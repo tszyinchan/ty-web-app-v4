@@ -73,41 +73,10 @@
       <section class="form-group">
         <div class="section-header">
           <div>
-            <h3 class="group-header" style="margin-bottom: 0">訓練項目</h3>
+            <h3 class="group-header" style="margin-bottom: 4px">訓練項目</h3>
             <p class="section-subtitle">
-              可加入重量訓練、有氧、伸展活動或自體重項目。
+              打字輸入動作名稱，系統會自動切換對應的項目欄位與類型。
             </p>
-          </div>
-
-          <div class="entry-action-row">
-            <button
-              mat-stroked-button
-              type="button"
-              (click)="addEntry('strength')"
-            >
-              新增重量訓練
-            </button>
-            <button
-              mat-stroked-button
-              type="button"
-              (click)="addEntry('cardio')"
-            >
-              新增有氧
-            </button>
-            <button
-              mat-stroked-button
-              type="button"
-              (click)="addEntry('mobility')"
-            >
-              新增伸展
-            </button>
-            <button
-              mat-stroked-button
-              type="button"
-              (click)="addEntry('bodyweight')"
-            >
-              新增自體重
-            </button>
           </div>
         </div>
 
@@ -135,7 +104,7 @@
                 </mat-icon>
                 <h4>項目 {{ entryIndex + 1 }}</h4>
                 <span class="entry-type-chip">
-                  {{ entry.entry_type || "未分類" }}
+                  {{ getEntryTypeLabel(entry.entry_type) }}
                 </span>
 
                 @if (!entry.isExpanded && entry.exercise_name) {
@@ -196,8 +165,8 @@
                     (ngModelChange)="onEntryTypeChange(entryIndex, $event)"
                     [name]="'entry_type_' + entryIndex"
                   >
-                    @for (type of entryTypeOptions; track type) {
-                      <mat-option [value]="type">{{ type }}</mat-option>
+                    @for (typeOpt of entryTypeOptions; track typeOpt.value) {
+                      <mat-option [value]="typeOpt.value">{{ typeOpt.label }}</mat-option>
                     }
                   </mat-select>
                 </mat-form-field>
@@ -207,9 +176,7 @@
                   <input
                     matInput
                     [ngModel]="entry.exercise_name"
-                    (ngModelChange)="
-                      updateEntryField(entryIndex, 'exercise_name', $event)
-                    "
+                    (ngModelChange)="onExerciseNameChange(entryIndex, $event)"
                     [name]="'exercise_name_' + entryIndex"
                     [matAutocomplete]="exerciseAuto"
                     required
@@ -341,7 +308,8 @@
                           subscriptSizing="dynamic"
                         >
                           <mat-label>單位</mat-label>
-                          <mat-select
+                          <input
+                            matInput
                             [ngModel]="set.weight_unit"
                             (ngModelChange)="
                               updateSetField(
@@ -354,10 +322,13 @@
                             [name]="
                               'weight_unit_' + entryIndex + '_' + setIndex
                             "
-                          >
+                            [matAutocomplete]="weightAuto"
+                            placeholder="自由輸入"
+                          />
+                          <mat-autocomplete #weightAuto="matAutocomplete">
                             <mat-option value="lb">lb</mat-option>
                             <mat-option value="kg">kg</mat-option>
-                          </mat-select>
+                          </mat-autocomplete>
                         </mat-form-field>
                       }
 
@@ -464,7 +435,8 @@
                           subscriptSizing="dynamic"
                         >
                           <mat-label>距離單位</mat-label>
-                          <mat-select
+                          <input
+                            matInput
                             [ngModel]="set.distance_unit"
                             (ngModelChange)="
                               updateSetField(
@@ -475,10 +447,35 @@
                               )
                             "
                             [name]="'dist_unit_' + entryIndex + '_' + setIndex"
-                          >
+                            [matAutocomplete]="distAuto"
+                            placeholder="自由輸入"
+                          />
+                          <mat-autocomplete #distAuto="matAutocomplete">
                             <mat-option value="km">km</mat-option>
                             <mat-option value="m">m</mat-option>
-                          </mat-select>
+                          </mat-autocomplete>
+                        </mat-form-field>
+
+                        <mat-form-field
+                          appearance="outline"
+                          subscriptSizing="dynamic"
+                        >
+                          <mat-label>坡度</mat-label>
+                          <input
+                            matInput
+                            type="number"
+                            [ngModel]="set.incline_value"
+                            (ngModelChange)="
+                              updateSetField(
+                                entryIndex,
+                                setIndex,
+                                'incline_value',
+                                $event
+                              )
+                            "
+                            [name]="'incline_' + entryIndex + '_' + setIndex"
+                            placeholder="例如: 15"
+                          />
                         </mat-form-field>
 
                         <mat-form-field
@@ -572,16 +569,10 @@
           </section>
         } @empty {
           <div class="empty-inline-note">
-            目前還沒有訓練項目，請用上方按鈕新增第一個項目。
+            目前還沒有訓練項目，請點擊上方導覽列的「新增項目」開始。
           </div>
         }
       </section>
     </div>
   }
 </div>
-
-<datalist id="exercise-names">
-  @for (name of exerciseNameSuggestions(); track name) {
-    <option [value]="name"></option>
-  }
-</datalist>

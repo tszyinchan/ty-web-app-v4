@@ -43,6 +43,7 @@ export interface FitEntrySet {
   calories_value: number | null;
   distance_value: number | null;
   distance_unit: string | null;
+  incline_value: number | null;
   level_text: string | null;
   side_code: FitSideCode | null;
   remarks: string | null;
@@ -71,6 +72,7 @@ export interface FitEditSetInput {
   calories_value: number | null;
   distance_value: number | null;
   distance_unit: string | null;
+  incline_value: number | null;
   level_text: string | null;
   side_code: FitSideCode | null;
   remarks: string | null;

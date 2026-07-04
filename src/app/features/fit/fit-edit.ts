@@ -35,7 +35,9 @@ import {
   FitSessionDetail,
 } from './fit.model';
 
-type FitEditVm = FitEditSessionInput;
+type FitEditVm = Omit<FitEditSessionInput, 'session_date'> & {
+  session_date: Date | string;
+};
 
 @Component({
   selector: 'app-fit-edit',
@@ -73,19 +75,21 @@ export class FitEdit implements OnInit, OnDestroy, DoCheck {
   isDirty = signal(false);
   isSaveDisabled = signal(true);
 
-  exerciseNameSuggestions = signal<string[]>([]);
+  exerciseNameSuggestions = signal<Array<{ name: string; type: FitEntryType }>>(
+    [],
+  );
 
-  entryTypeOptions: FitEntryType[] = [
-    'strength',
-    'cardio',
-    'mobility',
-    'bodyweight',
+  entryTypeOptions: { value: FitEntryType; label: string }[] = [
+    { value: 'strength', label: '重量訓練' },
+    { value: 'cardio', label: '有氧運動' },
+    { value: 'mobility', label: '伸展活動' },
+    { value: 'bodyweight', label: '自體重' },
   ];
 
   sideCodeOptions = [
-    { value: 'left', label: 'Left' },
-    { value: 'right', label: 'Right' },
-    { value: 'both', label: 'Both' },
+    { value: 'left', label: '左側' },
+    { value: 'right', label: '右側' },
+    { value: 'both', label: '雙側' },
   ];
 
   syncStatus = computed<'loading' | 'up-to-date' | 'unsaved' | 'none'>(() => {
@@ -134,7 +138,20 @@ export class FitEdit implements OnInit, OnDestroy, DoCheck {
     this.returnUrl =
       this.route.snapshot.queryParamMap.get('returnUrl') || '/fit/list';
 
-    const actions: HeaderAction[] = [];
+    const actions: HeaderAction[] = [
+      {
+        label: '展開全部',
+        icon: 'unfold_more',
+        type: 'secondary',
+        onClick: () => this.expandAll(),
+      },
+      {
+        label: '新增項目',
+        icon: 'add',
+        type: 'secondary',
+        onClick: () => this.addEntry('strength'),
+      },
+    ];
 
     if (this.currentId) {
       actions.push({
@@ -191,11 +208,39 @@ export class FitEdit implements OnInit, OnDestroy, DoCheck {
 
   getFilteredExercises(currentName: string | null | undefined): string[] {
     const search = (currentName || '').toLowerCase().trim();
-    const allNames = this.exerciseNameSuggestions();
-    if (!search) return allNames.slice(0, 8);
-    return allNames
-      .filter((name) => name.toLowerCase().includes(search))
-      .slice(0, 8);
+    const allObjects = this.exerciseNameSuggestions();
+    const allNames = allObjects.map((o) => o.name);
+
+    if (!search) return allNames;
+    return allNames.filter((name) => name.toLowerCase().includes(search));
+  }
+
+  onExerciseNameChange(entryIndex: number, name: string) {
+    this.updateEntryField(entryIndex, 'exercise_name', name);
+
+    if (!name) return;
+
+    const matched = this.exerciseNameSuggestions().find(
+      (o) => o.name.toLowerCase() === name.toLowerCase().trim(),
+    );
+
+    if (matched && matched.type) {
+      this.onEntryTypeChange(entryIndex, matched.type);
+    }
+  }
+
+  expandAll() {
+    this.item.update((current) => {
+      if (!current) return current;
+      return {
+        ...current,
+        entries: (current.entries || []).map((entry) => ({
+          ...entry,
+          isExpanded: true,
+          showAdvanced: true,
+        })),
+      };
+    });
   }
 
   formatSecToMmSs(sec: number | null | undefined): string {
@@ -468,16 +513,9 @@ export class FitEdit implements OnInit, OnDestroy, DoCheck {
   }
 
   private createNewItem(): FitEditVm {
-    const today = new Date();
-    const localDate = new Date(
-      today.getTime() - today.getTimezoneOffset() * 60000,
-    )
-      .toISOString()
-      .split('T')[0];
-
     return {
       id: null,
-      session_date: localDate,
+      session_date: new Date(),
       session_title: '',
       location: '',
       remarks: '',
@@ -509,12 +547,13 @@ export class FitEdit implements OnInit, OnDestroy, DoCheck {
       id: null,
       set_no: setNo,
       weight_value: null,
-      weight_unit: 'lb',
+      weight_unit: null,
       reps_value: null,
       duration_sec: null,
       calories_value: null,
       distance_value: null,
-      distance_unit: 'km',
+      distance_unit: null,
+      incline_value: null,
       level_text: '',
       side_code: null,
       remarks: '',
@@ -525,7 +564,9 @@ export class FitEdit implements OnInit, OnDestroy, DoCheck {
   private mapDetailToVm(detail: FitSessionDetail): FitEditVm {
     return {
       id: detail.session.tb_tyapp_fit_ssn_id,
-      session_date: detail.session.session_date,
+      session_date: detail.session.session_date
+        ? new Date(detail.session.session_date)
+        : new Date(),
       session_title: detail.session.session_title || '',
       location: detail.session.location || '',
       remarks: detail.session.remarks || '',
@@ -542,12 +583,13 @@ export class FitEdit implements OnInit, OnDestroy, DoCheck {
           id: set.tb_tyapp_fit_set_id,
           set_no: set.set_no ?? setIndex + 1,
           weight_value: set.weight_value ?? null,
-          weight_unit: set.weight_unit || 'lb',
+          weight_unit: set.weight_unit || null,
           reps_value: set.reps_value ?? null,
           duration_sec: set.duration_sec ?? null,
           calories_value: set.calories_value ?? null,
           distance_value: set.distance_value ?? null,
-          distance_unit: set.distance_unit || 'km',
+          distance_unit: set.distance_unit || null,
+          incline_value: set.incline_value ?? null,
           level_text: set.level_text || '',
           side_code: set.side_code || null,
           remarks: set.remarks || '',
@@ -558,9 +600,19 @@ export class FitEdit implements OnInit, OnDestroy, DoCheck {
   }
 
   private normalizePayload(current: FitEditVm): FitEditSessionInput {
+    let dateStr = '';
+    if (current.session_date instanceof Date) {
+      const d = current.session_date;
+      dateStr = new Date(d.getTime() - d.getTimezoneOffset() * 60000)
+        .toISOString()
+        .split('T')[0];
+    } else {
+      dateStr = current.session_date || '';
+    }
+
     return {
       id: current.id ?? null,
-      session_date: current.session_date,
+      session_date: dateStr,
       session_title: this.normalizeText(current.session_title),
       location: this.normalizeText(current.location),
       remarks: this.normalizeText(current.remarks),
@@ -583,6 +635,7 @@ export class FitEdit implements OnInit, OnDestroy, DoCheck {
           calories_value: this.normalizeNumber(set.calories_value),
           distance_value: this.normalizeNumber(set.distance_value),
           distance_unit: this.normalizeText(set.distance_unit),
+          incline_value: this.normalizeNumber(set.incline_value),
           level_text: this.normalizeText(set.level_text),
           side_code: set.side_code ?? null,
           remarks: this.normalizeText(set.remarks),
@@ -617,5 +670,10 @@ export class FitEdit implements OnInit, OnDestroy, DoCheck {
     if (value === null || value === undefined || value === '') return null;
     const num = Number(value);
     return Number.isNaN(num) ? null : Math.trunc(num);
+  }
+
+  getEntryTypeLabel(type: string | null | undefined): string {
+    const found = this.entryTypeOptions.find((o) => o.value === type);
+    return found ? found.label : '未分類';
   }
 }

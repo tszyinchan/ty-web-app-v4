@@ -8,6 +8,7 @@ import {
   FitEditSetInput,
   FitEntry,
   FitEntrySet,
+  FitEntryType,
   FitSession,
   FitSessionDetail,
 } from './fit.model';
@@ -311,6 +312,7 @@ export class FitService {
     weight?: number | null;
     weightUnit?: string | null;
     durationSec?: number | null;
+    inclineValue?: number | null;
     calories?: number | null;
     distance?: number | null;
     distanceUnit?: string | null;
@@ -328,6 +330,7 @@ export class FitService {
       calories_value: input.calories ?? null,
       distance_value: input.distance ?? null,
       distance_unit: input.distanceUnit ?? null,
+      incline_value: input.inclineValue ?? null,
       level_text: input.levelText ?? null,
       side_code: input.sideCode ?? null,
       remarks: input.remarks ?? null,
@@ -368,6 +371,7 @@ export class FitService {
         calories_value: set.calories_value,
         distance_value: set.distance_value,
         distance_unit: set.distance_unit,
+        incline_value: set.incline_value,
         level_text: set.level_text,
         side_code: set.side_code,
         remarks: set.remarks,
@@ -458,6 +462,7 @@ export class FitService {
       calories_value: set.calories_value,
       distance_value: set.distance_value,
       distance_unit: set.distance_unit,
+      incline_value: set.incline_value,
       level_text: set.level_text,
       side_code: set.side_code,
       remarks: set.remarks,
@@ -481,6 +486,7 @@ export class FitService {
         calories_value: set.calories_value,
         distance_value: set.distance_value,
         distance_unit: set.distance_unit,
+        incline_value: set.incline_value,
         level_text: set.level_text,
         side_code: set.side_code,
         remarks: set.remarks,
@@ -512,23 +518,32 @@ export class FitService {
     if (deleteEntryError) throw deleteEntryError;
   }
 
-  async fetchUniqueExerciseNames(): Promise<string[]> {
+  async fetchUniqueExerciseNames(): Promise<
+    Array<{ name: string; type: FitEntryType }>
+  > {
+    const userId = this.authService.userProfile()?.user_id;
+    if (!userId) return [];
+
     try {
       const { data, error } = await this.supabase
         .from('tyapp_fit_entry')
-        .select('exercise_name')
+        .select('exercise_name, entry_type')
         .is('deleted_at', null)
         .not('exercise_name', 'is', null);
 
       if (error) throw error;
 
-      const names = new Set<string>();
+      const nameMap = new Map<string, FitEntryType>();
       data.forEach((row: any) => {
         const name = row.exercise_name?.trim();
-        if (name) names.add(name);
+        if (name) {
+          nameMap.set(name, row.entry_type);
+        }
       });
 
-      return Array.from(names).sort();
+      return Array.from(nameMap.entries())
+        .map(([name, type]) => ({ name, type }))
+        .sort((a, b) => a.name.localeCompare(b.name));
     } catch (error: unknown) {
       console.error('Fetch exercise names failed', error);
       return [];
