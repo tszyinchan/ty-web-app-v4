@@ -25,6 +25,11 @@ import {
   HeaderAction,
   HeaderService,
 } from '../../core/services/header.service';
+
+import {
+  parseLocalDate,
+  formatDate,
+} from '../../core/utils/date-time.util'; // 🌟 引入你寫好的防禦性時間工具
 import { AuthService } from '../../core/services/auth.service';
 import { FitService } from './fit.service';
 import {
@@ -565,7 +570,7 @@ export class FitEdit implements OnInit, OnDestroy, DoCheck {
     return {
       id: detail.session.tb_tyapp_fit_ssn_id,
       session_date: detail.session.session_date
-        ? new Date(detail.session.session_date)
+        ? parseLocalDate(detail.session.session_date) || new Date()
         : new Date(),
       session_title: detail.session.session_title || '',
       location: detail.session.location || '',
@@ -602,10 +607,7 @@ export class FitEdit implements OnInit, OnDestroy, DoCheck {
   private normalizePayload(current: FitEditVm): FitEditSessionInput {
     let dateStr = '';
     if (current.session_date instanceof Date) {
-      const d = current.session_date;
-      dateStr = new Date(d.getTime() - d.getTimezoneOffset() * 60000)
-        .toISOString()
-        .split('T')[0];
+      dateStr = formatDate(current.session_date);
     } else {
       dateStr = current.session_date || '';
     }
