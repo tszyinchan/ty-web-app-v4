@@ -9,6 +9,8 @@ import { provideRouter } from '@angular/router';
 import { routes } from './app.routes';
 import { AuthService } from './core/services/auth.service';
 import { provideNativeDateAdapter } from '@angular/material/core';
+import { DateAdapter, provideCalendar } from 'angular-calendar';
+import { adapterFactory } from 'angular-calendar/date-adapters/date-fns';
 
 
 export const appConfig: ApplicationConfig = {
@@ -21,5 +23,6 @@ export const appConfig: ApplicationConfig = {
       const authService = inject(AuthService);
       return authService.init();
     }),
+    provideCalendar({ provide: DateAdapter, useFactory: adapterFactory }),
   ],
 };

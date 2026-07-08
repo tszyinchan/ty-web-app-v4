@@ -1,0 +1,146 @@
+<div
+  class="calendar-full-screen"
+  style="
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 140px);
+    padding: 16px;
+  "
+>
+  <div
+    class="calendar-toolbar"
+    style="
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    "
+  >
+    <div style="display: flex; align-items: center; gap: 8px">
+      <button mat-stroked-button (click)="goToToday()">Today</button>
+      <div>
+        <button mat-icon-button (click)="previous()">
+          <mat-icon>chevron_left</mat-icon>
+        </button>
+        <button mat-icon-button (click)="next()">
+          <mat-icon>chevron_right</mat-icon>
+        </button>
+      </div>
+      <h2
+        style="
+          margin: 0 0 0 8px;
+          font-size: 22px;
+          font-weight: 500;
+          color: var(--mat-sys-on-surface);
+        "
+      >
+        {{ viewTitle() }}
+      </h2>
+    </div>
+
+    <div>
+      <mat-button-toggle-group
+        [value]="view()"
+        (change)="view.set($event.value)"
+      >
+        <mat-button-toggle [value]="CalendarView.Month"
+          >Month</mat-button-toggle
+        >
+        <mat-button-toggle [value]="CalendarView.Week">Week</mat-button-toggle>
+        <mat-button-toggle [value]="CalendarView.Day">Day</mat-button-toggle>
+      </mat-button-toggle-group>
+    </div>
+  </div>
+
+  <div
+    class="calendar-body"
+    style="
+      flex: 1;
+      overflow: auto;
+      border: 1px solid var(--mat-sys-outline-variant);
+      border-radius: 12px;
+      background: var(--mat-sys-surface);
+    "
+  >
+    @switch (view()) {
+      @case (CalendarView.Month) {
+        <mwl-calendar-month-view
+          [viewDate]="viewDate()"
+          [events]="calendarEventsVM()"
+          [cellTemplate]="customCellTemplate"
+        ></mwl-calendar-month-view>
+      }
+      @case (CalendarView.Week) {
+        <mwl-calendar-week-view
+          [viewDate]="viewDate()"
+          [events]="calendarEventsVM()"
+        ></mwl-calendar-week-view>
+      }
+      @case (CalendarView.Day) {
+        <mwl-calendar-day-view
+          [viewDate]="viewDate()"
+          [events]="calendarEventsVM()"
+        ></mwl-calendar-day-view>
+      }
+    }
+
+    <ng-template #customCellTemplate let-day="day" let-locale="locale">
+      <div
+        style="
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+          min-height: 100px;
+        "
+      >
+        <div style="padding: 8px; text-align: right">
+          <span
+            [style.opacity]="day.inMonth ? 1 : 0.3"
+            style="
+              font-size: 13px;
+              font-weight: 500;
+              padding: 4px 6px;
+              border-radius: 50%;
+            "
+            [style.background-color]="
+              day.isToday ? 'var(--mat-sys-primary)' : 'transparent'
+            "
+            [style.color]="
+              day.isToday ? 'var(--mat-sys-on-primary)' : 'inherit'
+            "
+          >
+            {{ day.date | date: "d" }}
+          </span>
+        </div>
+
+        <div
+          style="
+            flex: 1;
+            padding: 0 4px 4px 4px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+          "
+        >
+          @for (event of day.events; track $index) {
+            <div
+              style="
+                font-size: 11px;
+                background-color: var(--mat-sys-primary-container);
+                color: var(--mat-sys-on-primary-container);
+                padding: 3px 6px;
+                border-radius: 4px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+              "
+            >
+              {{ event.title }}
+            </div>
+          }
+        </div>
+      </div>
+    </ng-template>
+  </div>
+</div>

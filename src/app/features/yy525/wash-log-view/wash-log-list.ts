@@ -3,6 +3,7 @@ import { Component, OnInit, OnDestroy, inject, computed } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { HeaderService } from '../../../core/services/header.service';
 import {
   groupItemsByPeriod,
@@ -15,6 +16,7 @@ import { WashLogService } from './wash-log.service';
   standalone: true,
   imports: [
     CommonModule,
+    RouterModule,
     MatButtonModule,
     MatIconModule,
     MatProgressSpinnerModule,
@@ -24,6 +26,8 @@ import { WashLogService } from './wash-log.service';
 export class WashLogList implements OnInit, OnDestroy {
   public washLogService = inject(WashLogService);
   private headerService = inject(HeaderService);
+  private router = inject(Router);
+  private route = inject(ActivatedRoute);
 
   groupedListVM = computed(() => {
     return groupItemsByPeriod(this.washLogService.washLogs(), (item) => {
@@ -36,22 +40,27 @@ export class WashLogList implements OnInit, OnDestroy {
     const isLoading = computed(() => this.washLogService.loading());
 
     this.headerService.setConfig({
+      title: 'Laundry Logs',
       actions: [
         {
           label: 'Refresh',
           icon: 'refresh',
           type: 'secondary',
           disabled: isLoading,
-          onClick: () => this.onRefresh(),
+          onClick: () => this.washLogService.fetchAllLogs(true),
+        },
+        {
+          label: 'Calendar View',
+          icon: 'calendar_month',
+          type: 'primary',
+          disabled: isLoading,
+          onClick: () =>
+            this.router.navigate(['../calendar'], { relativeTo: this.route }),
         },
       ],
     });
 
     this.washLogService.fetchAllLogs();
-  }
-
-  async onRefresh() {
-    await this.washLogService.fetchAllLogs(true);
   }
 
   ngOnDestroy() {

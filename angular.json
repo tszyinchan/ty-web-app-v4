@@ -28,7 +28,10 @@
                 "input": "public"
               }
             ],
-            "styles": ["src/styles.scss"]
+            "styles": [
+              "src/styles.scss",
+              "node_modules/angular-calendar/css/angular-calendar.css"
+            ]
           },
           "configurations": {
             "production": {
@@ -85,7 +88,10 @@
                 "input": "public"
               }
             ],
-            "styles": ["src/styles.scss"]
+            "styles": [
+              "src/styles.scss",
+              "node_modules/angular-calendar/css/angular-calendar.css"
+            ]
           }
         }
       }

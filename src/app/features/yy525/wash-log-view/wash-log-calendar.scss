@@ -1,0 +1,49 @@
+.calendar-full-screen {
+  ::ng-deep {
+    .cal-month-view,
+    .cal-week-view,
+    .cal-day-view {
+      background-color: var(--mat-sys-surface);
+    }
+
+    .cal-month-view .cal-days,
+    .cal-week-view .cal-day-headers {
+      border-bottom: 1px solid var(--mat-sys-outline-variant);
+      border-top: 0;
+      border-left: 0;
+      border-right: 0;
+    }
+
+    .cal-month-view .cal-cell-row,
+    .cal-month-view .cal-day-cell,
+    .cal-week-view .cal-day-headers .cal-header,
+    .cal-week-view .cal-time-events,
+    .cal-day-view .cal-hour-rows {
+      border-color: var(--mat-sys-outline-variant);
+    }
+
+    .cal-month-view .cal-day-cell:not(.cal-in-month) {
+      background-color: var(--mat-sys-surface-variant);
+    }
+
+    .cal-event-container .cal-event {
+      background-color: var(--mat-sys-primary-container);
+      color: var(--mat-sys-on-primary-container);
+      border-radius: 4px;
+      padding: 2px 4px;
+      font-size: 12px;
+      font-weight: 500;
+      border: 0;
+    }
+
+    .cal-event-container .cal-event-title {
+      color: var(--mat-sys-on-primary-container);
+    }
+
+    .cal-week-view .cal-all-day-events,
+    .cal-day-view .cal-all-day-events {
+      border-bottom: 1px solid var(--mat-sys-outline-variant);
+      background-color: var(--mat-sys-surface);
+    }
+  }
+}

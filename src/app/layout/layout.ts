@@ -108,7 +108,7 @@ export class Layout {
       icon: 'local_laundry_service',
       adminOnly: false,
       links: [
-        { title: 'Laundry Logs', route: '/yy525/wash-log/list' },
+        { title: 'Laundry Calendar', route: '/yy525/wash-log/calendar' },
       ]
     },
     {
