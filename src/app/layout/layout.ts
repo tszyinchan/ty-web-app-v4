@@ -104,6 +104,14 @@ export class Layout {
       ],
     },
     {
+      title: 'YY525',
+      icon: 'local_laundry_service',
+      adminOnly: false,
+      links: [
+        { title: 'Laundry Logs', route: '/yy525/wash-log/list' },
+      ]
+    },
+    {
       title: 'User Management',
       icon: 'people_outline',
       adminOnly: true,

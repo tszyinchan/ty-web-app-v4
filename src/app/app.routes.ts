@@ -92,6 +92,18 @@ export const routes: Routes = [
           import('./features/fit/fit.routes').then((m) => m.FIT_ROUTES),
       },
       {
+        path: 'yy525',
+        children: [
+          {
+            path: 'wash-log',
+            loadChildren: () =>
+              import('./features/yy525/wash-log-view/wash-log.routes').then(
+                (m) => m.WASH_LOG_ROUTES,
+              ),
+          }
+        ]
+      },
+      {
         path: 'archive',
         children: [
           {

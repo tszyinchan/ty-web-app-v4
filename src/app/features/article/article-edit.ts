@@ -34,6 +34,10 @@ import { DisplayNamePipe } from '../../core/pipes/display-name.pipe';
 import { exportToCsv } from '../../core/utils/csv-export.util';
 import { NotificationService } from '../../core/services/notification.service';
 
+type ArticleEditVm = Omit<Article, 'publish_date'> & { 
+  publish_date: Date | string | null 
+};
+
 @Component({
   selector: 'app-article-edit',
   standalone: true,
