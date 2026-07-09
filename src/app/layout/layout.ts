@@ -107,9 +107,7 @@ export class Layout {
       title: 'YY525',
       icon: 'local_laundry_service',
       adminOnly: false,
-      links: [
-        { title: 'Laundry Calendar', route: '/yy525/wash-log/calendar' },
-      ]
+      links: [{ title: 'Laundry Calendar', route: '/yy525/wash-log/calendar' }],
     },
     {
       title: 'User Management',
@@ -178,5 +176,9 @@ export class Layout {
 
   getToggleActions(actions?: HeaderAction[]) {
     return (actions || []).filter((a) => a.type === 'toggle');
+  }
+
+  getIconActions(actions?: HeaderAction[]) {
+    return (actions || []).filter((a) => a.type === 'icon');
   }
 }

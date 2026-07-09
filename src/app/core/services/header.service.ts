@@ -3,7 +3,7 @@ import { Injectable, signal, Signal } from '@angular/core';
 export interface HeaderAction {
   label: string;
   icon?: string;
-  type: 'primary' | 'secondary' | 'toggle';
+  type: 'primary' | 'secondary' | 'toggle'| 'icon';
   disabled?: Signal<boolean> | (() => boolean);
   onClick?: () => void;
 

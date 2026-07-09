@@ -6,6 +6,7 @@ import {
   inject,
   computed,
   signal,
+  effect,
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -18,6 +19,7 @@ import { startOfDay, addMonths, subMonths } from 'date-fns';
 
 import { WashLogService } from './wash-log.service';
 import { HeaderService } from '../../../core/services/header.service';
+import { format } from 'date-fns-tz';
 
 @Component({
   selector: 'app-wash-log-calendar',
@@ -57,30 +59,53 @@ export class WashLogCalendar implements OnInit, OnDestroy {
     });
   });
 
-  ngOnInit() {
-    const isLoading = computed(() => this.washLogService.loading());
+  constructor() {
+    effect(() => {
+      const currentDate = this.viewDate();
+      const isLoading = this.washLogService.loading();
 
-    this.headerService.setConfig({
-      title: 'Laundry Calendar',
-      actions: [
-        {
-          label: 'Refresh',
-          icon: 'refresh',
-          type: 'secondary',
-          disabled: isLoading,
-          onClick: () => this.washLogService.fetchAllLogs(true),
-        },
-        {
-          label: 'List View',
-          icon: 'view_list',
-          type: 'primary',
-          disabled: isLoading,
-          onClick: () =>
-            this.router.navigate(['../list'], { relativeTo: this.route }),
-        },
-      ],
+      this.headerService.setConfig({
+        title: format(currentDate, 'MMMM yyyy'),
+        actions: [
+          {
+            label: 'Today',
+            icon: 'today',
+            type: 'icon',
+            onClick: () => this.goToToday(),
+          },
+          {
+            label: 'Previous Month',
+            icon: 'chevron_left',
+            type: 'icon',
+            onClick: () => this.previous(),
+          },
+          {
+            label: 'Next Month',
+            icon: 'chevron_right',
+            type: 'icon',
+            onClick: () => this.next(),
+          },
+          {
+            label: 'Refresh',
+            icon: 'refresh',
+            type: 'secondary',
+            disabled: signal<boolean>(isLoading),
+            onClick: () => this.washLogService.fetchAllLogs(true),
+          },
+          {
+            label: 'List View',
+            icon: 'view_list',
+            type: 'primary',
+            disabled: signal<boolean>(isLoading),
+            onClick: () =>
+              this.router.navigate(['../list'], { relativeTo: this.route }),
+          },
+        ],
+      });
     });
+  }
 
+  ngOnInit() {
     this.breakpointObserver
       .observe('(max-width: 768px)')
       .subscribe((result) => {

@@ -145,6 +145,17 @@
                 </button>
               }
 
+              @for (action of getIconActions(config.actions); track action.label) {
+    <button
+      mat-icon-button
+      (click)="action.onClick ? action.onClick() : null"
+      [disabled]="action.disabled ? action.disabled() : false"
+      [title]="action.label"
+    >
+      <mat-icon>{{ action.icon }}</mat-icon>
+    </button>
+  }
+
               @for (
                 action of getPrimaryActions(config.actions);
                 track action.label

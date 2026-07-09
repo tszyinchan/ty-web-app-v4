@@ -1,18 +1,4 @@
 <div class="calendar-full-screen">
-  <div class="calendar-toolbar">
-    <div class="toolbar-nav">
-      <button mat-stroked-button (click)="goToToday()">Today</button>
-      <div class="nav-arrows">
-        <button mat-icon-button (click)="previous()">
-          <mat-icon>chevron_left</mat-icon>
-        </button>
-        <button mat-icon-button (click)="next()">
-          <mat-icon>chevron_right</mat-icon>
-        </button>
-      </div>
-      <h2 class="toolbar-title">{{ viewDate() | date: "MMM yyyy" }}</h2>
-    </div>
-  </div>
 
   <div class="calendar-body">
     <mwl-calendar-month-view

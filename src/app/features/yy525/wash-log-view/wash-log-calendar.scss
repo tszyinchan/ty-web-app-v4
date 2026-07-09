@@ -1,29 +1,14 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
 .calendar-full-screen {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 140px);
+  flex: 1;
   padding: 8px;
-
-  .calendar-toolbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
-
-    .toolbar-nav {
-      display: flex;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 4px;
-    }
-
-    .toolbar-title {
-      margin: 0;
-      font-size: clamp(16px, 4vw, 20px);
-      font-weight: 600;
-      color: var(--mat-sys-on-surface);
-    }
-  }
 
   .calendar-body {
     flex: 1;
@@ -81,16 +66,39 @@
   }
 
   ::ng-deep {
+    mwl-calendar-month-view {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      min-height: 0;
+    }
+
     .cal-month-view {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
       background-color: var(--mat-sys-surface);
     }
+
     .cal-month-view .cal-days {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
       border: none;
     }
-    .cal-month-view .cal-cell-row,
-    .cal-month-view .cal-day-cell {
+
+    .cal-month-view .cal-cell-row {
+      display: flex;
+      flex: 1;
       border-color: var(--mat-sys-outline-variant);
     }
+
+    .cal-month-view .cal-day-cell {
+      border-color: var(--mat-sys-outline-variant);
+      display: flex;
+      flex-direction: column;
+    }
+
     .cal-month-view .cal-day-cell:not(.cal-in-month) {
       background-color: var(--mat-sys-surface-variant);
     }
