@@ -8,27 +8,13 @@ import {
   signal,
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
-import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { RouterModule, Router, ActivatedRoute } from '@angular/router';
+import { BreakpointObserver } from '@angular/cdk/layout';
 
-import {
-  CalendarMonthViewComponent,
-  CalendarWeekViewComponent,
-  CalendarDayViewComponent,
-  CalendarEvent,
-  CalendarView,
-} from 'angular-calendar';
-import {
-  startOfDay,
-  addMonths,
-  subMonths,
-  addWeeks,
-  subWeeks,
-  addDays,
-  subDays,
-} from 'date-fns';
+import { CalendarMonthViewComponent, CalendarEvent } from 'angular-calendar';
+import { startOfDay, addMonths, subMonths } from 'date-fns';
 
 import { WashLogService } from './wash-log.service';
 import { HeaderService } from '../../../core/services/header.service';
@@ -40,12 +26,9 @@ import { HeaderService } from '../../../core/services/header.service';
     CommonModule,
     RouterModule,
     MatButtonModule,
-    MatButtonToggleModule,
     MatIconModule,
     MatProgressSpinnerModule,
     CalendarMonthViewComponent,
-    CalendarWeekViewComponent,
-    CalendarDayViewComponent,
   ],
   templateUrl: './wash-log-calendar.html',
   styleUrl: './wash-log-calendar.scss',
@@ -55,10 +38,11 @@ export class WashLogCalendar implements OnInit, OnDestroy {
   private headerService = inject(HeaderService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
+  private breakpointObserver = inject(BreakpointObserver);
 
   viewDate = signal<Date>(new Date());
-  view = signal<CalendarView>(CalendarView.Month);
-  CalendarView = CalendarView;
+
+  dayFormat = signal<'EEE' | 'EEEEE'>('EEE');
 
   calendarEventsVM = computed<CalendarEvent[]>(() => {
     return this.washLogService.washLogs().map((item) => {
@@ -67,28 +51,10 @@ export class WashLogCalendar implements OnInit, OnDestroy {
 
       return {
         start: startOfDay(localDate),
-        title: `👕 ${item.title}`,
-        allDay: true,
+        title: item.title,
         meta: { item },
-        color: {
-          primary: 'var(--mat-sys-primary)',
-          secondary: 'var(--mat-sys-primary-container)',
-        },
       };
     });
-  });
-
-  viewTitle = computed(() => {
-    const date = this.viewDate();
-    if (this.view() === CalendarView.Day) {
-      return date.toLocaleDateString('en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      });
-    }
-    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
   });
 
   ngOnInit() {
@@ -115,27 +81,21 @@ export class WashLogCalendar implements OnInit, OnDestroy {
       ],
     });
 
+    this.breakpointObserver
+      .observe('(max-width: 768px)')
+      .subscribe((result) => {
+        this.dayFormat.set(result.matches ? 'EEEEE' : 'EEE');
+      });
+
     this.washLogService.fetchAllLogs();
   }
 
   previous() {
-    const current = this.viewDate();
-    if (this.view() === CalendarView.Month)
-      this.viewDate.set(subMonths(current, 1));
-    else if (this.view() === CalendarView.Week)
-      this.viewDate.set(subWeeks(current, 1));
-    else this.viewDate.set(subDays(current, 1));
+    this.viewDate.set(subMonths(this.viewDate(), 1));
   }
-
   next() {
-    const current = this.viewDate();
-    if (this.view() === CalendarView.Month)
-      this.viewDate.set(addMonths(current, 1));
-    else if (this.view() === CalendarView.Week)
-      this.viewDate.set(addWeeks(current, 1));
-    else this.viewDate.set(addDays(current, 1));
+    this.viewDate.set(addMonths(this.viewDate(), 1));
   }
-
   goToToday() {
     this.viewDate.set(new Date());
   }

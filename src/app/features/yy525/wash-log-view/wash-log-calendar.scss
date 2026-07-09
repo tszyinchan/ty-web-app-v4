@@ -1,49 +1,124 @@
 .calendar-full-screen {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 140px);
+  padding: 8px;
+
+  .calendar-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+
+    .toolbar-nav {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    .toolbar-title {
+      margin: 0;
+      font-size: clamp(16px, 4vw, 20px);
+      font-weight: 600;
+      color: var(--mat-sys-on-surface);
+    }
+  }
+
+  .calendar-body {
+    flex: 1;
+    overflow: auto;
+    border: 1px solid var(--mat-sys-outline-variant);
+    border-radius: 8px;
+    background: var(--mat-sys-surface);
+  }
+
+  .cal-custom-header {
+    display: flex;
+    border-bottom: 1px solid var(--mat-sys-outline-variant);
+
+    .cal-header-cell {
+      flex: 1;
+      text-align: center;
+      padding: 6px 0;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--mat-sys-outline);
+    }
+  }
+
+  .cal-custom-cell {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    min-height: 80px;
+
+    .cell-date-wrapper {
+      padding: 2px 4px;
+      text-align: center;
+
+      .cell-date {
+        font-size: 12px;
+        font-weight: 500;
+        display: inline-block;
+        padding: 2px;
+        border-radius: 4px;
+
+        &.is-today {
+          color: var(--mat-sys-primary);
+        }
+      }
+    }
+
+    .cell-events-wrapper {
+      flex: 1;
+      padding: 0 2px 2px 2px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+  }
+
   ::ng-deep {
-    .cal-month-view,
-    .cal-week-view,
-    .cal-day-view {
+    .cal-month-view {
       background-color: var(--mat-sys-surface);
     }
-
-    .cal-month-view .cal-days,
-    .cal-week-view .cal-day-headers {
-      border-bottom: 1px solid var(--mat-sys-outline-variant);
-      border-top: 0;
-      border-left: 0;
-      border-right: 0;
+    .cal-month-view .cal-days {
+      border: none;
     }
-
     .cal-month-view .cal-cell-row,
-    .cal-month-view .cal-day-cell,
-    .cal-week-view .cal-day-headers .cal-header,
-    .cal-week-view .cal-time-events,
-    .cal-day-view .cal-hour-rows {
+    .cal-month-view .cal-day-cell {
       border-color: var(--mat-sys-outline-variant);
     }
-
     .cal-month-view .cal-day-cell:not(.cal-in-month) {
       background-color: var(--mat-sys-surface-variant);
     }
 
-    .cal-event-container .cal-event {
+    .event-badge {
+      font-size: 10px;
+      line-height: 1.2;
       background-color: var(--mat-sys-primary-container);
       color: var(--mat-sys-on-primary-container);
+      padding: 2px;
       border-radius: 4px;
-      padding: 2px 4px;
-      font-size: 12px;
-      font-weight: 500;
-      border: 0;
-    }
+      text-align: center;
 
-    .cal-event-container .cal-event-title {
-      color: var(--mat-sys-on-primary-container);
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: anywhere;
     }
+  }
+}
 
-    .cal-week-view .cal-all-day-events,
-    .cal-day-view .cal-all-day-events {
-      border-bottom: 1px solid var(--mat-sys-outline-variant);
-      background-color: var(--mat-sys-surface);
+@media (min-width: 768px) {
+  .calendar-full-screen {
+    ::ng-deep {
+      .event-badge {
+        font-size: 11px;
+        padding: 4px 6px;
+        text-align: left;
+      }
     }
   }
 }
