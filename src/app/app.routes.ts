@@ -104,6 +104,13 @@ export const routes: Routes = [
         ]
       },
       {
+        path: 'filelink',
+        loadChildren: () =>
+          import('./features/filelink/filelink.routes').then(
+            (m) => m.FILELINK_ROUTES,
+          ),
+      },
+      {
         path: 'archive',
         children: [
           {

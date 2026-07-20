@@ -104,6 +104,12 @@ export class Layout {
       ],
     },
     {
+      title: 'Filelink',
+      icon: 'link',
+      adminOnly: false,
+      links: [{ title: 'Filelink List', route: '/filelink/list' }],
+    },
+    {
       title: 'YY525',
       icon: 'local_laundry_service',
       adminOnly: false,

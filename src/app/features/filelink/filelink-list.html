@@ -1,0 +1,55 @@
+<div class="standard-list-view">
+  <div class="list-container">
+    @for (item of listVM(); track item.tb_tyapp_fl_item_id) {
+      <a class="item-link" [routerLink]="['../edit', item.tb_tyapp_fl_item_id]">
+        <div class="item-content">
+          <div class="item-info-group">
+            <span class="main-text">
+              <mat-icon
+                style="
+                  font-size: 16px;
+                  width: 16px;
+                  height: 16px;
+                  vertical-align: middle;
+                  margin-right: 4px;
+                  color: var(--mat-sys-primary);
+                "
+                >folder_open</mat-icon
+              >
+              {{ item.displayPath }}
+            </span>
+            <span class="sub-text">
+              {{ item.title || "Untitled" }}
+              @if (item.ref_date) {
+                · {{ item.ref_date }}
+              }
+              · Owner: {{ item.ownerName }}
+            </span>
+          </div>
+
+          <div class="item-status-group">
+            <span class="status-tag" [class.inactive]="item.status === 0">
+              {{ item.status === 1 ? "Active" : "Inactive" }}
+            </span>
+            <mat-icon class="chevron">chevron_right</mat-icon>
+          </div>
+        </div>
+      </a>
+    } @empty {
+      @if (!filelinkService.loading()) {
+        <div class="empty-placeholder">No file links found.</div>
+      }
+    }
+  </div>
+
+  <footer
+    class="list-footer"
+    [hidden]="filelinkService.loading() || listVM().length === 0"
+  >
+    <div class="divider"></div>
+    <span class="count-text">TOTAL {{ listVM().length }} ITEMS</span>
+    @if (filelinkService.loading()) {
+      <mat-spinner diameter="16"></mat-spinner>
+    }
+  </footer>
+</div>

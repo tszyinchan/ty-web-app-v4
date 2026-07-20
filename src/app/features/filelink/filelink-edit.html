@@ -1,0 +1,193 @@
+<div class="split-workspace">
+  @if (item(); as fl) {
+    <div class="form-scroll-area">
+      <section class="form-group">
+        <h3 class="group-header">Resource Location</h3>
+
+        <mat-form-field
+          appearance="outline"
+          class="full-width"
+          subscriptSizing="dynamic"
+        >
+          <mat-label>Directory Path</mat-label>
+          <mat-chip-grid #pathGrid aria-label="Enter directory path">
+            @for (path of fl.item_path; track path; let idx = $index) {
+              <mat-chip-row (removed)="removePath(idx)">
+                {{ path }}
+                <button matChipRemove aria-label="remove path layer">
+                  <mat-icon>cancel</mat-icon>
+                </button>
+              </mat-chip-row>
+            }
+            <input
+              placeholder="Type layer name & press Enter..."
+              [matChipInputFor]="pathGrid"
+              [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
+              [matChipInputAddOnBlur]="true"
+              (matChipInputTokenEnd)="addPath($event)"
+            />
+          </mat-chip-grid>
+          <mat-hint
+            >Press Enter to add a new folder level (e.g., Bills &rarr;
+            2026)</mat-hint
+          >
+        </mat-form-field>
+
+        <div class="fields-grid-2" style="margin-top: 16px">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Display Title (Optional)</mat-label>
+            <input
+              matInput
+              [(ngModel)]="fl.title"
+              placeholder="Defaults to Date if empty"
+            />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Reference Date (Optional)</mat-label>
+            <input matInput type="date" [(ngModel)]="fl.ref_date" />
+          </mat-form-field>
+        </div>
+
+        <mat-form-field
+          appearance="outline"
+          class="full-width"
+          subscriptSizing="dynamic"
+          style="margin-top: 16px"
+        >
+          <mat-label>External URL</mat-label>
+          <input matInput [(ngModel)]="fl.url" placeholder="https://..." />
+        </mat-form-field>
+      </section>
+
+      <section class="form-group">
+        <h3 class="group-header">Access Control</h3>
+        <mat-form-field
+          appearance="outline"
+          class="full-width"
+          subscriptSizing="dynamic"
+        >
+          <mat-label>Allowed Users</mat-label>
+          <mat-chip-grid #userGrid aria-label="User selection">
+            @for (uid of fl.allowed_users; track uid; let idx = $index) {
+              <mat-chip-row (removed)="removeAllowedUser(idx)">
+                {{ displayUserName(uid) }}
+                <button matChipRemove><mat-icon>cancel</mat-icon></button>
+              </mat-chip-row>
+            }
+            <input
+              placeholder="Search user to grant access..."
+              #userInput
+              [matChipInputFor]="userGrid"
+              [matAutocomplete]="userAuto"
+              (input)="userSearch.set(userInput.value)"
+              (focus)="userSearch.set('')"
+            />
+          </mat-chip-grid>
+          <mat-autocomplete
+            #userAuto="matAutocomplete"
+            (optionSelected)="addAllowedUser($event); userInput.value = ''"
+          >
+            @for (opt of filteredUsers(); track opt.value) {
+              <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
+            }
+          </mat-autocomplete>
+          <mat-hint
+            >Users added here will inherit access to this file via
+            RLS.</mat-hint
+          >
+        </mat-form-field>
+      </section>
+
+      <section class="form-group">
+        <h3 class="group-header">Dynamic Metadata (JSONB)</h3>
+
+        <div
+          style="
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 16px;
+          "
+        >
+          @for (pair of metaPairs(); track $index; let i = $index) {
+            <div style="display: flex; gap: 8px; align-items: center">
+              <mat-form-field
+                appearance="outline"
+                subscriptSizing="dynamic"
+                style="flex: 1"
+              >
+                <mat-label>Property Key</mat-label>
+                <input
+                  matInput
+                  [(ngModel)]="pair.k"
+                  (ngModelChange)="onMetaChange()"
+                  placeholder="e.g. amount"
+                />
+              </mat-form-field>
+
+              <mat-form-field
+                appearance="outline"
+                subscriptSizing="dynamic"
+                style="flex: 2"
+              >
+                <mat-label>Value</mat-label>
+                <input
+                  matInput
+                  [(ngModel)]="pair.v"
+                  (ngModelChange)="onMetaChange()"
+                  placeholder="Value"
+                />
+              </mat-form-field>
+
+              <button mat-icon-button color="warn" (click)="removeMetaPair(i)">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </div>
+          }
+        </div>
+
+        <button
+          mat-stroked-button
+          color="primary"
+          type="button"
+          (click)="addMetaPair()"
+        >
+          + Add Property
+        </button>
+      </section>
+
+      <section class="form-group">
+        <h3 class="group-header">Status & Logs</h3>
+        <div class="fields-row-2">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Sort Order</mat-label>
+            <input
+              matInput
+              type="number"
+              [(ngModel)]="fl.sort_order"
+              required
+            />
+          </mat-form-field>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Status</mat-label>
+            <mat-select [(ngModel)]="fl.status">
+              <mat-option [value]="1">Active</mat-option>
+              <mat-option [value]="0">Inactive</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+
+        <mat-form-field
+          appearance="outline"
+          class="full-width"
+          subscriptSizing="dynamic"
+          style="margin-top: 16px"
+        >
+          <mat-label>Internal Remarks / Log</mat-label>
+          <textarea matInput rows="3" [(ngModel)]="fl.log"></textarea>
+        </mat-form-field>
+      </section>
+    </div>
+  }
+</div>
