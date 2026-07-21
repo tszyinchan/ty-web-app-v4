@@ -27,9 +27,19 @@ export const YY525_Wash_Log_API = {
 };
 
 export const EXCHANGE_RATES: Record<string, number> = {
-  CAD: 1.00000,
+  CAD: 1.0,
   HKD: 5.66422,
   USD: 0.72354,
   CNY: 5.11018,
   JPY: 108.51953,
 };
+
+export const SUBDOMAINS = {
+  FILELINK: 'filelink',
+  JAXFR: 'jaxfr',
+} as const;
+
+export const DEFAULT_ROUTES = {
+  [SUBDOMAINS.FILELINK]: '/',
+  [SUBDOMAINS.JAXFR]: '/welcome',
+} as const;

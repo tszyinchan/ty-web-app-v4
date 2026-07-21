@@ -54,12 +54,14 @@ export class AuthService {
   }
 
   async login(email: string, pass: string) {
-    const { error } = await this.supabase.auth.signInWithPassword({
+    const { data, error } = await this.supabase.auth.signInWithPassword({
       email,
       password: pass,
     });
     if (error) throw error;
-    await this.router.navigate(['/welcome']);
+    if (data.session?.user) {
+      await this.fetchProfile(data.session.user.id);
+    }
   }
 
   async logout() {

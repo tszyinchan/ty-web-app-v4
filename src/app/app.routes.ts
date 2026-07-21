@@ -1,15 +1,12 @@
 import { Routes } from '@angular/router';
 import { Layout } from './apps/jaxfr/layout/layout';
 import { authGuard } from './core/guards/auth.guard';
+import { SUBDOMAINS } from './app.constants';
+import { getCurrentSubdomain } from './core/utils/app-env.util';
 
 const hostname = window.location.hostname;
 const port = window.location.port;
-
-let currentApp = 'jaxfr';
-
-if (hostname.startsWith('filelink') || port === '4300') {
-  currentApp = 'filelink';
-}
+const currentApp = getCurrentSubdomain();
 
 const JAXFR_ROUTES: Routes = [
   {
@@ -189,8 +186,8 @@ const FILELINK_ROUTES: Routes = [
 ];
 
 const routeMap: Record<string, Routes> = {
-  jaxfr: JAXFR_ROUTES,
-  filelink: FILELINK_ROUTES,
+  [SUBDOMAINS.JAXFR]: JAXFR_ROUTES,
+  [SUBDOMAINS.FILELINK]: FILELINK_ROUTES
 };
 
 export const routes: Routes = routeMap[currentApp] || JAXFR_ROUTES;
