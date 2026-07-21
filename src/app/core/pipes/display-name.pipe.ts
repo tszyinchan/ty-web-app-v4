@@ -1,5 +1,5 @@
 import { Pipe, PipeTransform } from '@angular/core';
-import { TyappUser } from '../../features/user/user.model';
+import { TyappUser } from '../models/user.model';
 
 @Pipe({
   name: 'tyDisplayName',

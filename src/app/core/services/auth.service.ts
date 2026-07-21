@@ -1,7 +1,7 @@
 import { Injectable, inject, signal, computed, NgZone } from '@angular/core';
 import { Router } from '@angular/router';
 import { SupabaseService } from './supabase.service';
-import { TyappUser, USER_ROLES } from '../../features/user/user.model';
+import { TyappUser, USER_ROLES } from '../models/user.model';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
