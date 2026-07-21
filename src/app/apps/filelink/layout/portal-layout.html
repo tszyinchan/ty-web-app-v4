@@ -1,0 +1,28 @@
+<div class="portal-shell">
+  <mat-toolbar class="portal-toolbar" color="primary">
+    <div class="toolbar-content">
+      <div class="brand">
+        <mat-icon>cloud_queue</mat-icon>
+        <span>Tyapp Filelink</span>
+      </div>
+
+      <button mat-icon-button [matMenuTriggerFor]="userMenu">
+        <mat-icon>account_circle</mat-icon>
+      </button>
+      <mat-menu #userMenu="matMenu">
+        <button mat-menu-item disabled>
+          {{ (userProfile() | tyDisplayName) || "User" }}
+        </button>
+        <mat-divider></mat-divider>
+        <button mat-menu-item (click)="onSignOut()">
+          <mat-icon>logout</mat-icon>
+          <span>Sign Out</span>
+        </button>
+      </mat-menu>
+    </div>
+  </mat-toolbar>
+
+  <main class="portal-main">
+    <router-outlet></router-outlet>
+  </main>
+</div>

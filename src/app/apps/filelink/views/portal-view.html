@@ -1,0 +1,60 @@
+<div class="file-browser-container">
+  <div class="breadcrumbs">
+    <button mat-icon-button (click)="goToLevel(-1)" class="home-btn">
+      <mat-icon>home</mat-icon>
+    </button>
+
+    @for (segment of currentPath(); track $index; let i = $index) {
+      <mat-icon class="separator">chevron_right</mat-icon>
+      <button mat-button class="crumb-btn" (click)="goToLevel(i)">
+        {{ segment }}
+      </button>
+    }
+  </div>
+
+  @if (filelinkService.loading()) {
+    <div class="loading-state">
+      <mat-spinner diameter="32"></mat-spinner>
+    </div>
+  } @else {
+    <div class="list-wrapper">
+      @for (folder of currentFolderContent().folders; track folder) {
+        <button
+          mat-ripple
+          class="list-item folder-item"
+          (click)="enterFolder(folder)"
+        >
+          <mat-icon class="item-icon folder-icon">folder</mat-icon>
+          <span class="item-name">{{ folder }}</span>
+          <mat-icon class="chevron">chevron_right</mat-icon>
+        </button>
+      }
+
+      @for (
+        file of currentFolderContent().files;
+        track file.tb_tyapp_fl_item_id
+      ) {
+        <button
+          mat-ripple
+          class="list-item file-item"
+          (click)="viewFileDetail(file.tb_tyapp_fl_item_id)"
+        >
+          <mat-icon class="item-icon file-icon">description</mat-icon>
+          <div class="item-details">
+            <span class="item-name">{{ file.title || "Untitled" }}</span>
+            @if (file.ref_date) {
+              <span class="item-meta">{{ file.ref_date }}</span>
+            }
+          </div>
+        </button>
+      }
+
+      @if (
+        currentFolderContent().folders.length === 0 &&
+        currentFolderContent().files.length === 0
+      ) {
+        <div class="empty-state">This folder is empty.</div>
+      }
+    </div>
+  }
+</div>

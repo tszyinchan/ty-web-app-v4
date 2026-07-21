@@ -162,7 +162,30 @@ const FILELINK_ROUTES: Routes = [
     path: 'login',
     loadComponent: () => import('./pages/login/login').then((m) => m.Login),
   },
-  { path: '**', redirectTo: 'login' },
+  {
+    path: '',
+    loadComponent: () =>
+      import('./apps/filelink/layout/portal-layout').then(
+        (m) => m.PortalLayout,
+      ),
+    canActivate: [authGuard],
+    children: [
+      {
+        path: '',
+        loadComponent: () =>
+          import('./apps/filelink/views/portal-view').then((m) => m.PortalView),
+      },
+      {
+        path: 'item/:id',
+        loadComponent: () =>
+          import('./apps/filelink/views/item-detail').then((m) => m.ItemDetail),
+      },
+    ],
+  },
+  {
+    path: '**',
+    redirectTo: '',
+  },
 ];
 
 const routeMap: Record<string, Routes> = {

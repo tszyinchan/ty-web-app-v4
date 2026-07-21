@@ -1,0 +1,76 @@
+<div class="detail-container">
+  <div class="header-actions">
+    <button mat-button class="back-btn" (click)="goBack()">
+      <mat-icon>arrow_back</mat-icon>
+      <span>Back to Folders</span>
+    </button>
+  </div>
+
+  @if (loading()) {
+    <div class="state-container">
+      <mat-spinner diameter="32"></mat-spinner>
+    </div>
+  } @else if (!item()) {
+    <div class="state-container error-state">
+      <mat-icon class="error-icon">lock</mat-icon>
+      <h2>Access Denied or Not Found</h2>
+      <p>
+        The file may have been removed, or you do not have permission to view
+        it.
+      </p>
+    </div>
+  } @else {
+    <div class="detail-card">
+      <div class="card-header">
+        <div class="icon-wrapper">
+          <mat-icon>insert_drive_file</mat-icon>
+        </div>
+        <div class="title-group">
+          <h1 class="item-title">{{ item()!.title || "Untitled Document" }}</h1>
+          <span class="item-path">{{ displayPath() }}</span>
+        </div>
+      </div>
+
+      <div class="card-body">
+        @if (item()!.ref_date) {
+          <div class="meta-row">
+            <span class="meta-label">Reference Date</span>
+            <span class="meta-value">{{ item()!.ref_date }}</span>
+          </div>
+        }
+
+        @for (pair of metaPairs(); track pair.key) {
+          <div class="meta-row">
+            <span class="meta-label">{{ pair.key }}</span>
+            <span class="meta-value">{{ pair.value }}</span>
+          </div>
+        }
+
+        @if (!item()!.ref_date && metaPairs().length === 0) {
+          <div class="empty-meta">No additional details provided.</div>
+        }
+      </div>
+
+      <div class="card-footer">
+        @if (item()!.url) {
+          <a
+            mat-flat-button
+            color="primary"
+            class="action-btn"
+            [href]="item()!.url"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <mat-icon>open_in_new</mat-icon>
+            Open Resource
+          </a>
+        } @else {
+          <button mat-flat-button color="primary" class="action-btn" disabled>
+            <mat-icon>link_off</mat-icon>
+            Link Unavailable
+          </button>
+        }
+      </div>
+    </div>
+  }
+</div>
