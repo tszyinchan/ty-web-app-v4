@@ -33,7 +33,7 @@ export class AuthService {
           await this.fetchProfile(session.user.id);
         } else if (event === 'SIGNED_OUT') {
           this._userProfile.set(null);
-          this.router.navigate(['/login']);
+          window.location.href = '/login';
         }
       });
     });
