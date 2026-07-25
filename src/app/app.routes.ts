@@ -4,8 +4,6 @@ import { authGuard } from './core/guards/auth.guard';
 import { SUBDOMAINS } from './app.constants';
 import { getCurrentSubdomain } from './core/utils/app-env.util';
 
-const hostname = window.location.hostname;
-const port = window.location.port;
 const currentApp = getCurrentSubdomain();
 
 const JAXFR_ROUTES: Routes = [

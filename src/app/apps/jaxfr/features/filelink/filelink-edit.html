@@ -122,8 +122,20 @@
                   matInput
                   [(ngModel)]="pair.k"
                   (ngModelChange)="onMetaChange()"
+                  [matAutocomplete]="keyAuto"
                   placeholder="e.g. amount"
                 />
+                <mat-autocomplete
+                  #keyAuto="matAutocomplete"
+                  (optionSelected)="onMetaChange()"
+                >
+                  @for (
+                    keyOption of getFilteredMetaKeys(pair.k);
+                    track keyOption
+                  ) {
+                    <mat-option [value]="keyOption">{{ keyOption }}</mat-option>
+                  }
+                </mat-autocomplete>
               </mat-form-field>
 
               <mat-form-field

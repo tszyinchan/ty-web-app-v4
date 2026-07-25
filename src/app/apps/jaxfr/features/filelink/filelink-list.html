@@ -1,55 +1,94 @@
-<div class="standard-list-view">
-  <div class="list-container">
-    @for (item of listVM(); track item.tb_tyapp_fl_item_id) {
-      <a class="item-link" [routerLink]="['../edit', item.tb_tyapp_fl_item_id]">
-        <div class="item-content">
-          <div class="item-info-group">
-            <span class="main-text">
-              <mat-icon
-                style="
-                  font-size: 16px;
-                  width: 16px;
-                  height: 16px;
-                  vertical-align: middle;
-                  margin-right: 4px;
-                  color: var(--mat-sys-primary);
-                "
-                >folder_open</mat-icon
-              >
-              {{ item.displayPath }}
-            </span>
-            <span class="sub-text">
-              {{ item.title || "Untitled" }}
-              @if (item.ref_date) {
-                · {{ item.ref_date }}
-              }
-              · Owner: {{ item.ownerName }}
-            </span>
-          </div>
+<div class="explorer-container">
+  <div class="explorer-breadcrumbs">
+    <button
+      mat-icon-button
+      (click)="goToLevel(-1)"
+      class="crumb-home"
+      [class.active]="currentPath().length === 0"
+    >
+      <mat-icon>home</mat-icon>
+    </button>
 
-          <div class="item-status-group">
-            <span class="status-tag" [class.inactive]="item.status === 0">
-              {{ item.status === 1 ? "Active" : "Inactive" }}
-            </span>
-            <mat-icon class="chevron">chevron_right</mat-icon>
-          </div>
-        </div>
-      </a>
-    } @empty {
-      @if (!filelinkService.loading()) {
-        <div class="empty-placeholder">No file links found.</div>
-      }
+    @for (segment of currentPath(); track $index; let i = $index) {
+      <mat-icon class="crumb-separator">chevron_right</mat-icon>
+      <button
+        mat-button
+        class="crumb-btn"
+        (click)="goToLevel(i)"
+        [class.active]="i === currentPath().length - 1"
+      >
+        {{ segment }}
+      </button>
     }
   </div>
 
-  <footer
-    class="list-footer"
-    [hidden]="filelinkService.loading() || listVM().length === 0"
-  >
-    <div class="divider"></div>
-    <span class="count-text">TOTAL {{ listVM().length }} ITEMS</span>
+  <div class="explorer-body">
     @if (filelinkService.loading()) {
-      <mat-spinner diameter="16"></mat-spinner>
+      <div class="state-container">
+        <mat-spinner diameter="32"></mat-spinner>
+      </div>
+    } @else {
+      @for (folder of currentFolderContent().folders; track folder) {
+        <button
+          mat-ripple
+          class="explorer-item folder"
+          (click)="enterFolder(folder)"
+        >
+          <div class="item-icon-wrapper">
+            <mat-icon class="folder-icon">folder</mat-icon>
+          </div>
+          <div class="item-name">{{ folder }}</div>
+          <mat-icon class="item-action">chevron_right</mat-icon>
+        </button>
+      }
+
+      @for (
+        file of currentFolderContent().files;
+        track file.tb_tyapp_fl_item_id
+      ) {
+        <button
+          mat-ripple
+          class="explorer-item file"
+          (click)="viewFile(file.tb_tyapp_fl_item_id)"
+        >
+          <div class="item-icon-wrapper">
+            <mat-icon class="file-icon">description</mat-icon>
+          </div>
+          <div class="item-details">
+            <div class="item-name">{{ file.displayTitle }}</div>
+            <div class="item-meta">
+              <mat-icon
+                style="
+                  font-size: 14px;
+                  width: 14px;
+                  height: 14px;
+                  margin-right: 4px;
+                "
+                >group</mat-icon
+              >
+              <span>{{ file.displaySharedWith }}</span>
+
+              <span
+                class="status-dot"
+                [class.inactive]="file.status === 0"
+                style="margin-left: 8px"
+              ></span>
+              <span>{{ file.status === 1 ? "Active" : "Inactive" }}</span>
+            </div>
+          </div>
+          <mat-icon class="item-action">edit</mat-icon>
+        </button>
+      }
+
+      @if (
+        currentFolderContent().folders.length === 0 &&
+        currentFolderContent().files.length === 0
+      ) {
+        <div class="state-container">
+          <p>This directory is empty.</p>
+          <span class="hint">Click "+ New Link" to add a file here.</span>
+        </div>
+      }
     }
-  </footer>
+  </div>
 </div>

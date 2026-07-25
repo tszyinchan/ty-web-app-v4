@@ -66,6 +66,16 @@ export class FilelinkEdit implements OnInit, OnDestroy, DoCheck {
 
   readonly separatorKeysCodes = [ENTER, COMMA] as const;
 
+  readonly COMMON_META_KEYS = [
+    'amount',
+    'currency',
+    'company',
+    'document_no',
+    'category',
+    'remarks',
+    'expiry_date',
+  ];
+
   item = signal<Partial<FilelinkItem> | null>(null);
   currentId: string | null = null;
   originalDataStr = signal<string>('');
@@ -99,6 +109,11 @@ export class FilelinkEdit implements OnInit, OnDestroy, DoCheck {
     if (this.currentId) return 'up-to-date';
     return 'none';
   });
+
+  getFilteredMetaKeys(currentInput: string): string[] {
+    const q = (currentInput || '').toLowerCase();
+    return this.COMMON_META_KEYS.filter((key) => key.toLowerCase().includes(q));
+  }
 
   @HostListener('window:beforeunload', ['$event'])
   onBeforeUnload(event: BeforeUnloadEvent) {
@@ -174,8 +189,18 @@ export class FilelinkEdit implements OnInit, OnDestroy, DoCheck {
 
     if (this.currentId) {
       const fresh = await this.filelinkService.fetchItemById(this.currentId);
+      const currentUserId = this.authService.userProfile()?.user_id;
+
       this.zone.run(() => {
         if (fresh) {
+          if (fresh.user_id !== currentUserId) {
+            alert(
+              'Permission Denied: You are not the owner of this file link.',
+            );
+            this.router.navigate(['/filelink/list']);
+            return;
+          }
+
           fresh.item_path = fresh.item_path || [];
           fresh.allowed_users = fresh.allowed_users || [];
 
@@ -188,9 +213,10 @@ export class FilelinkEdit implements OnInit, OnDestroy, DoCheck {
       });
     } else {
       const targetUserId = this.authService.userProfile()?.user_id || '';
+      const prefillPath = history.state?.prefillPath || [];
       const newItem: Partial<FilelinkItem> = {
         user_id: targetUserId,
-        item_path: [],
+        item_path: prefillPath,
         allowed_users: [],
         status: 1,
         sort_order: 0,
@@ -281,17 +307,23 @@ export class FilelinkEdit implements OnInit, OnDestroy, DoCheck {
     const success = await this.filelinkService.saveItem(data);
     if (success) {
       this.isDirty.set(false);
-      this.router.navigate(['/filelink/list']);
+      this.router.navigate(['/filelink/list'], {
+        state: { restorePath: data.item_path || [] },
+      });
     }
   }
 
   async onDelete() {
     if (!this.currentId) return;
     if (confirm('Are you sure you want to delete this file link?')) {
+      const pathToRestore = this.item()?.item_path || [];
       const success = await this.filelinkService.deleteItem(this.currentId);
+
       if (success) {
         this.isDirty.set(false);
-        this.router.navigate(['/filelink/list']);
+        this.router.navigate(['/filelink/list'], {
+          state: { restorePath: pathToRestore },
+        });
       }
     }
   }
