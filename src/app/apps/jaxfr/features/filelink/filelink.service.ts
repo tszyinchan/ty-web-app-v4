@@ -11,6 +11,7 @@ export class FilelinkService {
 
   items = signal<FilelinkItem[]>([]);
   loading = signal(false);
+  currentExplorerPath = signal<string[]>([]);
 
   async fetchAllItems(force = false) {
     if (this.items().length > 0 && !force) return;

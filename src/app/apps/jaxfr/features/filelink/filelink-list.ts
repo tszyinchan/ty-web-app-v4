@@ -45,7 +45,7 @@ export class FilelinkList implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private displayNamePipe = inject(DisplayNamePipe);
 
-  currentPath = signal<string[]>([]);
+  currentPath = this.filelinkService.currentExplorerPath;
 
   currentFolderContent = computed(() => {
     const allItems = this.filelinkService.items();
@@ -120,10 +120,6 @@ export class FilelinkList implements OnInit, OnDestroy {
   });
 
   ngOnInit() {
-    const restorePath = history.state?.restorePath;
-    if (Array.isArray(restorePath)) {
-      this.currentPath.set(restorePath);
-    }
     const isLoading = computed(() => this.filelinkService.loading());
 
     this.headerService.setConfig({
@@ -150,10 +146,7 @@ export class FilelinkList implements OnInit, OnDestroy {
           type: 'primary',
           disabled: isLoading,
           onClick: () => {
-            this.router.navigate(['../new'], {
-              relativeTo: this.route,
-              state: { prefillPath: this.currentPath() },
-            });
+            this.router.navigate(['../new'], { relativeTo: this.route });
           },
         },
       ],

@@ -213,7 +213,7 @@ export class FilelinkEdit implements OnInit, OnDestroy, DoCheck {
       });
     } else {
       const targetUserId = this.authService.userProfile()?.user_id || '';
-      const prefillPath = history.state?.prefillPath || [];
+      const prefillPath = this.filelinkService.currentExplorerPath();
       const newItem: Partial<FilelinkItem> = {
         user_id: targetUserId,
         item_path: prefillPath,
@@ -307,9 +307,7 @@ export class FilelinkEdit implements OnInit, OnDestroy, DoCheck {
     const success = await this.filelinkService.saveItem(data);
     if (success) {
       this.isDirty.set(false);
-      this.router.navigate(['/filelink/list'], {
-        state: { restorePath: data.item_path || [] },
-      });
+      this.router.navigate(['/filelink/list']);
     }
   }
 
@@ -321,9 +319,7 @@ export class FilelinkEdit implements OnInit, OnDestroy, DoCheck {
 
       if (success) {
         this.isDirty.set(false);
-        this.router.navigate(['/filelink/list'], {
-          state: { restorePath: pathToRestore },
-        });
+        this.router.navigate(['/filelink/list']);
       }
     }
   }
