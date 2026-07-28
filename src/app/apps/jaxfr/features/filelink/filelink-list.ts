@@ -11,6 +11,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatRippleModule } from '@angular/material/core';
+import { MatMenuModule } from '@angular/material/menu';
 import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 
 import { HeaderService } from '../../../../core/services/header.service';
@@ -20,6 +21,13 @@ import { FilelinkService } from './filelink.service';
 import { FilelinkItem } from './filelink.model';
 import { exportToCsv } from '../../../../core/utils/csv-export.util';
 import { DisplayNamePipe } from '../../../../core/pipes/display-name.pipe';
+
+type SortOption =
+  | 'custom'
+  | 'name-asc'
+  | 'name-desc'
+  | 'date-desc'
+  | 'modified-desc';
 
 @Component({
   selector: 'app-filelink-list',
@@ -31,6 +39,7 @@ import { DisplayNamePipe } from '../../../../core/pipes/display-name.pipe';
     MatIconModule,
     MatProgressSpinnerModule,
     MatRippleModule,
+    MatMenuModule,
   ],
   providers: [DisplayNamePipe],
   templateUrl: './filelink-list.html',
@@ -45,6 +54,8 @@ export class FilelinkList implements OnInit, OnDestroy {
   private displayNamePipe = inject(DisplayNamePipe);
 
   currentPath = this.filelinkService.currentExplorerPath;
+
+  currentSort = signal<SortOption>('custom');
 
   currentFolderContent = computed(() => {
     const allItems = this.filelinkService.items();
@@ -80,45 +91,77 @@ export class FilelinkList implements OnInit, OnDestroy {
 
     const users = this.userService.users();
 
-    const mappedFiles = files
-      .sort((a, b) => a.sort_order - b.sort_order)
-      .map((file) => {
-        let displayTitle = '';
-        if (file.title && file.ref_date) {
-          displayTitle = `${file.title} (${file.ref_date})`;
-        } else if (file.title) {
-          displayTitle = file.title;
-        } else if (file.ref_date) {
-          displayTitle = file.ref_date;
-        } else {
-          displayTitle = file.url || 'Untitled Document';
-        }
+    const mappedFiles = files.map((file) => {
+      let displayTitle = '';
+      if (file.title && file.ref_date) {
+        displayTitle = `${file.title} (${file.ref_date})`;
+      } else if (file.title) {
+        displayTitle = file.title;
+      } else if (file.ref_date) {
+        displayTitle = file.ref_date;
+      } else {
+        displayTitle = file.url || 'Untitled Document';
+      }
 
-        const allowedNames = (file.allowed_users || [])
-          .map((uid) => {
-            const u = users.find((x) => x.user_id === uid);
-            return u ? this.displayNamePipe.transform(u) : 'Unknown';
-          })
-          .join(', ');
+      const allowedNames = (file.allowed_users || [])
+        .map((uid) => {
+          const u = users.find((x) => x.user_id === uid);
+          return u ? this.displayNamePipe.transform(u) : 'Unknown';
+        })
+        .join(', ');
 
-        const displaySharedWith = allowedNames
-          ? `Shared with: ${allowedNames}`
-          : 'Private';
+      const displaySharedWith = allowedNames
+        ? `Shared with: ${allowedNames}`
+        : 'Private';
 
-        return {
-          ...file,
-          displayTitle,
-          displaySharedWith,
-        };
-      });
+      return {
+        ...file,
+        displayTitle,
+        displaySharedWith,
+      };
+    });
+
+    const sortType = this.currentSort();
+
+    let sortedFolders = Array.from(folderSet).sort();
+    if (sortType === 'name-desc') {
+      sortedFolders.reverse();
+    }
+
+    const sortedFiles = mappedFiles.sort((a, b) => {
+      if (sortType === 'custom') {
+        return a.sort_order - b.sort_order;
+      } else if (sortType === 'name-asc') {
+        return a.displayTitle.localeCompare(b.displayTitle);
+      } else if (sortType === 'name-desc') {
+        return b.displayTitle.localeCompare(a.displayTitle);
+      } else if (sortType === 'date-desc') {
+        const dA = a.ref_date || '';
+        const dB = b.ref_date || '';
+        if (!dA && !dB) return a.sort_order - b.sort_order;
+        if (!dA) return 1;
+        if (!dB) return -1;
+        return dB.localeCompare(dA);
+      } else if (sortType === 'modified-desc') {
+        const modA = a.updated_at || a.created_at || '';
+        const modB = b.updated_at || b.created_at || '';
+        return modB.localeCompare(modA);
+      }
+      return 0;
+    });
 
     return {
-      folders: Array.from(folderSet).sort(),
-      files: mappedFiles,
+      folders: sortedFolders,
+      files: sortedFiles,
     };
   });
 
   ngOnInit() {
+    const restorePath = history.state?.restorePath;
+    if (Array.isArray(restorePath)) {
+      this.currentPath.set(restorePath);
+    }
+
     const isLoading = computed(() => this.filelinkService.loading());
 
     this.headerService.setConfig({
