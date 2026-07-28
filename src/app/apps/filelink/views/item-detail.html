@@ -2,7 +2,7 @@
   <div class="header-actions">
     <button mat-button class="back-btn" (click)="goBack()">
       <mat-icon>arrow_back</mat-icon>
-      <span>Back to Folders</span>
+      <span>返回資料夾</span>
     </button>
   </div>
 
@@ -13,11 +13,8 @@
   } @else if (!item()) {
     <div class="state-container error-state">
       <mat-icon class="error-icon">lock</mat-icon>
-      <h2>Access Denied or Not Found</h2>
-      <p>
-        The file may have been removed, or you do not have permission to view
-        it.
-      </p>
+      <h2>拒絕存取或找不到檔案</h2>
+      <p>該檔案可能已被移除，或者您沒有權限檢視。</p>
     </div>
   } @else {
     <div class="detail-card">
@@ -26,29 +23,41 @@
           <mat-icon>insert_drive_file</mat-icon>
         </div>
         <div class="title-group">
-          <h1 class="item-title">{{ item()!.title || "Untitled Document" }}</h1>
+          <h1 class="item-title">{{ displayTitle() }}</h1>
           <span class="item-path">{{ displayPath() }}</span>
         </div>
       </div>
 
       <div class="card-body">
-        @if (item()!.ref_date) {
-          <div class="meta-row">
-            <span class="meta-label">Reference Date</span>
-            <span class="meta-value">{{ item()!.ref_date }}</span>
-          </div>
-        }
-
-        @for (pair of metaPairs(); track pair.key) {
-          <div class="meta-row">
-            <span class="meta-label">{{ pair.key }}</span>
+        @for (pair of metaPairs(); track pair.key; let isLast = $last) {
+          <div class="meta-row" [class.no-border]="isLast">
+            <div class="meta-label-group">
+              <mat-icon>{{ pair.icon }}</mat-icon>
+              <span class="meta-label" style="text-transform: capitalize">{{
+                pair.key
+              }}</span>
+            </div>
             <span class="meta-value">{{ pair.value }}</span>
           </div>
         }
 
-        @if (!item()!.ref_date && metaPairs().length === 0) {
-          <div class="empty-meta">No additional details provided.</div>
+        @if (metaPairs().length === 0) {
+          <div class="empty-meta">沒有提供額外詳細資訊。</div>
         }
+
+        <div class="system-meta-divider"></div>
+        <div class="meta-row timestamp-row">
+          <span class="meta-label">建立時間</span>
+          <span class="meta-value">{{
+            item()!.created_at | date: "yyyy-MM-dd HH:mm (z)"
+          }}</span>
+        </div>
+        <div class="meta-row timestamp-row">
+          <span class="meta-label">最後更新</span>
+          <span class="meta-value">{{
+            item()!.updated_at | date: "yyyy-MM-dd HH:mm (z)"
+          }}</span>
+        </div>
       </div>
 
       <div class="card-footer">
@@ -62,12 +71,12 @@
             rel="noopener noreferrer"
           >
             <mat-icon>open_in_new</mat-icon>
-            Open Resource
+            開啟資源
           </a>
         } @else {
           <button mat-flat-button color="primary" class="action-btn" disabled>
             <mat-icon>link_off</mat-icon>
-            Link Unavailable
+            連結無法使用
           </button>
         }
       </div>

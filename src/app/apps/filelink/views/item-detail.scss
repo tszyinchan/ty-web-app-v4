@@ -103,24 +103,38 @@
     .meta-row {
       display: flex;
       justify-content: space-between;
-      align-items: center;
-      padding-bottom: 8px;
+      align-items: flex-start;
+      padding-bottom: 12px;
       border-bottom: 1px dashed var(--mat-sys-outline-variant);
 
-      &:last-child {
+      &.no-border {
         border-bottom: none;
         padding-bottom: 0;
       }
 
-      .meta-label {
-        font-weight: 500;
+      .meta-label-group {
+        display: flex;
+        align-items: center;
+        gap: 8px;
         color: var(--mat-sys-on-surface-variant);
-        text-transform: capitalize;
+
+        mat-icon {
+          font-size: 20px;
+          width: 20px;
+          height: 20px;
+          opacity: 0.8;
+        }
+        .meta-label {
+          font-weight: 500;
+        }
       }
+
       .meta-value {
         color: var(--mat-sys-on-surface);
         text-align: right;
         word-break: break-word;
+        max-width: 60%;
+        line-height: 1.4;
       }
     }
 
@@ -129,6 +143,28 @@
       color: var(--mat-sys-outline);
       font-size: 14px;
       font-style: italic;
+    }
+
+    .system-meta-divider {
+      height: 1px;
+      background-color: var(--mat-sys-outline-variant);
+      margin: 8px 0;
+    }
+
+    .timestamp-row {
+      border-bottom: none;
+      padding-bottom: 0;
+      gap: 4px;
+
+      .meta-label {
+        font-size: 13px;
+        color: var(--mat-sys-outline);
+        font-weight: 400;
+      }
+      .meta-value {
+        font-size: 13px;
+        color: var(--mat-sys-outline);
+      }
     }
   }
 

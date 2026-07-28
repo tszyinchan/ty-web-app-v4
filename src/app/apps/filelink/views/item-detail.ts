@@ -1,11 +1,17 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, DatePipe } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { FilelinkItem } from '../../jaxfr/features/filelink/filelink.model';
 import { FilelinkService } from '../../jaxfr/features/filelink/filelink.service';
+
+interface MetaPair {
+  key: string;
+  value: string;
+  icon: string;
+}
 
 @Component({
   selector: 'app-item-detail',
@@ -16,6 +22,7 @@ import { FilelinkService } from '../../jaxfr/features/filelink/filelink.service'
     MatIconModule,
     MatProgressSpinnerModule,
   ],
+  providers: [DatePipe],
   templateUrl: './item-detail.html',
   styleUrl: './item-detail.scss',
 })
@@ -27,21 +34,89 @@ export class ItemDetail implements OnInit {
   loading = signal(true);
   item = signal<FilelinkItem | null>(null);
 
+  private readonly KNOWN_META: Record<string, { label: string; icon: string }> =
+    {
+      amount: { label: '金額', icon: 'payments' },
+      currency: { label: '幣別', icon: 'monetization_on' },
+      company: { label: '公司 / 機構', icon: 'domain' },
+      document_no: { label: '文件編號', icon: 'numbers' },
+      category: { label: '分類', icon: 'label' },
+      remarks: { label: '備註', icon: 'notes' },
+      expiry_date: { label: '到期日', icon: 'event_busy' },
+    };
+
+  displayTitle = computed(() => {
+    const data = this.item();
+    if (!data) return '未命名文件';
+
+    if (data.title && data.ref_date) {
+      return `${data.title} (${data.ref_date})`;
+    } else if (data.title) {
+      return data.title;
+    } else if (data.ref_date) {
+      return data.ref_date;
+    } else {
+      return '未命名文件';
+    }
+  });
+
   displayPath = computed(() => {
     const data = this.item();
     if (!data || !data.item_path || data.item_path.length === 0)
-      return 'Root Directory';
+      return '根目錄';
     return data.item_path.join(' / ');
   });
 
-  metaPairs = computed(() => {
-    const meta = this.item()?.metadata;
-    if (!meta) return [];
+  metaPairs = computed<MetaPair[]>(() => {
+    const originalMeta = this.item()?.metadata;
+    if (!originalMeta) return [];
 
-    return Object.entries(meta).map(([key, value]) => ({
-      key: key.replace(/_/g, ' '),
-      value: String(value),
-    }));
+    const meta = { ...originalMeta };
+    const pairs: MetaPair[] = [];
+
+    if (meta['amount'] !== undefined && meta['currency'] !== undefined) {
+      const currCode = String(meta['currency']).toUpperCase();
+      const amountNum = Number(meta['amount']);
+
+      let displayValue = `${currCode} ${meta['amount']}`;
+
+      if (!isNaN(amountNum)) {
+        try {
+          displayValue = new Intl.NumberFormat('zh-TW', {
+            style: 'currency',
+            currency: currCode,
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 2,
+          }).format(amountNum);
+        } catch (e) {}
+      }
+
+      pairs.push({ key: '金額', value: displayValue, icon: 'payments' });
+      delete meta['amount'];
+      delete meta['currency'];
+    }
+
+    if (meta['currency'] !== undefined) {
+      pairs.push({
+        key: this.KNOWN_META['currency'].label,
+        value: String(meta['currency']).toUpperCase(),
+        icon: this.KNOWN_META['currency'].icon,
+      });
+      delete meta['currency'];
+    }
+
+    for (const [key, value] of Object.entries(meta)) {
+      const lowerKey = key.toLowerCase();
+      const known = this.KNOWN_META[lowerKey];
+
+      pairs.push({
+        key: known ? known.label : key.replace(/_/g, ' '),
+        value: String(value),
+        icon: known ? known.icon : 'info',
+      });
+    }
+
+    return pairs;
   });
 
   async ngOnInit() {
