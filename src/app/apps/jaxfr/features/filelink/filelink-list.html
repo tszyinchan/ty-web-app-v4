@@ -1,94 +1,153 @@
-<div class="explorer-container">
-  <div class="explorer-breadcrumbs">
+<div class="standard-list-view">
+  <!-- 麵包屑導航 (融入標準外觀) -->
+  <div
+    style="
+      display: flex;
+      align-items: center;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--mat-sys-outline-variant);
+      background: var(--mat-sys-surface-container-lowest);
+    "
+  >
     <button
       mat-icon-button
       (click)="goToLevel(-1)"
-      class="crumb-home"
-      [class.active]="currentPath().length === 0"
+      [color]="currentPath().length === 0 ? 'primary' : ''"
     >
       <mat-icon>home</mat-icon>
     </button>
 
     @for (segment of currentPath(); track $index; let i = $index) {
-      <mat-icon class="crumb-separator">chevron_right</mat-icon>
+      <mat-icon style="color: var(--mat-sys-outline); margin: 0 4px"
+        >chevron_right</mat-icon
+      >
       <button
         mat-button
-        class="crumb-btn"
         (click)="goToLevel(i)"
-        [class.active]="i === currentPath().length - 1"
+        [color]="i === currentPath().length - 1 ? 'primary' : ''"
+        style="min-width: unset; padding: 0 8px"
       >
         {{ segment }}
       </button>
     }
   </div>
 
-  <div class="explorer-body">
+  <div class="list-container">
     @if (filelinkService.loading()) {
-      <div class="state-container">
-        <mat-spinner diameter="32"></mat-spinner>
+      <div style="padding: 48px; text-align: center">
+        <mat-spinner diameter="32" style="margin: 0 auto"></mat-spinner>
       </div>
     } @else {
+      <!-- 虛擬資料夾列表 -->
       @for (folder of currentFolderContent().folders; track folder) {
-        <button
-          mat-ripple
-          class="explorer-item folder"
+        <a
+          class="item-link"
           (click)="enterFolder(folder)"
+          style="cursor: pointer"
         >
-          <div class="item-icon-wrapper">
-            <mat-icon class="folder-icon">folder</mat-icon>
+          <div class="item-content">
+            <div class="item-info-group">
+              <span class="main-text">
+                <mat-icon
+                  style="
+                    font-size: 18px;
+                    width: 18px;
+                    height: 18px;
+                    vertical-align: middle;
+                    margin-right: 6px;
+                    color: #fbc02d;
+                  "
+                  >folder</mat-icon
+                >
+                {{ folder }}
+              </span>
+            </div>
+            <div class="item-status-group">
+              <mat-icon class="chevron">chevron_right</mat-icon>
+            </div>
           </div>
-          <div class="item-name">{{ folder }}</div>
-          <mat-icon class="item-action">chevron_right</mat-icon>
-        </button>
+        </a>
       }
 
+      <!-- 真實檔案列表 -->
       @for (
         file of currentFolderContent().files;
         track file.tb_tyapp_fl_item_id
       ) {
-        <button
-          mat-ripple
-          class="explorer-item file"
+        <a
+          class="item-link"
           (click)="viewFile(file.tb_tyapp_fl_item_id)"
+          style="cursor: pointer"
         >
-          <div class="item-icon-wrapper">
-            <mat-icon class="file-icon">description</mat-icon>
-          </div>
-          <div class="item-details">
-            <div class="item-name">{{ file.displayTitle }}</div>
-            <div class="item-meta">
-              <mat-icon
-                style="
-                  font-size: 14px;
-                  width: 14px;
-                  height: 14px;
-                  margin-right: 4px;
-                "
-                >group</mat-icon
-              >
-              <span>{{ file.displaySharedWith }}</span>
+          <div class="item-content">
+            <div class="item-info-group">
+              <span class="main-text">
+                <mat-icon
+                  style="
+                    font-size: 18px;
+                    width: 18px;
+                    height: 18px;
+                    vertical-align: middle;
+                    margin-right: 6px;
+                    color: var(--mat-sys-primary);
+                  "
+                  >description</mat-icon
+                >
+                {{ file.displayTitle }}
+              </span>
+              <span class="sub-text">
+                <mat-icon
+                  style="
+                    font-size: 14px;
+                    width: 14px;
+                    height: 14px;
+                    vertical-align: middle;
+                    margin-right: 2px;
+                  "
+                  >group</mat-icon
+                >
+                {{ file.displaySharedWith }}
+              </span>
+            </div>
 
-              <span
-                class="status-dot"
-                [class.inactive]="file.status === 0"
-                style="margin-left: 8px"
-              ></span>
-              <span>{{ file.status === 1 ? "Active" : "Inactive" }}</span>
+            <div class="item-status-group">
+              <span class="status-tag" [class.inactive]="file.status === 0">
+                {{ file.status === 1 ? "Active" : "Inactive" }}
+              </span>
+              <mat-icon class="chevron">edit</mat-icon>
             </div>
           </div>
-          <mat-icon class="item-action">edit</mat-icon>
-        </button>
+        </a>
       }
 
+      <!-- 空目錄提示 -->
       @if (
         currentFolderContent().folders.length === 0 &&
         currentFolderContent().files.length === 0
       ) {
-        <div class="state-container">
-          <p>This directory is empty.</p>
-          <span class="hint">Click "+ New Link" to add a file here.</span>
+        <div class="empty-placeholder">
+          This directory is empty.<br />
+          <span style="font-size: 13px; opacity: 0.7"
+            >Click "+ New Link" to add a file here.</span
+          >
         </div>
       }
     }
   </div>
+
+  <!-- 底部統計 (可選保留) -->
+  <footer
+    class="list-footer"
+    [hidden]="
+      filelinkService.loading() ||
+      (currentFolderContent().folders.length === 0 &&
+        currentFolderContent().files.length === 0)
+    "
+  >
+    <div class="divider"></div>
+    <span class="count-text">
+      TOTAL {{ currentFolderContent().folders.length }} FOLDERS,
+      {{ currentFolderContent().files.length }} FILES
+    </span>
+  </footer>
 </div>

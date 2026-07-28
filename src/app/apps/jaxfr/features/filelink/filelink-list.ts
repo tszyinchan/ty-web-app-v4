@@ -34,7 +34,6 @@ import { DisplayNamePipe } from '../../../../core/pipes/display-name.pipe';
   ],
   providers: [DisplayNamePipe],
   templateUrl: './filelink-list.html',
-  styleUrls: ['./filelink-list.scss'],
 })
 export class FilelinkList implements OnInit, OnDestroy {
   public filelinkService = inject(FilelinkService);
