@@ -1,60 +1,166 @@
-<div class="file-browser-container">
-  <div class="breadcrumbs">
-    <button mat-icon-button (click)="goToLevel(-1)" class="home-btn">
-      <mat-icon>home</mat-icon>
-    </button>
-
-    @for (segment of currentPath(); track $index; let i = $index) {
-      <mat-icon class="separator">chevron_right</mat-icon>
-      <button mat-button class="crumb-btn" (click)="goToLevel(i)">
-        {{ segment }}
+<div class="standard-list-view responsive-file-card">
+  <div class="action-bar">
+    <div style="display: flex; align-items: center; flex-wrap: wrap">
+      <button
+        mat-icon-button
+        (click)="goToLevel(-1)"
+        [color]="currentPath().length === 0 ? 'primary' : ''"
+      >
+        <mat-icon>home</mat-icon>
       </button>
-    }
+
+      @for (segment of currentPath(); track $index; let i = $index) {
+        <mat-icon style="color: var(--mat-sys-outline); margin: 0 4px"
+          >chevron_right</mat-icon
+        >
+        <button
+          mat-button
+          (click)="goToLevel(i)"
+          [color]="i === currentPath().length - 1 ? 'primary' : ''"
+          style="min-width: unset; padding: 0 8px"
+        >
+          {{ segment }}
+        </button>
+      }
+    </div>
+
+    <div style="flex: 1"></div>
+
+    <button
+      mat-icon-button
+      [matMenuTriggerFor]="sortMenu"
+      aria-label="Sort options"
+      style="color: var(--mat-sys-on-surface-variant)"
+    >
+      <mat-icon>sort</mat-icon>
+    </button>
+    <mat-menu #sortMenu="matMenu" xPosition="before">
+      <button mat-menu-item (click)="currentSort.set('custom')">
+        <mat-icon
+          [style.visibility]="currentSort() === 'custom' ? 'visible' : 'hidden'"
+          color="primary"
+          >check</mat-icon
+        >
+        <span>自訂排序</span>
+      </button>
+      <button mat-menu-item (click)="currentSort.set('name-asc')">
+        <mat-icon
+          [style.visibility]="
+            currentSort() === 'name-asc' ? 'visible' : 'hidden'
+          "
+          color="primary"
+          >check</mat-icon
+        >
+        <span>名稱 (A 到 Z)</span>
+      </button>
+      <button mat-menu-item (click)="currentSort.set('name-desc')">
+        <mat-icon
+          [style.visibility]="
+            currentSort() === 'name-desc' ? 'visible' : 'hidden'
+          "
+          color="primary"
+          >check</mat-icon
+        >
+        <span>名稱 (Z 到 A)</span>
+      </button>
+      <button mat-menu-item (click)="currentSort.set('date-desc')">
+        <mat-icon
+          [style.visibility]="
+            currentSort() === 'date-desc' ? 'visible' : 'hidden'
+          "
+          color="primary"
+          >check</mat-icon
+        >
+        <span>最新參考日期</span>
+      </button>
+      <button mat-menu-item (click)="currentSort.set('modified-desc')">
+        <mat-icon
+          [style.visibility]="
+            currentSort() === 'modified-desc' ? 'visible' : 'hidden'
+          "
+          color="primary"
+          >check</mat-icon
+        >
+        <span>最近更新</span>
+      </button>
+    </mat-menu>
   </div>
 
-  @if (filelinkService.loading()) {
-    <div class="loading-state">
-      <mat-spinner diameter="32"></mat-spinner>
-    </div>
-  } @else {
-    <div class="list-wrapper">
+  <div class="list-container">
+    @if (filelinkService.loading()) {
+      <div style="padding: 48px; text-align: center">
+        <mat-spinner diameter="32" style="margin: 0 auto"></mat-spinner>
+      </div>
+    } @else {
       @for (folder of currentFolderContent().folders; track folder) {
-        <button
-          mat-ripple
-          class="list-item folder-item"
+        <a
+          class="item-link"
           (click)="enterFolder(folder)"
+          style="cursor: pointer"
         >
-          <mat-icon class="item-icon folder-icon">folder</mat-icon>
-          <span class="item-name">{{ folder }}</span>
-          <mat-icon class="chevron">chevron_right</mat-icon>
-        </button>
+          <div class="item-content">
+            <div class="item-info-group">
+              <span class="main-text">
+                <mat-icon
+                  style="
+                    font-size: 18px;
+                    width: 18px;
+                    height: 18px;
+                    vertical-align: middle;
+                    margin-right: 6px;
+                    color: #fbc02d;
+                  "
+                  >folder</mat-icon
+                >
+                {{ folder }}
+              </span>
+            </div>
+            <div class="item-status-group">
+              <mat-icon class="chevron">chevron_right</mat-icon>
+            </div>
+          </div>
+        </a>
       }
 
       @for (
         file of currentFolderContent().files;
         track file.tb_tyapp_fl_item_id
       ) {
-        <button
-          mat-ripple
-          class="list-item file-item"
+        <a
+          class="item-link"
           (click)="viewFileDetail(file.tb_tyapp_fl_item_id)"
+          style="cursor: pointer"
         >
-          <mat-icon class="item-icon file-icon">description</mat-icon>
-          <div class="item-details">
-            <span class="item-name">{{ file.title || "Untitled" }}</span>
-            @if (file.ref_date) {
-              <span class="item-meta">{{ file.ref_date }}</span>
-            }
+          <div class="item-content">
+            <div class="item-info-group">
+              <span class="main-text">
+                <mat-icon
+                  style="
+                    font-size: 18px;
+                    width: 18px;
+                    height: 18px;
+                    vertical-align: middle;
+                    margin-right: 6px;
+                    color: var(--mat-sys-primary);
+                  "
+                  >description</mat-icon
+                >
+                {{ file.displayTitle }}
+              </span>
+            </div>
+            <div class="item-status-group">
+              <mat-icon class="chevron">visibility</mat-icon>
+            </div>
           </div>
-        </button>
+        </a>
       }
 
       @if (
         currentFolderContent().folders.length === 0 &&
         currentFolderContent().files.length === 0
       ) {
-        <div class="empty-state">This folder is empty.</div>
+        <div class="empty-placeholder">此資料夾是空的。</div>
       }
-    </div>
-  }
+    }
+  </div>
 </div>

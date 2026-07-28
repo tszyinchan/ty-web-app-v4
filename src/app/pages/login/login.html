@@ -2,13 +2,13 @@
   <div class="login-content">
     <header class="login-header">
       <mat-icon class="brand-icon">{{ appIcon() }}</mat-icon>
-      <h1>Sign in to {{ appName() }}</h1>
+      <h1>{{ titlePrefix() }} {{ appName() }}</h1>
       <p>{{ subtitle() }}</p>
     </header>
 
     <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
       <mat-form-field appearance="outline" class="full-width">
-        <mat-label>Email address</mat-label>
+        <mat-label>{{ emailLabel() }}</mat-label>
         <input
           matInput
           type="email"
@@ -16,15 +16,15 @@
           placeholder="name@company.com"
         />
         @if (loginForm.controls.email.errors?.["required"]) {
-          <mat-error>Email is required</mat-error>
+          <mat-error>{{ emailReqErr() }}</mat-error>
         }
         @if (loginForm.controls.email.errors?.["email"]) {
-          <mat-error>Please enter a valid email</mat-error>
+          <mat-error>{{ emailInvErr() }}</mat-error>
         }
       </mat-form-field>
 
       <mat-form-field appearance="outline" class="full-width">
-        <mat-label>Password</mat-label>
+        <mat-label>{{ pwdLabel() }}</mat-label>
         <input
           matInput
           [type]="hidePassword() ? 'password' : 'text'"
@@ -42,10 +42,10 @@
           }}</mat-icon>
         </button>
         @if (loginForm.controls.password.errors?.["required"]) {
-          <mat-error>Password is required</mat-error>
+          <mat-error>{{ pwdReqErr() }}</mat-error>
         }
         @if (loginForm.controls.password.errors?.["minlength"]) {
-          <mat-error>At least 6 characters</mat-error>
+          <mat-error>{{ pwdMinErr() }}</mat-error>
         }
       </mat-form-field>
 
@@ -55,7 +55,7 @@
         class="submit-button"
         [disabled]="loginForm.invalid || isLoading()"
       >
-        {{ isLoading() ? "Signing in..." : "Sign In" }}
+        {{ isLoading() ? signingInBtn() : signInBtn() }}
       </button>
     </form>
   </div>

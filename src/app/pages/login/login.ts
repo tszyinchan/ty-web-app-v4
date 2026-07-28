@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -25,7 +25,7 @@ import { getCurrentSubdomain } from '../../core/utils/app-env.util';
   templateUrl: './login.html',
   styleUrl: './login.scss',
 })
-export class Login {
+export class Login implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
   private readonly snack = inject(MatSnackBar);
@@ -33,7 +33,22 @@ export class Login {
 
   readonly appName = signal(APP_CONFIG.appName);
   readonly appIcon = signal('admin_panel_settings');
+  readonly titlePrefix = signal('Sign in to');
   readonly subtitle = signal('Enter your details below to continue.');
+
+  readonly emailLabel = signal('Email address');
+  readonly emailReqErr = signal('Email is required');
+  readonly emailInvErr = signal('Please enter a valid email');
+
+  readonly pwdLabel = signal('Password');
+  readonly pwdReqErr = signal('Password is required');
+  readonly pwdMinErr = signal('At least 6 characters');
+
+  readonly signInBtn = signal('Sign In');
+  readonly signingInBtn = signal('Signing in...');
+  readonly defaultErrorMsg = signal(
+    'Login failed. Please check your credentials.',
+  );
 
   readonly hidePassword = signal(true);
   readonly isLoading = signal(false);
@@ -54,10 +69,24 @@ export class Login {
     if (currentApp === SUBDOMAINS.FILELINK) {
       this.appName.set('Filelink');
       this.appIcon.set('cloud_queue');
-      this.subtitle.set('Access to your files and documents.');
+      this.titlePrefix.set('登入');
+      this.subtitle.set('請輸入您的帳號密碼以存取檔案。');
+
+      this.emailLabel.set('電子郵件');
+      this.emailReqErr.set('請輸入電子郵件');
+      this.emailInvErr.set('請輸入有效的電子郵件格式');
+
+      this.pwdLabel.set('密碼');
+      this.pwdReqErr.set('請輸入密碼');
+      this.pwdMinErr.set('密碼長度至少需 6 個字元');
+
+      this.signInBtn.set('登入');
+      this.signingInBtn.set('登入中...');
+      this.defaultErrorMsg.set('登入失敗，請檢查帳號密碼');
     } else {
       this.appName.set('Jaxfr');
       this.appIcon.set('admin_panel_settings');
+      this.titlePrefix.set('Sign in to');
       this.subtitle.set('Welcome back. Please sign in to your account.');
     }
   }
@@ -76,7 +105,7 @@ export class Login {
 
       await this.router.navigate([targetRoute]);
     } catch (e: unknown) {
-      const message = (e as AuthError).message || '登入失敗，請檢查帳號密碼';
+      const message = (e as AuthError).message || this.defaultErrorMsg();
       this.snack.open(message, 'OK', {
         duration: 5000,
         horizontalPosition: 'center',

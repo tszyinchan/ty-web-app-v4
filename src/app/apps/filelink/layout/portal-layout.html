@@ -1,22 +1,22 @@
 <div class="portal-shell">
-  <mat-toolbar class="portal-toolbar" color="primary">
+  <mat-toolbar class="portal-toolbar">
     <div class="toolbar-content">
       <div class="brand">
-        <mat-icon>cloud_queue</mat-icon>
-        <span>Tyapp Filelink</span>
+        <mat-icon color="primary">cloud_queue</mat-icon>
+        <span>Filelink</span>
       </div>
 
-      <button mat-icon-button [matMenuTriggerFor]="userMenu">
+      <button mat-icon-button [matMenuTriggerFor]="userMenu" class="user-btn">
         <mat-icon>account_circle</mat-icon>
       </button>
       <mat-menu #userMenu="matMenu">
         <button mat-menu-item disabled>
-          {{ (userProfile() | tyDisplayName) || "User" }}
+          {{ (userProfile() | tyDisplayName) || "使用者" }}
         </button>
         <mat-divider></mat-divider>
         <button mat-menu-item (click)="onSignOut()">
           <mat-icon>logout</mat-icon>
-          <span>Sign Out</span>
+          <span>登出</span>
         </button>
       </mat-menu>
     </div>
