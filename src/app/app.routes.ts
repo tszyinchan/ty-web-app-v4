@@ -3,6 +3,7 @@ import { Layout } from './apps/jaxfr/layout/layout';
 import { authGuard } from './core/guards/auth.guard';
 import { SUBDOMAINS } from './app.constants';
 import { getCurrentSubdomain } from './core/utils/app-env.util';
+import { appAccessGuard } from './core/guards/app-access.guard';
 
 const currentApp = getCurrentSubdomain();
 
@@ -14,7 +15,7 @@ const JAXFR_ROUTES: Routes = [
   {
     path: '',
     component: Layout,
-    canActivate: [authGuard],
+    canActivate: [authGuard, appAccessGuard],
     children: [
       {
         path: '',
@@ -163,7 +164,7 @@ const FILELINK_ROUTES: Routes = [
       import('./apps/filelink/layout/portal-layout').then(
         (m) => m.PortalLayout,
       ),
-    canActivate: [authGuard],
+    canActivate: [authGuard, appAccessGuard],
     children: [
       {
         path: '',

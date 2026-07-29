@@ -33,7 +33,9 @@ export class AuthService {
           await this.fetchProfile(session.user.id);
         } else if (event === 'SIGNED_OUT') {
           this._userProfile.set(null);
-          window.location.href = '/login';
+          if (!window.location.pathname.includes('/login')) {
+            window.location.href = '/login';
+          }
         }
       });
     });

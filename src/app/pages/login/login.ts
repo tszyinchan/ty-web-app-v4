@@ -97,15 +97,32 @@ export class Login implements OnInit {
 
     try {
       const { email, password } = this.loginForm.getRawValue();
+
       await this.authService.login(email, password);
 
       const currentApp = getCurrentSubdomain();
+      const profile = this.authService.userProfile();
+
+      if (!profile?.allowed_apps?.includes(currentApp)) {
+        await this.authService.logout();
+        throw new Error('APP_ACCESS_DENIED');
+      }
+
       const targetRoute =
         DEFAULT_ROUTES[currentApp as keyof typeof DEFAULT_ROUTES];
 
       await this.router.navigate([targetRoute]);
-    } catch (e: unknown) {
-      const message = (e as AuthError).message || this.defaultErrorMsg();
+    } catch (e: any) {
+      let message = e.message || this.defaultErrorMsg();
+
+      if (e.message === 'APP_ACCESS_DENIED') {
+        const currentApp = getCurrentSubdomain();
+        message =
+          currentApp === SUBDOMAINS.FILELINK
+            ? '您沒有權限存取此模組，請聯絡管理員。'
+            : 'You do not have permission to access this app.';
+      }
+
       this.snack.open(message, 'OK', {
         duration: 5000,
         horizontalPosition: 'center',

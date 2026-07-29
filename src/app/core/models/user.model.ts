@@ -14,6 +14,7 @@ export interface TyappUser {
   deleted_at: string | null;
   remarks: string | null;
   appsheet_525_user_id: string | null;
+  allowed_apps: string[];
 }
 
 export const USER_ROLES = {
