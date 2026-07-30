@@ -3,11 +3,11 @@ import {
   Component,
   OnInit,
   OnDestroy,
+  DoCheck,
   inject,
   NgZone,
   signal,
   computed,
-  DoCheck,
   HostListener,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -18,13 +18,15 @@ import { MatInputModule } from '@angular/material/input';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatSelectModule } from '@angular/material/select';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
+import { SUBDOMAINS } from '../../../../app.constants';
+import { TyappUser } from '../../../../core/models/user.model';
 import { DisplayNameModePipe } from '../../../../core/pipes/display-name-mode.pipe';
 import { DisplayNamePipe } from '../../../../core/pipes/display-name.pipe';
 import { RoleLabelPipe } from '../../../../core/pipes/role-label.pipe';
 import { HeaderService } from '../../../../core/services/header.service';
 import { exportToCsv } from '../../../../core/utils/csv-export.util';
-import { TyappUser } from '../../../../core/models/user.model';
 import { UserService } from './user.service';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 
 @Component({
   selector: 'app-user-edit',
@@ -39,6 +41,7 @@ import { UserService } from './user.service';
     MatButtonModule,
     MatIconModule,
     MatMenuModule,
+    MatCheckboxModule,
     DisplayNamePipe,
     RoleLabelPipe,
     DisplayNameModePipe,
@@ -64,8 +67,11 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
   isSaving = signal(false);
 
   originalDataStr = signal<string>('');
-
   isDirty = signal(false);
+
+  hasJaxfrAccess = false;
+  hasFilelinkAccess = false;
+  private originalAccessStr = '';
 
   syncStatus = computed<'loading' | 'up-to-date' | 'unsaved' | 'none'>(() => {
     if (this.isSaving() || this.userService.loading()) return 'loading';
@@ -109,20 +115,32 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
 
     const cachedUser = this.userService.users().find((u) => u.user_id === id);
     if (cachedUser) {
-      this.user.set(structuredClone(cachedUser));
-      this.originalDataStr.set(JSON.stringify(cachedUser));
+      this.setUserAndAccess(cachedUser);
     }
 
     const freshUser = await this.userService.fetchUserById(id);
 
     this.zone.run(() => {
       if (freshUser) {
-        this.user.set(structuredClone(freshUser));
-        this.originalDataStr.set(JSON.stringify(freshUser));
+        this.setUserAndAccess(freshUser);
       } else if (!cachedUser) {
         this.router.navigate(['/users/list']);
       }
     });
+  }
+
+  private setUserAndAccess(u: TyappUser) {
+    this.user.set(structuredClone(u));
+    this.originalDataStr.set(JSON.stringify(u));
+
+    const apps = u.allowed_apps || [];
+    this.hasJaxfrAccess = apps.includes(SUBDOMAINS.JAXFR);
+    this.hasFilelinkAccess = apps.includes(SUBDOMAINS.FILELINK);
+
+    this.originalAccessStr = JSON.stringify([
+      this.hasJaxfrAccess,
+      this.hasFilelinkAccess,
+    ]);
   }
 
   @HostListener('window:beforeunload', ['$event'])
@@ -139,11 +157,23 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
     const original = this.originalDataStr();
 
     if (current && original) {
-      const currentlyDirty = JSON.stringify(current) !== original;
+      const isBaseDirty = JSON.stringify(current) !== original;
+      const currentAccessStr = JSON.stringify([
+        this.hasJaxfrAccess,
+        this.hasFilelinkAccess,
+      ]);
+      const isAccessDirty = currentAccessStr !== this.originalAccessStr;
+
+      const currentlyDirty = isBaseDirty || isAccessDirty;
+
       if (this.isDirty() !== currentlyDirty) {
         this.isDirty.set(currentlyDirty);
       }
     }
+  }
+
+  markAsDirty() {
+    this.isDirty.set(true);
   }
 
   async onSave() {
@@ -157,11 +187,21 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
       return;
 
     this.isSaving.set(true);
+
+    const newAllowedApps: string[] = [];
+    if (this.hasJaxfrAccess) newAllowedApps.push(SUBDOMAINS.JAXFR);
+    if (this.hasFilelinkAccess) newAllowedApps.push(SUBDOMAINS.FILELINK);
+    data.allowed_apps = newAllowedApps;
+
     const success = await this.userService.updateUser(data.user_id, data);
 
     this.zone.run(() => {
       if (success) {
         this.originalDataStr.set(JSON.stringify(data));
+        this.originalAccessStr = JSON.stringify([
+          this.hasJaxfrAccess,
+          this.hasFilelinkAccess,
+        ]);
         this.isDirty.set(false);
         this.router.navigate(['/users/list']);
       }

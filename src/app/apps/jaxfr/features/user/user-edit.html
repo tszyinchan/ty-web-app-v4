@@ -50,6 +50,51 @@
       <section class="form-group">
         <h3 class="group-header">System Access & Admin</h3>
 
+        <div
+          class="app-access-box"
+          style="
+            margin-bottom: 24px;
+            padding: 16px;
+            background: var(--mat-sys-surface-container-lowest);
+            border-radius: 8px;
+            border: 1px solid var(--mat-sys-outline-variant);
+          "
+        >
+          <div
+            style="
+              font-weight: 500;
+              margin-bottom: 8px;
+              color: var(--mat-sys-on-surface);
+            "
+          >
+            Module Access Permissions
+          </div>
+          <div
+            style="
+              font-size: 13px;
+              color: var(--mat-sys-outline);
+              margin-bottom: 16px;
+            "
+          >
+            Select which applications this user can sign in to.
+          </div>
+
+          <div style="display: flex; gap: 24px; flex-wrap: wrap">
+            <mat-checkbox
+              [(ngModel)]="hasJaxfrAccess"
+              (ngModelChange)="markAsDirty()"
+            >
+              Jaxfr (Admin Portal)
+            </mat-checkbox>
+            <mat-checkbox
+              [(ngModel)]="hasFilelinkAccess"
+              (ngModelChange)="markAsDirty()"
+            >
+              Filelink (Frontend)
+            </mat-checkbox>
+          </div>
+        </div>
+
         <div class="fields-row-2">
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
             <mat-label>User Role</mat-label>

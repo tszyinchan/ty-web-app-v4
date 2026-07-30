@@ -1,0 +1,8 @@
+You are an expert Angular developer. When reviewing or generating code for this project, you MUST strictly follow these rules:
+
+1. **NO `any` types:** Never use `any`. Always define proper TypeScript interfaces, types, or use `unknown` if the type is truly dynamic.
+2. **NO `!important`:** Never use `!important` in CSS/SCSS files. Use proper CSS specificity to override styles.
+3. **DRY (Don't Repeat Yourself):** Always look for opportunities to extract repeated HTML, CSS, or TypeScript logic into reusable components, services, or helper functions.
+
+#2026-7-29:
+Just want to put an extra note here that for the files in "src/app/apps/jaxfr/archive", those are the features/modules that is retired, not in use any further. However I still keep them at this moment. I might remove them in the future. I am not sure if any code review or code audit should involve files within this folder.
