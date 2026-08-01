@@ -33,9 +33,10 @@ import { SelectOption } from '../../../../core/models/common.model';
 import { DisplayNamePipe } from '../../../../core/pipes/display-name.pipe';
 import { exportToCsv } from '../../../../core/utils/csv-export.util';
 import { NotificationService } from '../../../../core/services/notification.service';
+import { RecordStatus } from '../../../../core/models/status.enum';
 
-type ArticleEditVm = Omit<Article, 'publish_date'> & { 
-  publish_date: Date | string | null 
+type ArticleEditVm = Omit<Article, 'publish_date'> & {
+  publish_date: Date | string | null;
 };
 
 @Component({
@@ -68,7 +69,9 @@ export class ArticleEdit implements OnInit, OnDestroy, DoCheck {
   public userService = inject(UserService);
   public authService = inject(AuthService);
 
-  item = signal<Partial<Article> | null>(null);
+  readonly RecordStatus = RecordStatus;
+
+  item = signal<Partial<ArticleEditVm> | null>(null);
   currentId: string | null = null;
   originalDataStr = signal<string>('');
 
@@ -200,16 +203,16 @@ export class ArticleEdit implements OnInit, OnDestroy, DoCheck {
         }
       });
     } else {
-      const newArticle: Partial<Article> = {
+      const newArticle: Partial<ArticleEditVm> = {
         title: '',
         author: '',
         platform: '',
         content: '',
         url_link: '',
         remarks: '',
-        publish_date: new Date() as unknown as string,
+        publish_date: new Date(),
         manage_user_id: this.authService.userProfile()?.user_id || '',
-        status: 1,
+        status: RecordStatus.Active,
       };
       this.item.set(newArticle);
       this.originalDataStr.set(JSON.stringify(newArticle));
@@ -229,7 +232,9 @@ export class ArticleEdit implements OnInit, OnDestroy, DoCheck {
         .split('T')[0];
     }
 
-    const success = await this.articleService.saveArticle(data);
+    const success = await this.articleService.saveArticle(
+      data as Partial<Article>,
+    );
     if (success) {
       this.originalDataStr.set(JSON.stringify(data));
       this.isDirty.set(false);
@@ -296,7 +301,7 @@ export class ArticleEdit implements OnInit, OnDestroy, DoCheck {
     const text = this.rawArticleText();
     if (!text.trim()) return;
 
-    let publish_date: any = null;
+    let publish_date: Date | null = null;
     let author = '';
     let platform = '';
     let title = '';

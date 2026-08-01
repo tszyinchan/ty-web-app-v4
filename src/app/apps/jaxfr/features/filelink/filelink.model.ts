@@ -8,7 +8,7 @@ export interface FilelinkItem {
   ref_date?: string | null;
   sort_order: number;
   allowed_users: string[];
-  metadata?: Record<string, any> | null;
+  metadata?: Record<string, unknown> | null;
   status: number;
   log?: string | null;
   created_at?: string;
