@@ -21,6 +21,7 @@ import { UserService } from '../user/user.service';
 import { ArticleService } from './article.service';
 import { DisplayNamePipe } from '../../../../core/pipes/display-name.pipe';
 import { exportToCsv } from '../../../../core/utils/csv-export.util';
+import { RecordStatus } from '../../../../core/models/status.enum';
 
 @Component({
   selector: 'app-article-list',
@@ -48,6 +49,8 @@ export class ArticleList implements OnInit, OnDestroy {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private displayNamePipe = inject(DisplayNamePipe);
+
+  readonly RecordStatus = RecordStatus;
 
   searchQuery = signal<string>('');
   pageSize = signal<number>(10);
@@ -155,7 +158,7 @@ export class ArticleList implements OnInit, OnDestroy {
       a.author || '',
       a.publish_date || '',
       a.manageUserName,
-      a.status === 1 ? 'Published' : 'Draft',
+      a.status === RecordStatus.Active ? 'Published' : 'Draft',
     ]);
 
     exportToCsv(

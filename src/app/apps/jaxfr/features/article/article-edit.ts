@@ -285,7 +285,7 @@ export class ArticleEdit implements OnInit, OnDestroy, DoCheck {
         this.displayUserName(data.manage_user_id || ''),
         data.url_link || '',
         data.content || '',
-        data.status === 1 ? 'Published' : 'Draft',
+        data.status === RecordStatus.Active ? 'Published' : 'Draft',
         data.remarks || '',
       ],
     ];
@@ -370,7 +370,7 @@ export class ArticleEdit implements OnInit, OnDestroy, DoCheck {
         title: title || current.title,
         content: content || current.content,
         url_link: url_link || current.url_link,
-        status: 1,
+        status: RecordStatus.Active,
       };
     });
 

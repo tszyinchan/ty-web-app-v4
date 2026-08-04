@@ -1,3 +1,5 @@
+import { RecordStatus } from "../../../../core/models/status.enum";
+
 export interface Article {
   tb_tyapp_atcl_id: string;
   tb_tyapp_atcl_seq_no?: number;
@@ -7,7 +9,7 @@ export interface Article {
   title: string;
   content: string;
   remarks?: string | null;
-  status: number;
+  status: RecordStatus;
   created_at?: string;
   updated_at?: string;
   deleted_at?: string | null;

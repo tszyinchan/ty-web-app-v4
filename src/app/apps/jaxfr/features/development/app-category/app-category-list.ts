@@ -7,6 +7,7 @@ import { RouterModule, Router, ActivatedRoute } from "@angular/router";
 import { HeaderService } from "../../../../../core/services/header.service";
 import { exportToCsv } from "../../../../../core/utils/csv-export.util";
 import { AppCategoryService } from "./app-category.service";
+import { RecordStatus } from "../../../../../core/models/status.enum";
 
 
 @Component({
@@ -26,6 +27,8 @@ export class AppCategoryList implements OnInit, OnDestroy {
   private readonly headerService = inject(HeaderService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
+
+  readonly RecordStatus = RecordStatus;
 
   ngOnInit() {
     const isLoading = computed(() => this.categoryService.loading());
@@ -82,7 +85,7 @@ export class AppCategoryList implements OnInit, OnDestroy {
       c.display_name || '',
       c.name_en || '',
       c.name_zh || '',
-      c.status === 1 ? 'Active' : 'Inactive'
+      c.status === RecordStatus.Active ? 'Active' : 'Inactive'
     ]);
 
     exportToCsv('Category_List', headers, rows);

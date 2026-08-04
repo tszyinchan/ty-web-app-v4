@@ -47,8 +47,8 @@
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
             <mat-label>狀態</mat-label>
             <mat-select [(ngModel)]="fit.status" name="status">
-              <mat-option [value]="1">啟用</mat-option>
-              <mat-option [value]="0">停用</mat-option>
+              <mat-option [value]="RecordStatus.Active">啟用</mat-option>
+              <mat-option [value]="RecordStatus.Inactive">停用</mat-option>
             </mat-select>
           </mat-form-field>
         </div>
@@ -223,8 +223,8 @@
                       "
                       [name]="'entry_status_' + entryIndex"
                     >
-                      <mat-option [value]="1">啟用</mat-option>
-                      <mat-option [value]="0">停用</mat-option>
+                      <mat-option [value]="RecordStatus.Active">啟用</mat-option>
+                      <mat-option [value]="RecordStatus.Inactive">停用</mat-option>
                     </mat-select>
                   </mat-form-field>
                 </div>

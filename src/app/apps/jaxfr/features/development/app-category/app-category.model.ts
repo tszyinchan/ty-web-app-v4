@@ -1,3 +1,5 @@
+import { RecordStatus } from "../../../../../core/models/status.enum";
+
 export interface AppCategory {
   tb_tyapp_ap_ctgy_id: string;
   tb_tyapp_ap_ctgy_seq_no: number;
@@ -5,7 +7,7 @@ export interface AppCategory {
   name_zh: string;
   display_name: string;
   remarks: string | null;
-  status: number;
+  status: RecordStatus;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;

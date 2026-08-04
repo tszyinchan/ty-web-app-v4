@@ -21,6 +21,7 @@ import { FilelinkService } from './filelink.service';
 import { FilelinkItem } from './filelink.model';
 import { exportToCsv } from '../../../../core/utils/csv-export.util';
 import { DisplayNamePipe } from '../../../../core/pipes/display-name.pipe';
+import { RecordStatus } from '../../../../core/models/status.enum';
 
 type SortOption =
   | 'custom'
@@ -52,6 +53,8 @@ export class FilelinkList implements OnInit, OnDestroy {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private displayNamePipe = inject(DisplayNamePipe);
+
+  readonly RecordStatus = RecordStatus;
 
   currentPath = this.filelinkService.currentExplorerPath;
 
@@ -230,7 +233,7 @@ export class FilelinkList implements OnInit, OnDestroy {
       item.item_path?.join(' / ') || 'Root',
       item.ref_date || '',
       item.url || '',
-      item.status === 1 ? 'Active' : 'Inactive',
+      item.status === RecordStatus.Active ? 'Active' : 'Inactive',
     ]);
 
     exportToCsv(

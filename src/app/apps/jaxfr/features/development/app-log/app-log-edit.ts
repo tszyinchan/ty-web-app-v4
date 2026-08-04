@@ -33,6 +33,7 @@ import { AppLogService } from './app-log.service';
 import { SelectOption } from '../../../../../core/models/common.model';
 import { DisplayNamePipe } from '../../../../../core/pipes/display-name.pipe';
 import { exportToCsv } from '../../../../../core/utils/csv-export.util';
+import { RecordStatus } from '../../../../../core/models/status.enum';
 
 @Component({
   selector: 'app-log-edit',
@@ -63,6 +64,8 @@ export class AppLogEdit implements OnInit, OnDestroy, DoCheck {
   public categoryService = inject(AppCategoryService);
   public userService = inject(UserService);
   public authService = inject(AuthService);
+
+  readonly RecordStatus = RecordStatus;
 
   item = signal<Partial<AppLog> | null>(null);
   currentId: string | null = null;
@@ -230,7 +233,7 @@ export class AppLogEdit implements OnInit, OnDestroy, DoCheck {
         category_id: '',
         log_message: '',
         remarks: '',
-        status: 1,
+        status: RecordStatus.Active,
       };
       this.item.set(newLog);
       this.originalDataStr.set(JSON.stringify(newLog));
@@ -333,7 +336,7 @@ export class AppLogEdit implements OnInit, OnDestroy, DoCheck {
         this.displayCategoryName(data.category_id || ''),
         this.displayUserName(data.log_user || ''),
         data.log_message || '',
-        data.status === 1 ? 'Published' : 'Draft',
+        data.status === RecordStatus.Active ? 'Published' : 'Draft',
         data.remarks || '',
       ],
     ];

@@ -10,6 +10,7 @@ import { UserService } from '../../user/user.service';
 import { AppLogService } from './app-log.service';
 import { DisplayNamePipe } from '../../../../../core/pipes/display-name.pipe';
 import { exportToCsv } from '../../../../../core/utils/csv-export.util';
+import { RecordStatus } from '../../../../../core/models/status.enum';
 
 @Component({
   selector: 'app-log-list',
@@ -34,6 +35,8 @@ export class AppLogList implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
 
   private displayNamePipe = inject(DisplayNamePipe);
+
+  readonly RecordStatus = RecordStatus;
 
   listVM = computed(() => {
     const logs = this.logService.logs();
@@ -120,7 +123,7 @@ export class AppLogList implements OnInit, OnDestroy {
       l.categoryName,
       l.authorName,
       l.log_message || '',
-      l.status === 1 ? 'Published' : 'Draft',
+      l.status === RecordStatus.Active ? 'Published' : 'Draft',
       l.remarks || '',
     ]);
 

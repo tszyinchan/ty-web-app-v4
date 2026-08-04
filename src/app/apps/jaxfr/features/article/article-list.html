@@ -25,8 +25,8 @@
           </div>
 
           <div class="item-status-group">
-            <span class="status-tag" [class.inactive]="item.status === 0">
-              {{ item.status === 1 ? "Published" : "Draft" }}
+            <span class="status-tag" [class.inactive]="item.status === RecordStatus.Inactive">
+              {{ item.status === RecordStatus.Active ? "Published" : "Draft" }}
             </span>
             <mat-icon class="chevron">chevron_right</mat-icon>
           </div>

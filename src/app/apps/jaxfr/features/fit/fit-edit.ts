@@ -39,6 +39,7 @@ import {
   FitEntryType,
   FitSessionDetail,
 } from './fit.model';
+import { RecordStatus } from '../../../../core/models/status.enum';
 
 type FitEditVm = Omit<FitEditSessionInput, 'session_date'> & {
   session_date: Date | string;
@@ -71,6 +72,8 @@ export class FitEdit implements OnInit, OnDestroy, DoCheck {
   private authService = inject(AuthService);
 
   public fitService = inject(FitService);
+
+  readonly RecordStatus = RecordStatus;
 
   item = signal<FitEditVm | null>(null);
   currentId: string | null = null;
@@ -524,7 +527,7 @@ export class FitEdit implements OnInit, OnDestroy, DoCheck {
       session_title: '',
       location: '',
       remarks: '',
-      status: 1,
+      status: RecordStatus.Active,
       entries: [this.createNewEntry('strength', 1)],
     };
   }
@@ -540,7 +543,7 @@ export class FitEdit implements OnInit, OnDestroy, DoCheck {
       exercise_name: '',
       source_url: '',
       remarks: '',
-      status: 1,
+      status: RecordStatus.Active,
       showAdvanced: false,
       isExpanded: true,
       sets: [this.createNewSet(1)],
@@ -562,7 +565,7 @@ export class FitEdit implements OnInit, OnDestroy, DoCheck {
       level_text: '',
       side_code: null,
       remarks: '',
-      status: 1,
+      status: RecordStatus.Active,
     };
   }
 
@@ -575,7 +578,7 @@ export class FitEdit implements OnInit, OnDestroy, DoCheck {
       session_title: detail.session.session_title || '',
       location: detail.session.location || '',
       remarks: detail.session.remarks || '',
-      status: detail.session.status ?? 1,
+      status: detail.session.status ?? RecordStatus.Active,
       entries: (detail.entries || []).map((entry, entryIndex) => ({
         id: entry.tb_tyapp_fit_ntry_id,
         sort_order: entry.sort_order ?? entryIndex + 1,
@@ -583,7 +586,7 @@ export class FitEdit implements OnInit, OnDestroy, DoCheck {
         exercise_name: entry.exercise_name || '',
         source_url: entry.source_url || '',
         remarks: entry.remarks || '',
-        status: entry.status ?? 1,
+        status: entry.status ?? RecordStatus.Active,
         sets: (entry.sets || []).map((set, setIndex) => ({
           id: set.tb_tyapp_fit_set_id,
           set_no: set.set_no ?? setIndex + 1,
@@ -598,7 +601,7 @@ export class FitEdit implements OnInit, OnDestroy, DoCheck {
           level_text: set.level_text || '',
           side_code: set.side_code || null,
           remarks: set.remarks || '',
-          status: set.status ?? 1,
+          status: set.status ?? RecordStatus.Active,
         })),
       })),
     };
@@ -618,7 +621,7 @@ export class FitEdit implements OnInit, OnDestroy, DoCheck {
       session_title: this.normalizeText(current.session_title),
       location: this.normalizeText(current.location),
       remarks: this.normalizeText(current.remarks),
-      status: current.status ?? 1,
+      status: current.status ?? RecordStatus.Active,
       entries: (current.entries || []).map((entry, entryIndex) => ({
         id: entry.id ?? null,
         sort_order: entryIndex + 1,
@@ -626,7 +629,7 @@ export class FitEdit implements OnInit, OnDestroy, DoCheck {
         exercise_name: this.normalizeText(entry.exercise_name) || '',
         source_url: this.normalizeText(entry.source_url),
         remarks: this.normalizeText(entry.remarks),
-        status: entry.status ?? 1,
+        status: entry.status ?? RecordStatus.Active,
         sets: (entry.sets || []).map((set, setIndex) => ({
           id: set.id ?? null,
           set_no: setIndex + 1,
@@ -641,7 +644,7 @@ export class FitEdit implements OnInit, OnDestroy, DoCheck {
           level_text: this.normalizeText(set.level_text),
           side_code: set.side_code ?? null,
           remarks: this.normalizeText(set.remarks),
-          status: set.status ?? 1,
+          status: set.status ?? RecordStatus.Active,
         })),
       })),
     };

@@ -12,6 +12,7 @@ import {
   FitSession,
   FitSessionDetail,
 } from './fit.model';
+import { RecordStatus } from '../../../../core/models/status.enum';
 
 @Injectable({ providedIn: 'root' })
 export class FitService {
@@ -334,7 +335,7 @@ export class FitService {
       level_text: input.levelText ?? null,
       side_code: input.sideCode ?? null,
       remarks: input.remarks ?? null,
-      status: 1,
+      status: RecordStatus.Active,
     }));
   }
 

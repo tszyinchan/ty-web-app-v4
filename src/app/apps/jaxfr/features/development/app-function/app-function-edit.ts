@@ -27,6 +27,7 @@ import { exportToCsv } from '../../../../../core/utils/csv-export.util';
 import { AppCategoryService } from '../app-category/app-category.service';
 import { AppFunction } from './app-function.model';
 import { AppFunctionService } from './app-function.service';
+import { RecordStatus } from '../../../../../core/models/status.enum';
 
 @Component({
   selector: 'app-function-edit',
@@ -51,6 +52,8 @@ export class AppFunctionEdit implements OnInit, OnDestroy, DoCheck {
   public functionService = inject(AppFunctionService);
   public categoryService = inject(AppCategoryService);
   private headerService = inject(HeaderService);
+
+  readonly RecordStatus = RecordStatus;
 
   item = signal<Partial<AppFunction> | null>(null);
   currentId: string | null = null;
@@ -156,7 +159,7 @@ export class AppFunctionEdit implements OnInit, OnDestroy, DoCheck {
         category_id: '',
         description: '',
         remarks: '',
-        status: 1,
+        status: RecordStatus.Active,
       };
       this.item.set(newFunc);
       this.originalDataStr.set(JSON.stringify(newFunc));
@@ -241,7 +244,7 @@ export class AppFunctionEdit implements OnInit, OnDestroy, DoCheck {
         this.displayCategoryName(data.category_id || ''),
         data.description || '',
         data.remarks || '',
-        data.status === 1 ? 'Active' : 'Inactive',
+        data.status === RecordStatus.Active ? 'Active' : 'Inactive',
       ],
     ];
 

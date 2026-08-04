@@ -15,6 +15,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 
 import { HeaderService } from '../../../../core/services/header.service';
 import { ArticleService } from './article.service';
+import { RecordStatus } from '../../../../core/models/status.enum';
 
 @Component({
   selector: 'app-article-feed',
@@ -39,14 +40,14 @@ export class ArticleFeed implements OnInit, OnDestroy {
   feedVM = computed(() => {
     const publishedArticles = this.articleService
       .articles()
-      .filter((a) => a.status === 1);
+      .filter((a) => a.status === RecordStatus.Active);
     return publishedArticles.slice(0, this.visibleCount());
   });
 
   hasMore = computed(() => {
     const totalPublished = this.articleService
       .articles()
-      .filter((a) => a.status === 1).length;
+      .filter((a) => a.status === RecordStatus.Active).length;
     return this.feedVM().length < totalPublished;
   });
 

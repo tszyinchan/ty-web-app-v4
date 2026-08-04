@@ -171,8 +171,8 @@
             </div>
 
             <div class="item-status-group">
-              <span class="status-tag" [class.inactive]="file.status === 0">
-                {{ file.status === 1 ? "Active" : "Inactive" }}
+              <span class="status-tag" [class.inactive]="file.status === RecordStatus.Inactive">
+                {{ file.status === RecordStatus.Active ? "Active" : "Inactive" }}
               </span>
               <mat-icon class="chevron">edit</mat-icon>
             </div>

@@ -1,3 +1,5 @@
+import { RecordStatus } from "../../../../../core/models/status.enum";
+
 export interface AppLog {
   tb_tyapp_ap_lg_id: string;
   tb_tyapp_ap_lg_seq_no?: number;
@@ -9,7 +11,7 @@ export interface AppLog {
   log_user: string;
   log_message: string;
   remarks?: string | null;
-  status: number;
+  status: RecordStatus;
   created_at?: string;
   updated_at?: string;
   deleted_at?: string | null;

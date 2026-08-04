@@ -9,8 +9,8 @@
           </div>
 
           <div class="item-status-group">
-            <span class="status-tag" [class.inactive]="cat.status === 0">
-              {{ cat.status === 1 ? "Active" : "Inactive" }}
+            <span class="status-tag" [class.inactive]="cat.status === RecordStatus.Inactive">
+              {{ cat.status === RecordStatus.Active ? "Active" : "Inactive" }}
             </span>
             <mat-icon class="chevron">chevron_right</mat-icon>
           </div>

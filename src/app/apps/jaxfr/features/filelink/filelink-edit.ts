@@ -34,6 +34,7 @@ import { FilelinkItem } from './filelink.model';
 import { FilelinkService } from './filelink.service';
 import { SelectOption } from '../../../../core/models/common.model';
 import { DisplayNamePipe } from '../../../../core/pipes/display-name.pipe';
+import { RecordStatus } from '../../../../core/models/status.enum';
 
 @Component({
   selector: 'app-filelink-edit',
@@ -63,6 +64,8 @@ export class FilelinkEdit implements OnInit, OnDestroy, DoCheck {
   public filelinkService = inject(FilelinkService);
   public userService = inject(UserService);
   public authService = inject(AuthService);
+
+  readonly RecordStatus = RecordStatus;
 
   readonly separatorKeysCodes = [ENTER, COMMA] as const;
 
@@ -218,7 +221,7 @@ export class FilelinkEdit implements OnInit, OnDestroy, DoCheck {
         user_id: targetUserId,
         item_path: prefillPath,
         allowed_users: [],
-        status: 1,
+        status: RecordStatus.Active,
         sort_order: 0,
       };
 

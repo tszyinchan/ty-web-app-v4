@@ -1,11 +1,5 @@
 import { CommonModule } from '@angular/common';
-import {
-  Component,
-  OnInit,
-  OnDestroy,
-  computed,
-  inject,
-} from '@angular/core';
+import { Component, OnInit, OnDestroy, computed, inject } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -18,6 +12,7 @@ import {
   getWeekRange,
   groupItemsByPeriod,
 } from '../../../../core/utils/date-time.util';
+import { RecordStatus } from '../../../../core/models/status.enum';
 
 type FitListItemVm = {
   tb_tyapp_fit_ssn_id: string;
@@ -56,6 +51,8 @@ export class FitList implements OnInit, OnDestroy {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
 
+  readonly RecordStatus = RecordStatus;
+
   listVM = computed<FitListItemVm[]>(() => {
     return this.fitService.sessions().map((session) => {
       const title = session.session_title?.trim() || 'Untitled Session';
@@ -83,7 +80,6 @@ export class FitList implements OnInit, OnDestroy {
   });
 
   groupedListVM = computed<FitListGroupVm[]>(() => {
-    // 🌟 直接呼叫你完美處理過時區的核心工具
     return groupItemsByPeriod(this.listVM(), (item) => {
       const range = getWeekRange(item.session_date);
       return range ? range.label : 'Unknown Week';

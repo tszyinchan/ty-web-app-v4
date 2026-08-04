@@ -183,8 +183,8 @@
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
             <mat-label>Status</mat-label>
             <mat-select [(ngModel)]="log.status">
-              <mat-option [value]="1">Active (Published)</mat-option>
-              <mat-option [value]="0">Inactive (Draft)</mat-option>
+              <mat-option [value]="RecordStatus.Active">Active (Published)</mat-option>
+              <mat-option [value]="RecordStatus.Inactive">Inactive (Draft)</mat-option>
             </mat-select>
           </mat-form-field>
         </div>

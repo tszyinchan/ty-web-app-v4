@@ -10,6 +10,7 @@ import { NotificationService } from '../../../../core/services/notification.serv
 import { FitService } from './fit.service';
 import { FitSessionDetail, FitSideCode } from './fit.model';
 import { MatCardModule } from '@angular/material/card';
+import { RecordStatus } from '../../../../core/models/status.enum';
 
 type FitThreadItemVm = {
   id: string;
@@ -39,6 +40,8 @@ export class FitThread implements OnInit, OnDestroy {
   private notificationService = inject(NotificationService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
+
+  readonly RecordStatus = RecordStatus;
 
   loading = signal(false);
   threadItems = signal<FitThreadItemVm[]>([]);

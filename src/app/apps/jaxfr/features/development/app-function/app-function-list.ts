@@ -8,6 +8,7 @@ import { HeaderService } from "../../../../../core/services/header.service";
 import { exportToCsv } from "../../../../../core/utils/csv-export.util";
 import { AppCategoryService } from "../app-category/app-category.service";
 import { AppFunctionService } from "./app-function.service";
+import { RecordStatus } from "../../../../../core/models/status.enum";
 
 @Component({
   selector: 'app-function-list',
@@ -27,6 +28,8 @@ export class AppFunctionList implements OnInit, OnDestroy {
   private headerService = inject(HeaderService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
+
+  readonly RecordStatus = RecordStatus;
 
   listVM = computed(() => {
     const functions = this.functionService.functions();
@@ -100,7 +103,7 @@ export class AppFunctionList implements OnInit, OnDestroy {
       item.tb_tyapp_ap_func_id,
       item.function_name,
       item.categoryName,
-      item.status === 1 ? 'Active' : 'Inactive',
+      item.status === RecordStatus.Active ? 'Active' : 'Inactive',
     ]);
 
     exportToCsv('App_Function_List', headers, rows);

@@ -24,6 +24,7 @@ import {
 import { exportToCsv } from '../../../../../core/utils/csv-export.util';
 import { AppCategory } from './app-category.model';
 import { AppCategoryService } from './app-category.service';
+import { RecordStatus } from '../../../../../core/models/status.enum';
 
 @Component({
   selector: 'app-category-edit',
@@ -46,6 +47,8 @@ export class AppCategoryEdit implements OnInit, OnDestroy, DoCheck {
   private zone = inject(NgZone);
   public categoryService = inject(AppCategoryService);
   private headerService = inject(HeaderService);
+
+  readonly RecordStatus = RecordStatus;
 
   item = signal<Partial<AppCategory> | null>(null);
   currentId: string | null = null;
@@ -121,7 +124,7 @@ export class AppCategoryEdit implements OnInit, OnDestroy, DoCheck {
         display_name: '',
         name_en: '',
         name_zh: '',
-        status: 1,
+        status: RecordStatus.Active,
         remarks: '',
       };
       this.item.set(newCat);
@@ -208,7 +211,7 @@ export class AppCategoryEdit implements OnInit, OnDestroy, DoCheck {
         c.display_name || '',
         c.name_en || '',
         c.name_zh || '',
-        c.status === 1 ? 'Active' : 'Inactive',
+        c.status === RecordStatus.Active ? 'Active' : 'Inactive',
         c.remarks || '',
       ],
     ];
