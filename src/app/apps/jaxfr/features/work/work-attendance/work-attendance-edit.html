@@ -338,8 +338,8 @@
         >
           <mat-label>Status</mat-label>
           <mat-select [(ngModel)]="attn.status">
-            <mat-option [value]="1">Active</mat-option>
-            <mat-option [value]="0">Inactive</mat-option>
+            <mat-option [value]="RecordStatus.Active">Active</mat-option>
+            <mat-option [value]="RecordStatus.Inactive">Inactive</mat-option>
           </mat-select>
         </mat-form-field>
       </section>

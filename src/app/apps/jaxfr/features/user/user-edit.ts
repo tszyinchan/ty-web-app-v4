@@ -27,6 +27,7 @@ import { HeaderService } from '../../../../core/services/header.service';
 import { exportToCsv } from '../../../../core/utils/csv-export.util';
 import { UserService } from './user.service';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { RecordStatus } from '../../../../core/models/status.enum';
 
 @Component({
   selector: 'app-user-edit',
@@ -62,6 +63,7 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
 
   readonly availableRoles = [1, 900, 998];
   readonly availableModes = [1, 2, 3, 4, 5];
+  readonly RecordStatus = RecordStatus;
 
   user = signal<TyappUser | null>(null);
   isSaving = signal(false);
@@ -237,7 +239,7 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
         u.customized_display_name || '',
         this.displayNamePipe.transform(u),
         this.roleLabelPipe.transform(u.role),
-        u.status === 1 ? 'Active' : 'Inactive',
+        u.status === RecordStatus.Active ? 'Active' : 'Inactive',
         u.remarks || '',
       ],
     ];

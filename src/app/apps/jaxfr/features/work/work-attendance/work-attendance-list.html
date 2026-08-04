@@ -56,8 +56,8 @@
                     >Day Off</span
                   >
                 } @else {
-                  <span class="status-tag" [class.inactive]="item.status === 0">
-                    {{ item.status === 1 ? "Active" : "Inactive" }}
+                  <span class="status-tag" [class.inactive]="item.status === RecordStatus.Inactive">
+                    {{ item.status === RecordStatus.Active ? "Active" : "Inactive" }}
                   </span>
                 }
                 <mat-icon class="chevron">chevron_right</mat-icon>

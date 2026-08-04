@@ -1,3 +1,5 @@
+import { RecordStatus } from "../../../../core/models/status.enum";
+
 export type FitEntryType = 'strength' | 'cardio' | 'mobility' | 'bodyweight';
 
 export type FitSideCode = 'left' | 'right' | 'both';
@@ -10,7 +12,7 @@ export interface FitSession {
   session_title: string | null;
   location: string | null;
   remarks: string | null;
-  status: number;
+  status: RecordStatus;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
@@ -25,7 +27,7 @@ export interface FitEntry {
   exercise_name: string;
   source_url: string | null;
   remarks: string | null;
-  status: number;
+  status: RecordStatus;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
@@ -47,7 +49,7 @@ export interface FitEntrySet {
   level_text: string | null;
   side_code: FitSideCode | null;
   remarks: string | null;
-  status: number;
+  status: RecordStatus;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
@@ -76,7 +78,7 @@ export interface FitEditSetInput {
   level_text: string | null;
   side_code: FitSideCode | null;
   remarks: string | null;
-  status: number;
+  status: RecordStatus;
 }
 
 export interface FitEditEntryInput {
@@ -86,7 +88,7 @@ export interface FitEditEntryInput {
   exercise_name: string;
   source_url: string | null;
   remarks: string | null;
-  status: number;
+  status: RecordStatus;
   sets: FitEditSetInput[];
   showAdvanced?: boolean;
   isExpanded?: boolean;
@@ -98,6 +100,6 @@ export interface FitEditSessionInput {
   session_title: string | null;
   location: string | null;
   remarks: string | null;
-  status: number;
+  status: RecordStatus;
   entries: FitEditEntryInput[];
 }

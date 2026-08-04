@@ -15,6 +15,7 @@ import {
   groupItemsByPeriod,
 } from '../../../../../core/utils/date-time.util';
 import { exportToCsv } from '../../../../../core/utils/csv-export.util';
+import { RecordStatus } from '../../../../../core/models/status.enum';
 
 @Component({
   selector: 'app-work-attendance-list',
@@ -39,6 +40,8 @@ export class WorkAttendanceList implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private displayNamePipe = inject(DisplayNamePipe);
   private datePipe = inject(DatePipe);
+
+  readonly RecordStatus = RecordStatus;
 
   listVM = computed(() => {
     const attendances = this.workAttendanceService.workAttendances();
@@ -194,7 +197,7 @@ export class WorkAttendanceList implements OnInit, OnDestroy {
           : a.end_time
             ? this.datePipe.transform(a.end_time, 'HH:mm') || ''
             : '',
-        a.status === 1 ? 'Active' : 'Inactive',
+        a.status === RecordStatus.Active ? 'Active' : 'Inactive',
       ];
     });
 

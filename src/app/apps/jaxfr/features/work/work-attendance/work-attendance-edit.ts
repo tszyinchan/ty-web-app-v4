@@ -44,6 +44,7 @@ import { DisplayNamePipe } from '../../../../../core/pipes/display-name.pipe';
 import { WorkScheduleService } from '../work-schedule/work-schedule.service';
 import { WORK_SCHEDULE_NEW_RECORD_SHORTCUT } from '../../../../../app.constants';
 import { exportToCsv } from '../../../../../core/utils/csv-export.util';
+import { RecordStatus } from '../../../../../core/models/status.enum';
 @Component({
   selector: 'app-work-attendance-edit',
   standalone: true,
@@ -79,6 +80,8 @@ export class WorkAttendanceEdit implements OnInit, OnDestroy, DoCheck {
   public authService = inject(AuthService);
 
   public readonly addMins = addMinutesToTime;
+
+  readonly RecordStatus = RecordStatus;
 
   item = signal<Partial<WorkAttendance> | null>(null);
   currentId: string | null = null;
@@ -117,7 +120,7 @@ export class WorkAttendanceEdit implements OnInit, OnDestroy, DoCheck {
       .workEmployments()
       .filter(
         (e) =>
-          e.status === 1 && (!currentUserId || e.user_id === currentUserId),
+          e.status === RecordStatus.Active && (!currentUserId || e.user_id === currentUserId),
       );
   });
 
@@ -253,7 +256,7 @@ export class WorkAttendanceEdit implements OnInit, OnDestroy, DoCheck {
         work_date: dateStr,
         is_day_off: false,
         log_is_secret: true,
-        status: 1,
+        status: RecordStatus.Active,
       };
 
       const initTimes = {
@@ -270,7 +273,7 @@ export class WorkAttendanceEdit implements OnInit, OnDestroy, DoCheck {
         (s) =>
           s.work_date === dateStr &&
           s.user_id === targetUserId &&
-          s.status === 1,
+          s.status === RecordStatus.Active,
       );
 
       if (matchingSchedule) {
@@ -426,7 +429,7 @@ export class WorkAttendanceEdit implements OnInit, OnDestroy, DoCheck {
         times.break_end || '',
         a.log || '',
         a.log_is_secret ? 'Yes' : 'No',
-        a.status === 1 ? 'Active' : 'Inactive',
+        a.status === RecordStatus.Active ? 'Active' : 'Inactive',
       ],
     ];
 

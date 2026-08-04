@@ -22,6 +22,7 @@ import {
   PeriodRange,
 } from '../../../../../core/utils/date-time.util';
 import { exportToCsv } from '../../../../../core/utils/csv-export.util';
+import { RecordStatus } from '../../../../../core/models/status.enum';
 
 @Component({
   selector: 'app-work-attendance-report',
@@ -48,7 +49,7 @@ export class WorkAttendanceReport implements OnInit, OnDestroy {
     const employments = this.workEmploymentService.workEmployments();
 
     const validRecords = attendances.filter(
-      (a) => a.status === 1 && !a.is_day_off && a.mplm_id,
+      (a) => a.status === RecordStatus.Active && !a.is_day_off && a.mplm_id,
     );
 
     const enrichedRecords = validRecords.map((a) => {

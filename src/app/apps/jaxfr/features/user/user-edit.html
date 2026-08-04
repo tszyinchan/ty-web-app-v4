@@ -108,7 +108,7 @@
             <mat-label>Status</mat-label>
             <input
               matInput
-              [value]="u.status === 1 ? 'Active' : 'Inactive'"
+              [value]="u.status === RecordStatus.Active ? 'Active' : 'Inactive'"
               disabled
             />
           </mat-form-field>

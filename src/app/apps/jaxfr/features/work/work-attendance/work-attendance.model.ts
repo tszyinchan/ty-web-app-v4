@@ -1,3 +1,5 @@
+import { RecordStatus } from "../../../../../core/models/status.enum";
+
 export interface WorkAttendance {
   tb_tyapp_wk_attn_id: string;
   tb_tyapp_wk_attn_seq_no?: number;
@@ -9,7 +11,7 @@ export interface WorkAttendance {
   break_start_time?: string | null;
   break_end_time?: string | null;
   end_time?: string | null;
-  status: number;
+  status: RecordStatus;
   log?: string | null;
   log_is_secret: boolean;
   is_day_off: boolean;
