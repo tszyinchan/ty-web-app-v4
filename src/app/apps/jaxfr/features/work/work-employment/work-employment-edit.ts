@@ -30,6 +30,7 @@ import { WorkEmploymentService } from './work-employment.service';
 import { SelectOption } from '../../../../../core/models/common.model';
 import { DisplayNamePipe } from '../../../../../core/pipes/display-name.pipe';
 import { exportToCsv } from '../../../../../core/utils/csv-export.util';
+import { RecordStatus } from '../../../../../core/models/status.enum';
 
 @Component({
   selector: 'app-work-employment-edit',
@@ -58,6 +59,8 @@ export class WorkEmploymentEdit implements OnInit, OnDestroy, DoCheck {
   public workEmploymentService = inject(WorkEmploymentService);
   public userService = inject(UserService);
   public authService = inject(AuthService);
+
+  readonly RecordStatus = RecordStatus;
 
   item = signal<Partial<WorkEmployment> | null>(null);
   currentId: string | null = null;
@@ -197,7 +200,7 @@ export class WorkEmploymentEdit implements OnInit, OnDestroy, DoCheck {
         employment_type: 'Permanent',
         remarks: '',
         user_id: this.authService.userProfile()?.user_id || '',
-        status: 1,
+        status: RecordStatus.Active,
       };
       this.item.set(newEmp);
       this.originalDataStr.set(JSON.stringify(newEmp));
@@ -256,7 +259,7 @@ export class WorkEmploymentEdit implements OnInit, OnDestroy, DoCheck {
         data.workload_type || '',
         data.employment_type || '',
         this.displayUserName(data.user_id || ''),
-        data.status === 1 ? 'Active' : 'Inactive',
+        data.status === RecordStatus.Active ? 'Active' : 'Inactive',
         data.remarks || '',
       ],
     ];

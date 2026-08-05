@@ -42,6 +42,7 @@ import { SelectOption } from '../../../../../core/models/common.model';
 import { DisplayNamePipe } from '../../../../../core/pipes/display-name.pipe';
 import { WORK_SCHEDULE_NEW_RECORD_SHORTCUT } from '../../../../../app.constants';
 import { exportToCsv } from '../../../../../core/utils/csv-export.util';
+import { RecordStatus } from '../../../../../core/models/status.enum';
 
 @Component({
   selector: 'app-work-schedule-edit',
@@ -75,6 +76,8 @@ export class WorkScheduleEdit implements OnInit, OnDestroy, DoCheck {
   public userService = inject(UserService);
   public authService = inject(AuthService);
 
+  readonly RecordStatus = RecordStatus;
+
   item = signal<Partial<WorkSchedule> | null>(null);
   currentId: string | null = null;
   originalDataStr = signal<string>('');
@@ -105,7 +108,7 @@ export class WorkScheduleEdit implements OnInit, OnDestroy, DoCheck {
       .workEmployments()
       .filter(
         (e) =>
-          e.status === 1 && (!currentUserId || e.user_id === currentUserId),
+          e.status === RecordStatus.Active && (!currentUserId || e.user_id === currentUserId),
       );
   });
 
@@ -203,7 +206,7 @@ export class WorkScheduleEdit implements OnInit, OnDestroy, DoCheck {
         work_date: '',
         is_day_off: false,
         planned_meal_minutes: 60,
-        status: 1,
+        status: RecordStatus.Active,
       };
 
       this.item.set(newScdl);
@@ -375,7 +378,7 @@ export class WorkScheduleEdit implements OnInit, OnDestroy, DoCheck {
         this.timeInputs().end || '',
         s.planned_meal_minutes?.toString() || '0',
         s.log || '',
-        s.status === 1 ? 'Active' : 'Inactive',
+        s.status === RecordStatus.Active ? 'Active' : 'Inactive',
       ],
     ];
 

@@ -10,6 +10,7 @@ import { UserService } from '../../user/user.service';
 import { WorkEmploymentService } from './work-employment.service';
 import { DisplayNamePipe } from '../../../../../core/pipes/display-name.pipe';
 import { exportToCsv } from '../../../../../core/utils/csv-export.util';
+import { RecordStatus } from '../../../../../core/models/status.enum';
 
 @Component({
   selector: 'app-work-employment-list',
@@ -32,6 +33,8 @@ export class WorkEmploymentList implements OnInit, OnDestroy {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private displayNamePipe = inject(DisplayNamePipe);
+
+  readonly RecordStatus = RecordStatus;
 
   rawListVM = computed(() => {
     const employments = this.workEmploymentService.workEmployments();
@@ -109,7 +112,7 @@ export class WorkEmploymentList implements OnInit, OnDestroy {
       r.workload_type || '',
       r.employment_type || '',
       r.manageUserName,
-      r.status === 1 ? 'Active' : 'Inactive',
+      r.status === RecordStatus.Active ? 'Active' : 'Inactive',
     ]);
 
     exportToCsv(

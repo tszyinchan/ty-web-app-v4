@@ -20,6 +20,7 @@ import {
 import { WorkSchedule } from './work-schedule.model';
 import { WORK_SCHEDULE_NEW_RECORD_SHORTCUT } from '../../../../../app.constants';
 import { exportToCsv } from '../../../../../core/utils/csv-export.util';
+import { RecordStatus } from '../../../../../core/models/status.enum';
 @Component({
   selector: 'app-work-schedule-list',
   standalone: true,
@@ -43,6 +44,8 @@ export class WorkScheduleList implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private displayNamePipe = inject(DisplayNamePipe);
   private datePipe = inject(DatePipe);
+
+  readonly RecordStatus = RecordStatus;
 
   listVM = computed(() => {
     const schedules = this.workScheduleService.workSchedules();
@@ -119,7 +122,7 @@ export class WorkScheduleList implements OnInit, OnDestroy {
         user_id: latestRecord.user_id,
         work_date: dateStr,
         is_day_off: isWeekend,
-        status: 1,
+        status: RecordStatus.Active,
       };
 
       if (isWeekend) {
@@ -237,7 +240,7 @@ export class WorkScheduleList implements OnInit, OnDestroy {
             : '',
         isDayOff ? '' : s.planned_meal_minutes?.toString() || '0',
         s.log || '',
-        s.status === 1 ? 'Active' : 'Inactive',
+        s.status === RecordStatus.Active ? 'Active' : 'Inactive',
       ];
     });
 

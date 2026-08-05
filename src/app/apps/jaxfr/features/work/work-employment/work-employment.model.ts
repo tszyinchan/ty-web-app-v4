@@ -1,3 +1,5 @@
+import { RecordStatus } from "../../../../../core/models/status.enum";
+
 export interface WorkEmployment {
   tb_tyapp_wk_mplm_id: string;
   tb_tyweb_wk_mplm_seq_no?: number;
@@ -8,7 +10,7 @@ export interface WorkEmployment {
   workload_type: string;
   employment_type: string;
   remarks?: string | null;
-  status: number;
+  status: RecordStatus;
   created_at?: string;
   updated_at?: string;
   deleted_at?: string | null;

@@ -8,6 +8,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { Router, ActivatedRoute } from '@angular/router';
 import { FilelinkItem } from '../../jaxfr/features/filelink/filelink.model';
 import { FilelinkService } from '../../jaxfr/features/filelink/filelink.service';
+import { RecordStatus } from '../../../core/models/status.enum';
 
 type SortOption =
   | 'custom'
@@ -41,7 +42,7 @@ export class PortalView implements OnInit {
   currentFolderContent = computed(() => {
     const allItems = this.filelinkService.items();
 
-    const activeItems = allItems.filter((item) => item.status === 1);
+    const activeItems = allItems.filter((item) => item.status === RecordStatus.Active);
 
     const current = this.currentPath();
     const currentDepth = current.length;
