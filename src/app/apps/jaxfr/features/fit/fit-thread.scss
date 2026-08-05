@@ -3,7 +3,7 @@
 }
 
 .feed-container {
-  max-width: 680px; /* 🌟 統一為舒適的 680px 閱讀寬度 */
+  max-width: 680px;
   margin: 0 auto;
   padding: 24px 16px;
   display: flex;
@@ -11,17 +11,21 @@
   gap: 24px;
 }
 
-.feed-card {
-  box-shadow: none !important;
+mat-card.feed-card {
+  box-shadow: none;
   border: 1px solid var(--mat-sys-outline-variant);
-  border-radius: 12px !important;
+  border-radius: 12px;
 }
 
-.custom-header {
+mat-card-header.custom-header {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  padding: 16px 16px 12px 16px !important;
+  padding: 16px 16px 12px 16px;
+}
+
+mat-card-content.custom-content {
+  padding: 0 16px 16px 16px;
 }
 
 .article-title {
@@ -39,22 +43,21 @@
 }
 
 .article-body {
-  white-space: pre-wrap; /* 🌟 這行能完美渲染你的換行符號 */
+  white-space: pre-wrap;
   word-break: break-word;
   line-height: 1.6;
   font-size: 15px;
   color: var(--mat-sys-on-surface);
 }
 
-/* 🌟 手機版的完美滿版樣式 */
 @media (max-width: 600px) {
   .feed-container {
     padding: 0;
     gap: 8px;
     background-color: var(--mat-sys-surface-variant);
   }
-  .feed-card {
-    border-radius: 0 !important;
+  mat-card.feed-card {
+    border-radius: 0;
     border-left: none;
     border-right: none;
   }
