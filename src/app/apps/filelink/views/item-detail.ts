@@ -7,6 +7,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { FilelinkService } from '../../../core/domains/filelink/filelink.service';
 import { FilelinkItem } from '../../../core/domains/filelink/filelink.model';
 import { buildFileDisplayTitle } from '../../../core/domains/filelink/filelink.util';
+import { resolveUrlActionConfig } from '../../../core/domains/filelink/filelink-url.util';
 
 interface MetaPair {
   key: string;
@@ -109,6 +110,10 @@ export class ItemDetail implements OnInit {
     }
 
     return pairs;
+  });
+
+  actionConfig = computed(() => {
+    return resolveUrlActionConfig(this.item()?.url);
   });
 
   async ngOnInit() {

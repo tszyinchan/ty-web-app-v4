@@ -177,9 +177,105 @@
       padding: 24px 0;
       font-size: 16px;
       border-radius: 8px;
+      font-weight: 500;
+      transition: all 0.2s ease-in-out;
 
-      mat-icon {
-        margin-right: 8px;
+      .btn-content-wrapper {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: 100%;
+      }
+
+      .brand-icon {
+        width: 24px;
+        height: 24px;
+        object-fit: contain;
+      }
+
+      &.disabled-btn {
+        background-color: var(--mat-sys-surface-variant);
+        color: var(--mat-sys-on-surface-variant);
+        opacity: 0.7;
+      }
+    }
+
+    a.mat-mdc-unelevated-button.custom-action-btn:not(:disabled) {
+      &.brand-youtube {
+        --mdc-filled-button-container-color: #ff0000;
+        --mdc-filled-button-label-text-color: #ffffff;
+        --mdc-filled-button-icon-color: #ffffff;
+        background-color: #ff0000;
+        color: #ffffff;
+      }
+
+      &.brand-google-light {
+        --mdc-filled-button-container-color: #f8f9fa;
+        --mdc-filled-button-label-text-color: #3c4043;
+        background-color: #f8f9fa;
+        color: #3c4043;
+        border: 1px solid #dadce0;
+      }
+
+      &.brand-spotify {
+        --mdc-filled-button-container-color: #1db954;
+        --mdc-filled-button-label-text-color: #ffffff;
+        background-color: #1db954;
+        color: #ffffff;
+      }
+
+      &.brand-apple-music {
+        --mdc-filled-button-container-color: #fa243c;
+        --mdc-filled-button-label-text-color: #ffffff;
+        background-color: #fa243c;
+        color: #ffffff;
+      }
+
+      &.brand-facebook {
+        --mdc-filled-button-container-color: #1877f2;
+        --mdc-filled-button-label-text-color: #ffffff;
+        background-color: #1877f2;
+        color: #ffffff;
+      }
+
+      &.brand-instagram {
+        --mdc-filled-button-container-color: #e1306c;
+        --mdc-filled-button-label-text-color: #ffffff;
+        background-color: #e1306c;
+        color: #ffffff;
+      }
+
+      &.brand-shopping {
+        --mdc-filled-button-container-color: #ff9900;
+        --mdc-filled-button-label-text-color: #111111;
+        --mdc-filled-button-icon-color: #111111;
+        background-color: #ff9900;
+        color: #111111;
+      }
+
+      &.brand-document {
+        --mdc-filled-button-container-color: #f40f02;
+        --mdc-filled-button-label-text-color: #ffffff;
+        --mdc-filled-button-icon-color: #ffffff;
+        background-color: #f40f02;
+        color: #ffffff;
+      }
+
+      &.brand-image {
+        --mdc-filled-button-container-color: #03a9f4;
+        --mdc-filled-button-label-text-color: #ffffff;
+        --mdc-filled-button-icon-color: #ffffff;
+        background-color: #03a9f4;
+        color: #ffffff;
+      }
+
+      &.brand-default {
+        --mdc-filled-button-container-color: var(--mat-sys-primary);
+        --mdc-filled-button-label-text-color: var(--mat-sys-on-primary);
+        --mdc-filled-button-icon-color: var(--mat-sys-on-primary);
+        background-color: var(--mat-sys-primary);
+        color: var(--mat-sys-on-primary);
       }
     }
   }

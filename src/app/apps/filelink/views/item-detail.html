@@ -61,22 +61,35 @@
       </div>
 
       <div class="card-footer">
-        @if (item()!.url) {
+        @if (item()?.url) {
           <a
             mat-flat-button
-            color="primary"
-            class="action-btn"
+            class="action-btn custom-action-btn"
+            [ngClass]="actionConfig().themeClass"
             [href]="item()!.url"
             target="_blank"
             rel="noopener noreferrer"
           >
-            <mat-icon>open_in_new</mat-icon>
-            開啟資源
+            <span class="btn-content-wrapper">
+              @if (actionConfig().iconType === "brand") {
+                <img
+                  [src]="actionConfig().iconValue"
+                  alt="Brand Logo"
+                  class="brand-icon"
+                />
+              } @else {
+                <mat-icon>{{ actionConfig().iconValue }}</mat-icon>
+              }
+
+              <span class="action-text">{{ actionConfig().actionText }}</span>
+            </span>
           </a>
         } @else {
-          <button mat-flat-button color="primary" class="action-btn" disabled>
-            <mat-icon>link_off</mat-icon>
-            連結無法使用
+          <button mat-flat-button class="action-btn disabled-btn" disabled>
+            <span class="btn-content-wrapper">
+              <mat-icon>link_off</mat-icon>
+              <span class="action-text">尚未提供網址</span>
+            </span>
           </button>
         }
       </div>
