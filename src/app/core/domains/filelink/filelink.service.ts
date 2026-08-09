@@ -1,6 +1,6 @@
 import { Injectable, inject, NgZone, signal } from '@angular/core';
-import { NotificationService } from '../../../../core/services/notification.service';
-import { SupabaseService } from '../../../../core/services/supabase.service';
+import { NotificationService } from '../../services/notification.service';
+import { SupabaseService } from '../../services/supabase.service';
 import { FilelinkItem } from './filelink.model';
 
 @Injectable({ providedIn: 'root' })

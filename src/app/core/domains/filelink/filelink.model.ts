@@ -1,4 +1,4 @@
-import { RecordStatus } from "../../../../core/models/status.enum";
+import { RecordStatus } from "../../models/status.enum";
 
 export interface FilelinkItem {
   tb_tyapp_fl_item_id: string;

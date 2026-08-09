@@ -33,7 +33,7 @@
           >
         </mat-form-field>
 
-        <div class="fields-grid-2" style="margin-top: 16px">
+        <div class="fields-grid-2 mt-16">
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
             <mat-label>Display Title (Optional)</mat-label>
             <input
@@ -51,9 +51,8 @@
 
         <mat-form-field
           appearance="outline"
-          class="full-width"
+          class="full-width mt-16"
           subscriptSizing="dynamic"
-          style="margin-top: 16px"
         >
           <mat-label>External URL</mat-label>
           <input matInput [(ngModel)]="fl.url" placeholder="https://..." />
@@ -102,20 +101,13 @@
       <section class="form-group">
         <h3 class="group-header">Dynamic Metadata (JSONB)</h3>
 
-        <div
-          style="
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            margin-bottom: 16px;
-          "
-        >
+        <div class="meta-pairs-container">
           @for (pair of metaPairs(); track $index; let i = $index) {
-            <div style="display: flex; gap: 8px; align-items: center">
+            <div class="meta-pair-row">
               <mat-form-field
                 appearance="outline"
                 subscriptSizing="dynamic"
-                style="flex: 1"
+                class="key-input"
               >
                 <mat-label>Property Key</mat-label>
                 <input
@@ -141,7 +133,7 @@
               <mat-form-field
                 appearance="outline"
                 subscriptSizing="dynamic"
-                style="flex: 2"
+                class="val-input"
               >
                 <mat-label>Value</mat-label>
                 <input
@@ -192,9 +184,8 @@
 
         <mat-form-field
           appearance="outline"
-          class="full-width"
+          class="full-width mt-16"
           subscriptSizing="dynamic"
-          style="margin-top: 16px"
         >
           <mat-label>Internal Remarks / Log</mat-label>
           <textarea matInput rows="3" [(ngModel)]="fl.log"></textarea>

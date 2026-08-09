@@ -30,11 +30,12 @@ import {
   HeaderAction,
 } from '../../../../core/services/header.service';
 import { UserService } from '../user/user.service';
-import { FilelinkItem } from './filelink.model';
-import { FilelinkService } from './filelink.service';
+
+import { FilelinkService } from '../../../../core/domains/filelink/filelink.service';
 import { SelectOption } from '../../../../core/models/common.model';
 import { DisplayNamePipe } from '../../../../core/pipes/display-name.pipe';
 import { RecordStatus } from '../../../../core/models/status.enum';
+import { FilelinkItem } from '../../../../core/domains/filelink/filelink.model';
 
 @Component({
   selector: 'app-filelink-edit',
@@ -53,6 +54,7 @@ import { RecordStatus } from '../../../../core/models/status.enum';
   ],
   providers: [DisplayNamePipe],
   templateUrl: './filelink-edit.html',
+  styleUrl: './filelink-edit.scss',
 })
 export class FilelinkEdit implements OnInit, OnDestroy, DoCheck {
   private route = inject(ActivatedRoute);
@@ -132,7 +134,7 @@ export class FilelinkEdit implements OnInit, OnDestroy, DoCheck {
     const original = this.originalDataStr();
 
     if (current && original) {
-      const newMeta: Record<string, any> = {};
+      const newMeta: Record<string, unknown> = {};
       this.metaPairs().forEach((pair) => {
         if (pair.k.trim()) newMeta[pair.k.trim()] = pair.v;
       });
@@ -273,7 +275,7 @@ export class FilelinkEdit implements OnInit, OnDestroy, DoCheck {
     });
   }
 
-  initMetaPairs(metadata: Record<string, any> | null | undefined) {
+  initMetaPairs(metadata: Record<string, unknown> | null | undefined) {
     if (!metadata) {
       this.metaPairs.set([]);
       return;

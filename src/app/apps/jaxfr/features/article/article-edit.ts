@@ -34,6 +34,7 @@ import { DisplayNamePipe } from '../../../../core/pipes/display-name.pipe';
 import { exportToCsv } from '../../../../core/utils/csv-export.util';
 import { NotificationService } from '../../../../core/services/notification.service';
 import { RecordStatus } from '../../../../core/models/status.enum';
+import { formatDate } from '../../../../core/utils/date-time.util';
 
 type ArticleEditVm = Omit<Article, 'publish_date'> & {
   publish_date: Date | string | null;
@@ -223,13 +224,8 @@ export class ArticleEdit implements OnInit, OnDestroy, DoCheck {
     const data = this.item();
     if (!data || !data.title?.trim() || !data.manage_user_id) return;
 
-    const dateVal = data.publish_date as unknown;
-    if (dateVal instanceof Date) {
-      data.publish_date = new Date(
-        dateVal.getTime() - dateVal.getTimezoneOffset() * 60000,
-      )
-        .toISOString()
-        .split('T')[0];
+    if (data.publish_date instanceof Date) {
+      data.publish_date = formatDate(data.publish_date);
     }
 
     const success = await this.articleService.saveArticle(
@@ -257,11 +253,9 @@ export class ArticleEdit implements OnInit, OnDestroy, DoCheck {
     const data = this.item();
     if (!data || !this.currentId) return;
 
-    const dateVal = data.publish_date as unknown;
-    const formattedDate =
-      dateVal instanceof Date
-        ? dateVal.toISOString().split('T')[0]
-        : String(dateVal || '');
+    const formattedDate = data.publish_date instanceof Date
+        ? formatDate(data.publish_date)
+        : String(data.publish_date || '');
 
     const headers = [
       'Article ID',

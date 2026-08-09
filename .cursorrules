@@ -1,8 +1,30 @@
-You are an expert Angular developer. When reviewing or generating code for this project, you MUST strictly follow these rules:
+# Role & Context
+You are an expert Angular 17+ and TypeScript developer. Your goal is to write clean, pragmatic, and maintainable code tailored for a small-to-medium scale team. 
 
-1. **NO `any` types:** Never use `any`. Always define proper TypeScript interfaces, types, or use `unknown` if the type is truly dynamic.
-2. **NO `!important`:** Never use `!important` in CSS/SCSS files. Use proper CSS specificity to override styles.
-3. **DRY (Don't Repeat Yourself):** Always look for opportunities to extract repeated HTML, CSS, or TypeScript logic into reusable components, services, or helper functions.
+# 1. TypeScript & Type Safety (Strict)
+- **NO `any` types:** NEVER use `any`. Always define proper TypeScript interfaces, types, or use `unknown` if the type is truly dynamic.
+- **NO Magic Numbers:** Do not hardcode status numbers (like `0` or `1`) in HTML or TS. ALWAYS use shared Enums (e.g., `RecordStatus`) for statuses, flags, and configuration values.
 
-#2026-7-29:
-Just want to put an extra note here that for the files in "src/app/apps/jaxfr/archive", those are the features/modules that is retired, not in use any further. However I still keep them at this moment. I might remove them in the future. I am not sure if any code review or code audit should involve files within this folder.
+# 2. Angular Architecture & State Management
+- **Modern Angular Features:** Always use Standalone Components and the new control flow syntax (`@if`, `@for`, `@switch`).
+- **Dependency Injection:** Use the `inject()` function instead of constructor injection for better readability and inheritance.
+- **State Management:** Use Angular Signals (`signal()`, `computed()`) as the primary method for state management.
+- **NO Direct DOM Manipulation:** NEVER use `document.getElementById`, `querySelector`, or `element.style`. ALWAYS use Angular's data-driven approach, such as class bindings (`[class.active]="isActive()"`) controlled by Signals.
+
+# 3. Form Handling (Project Specific Pragmatism)
+- **Template-Driven Forms Priority:** Use Template-Driven Forms (`[(ngModel)]`) instead of Reactive Forms to maintain high development speed and AI-collaboration affinity, especially for complex nested arrays (e.g., workout sets).
+- **Dirty Checking with Signals:** Because `[(ngModel)]` mutates data in place (which bypasses `computed` reactivity), use Angular's `ngDoCheck` lifecycle hook combined with `JSON.stringify` to deeply compare the current state with the original state to accurately detect unsaved changes (`isDirty`).
+
+# 4. Code Design & DRY Principle
+- **Extract Complex Logic:** Keep Components lean. Extract complex business logic, text formatting, or data parsing into dedicated pure functions or static utility classes. 
+  - Global utilities go to `src/app/core/utils/`.
+  - Feature-specific utilities go to the feature folder (e.g., `src/app/apps/.../features/fit/fit.util.ts`).
+- **Reuse Existing Utils:** Do not rewrite common logic. For example, ALWAYS use the `formatDate()` utility from `core/utils/date-time.util.ts` to handle timezone-safe date-to-string conversions instead of writing raw `toISOString()` and timezone offset calculations.
+
+# 5. Styling & SCSS
+- **NO `!important`:** NEVER use `!important` in CSS/SCSS files. 
+- **Overriding Material Styles:** To override Angular Material default styles, gracefully increase CSS specificity by prepending the HTML element tag (e.g., use `mat-card.my-custom-class` instead of `.my-custom-class`).
+- **NO Inline Styles:** Avoid using `style="..."` in HTML templates. Move them to the component's SCSS file.
+
+# 6. Exclusions
+- **IGNORE Archive Folder:** DO NOT review, audit, refactor, or draw context from any files within `src/app/apps/jaxfr/archive/`. Treat this folder as deprecated and non-existent.

@@ -1,0 +1,28 @@
+.form-scroll-area {
+  padding-bottom: 32px;
+}
+
+.mt-16 {
+  margin-top: 16px;
+}
+
+.meta-pairs-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.meta-pair-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.key-input {
+  flex: 1;
+}
+
+.val-input {
+  flex: 2;
+}

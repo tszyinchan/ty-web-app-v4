@@ -17,11 +17,12 @@ import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { HeaderService } from '../../../../core/services/header.service';
 import { AuthService } from '../../../../core/services/auth.service';
 import { UserService } from '../user/user.service';
-import { FilelinkService } from './filelink.service';
-import { FilelinkItem } from './filelink.model';
+import { FilelinkService } from '../../../../core/domains/filelink/filelink.service';
+import { FilelinkItem } from '../../../../core/domains/filelink/filelink.model';
 import { exportToCsv } from '../../../../core/utils/csv-export.util';
 import { DisplayNamePipe } from '../../../../core/pipes/display-name.pipe';
 import { RecordStatus } from '../../../../core/models/status.enum';
+import { FilelinkSortOption, extractFolderContent, buildFileDisplayTitle, sortExplorerContent } from '../../../../core/domains/filelink/filelink.util';
 
 type SortOption =
   | 'custom'
@@ -44,6 +45,7 @@ type SortOption =
   ],
   providers: [DisplayNamePipe],
   templateUrl: './filelink-list.html',
+  styleUrl: './filelink-list.scss',
 })
 export class FilelinkList implements OnInit, OnDestroy {
   public filelinkService = inject(FilelinkService);
@@ -58,54 +60,21 @@ export class FilelinkList implements OnInit, OnDestroy {
 
   currentPath = this.filelinkService.currentExplorerPath;
 
-  currentSort = signal<SortOption>('custom');
+  currentSort = signal<FilelinkSortOption>('custom');
 
   currentFolderContent = computed(() => {
-    const allItems = this.filelinkService.items();
     const currentUserId = this.authService.userProfile()?.user_id;
-
-    const myItems = allItems.filter((item) => item.user_id === currentUserId);
-
-    const current = this.currentPath();
-    const currentDepth = current.length;
-
-    const files: FilelinkItem[] = [];
-    const folderSet = new Set<string>();
-
-    for (const item of myItems) {
-      const itemPath = item.item_path || [];
-
-      let isUnderCurrentPath = true;
-      for (let i = 0; i < currentDepth; i++) {
-        if (itemPath[i] !== current[i]) {
-          isUnderCurrentPath = false;
-          break;
-        }
-      }
-
-      if (!isUnderCurrentPath) continue;
-
-      if (itemPath.length === currentDepth) {
-        files.push(item);
-      } else if (itemPath.length > currentDepth) {
-        folderSet.add(itemPath[currentDepth]);
-      }
-    }
-
+    const myItems = this.filelinkService
+      .items()
+      .filter((item) => item.user_id === currentUserId);
     const users = this.userService.users();
 
-    const mappedFiles = files.map((file) => {
-      let displayTitle = '';
-      if (file.title && file.ref_date) {
-        displayTitle = `${file.title} (${file.ref_date})`;
-      } else if (file.title) {
-        displayTitle = file.title;
-      } else if (file.ref_date) {
-        displayTitle = file.ref_date;
-      } else {
-        displayTitle = file.url || 'Untitled Document';
-      }
+    const { files, folders } = extractFolderContent(
+      myItems,
+      this.currentPath(),
+    );
 
+    const mappedFiles = files.map((file) => {
       const allowedNames = (file.allowed_users || [])
         .map((uid) => {
           const u = users.find((x) => x.user_id === uid);
@@ -113,50 +82,20 @@ export class FilelinkList implements OnInit, OnDestroy {
         })
         .join(', ');
 
-      const displaySharedWith = allowedNames
-        ? `Shared with: ${allowedNames}`
-        : 'Private';
-
       return {
         ...file,
-        displayTitle,
-        displaySharedWith,
+        displayTitle: buildFileDisplayTitle(
+          file.title,
+          file.ref_date,
+          file.url,
+        ),
+        displaySharedWith: allowedNames
+          ? `Shared with: ${allowedNames}`
+          : 'Private',
       };
     });
 
-    const sortType = this.currentSort();
-
-    let sortedFolders = Array.from(folderSet).sort();
-    if (sortType === 'name-desc') {
-      sortedFolders.reverse();
-    }
-
-    const sortedFiles = mappedFiles.sort((a, b) => {
-      if (sortType === 'custom') {
-        return a.sort_order - b.sort_order;
-      } else if (sortType === 'name-asc') {
-        return a.displayTitle.localeCompare(b.displayTitle);
-      } else if (sortType === 'name-desc') {
-        return b.displayTitle.localeCompare(a.displayTitle);
-      } else if (sortType === 'date-desc') {
-        const dA = a.ref_date || '';
-        const dB = b.ref_date || '';
-        if (!dA && !dB) return a.sort_order - b.sort_order;
-        if (!dA) return 1;
-        if (!dB) return -1;
-        return dB.localeCompare(dA);
-      } else if (sortType === 'modified-desc') {
-        const modA = a.updated_at || a.created_at || '';
-        const modB = b.updated_at || b.created_at || '';
-        return modB.localeCompare(modA);
-      }
-      return 0;
-    });
-
-    return {
-      folders: sortedFolders,
-      files: sortedFiles,
-    };
+    return sortExplorerContent(mappedFiles, folders, this.currentSort());
   });
 
   ngOnInit() {

@@ -36,6 +36,7 @@ export class ArticleFeed implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
 
   visibleCount = signal<number>(10);
+  highlightedId = signal<string | null>(null);
 
   feedVM = computed(() => {
     const publishedArticles = this.articleService
@@ -77,9 +78,9 @@ export class ArticleFeed implements OnInit, OnDestroy {
           if (el) {
             el.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-            el.style.transition = 'box-shadow 0.5s';
-            el.style.boxShadow = '0 0 0 4px var(--mat-sys-primary)';
-            setTimeout(() => (el.style.boxShadow = 'none'), 1500);
+            this.highlightedId.set(targetId);
+
+            setTimeout(() => this.highlightedId.set(null), 1500);
           }
           sessionStorage.removeItem('feed_scroll_target');
         }, 100);

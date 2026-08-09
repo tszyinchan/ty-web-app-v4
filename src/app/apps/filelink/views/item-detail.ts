@@ -4,8 +4,9 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { FilelinkItem } from '../../jaxfr/features/filelink/filelink.model';
-import { FilelinkService } from '../../jaxfr/features/filelink/filelink.service';
+import { FilelinkService } from '../../../core/domains/filelink/filelink.service';
+import { FilelinkItem } from '../../../core/domains/filelink/filelink.model';
+import { buildFileDisplayTitle } from '../../../core/domains/filelink/filelink.util';
 
 interface MetaPair {
   key: string;
@@ -48,16 +49,7 @@ export class ItemDetail implements OnInit {
   displayTitle = computed(() => {
     const data = this.item();
     if (!data) return '未命名文件';
-
-    if (data.title && data.ref_date) {
-      return `${data.title} (${data.ref_date})`;
-    } else if (data.title) {
-      return data.title;
-    } else if (data.ref_date) {
-      return data.ref_date;
-    } else {
-      return '未命名文件';
-    }
+    return buildFileDisplayTitle(data.title, data.ref_date, data.url);
   });
 
   displayPath = computed(() => {

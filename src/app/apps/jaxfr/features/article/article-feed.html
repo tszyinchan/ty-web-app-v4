@@ -12,6 +12,11 @@
     box-shadow: none;
     border: 1px solid var(--mat-sys-outline-variant);
     border-radius: 12px;
+    transition: box-shadow 0.5s ease-in-out;
+  }
+
+  mat-card.feed-card.highlight-card {
+    box-shadow: 0 0 0 4px var(--mat-sys-primary);
   }
 
   mat-card-header.custom-header {
@@ -73,7 +78,11 @@
 
 <div class="feed-container">
   @for (article of feedVM(); track article.tb_tyapp_atcl_id) {
-    <mat-card class="feed-card" [id]="article.tb_tyapp_atcl_id">
+    <mat-card
+      class="feed-card"
+      [id]="article.tb_tyapp_atcl_id"
+      [class.highlight-card]="article.tb_tyapp_atcl_id === highlightedId()"
+    >
       <mat-card-header class="custom-header">
         <div
           style="

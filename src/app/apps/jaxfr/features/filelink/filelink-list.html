@@ -1,14 +1,6 @@
 <div class="standard-list-view">
-  <div
-    style="
-      display: flex;
-      align-items: center;
-      padding: 12px 16px;
-      border-bottom: 1px solid var(--mat-sys-outline-variant);
-      background: var(--mat-sys-surface-container-lowest);
-    "
-  >
-    <div style="display: flex; align-items: center; flex-wrap: wrap">
+  <div class="action-bar">
+    <div class="breadcrumb-row">
       <button
         mat-icon-button
         (click)="goToLevel(-1)"
@@ -18,34 +10,33 @@
       </button>
 
       @for (segment of currentPath(); track $index; let i = $index) {
-        <mat-icon style="color: var(--mat-sys-outline); margin: 0 4px"
-          >chevron_right</mat-icon
-        >
+        <mat-icon class="separator-icon">chevron_right</mat-icon>
         <button
           mat-button
+          class="crumb-btn"
           (click)="goToLevel(i)"
           [color]="i === currentPath().length - 1 ? 'primary' : ''"
-          style="min-width: unset; padding: 0 8px"
         >
           {{ segment }}
         </button>
       }
     </div>
 
-    <div style="flex: 1"></div>
+    <div class="spacer"></div>
 
     <button
       mat-icon-button
       [matMenuTriggerFor]="sortMenu"
       aria-label="Sort options"
-      style="color: var(--mat-sys-on-surface-variant)"
+      class="sort-btn"
     >
       <mat-icon>sort</mat-icon>
     </button>
     <mat-menu #sortMenu="matMenu" xPosition="before">
       <button mat-menu-item (click)="currentSort.set('custom')">
         <mat-icon
-          [style.visibility]="currentSort() === 'custom' ? 'visible' : 'hidden'"
+          class="sort-check-icon"
+          [class.visible]="currentSort() === 'custom'"
           color="primary"
           >check</mat-icon
         >
@@ -53,9 +44,8 @@
       </button>
       <button mat-menu-item (click)="currentSort.set('name-asc')">
         <mat-icon
-          [style.visibility]="
-            currentSort() === 'name-asc' ? 'visible' : 'hidden'
-          "
+          class="sort-check-icon"
+          [class.visible]="currentSort() === 'name-asc'"
           color="primary"
           >check</mat-icon
         >
@@ -63,9 +53,8 @@
       </button>
       <button mat-menu-item (click)="currentSort.set('name-desc')">
         <mat-icon
-          [style.visibility]="
-            currentSort() === 'name-desc' ? 'visible' : 'hidden'
-          "
+          class="sort-check-icon"
+          [class.visible]="currentSort() === 'name-desc'"
           color="primary"
           >check</mat-icon
         >
@@ -73,9 +62,8 @@
       </button>
       <button mat-menu-item (click)="currentSort.set('date-desc')">
         <mat-icon
-          [style.visibility]="
-            currentSort() === 'date-desc' ? 'visible' : 'hidden'
-          "
+          class="sort-check-icon"
+          [class.visible]="currentSort() === 'date-desc'"
           color="primary"
           >check</mat-icon
         >
@@ -83,9 +71,8 @@
       </button>
       <button mat-menu-item (click)="currentSort.set('modified-desc')">
         <mat-icon
-          [style.visibility]="
-            currentSort() === 'modified-desc' ? 'visible' : 'hidden'
-          "
+          class="sort-check-icon"
+          [class.visible]="currentSort() === 'modified-desc'"
           color="primary"
           >check</mat-icon
         >
@@ -96,28 +83,16 @@
 
   <div class="list-container">
     @if (filelinkService.loading()) {
-      <div style="padding: 48px; text-align: center">
-        <mat-spinner diameter="32" style="margin: 0 auto"></mat-spinner>
+      <div class="loading-state">
+        <mat-spinner diameter="32"></mat-spinner>
       </div>
     } @else {
       @for (folder of currentFolderContent().folders; track folder) {
-        <a
-          class="item-link"
-          (click)="enterFolder(folder)"
-          style="cursor: pointer"
-        >
+        <a class="item-link" (click)="enterFolder(folder)">
           <div class="item-content">
             <div class="item-info-group">
               <span class="main-text">
-                <mat-icon
-                  style="
-                    font-size: 18px;
-                    width: 18px;
-                    height: 18px;
-                    vertical-align: middle;
-                    margin-right: 6px;
-                    color: #fbc02d;
-                  "
+                <mat-icon class="item-leading-icon folder-icon"
                   >folder</mat-icon
                 >
                 {{ folder }}
@@ -134,45 +109,28 @@
         file of currentFolderContent().files;
         track file.tb_tyapp_fl_item_id
       ) {
-        <a
-          class="item-link"
-          (click)="viewFile(file.tb_tyapp_fl_item_id)"
-          style="cursor: pointer"
-        >
+        <a class="item-link" (click)="viewFile(file.tb_tyapp_fl_item_id)">
           <div class="item-content">
             <div class="item-info-group">
               <span class="main-text">
-                <mat-icon
-                  style="
-                    font-size: 18px;
-                    width: 18px;
-                    height: 18px;
-                    vertical-align: middle;
-                    margin-right: 6px;
-                    color: var(--mat-sys-primary);
-                  "
+                <mat-icon class="item-leading-icon file-icon"
                   >description</mat-icon
                 >
                 {{ file.displayTitle }}
               </span>
               <span class="sub-text">
-                <mat-icon
-                  style="
-                    font-size: 14px;
-                    width: 14px;
-                    height: 14px;
-                    vertical-align: middle;
-                    margin-right: 2px;
-                  "
-                  >group</mat-icon
-                >
+                <mat-icon class="item-tiny-icon">group</mat-icon>
                 {{ file.displaySharedWith }}
               </span>
             </div>
-
             <div class="item-status-group">
-              <span class="status-tag" [class.inactive]="file.status === RecordStatus.Inactive">
-                {{ file.status === RecordStatus.Active ? "Active" : "Inactive" }}
+              <span
+                class="status-tag"
+                [class.inactive]="file.status === RecordStatus.Inactive"
+              >
+                {{
+                  file.status === RecordStatus.Active ? "Active" : "Inactive"
+                }}
               </span>
               <mat-icon class="chevron">edit</mat-icon>
             </div>
@@ -186,9 +144,7 @@
       ) {
         <div class="empty-placeholder">
           This directory is empty.<br />
-          <span style="font-size: 13px; opacity: 0.7"
-            >Click "+ New Link" to add a file here.</span
-          >
+          <span class="hint-text">Click "+ New Link" to add a file here.</span>
         </div>
       }
     }
