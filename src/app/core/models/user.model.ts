@@ -24,3 +24,11 @@ export const USER_ROLES = {
   ADMIN: 900,
   USER: 100
 } as const;
+
+export enum NameDisplayMode {
+  LegalFirstMiddleLast = 1,
+  LegalLastMiddleFirst = 2,
+  PreferredFirstMiddleLast = 3,
+  PreferredLastMiddleFirst = 4,
+  CustomizedOnly = 5,
+}

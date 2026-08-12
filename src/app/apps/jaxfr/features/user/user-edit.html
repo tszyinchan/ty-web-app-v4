@@ -38,7 +38,7 @@
               }
             </mat-select>
           </mat-form-field>
-          @if (u.name_display_mode === 5) {
+          @if (u.name_display_mode === NameDisplayMode.CustomizedOnly) {
             <mat-form-field appearance="outline" subscriptSizing="dynamic">
               <mat-label>Customized Display Name</mat-label>
               <input matInput [(ngModel)]="u.customized_display_name" />

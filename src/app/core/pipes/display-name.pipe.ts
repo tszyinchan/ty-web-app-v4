@@ -1,5 +1,5 @@
 import { Pipe, PipeTransform } from '@angular/core';
-import { TyappUser } from '../models/user.model';
+import { NameDisplayMode, TyappUser } from '../models/user.model';
 
 @Pipe({
   name: 'tyDisplayName',
@@ -26,35 +26,35 @@ export class DisplayNamePipe implements PipeTransform {
     let result = '';
 
     switch (name_display_mode) {
-      case 1:
+      case NameDisplayMode.LegalFirstMiddleLast:
         result = buildName(
           legal_first_name,
           legal_middle_name,
           legal_last_name,
         );
         break;
-      case 2:
+      case NameDisplayMode.LegalLastMiddleFirst:
         result = buildName(
           legal_last_name,
           legal_middle_name,
           legal_first_name,
         );
         break;
-      case 3:
+      case NameDisplayMode.PreferredFirstMiddleLast:
         result = buildName(
           preferred_first_name,
           legal_middle_name,
           legal_last_name,
         );
         break;
-      case 4:
+      case NameDisplayMode.PreferredLastMiddleFirst:
         result = buildName(
           legal_last_name,
           legal_middle_name,
           preferred_first_name,
         );
         break;
-      case 5:
+      case NameDisplayMode.CustomizedOnly:
         result = customized_display_name || '';
         break;
       default:

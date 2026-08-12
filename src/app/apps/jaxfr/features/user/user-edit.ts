@@ -19,7 +19,11 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatSelectModule } from '@angular/material/select';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { SUBDOMAINS } from '../../../../app.constants';
-import { TyappUser, USER_ROLES } from '../../../../core/models/user.model';
+import {
+  NameDisplayMode,
+  TyappUser,
+  USER_ROLES,
+} from '../../../../core/models/user.model';
 import { DisplayNameModePipe } from '../../../../core/pipes/display-name-mode.pipe';
 import { DisplayNamePipe } from '../../../../core/pipes/display-name.pipe';
 import { RoleLabelPipe } from '../../../../core/pipes/role-label.pipe';
@@ -66,7 +70,14 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
     USER_ROLES.ADMIN,
     USER_ROLES.SUPER_ADMIN,
   ];
-  readonly availableModes = [1, 2, 3, 4, 5];
+  readonly availableModes = [
+    NameDisplayMode.LegalFirstMiddleLast,
+    NameDisplayMode.LegalLastMiddleFirst,
+    NameDisplayMode.PreferredFirstMiddleLast,
+    NameDisplayMode.PreferredLastMiddleFirst,
+    NameDisplayMode.CustomizedOnly,
+  ];
+  readonly NameDisplayMode = NameDisplayMode;
   readonly RecordStatus = RecordStatus;
 
   user = signal<TyappUser | null>(null);

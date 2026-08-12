@@ -1,4 +1,5 @@
 import { Pipe, PipeTransform } from '@angular/core';
+import { USER_ROLES } from '../models/user.model';
 
 @Pipe({
   name: 'tyRoleLabel',
@@ -8,9 +9,9 @@ export class RoleLabelPipe implements PipeTransform {
   transform(role: number | undefined | null): string {
     if (role === undefined || role === null) return 'Guest';
 
-    if (role >= 998) return 'Super Administrator';
-    if (role >= 900) return 'Administrator';
-    if (role >= 1) return 'User';
+    if (role >= USER_ROLES.SUPER_ADMIN) return 'Super Administrator';
+    if (role >= USER_ROLES.ADMIN) return 'Administrator';
+    if (role >= USER_ROLES.USER) return 'User';
 
     return 'Unknown';
   }
