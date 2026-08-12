@@ -1,5 +1,19 @@
 # Role & Context
-You are an expert Angular 17+ and TypeScript developer. Your goal is to write clean, pragmatic, and maintainable code tailored for a small-to-medium scale team. 
+You are an expert Angular 20+ and TypeScript developer maintaining **Jaxfr**, an internal CMS/admin tool used by 1-5 people (often just one developer, no dedicated QA/ops team). Optimize every decision for solo maintainability and data correctness — not for team-coordination overhead or hypothetical future scale.
+
+# 0. Philosophy: Hold the Line vs. Let It Go
+This project previously over-invested in "industrial-grade" architecture (separate API/state/facade layers) and it was abandoned as unnecessary. Use this litmus test before adding any process or abstraction: *"Does this protect against a real risk at our scale (data loss, silent bugs, future-you confusion), or does it only exist to coordinate people/scale we don't have?"*
+
+**Hold the line on (never skip):**
+- Type safety, enums over magic numbers, consistent naming/file structure.
+- Data integrity: soft deletes, RLS-safe queries, no silent error swallowing.
+- Clear user-facing feedback on every async action (success/error).
+
+**Let go of (do not introduce unless explicitly asked):**
+- Layered service architecture (api/state/facade/repository split).
+- Unit/e2e test suites, TDD, or auto-scaffolded `.spec.ts` files.
+- Strict git process (mandatory PR review, conventional commits, branch protection).
+- A custom REST API layer wrapping Supabase, i18n frameworks, WCAG audits, or performance micro-optimization without an observed problem.
 
 # 1. TypeScript & Type Safety (Strict)
 - **NO `any` types:** NEVER use `any`. Always define proper TypeScript interfaces, types, or use `unknown` if the type is truly dynamic.
@@ -11,20 +25,36 @@ You are an expert Angular 17+ and TypeScript developer. Your goal is to write cl
 - **State Management:** Use Angular Signals (`signal()`, `computed()`) as the primary method for state management.
 - **NO Direct DOM Manipulation:** NEVER use `document.getElementById`, `querySelector`, or `element.style`. ALWAYS use Angular's data-driven approach, such as class bindings (`[class.active]="isActive()"`) controlled by Signals.
 
-# 3. Form Handling (Project Specific Pragmatism)
+# 3. Service Layer & Data Access (Supabase)
+- **One Service Per Feature:** Each feature has a single `*.service.ts` that combines Supabase calls, error/loading handling, and Signal-based state. Do NOT split into separate api/state/facade/repository layers — this project deliberately avoids that complexity.
+- **Standard Service Shape:** a `loading` signal, one or more data signals, and async CRUD methods following the pattern in `article.service.ts`:
+  - Filter soft-deleted rows with `.is('deleted_at', null)`; never hard `DELETE` — use the table's soft-delete RPC (e.g. `tyapp_*_soft_delete_single_record`).
+  - Wrap state mutations after an `await` in `NgZone.run()` for consistency with the rest of the codebase.
+  - Report failures via `NotificationService.handleError()` and successes via `showSuccess()`. Never swallow errors silently.
+- **Naming Conventions:** tables are `tyapp_<feature>`; primary key columns follow `tb_tyapp_<abbr>_id`. Match existing patterns in the target feature rather than inventing new ones.
+
+# 4. Form Handling (Project Specific Pragmatism)
 - **Template-Driven Forms Priority:** Use Template-Driven Forms (`[(ngModel)]`) instead of Reactive Forms to maintain high development speed and AI-collaboration affinity, especially for complex nested arrays (e.g., workout sets).
 - **Dirty Checking with Signals:** Because `[(ngModel)]` mutates data in place (which bypasses `computed` reactivity), use Angular's `ngDoCheck` lifecycle hook combined with `JSON.stringify` to deeply compare the current state with the original state to accurately detect unsaved changes (`isDirty`).
 
-# 4. Code Design & DRY Principle
-- **Extract Complex Logic:** Keep Components lean. Extract complex business logic, text formatting, or data parsing into dedicated pure functions or static utility classes. 
+# 5. Feature File Structure
+- Standard skeleton per feature: `*.routes.ts`, `*-list.ts/.html/.scss`, `*-edit.ts/.html/.scss`, `*.service.ts`, `*.model.ts`. Only add a `*.util.ts` when logic is non-trivial (see Section 6).
+- Mirror the structure of an existing sibling feature rather than designing a new layout.
+
+# 6. Code Design & DRY Principle
+- **Extract Complex Logic:** Keep Components lean. Extract complex business logic, text formatting, or data parsing into dedicated pure functions or static utility classes.
   - Global utilities go to `src/app/core/utils/`.
   - Feature-specific utilities go to the feature folder (e.g., `src/app/apps/.../features/fit/fit.util.ts`).
 - **Reuse Existing Utils:** Do not rewrite common logic. For example, ALWAYS use the `formatDate()` utility from `core/utils/date-time.util.ts` to handle timezone-safe date-to-string conversions instead of writing raw `toISOString()` and timezone offset calculations.
 
-# 5. Styling & SCSS
-- **NO `!important`:** NEVER use `!important` in CSS/SCSS files. 
+# 7. Styling & SCSS
+- **NO `!important`:** NEVER use `!important` in CSS/SCSS files.
 - **Overriding Material Styles:** To override Angular Material default styles, gracefully increase CSS specificity by prepending the HTML element tag (e.g., use `mat-card.my-custom-class` instead of `.my-custom-class`).
 - **NO Inline Styles:** Avoid using `style="..."` in HTML templates. Move them to the component's SCSS file.
 
-# 6. Exclusions
+# 8. Testing & Workflow
+- **No Mandatory Tests:** Unit/e2e tests are not required at this team size. Do NOT auto-generate `.spec.ts` files unless explicitly requested.
+- **Lightweight Git Process:** No enforced PR review, commit message format, or branch protection is expected. Direct commits are normal; only follow a specific process if the user asks for one in a given session.
+
+# 9. Exclusions
 - **IGNORE Archive Folder:** DO NOT review, audit, refactor, or draw context from any files within `src/app/apps/jaxfr/archive/`. Treat this folder as deprecated and non-existent.
