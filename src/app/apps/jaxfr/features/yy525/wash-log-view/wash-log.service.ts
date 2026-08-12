@@ -1,5 +1,5 @@
 import { Injectable, inject, NgZone, signal } from '@angular/core';
-import { YY525_Wash_Log_API } from '../../../../../app.constants';
+import { environment } from '../../../../../../environments/environment';
 import { NotificationService } from '../../../../../core/services/notification.service';
 import { WashLog } from './wash-log.model';
 
@@ -16,7 +16,7 @@ export class WashLogService {
 
     this.loading.set(true);
     try {
-      const url = `${YY525_Wash_Log_API.GAS_URL}?token=${YY525_Wash_Log_API.TOKEN}`;
+      const url = `${environment.washLogGasUrl}?token=${environment.washLogToken}`;
       const response = await fetch(url);
 
       if (!response.ok)

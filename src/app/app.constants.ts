@@ -3,7 +3,7 @@ export const APP_CONFIG = {
   version: {
     major: 4,
     minor: 56,
-    patch: 3,
+    patch: 4,
   },
   versionDate: '2026-08-12',
 };
@@ -19,11 +19,6 @@ export const YY525_SOURCE = {
   GAS_URL:
     'https://script.google.com/macros/s/AKfycbxJXfT6MlqzO2Lc3Ip755sxApmU-IwryngtUxj0LXQZGkX4LRVIiP4kZUucugdFfcJoUg/exec',
   TOKEN: 'jaxfr_finance_2026',
-};
-export const YY525_Wash_Log_API = {
-  GAS_URL:
-    'https://script.google.com/macros/s/AKfycbyhAKU-WbIGLFt8GHszq4JTqT3dSJswWHZ1-e8coKE7eEtyIS0ISxbJTcENpK7iX383/exec',
-  TOKEN: '3_xiCrP_c2W2oAJPmTk_nKirpz3a7622nU',
 };
 
 export const EXCHANGE_RATES: Record<string, number> = {
