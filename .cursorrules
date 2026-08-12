@@ -61,6 +61,7 @@ This project previously over-invested in "industrial-grade" architecture (separa
 - **Bump Heuristic:** New feature/page/route → bump `minor` (reset `patch` to 0). Bug fix, style tweak, refactor, or small copy change → bump `patch`. Breaking change or major redesign → bump `major` (reset `minor`/`patch` to 0). State the proposed bump before committing so the user can confirm or override it.
 - **Commit Message Format:** `VerX.X.X-<concise description>`, matching existing git history (e.g. `Ver4.56.0-Dynamic button display for items`).
 - **In-App Changelog:** The user manually adds a matching entry to the `tyapp_app_log` table (via the App Logs feature) using the same version numbers. Do not attempt to write to Supabase on their behalf — just keep the commit version number consistent so it's easy to copy over.
+- **Small Batches, Push Immediately:** When working through a multi-item task (e.g. an audit fix list), group changes into small, independently-verifiable batches rather than one large change. After the user confirms a batch passed manual testing, commit AND push that batch right away — don't wait to accumulate multiple batches before pushing. Small, frequently-pushed commits are easier to roll back than large ones.
 
 # 10. Exclusions
 - **IGNORE Archive Folder:** DO NOT review, audit, refactor, or draw context from any files within `src/app/apps/jaxfr/archive/`. Treat this folder as deprecated and non-existent.
