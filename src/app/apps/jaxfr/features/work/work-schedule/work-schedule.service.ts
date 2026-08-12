@@ -42,6 +42,7 @@ export class WorkScheduleService {
         .from('tyapp_work_schedule')
         .select('*')
         .eq('tb_tyapp_wk_scdl_id', id)
+        .is('deleted_at', null)
         .single();
 
       if (error) throw error;

@@ -45,6 +45,7 @@ export class FilelinkService {
         .from('tyapp_filelink_item')
         .select('*')
         .eq('tb_tyapp_fl_item_id', id)
+        .is('deleted_at', null)
         .single();
 
       if (error) throw error;

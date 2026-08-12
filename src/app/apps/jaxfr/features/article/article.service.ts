@@ -43,6 +43,7 @@ export class ArticleService {
         .from('tyapp_article')
         .select('*')
         .eq('tb_tyapp_atcl_id', id)
+        .is('deleted_at', null)
         .single();
 
       if (error) throw error;

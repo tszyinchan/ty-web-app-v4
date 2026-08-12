@@ -43,6 +43,7 @@ export class WorkAttendanceService {
         .from('tyapp_work_attendance')
         .select('*')
         .eq('tb_tyapp_wk_attn_id', id)
+        .is('deleted_at', null)
         .single();
 
       if (error) throw error;

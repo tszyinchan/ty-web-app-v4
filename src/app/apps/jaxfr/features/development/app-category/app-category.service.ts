@@ -42,6 +42,7 @@ export class AppCategoryService {
         .from('tyapp_app_category')
         .select('*')
         .eq('tb_tyapp_ap_ctgy_id', id)
+        .is('deleted_at', null)
         .single();
 
       if (error) throw error;

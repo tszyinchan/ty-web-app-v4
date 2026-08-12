@@ -28,6 +28,7 @@ export class UserService {
         const { data, error } = await this.supabase
           .from('tyapp_user')
           .select('*')
+          .is('deleted_at', null)
           .order('tb_tyapp_pofl_seq_no', { ascending: true });
 
         if (error) throw error;
@@ -56,6 +57,7 @@ export class UserService {
         .from('tyapp_user')
         .select('*')
         .eq('user_id', userId)
+        .is('deleted_at', null)
         .single();
 
       if (error) throw error;

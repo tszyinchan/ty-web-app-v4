@@ -42,6 +42,7 @@ export class AppFunctionService {
         .from('tyapp_app_function')
         .select('*')
         .eq('tb_tyapp_ap_func_id', id)
+        .is('deleted_at', null)
         .single();
 
       if (error) throw error;

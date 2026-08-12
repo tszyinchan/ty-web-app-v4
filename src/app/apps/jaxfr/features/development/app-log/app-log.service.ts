@@ -43,6 +43,7 @@ export class AppLogService {
         .from('tyapp_app_log')
         .select('*')
         .eq('tb_tyapp_ap_lg_id', id)
+        .is('deleted_at', null)
         .single();
 
       if (error) throw error;

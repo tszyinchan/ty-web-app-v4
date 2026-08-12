@@ -42,6 +42,7 @@ export class WorkEmploymentService {
         .from('tyapp_work_employment')
         .select('*')
         .eq('tb_tyapp_wk_mplm_id', id)
+        .is('deleted_at', null)
         .single();
 
       if (error) throw error;
