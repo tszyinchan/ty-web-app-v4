@@ -32,6 +32,7 @@ This project previously over-invested in "industrial-grade" architecture (separa
   - Wrap state mutations after an `await` in `NgZone.run()` for consistency with the rest of the codebase.
   - Report failures via `NotificationService.handleError()` and successes via `showSuccess()`. Never swallow errors silently.
 - **Naming Conventions:** tables are `tyapp_<feature>`; primary key columns follow `tb_tyapp_<abbr>_id`. Match existing patterns in the target feature rather than inventing new ones.
+- **Nested Data Exception (e.g. Fit):** Features with a parent-child-grandchild table structure (e.g. `tyapp_fit_session` → `tyapp_fit_entry` → `tyapp_fit_entry_set`) do NOT need a single-record soft-delete RPC. Manual, sequential `.update({ deleted_at })` calls in child-first order (grandchild → child → parent) are an accepted pattern here — this avoids maintaining PL/pgSQL cascade logic for a low-traffic, single-maintainer app. Do not "fix" this into an RPC unless the user reports actual data inconsistency.
 
 # 4. Form Handling (Project Specific Pragmatism)
 - **Template-Driven Forms Priority:** Use Template-Driven Forms (`[(ngModel)]`) instead of Reactive Forms to maintain high development speed and AI-collaboration affinity, especially for complex nested arrays (e.g., workout sets).
