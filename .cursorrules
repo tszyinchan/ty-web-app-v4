@@ -56,5 +56,11 @@ This project previously over-invested in "industrial-grade" architecture (separa
 - **No Mandatory Tests:** Unit/e2e tests are not required at this team size. Do NOT auto-generate `.spec.ts` files unless explicitly requested.
 - **Lightweight Git Process:** No enforced PR review, commit message format, or branch protection is expected. Direct commits are normal; only follow a specific process if the user asks for one in a given session.
 
-# 9. Exclusions
+# 9. Versioning & Commit Convention
+- **Single Source of Truth:** `src/app/app.constants.ts` (`APP_CONFIG.version` + `versionDate`) is the authoritative app version. When committing a change, update it there.
+- **Bump Heuristic:** New feature/page/route → bump `minor` (reset `patch` to 0). Bug fix, style tweak, refactor, or small copy change → bump `patch`. Breaking change or major redesign → bump `major` (reset `minor`/`patch` to 0). State the proposed bump before committing so the user can confirm or override it.
+- **Commit Message Format:** `VerX.X.X-<concise description>`, matching existing git history (e.g. `Ver4.56.0-Dynamic button display for items`).
+- **In-App Changelog:** The user manually adds a matching entry to the `tyapp_app_log` table (via the App Logs feature) using the same version numbers. Do not attempt to write to Supabase on their behalf — just keep the commit version number consistent so it's easy to copy over.
+
+# 10. Exclusions
 - **IGNORE Archive Folder:** DO NOT review, audit, refactor, or draw context from any files within `src/app/apps/jaxfr/archive/`. Treat this folder as deprecated and non-existent.
