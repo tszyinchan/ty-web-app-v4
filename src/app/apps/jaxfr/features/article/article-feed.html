@@ -1,6 +1,7 @@
 <div class="feed-container">
   @for (article of feedVM(); track article.tb_tyapp_atcl_id) {
     <mat-card
+      #cardRef
       class="feed-card"
       [id]="article.tb_tyapp_atcl_id"
       [class.highlight-card]="article.tb_tyapp_atcl_id === highlightedId()"

@@ -6,6 +6,9 @@ import {
   inject,
   computed,
   signal,
+  viewChildren,
+  ElementRef,
+  Signal,
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -38,6 +41,10 @@ export class ArticleFeed implements OnInit, OnDestroy {
 
   visibleCount = signal<number>(10);
   highlightedId = signal<string | null>(null);
+  cardRefs: Signal<ReadonlyArray<ElementRef<HTMLElement>>> = viewChildren(
+    'cardRef',
+    { read: ElementRef },
+  );
 
   feedVM = computed(() => {
     const publishedArticles = this.articleService
@@ -75,9 +82,14 @@ export class ArticleFeed implements OnInit, OnDestroy {
       const targetId = sessionStorage.getItem('feed_scroll_target');
       if (targetId) {
         setTimeout(() => {
-          const el = document.getElementById(targetId);
-          if (el) {
-            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          const target = this.cardRefs().find(
+            (ref) => ref.nativeElement.id === targetId,
+          );
+          if (target) {
+            target.nativeElement.scrollIntoView({
+              behavior: 'smooth',
+              block: 'center',
+            });
 
             this.highlightedId.set(targetId);
 

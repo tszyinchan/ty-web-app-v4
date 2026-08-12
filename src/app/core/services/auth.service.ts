@@ -48,9 +48,11 @@ export class AuthService {
       .from('tyapp_user')
       .select('*')
       .eq('user_id', userId)
+      .is('deleted_at', null)
       .single();
 
     if (error) {
+      this._userProfile.set(null);
       this.notification.handleError('Fetch Profile Error', error);
       return;
     }
