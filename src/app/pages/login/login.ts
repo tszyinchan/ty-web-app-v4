@@ -112,10 +112,11 @@ export class Login implements OnInit {
         DEFAULT_ROUTES[currentApp as keyof typeof DEFAULT_ROUTES];
 
       await this.router.navigate([targetRoute]);
-    } catch (e: any) {
-      let message = e.message || this.defaultErrorMsg();
+    } catch (e: unknown) {
+      const errorMessage = e instanceof Error ? e.message : undefined;
+      let message = errorMessage || this.defaultErrorMsg();
 
-      if (e.message === 'APP_ACCESS_DENIED') {
+      if (errorMessage === 'APP_ACCESS_DENIED') {
         const currentApp = getCurrentSubdomain();
         message =
           currentApp === SUBDOMAINS.FILELINK

@@ -9,6 +9,7 @@ import {
   FitEntry,
   FitEntrySet,
   FitEntryType,
+  FitEntryWithSets,
   FitSession,
   FitSessionDetail,
 } from './fit.model';
@@ -535,7 +536,11 @@ export class FitService {
       if (error) throw error;
 
       const nameMap = new Map<string, FitEntryType>();
-      data.forEach((row: any) => {
+      const rows = (data || []) as Array<{
+        exercise_name: string | null;
+        entry_type: FitEntryType;
+      }>;
+      rows.forEach((row) => {
         const name = row.exercise_name?.trim();
         if (name) {
           nameMap.set(name, row.entry_type);
@@ -546,7 +551,7 @@ export class FitService {
         .map(([name, type]) => ({ name, type }))
         .sort((a, b) => a.name.localeCompare(b.name));
     } catch (error: unknown) {
-      console.error('Fetch exercise names failed', error);
+      this.notification.handleError('Fetch Exercise Names Failed', error);
       return [];
     }
   }
@@ -569,7 +574,7 @@ export class FitService {
 
       const sessionIds = sessions.map((s) => s.tb_tyapp_fit_ssn_id);
 
-      const { data: entries, error: entryErr } = await this.supabase
+      const { data: entryData, error: entryErr } = await this.supabase
         .from('tyapp_fit_entry')
         .select('*')
         .in('fit_session_id', sessionIds)
@@ -578,7 +583,8 @@ export class FitService {
 
       if (entryErr) throw entryErr;
 
-      const entryIds = (entries || []).map((e) => e.tb_tyapp_fit_ntry_id);
+      const entries = (entryData || []) as FitEntry[];
+      const entryIds = entries.map((e) => e.tb_tyapp_fit_ntry_id);
       let sets: FitEntrySet[] = [];
 
       if (entryIds.length > 0) {
@@ -595,17 +601,19 @@ export class FitService {
 
       return sessions.map((session) => ({
         session: session as FitSession,
-        entries: (entries || [])
+        entries: entries
           .filter((e) => e.fit_session_id === session.tb_tyapp_fit_ssn_id)
-          .map((entry) => ({
-            ...entry,
-            sets: sets.filter(
-              (s) => s.fit_entry_id === entry.tb_tyapp_fit_ntry_id,
-            ),
-          })) as any[],
+          .map(
+            (entry): FitEntryWithSets => ({
+              ...entry,
+              sets: sets.filter(
+                (s) => s.fit_entry_id === entry.tb_tyapp_fit_ntry_id,
+              ),
+            }),
+          ),
       }));
-    } catch (error) {
-      console.error('Fetch recent threads failed:', error);
+    } catch (error: unknown) {
+      this.notification.handleError('Fetch Recent Threads Failed', error);
       return [];
     }
   }

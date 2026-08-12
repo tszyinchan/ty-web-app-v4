@@ -1,6 +1,7 @@
 import { Injectable, inject, signal, computed, NgZone } from '@angular/core';
 import { Router } from '@angular/router';
 import { SupabaseService } from './supabase.service';
+import { NotificationService } from './notification.service';
 import { TyappUser, USER_ROLES } from '../models/user.model';
 
 @Injectable({ providedIn: 'root' })
@@ -8,6 +9,7 @@ export class AuthService {
   private supabase = inject(SupabaseService).client;
   private router = inject(Router);
   private zone = inject(NgZone);
+  private notification = inject(NotificationService);
 
   private _userProfile = signal<TyappUser | null>(null);
   public userProfile = this._userProfile.asReadonly();
@@ -49,7 +51,7 @@ export class AuthService {
       .single();
 
     if (error) {
-      console.error('Fetch Profile Error:', error.message);
+      this.notification.handleError('Fetch Profile Error', error);
       return;
     }
     this._userProfile.set(data as TyappUser);
