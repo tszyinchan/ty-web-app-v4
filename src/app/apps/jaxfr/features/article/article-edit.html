@@ -2,30 +2,11 @@
   @if (item(); as article) {
     <div class="form-scroll-area">
       @if (!currentId) {
-        <section
-          class="form-group"
-          style="
-            background-color: var(--mat-sys-surface-variant);
-            padding: 16px;
-            border-radius: 12px;
-            margin-bottom: 24px;
-          "
-        >
-          <div
-            style="
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-              margin-bottom: 12px;
-            "
-          >
-            <div style="display: flex; align-items: center; gap: 8px">
-              <mat-icon style="color: var(--mat-sys-primary)"
-                >auto_fix_high</mat-icon
-              >
-              <h3 style="margin: 0; font-size: 16px; font-weight: 600">
-                Smart Auto-fill (Ming Pao)
-              </h3>
+        <section class="form-group smart-autofill-section">
+          <div class="smart-autofill-header">
+            <div class="smart-autofill-title-wrapper">
+              <mat-icon class="primary-icon">auto_fix_high</mat-icon>
+              <h3 class="smart-autofill-title">Smart Auto-fill (Ming Pao)</h3>
             </div>
             <button
               mat-stroked-button
@@ -65,7 +46,7 @@
           />
         </mat-form-field>
 
-        <div class="fields-grid-2" style="margin-top: 16px">
+        <div class="fields-grid-2 mt-16">
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
             <mat-label>Author</mat-label>
             <input matInput [(ngModel)]="article.author" required />
@@ -81,7 +62,7 @@
           </mat-form-field>
         </div>
 
-        <div class="fields-grid-2" style="margin-top: 16px">
+        <div class="fields-grid-2 mt-16">
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
             <mat-label>Publish Date</mat-label>
             <input
@@ -142,9 +123,8 @@
 
         <mat-form-field
           appearance="outline"
-          class="full-width"
+          class="full-width mt-16"
           subscriptSizing="dynamic"
-          style="margin-top: 16px"
         >
           <mat-label>Article Content</mat-label>
           <textarea
@@ -155,7 +135,7 @@
           ></textarea>
         </mat-form-field>
 
-        <div class="fields-row-2" style="margin-top: 16px">
+        <div class="fields-row-2 mt-16">
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
             <mat-label>Status</mat-label>
             <mat-select [(ngModel)]="article.status">
@@ -171,9 +151,8 @@
 
         <mat-form-field
           appearance="outline"
-          class="full-width"
+          class="full-width mt-16"
           subscriptSizing="dynamic"
-          style="margin-top: 16px"
         >
           <mat-label>Internal Remarks</mat-label>
           <textarea matInput rows="2" [(ngModel)]="article.remarks"></textarea>

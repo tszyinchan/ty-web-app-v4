@@ -27,4 +27,48 @@ button.shortcut-btn {
     padding: 0 8px;
     opacity: 0.9;
   }
+
+  &.shortcut-btn-primary-tint {
+    background: rgba(var(--mat-sys-primary-rgb), 0.08);
+  }
+
+  &.shortcut-btn-accent-tint {
+    background: rgba(var(--mat-sys-accent-rgb), 0.1);
+  }
+}
+
+.time-tracking-section {
+  background-color: var(--mat-sys-surface-variant);
+  padding: 16px;
+  border-radius: 12px;
+}
+
+.time-tracking-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.time-tracking-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.k-shortcut-row {
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+}
+
+.time-field-col {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.secret-label {
+  font-size: 14px;
+  color: var(--mat-sys-error);
 }

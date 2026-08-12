@@ -1,78 +1,46 @@
 <div class="standard-list-view">
   <div class="list-container">
     @for (group of groupedListVM(); track group.periodLabel) {
-      <div class="week-group" style="display: flex; flex-direction: column">
-        <div
-          style="
-            background: var(--mat-sys-surface-variant);
-            color: var(--mat-sys-on-surface-variant);
-            padding: 6px 16px;
-            margin: 16px 0 8px 0;
-            font-size: 13px;
-            font-weight: 600;
-            border-radius: 6px;
-            position: sticky;
-            top: 0;
-            z-index: 10;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-          "
-        >
+      <div class="week-group">
+        <div class="week-group-header">
           <span>Week of {{ group.periodLabel }}</span>
-          <span style="font-size: 12px; opacity: 0.7"
-            >{{ group.items.length }} items</span
-          >
+          <span class="item-count">{{ group.items.length }} items</span>
         </div>
 
         @for (item of group.items; track $index) {
-          <div class="item-link" style="cursor: default">
+          <div class="item-link non-interactive">
             <div class="item-content">
               <div class="item-info-group">
                 <span class="main-text">
                   {{ item.date }}
-                  <span style="color: var(--mat-sys-primary); margin-left: 8px"
-                    >👕 {{ item.title }}</span
-                  >
+                  <span class="wash-title">👕 {{ item.title }}</span>
                 </span>
               </div>
-
               <div class="item-status-group">
-                <mat-icon
-                  style="
-                    color: var(--mat-sys-primary);
-                    font-size: 20px;
-                    width: 20px;
-                    height: 20px;
-                  "
-                >
-                  local_laundry_service
-                </mat-icon>
+                <mat-icon class="wash-icon">local_laundry_service</mat-icon>
               </div>
             </div>
           </div>
+        } @empty {
+          @if (!washLogService.loading()) {
+            <div class="empty-placeholder">No items found.</div>
+          }
         }
       </div>
-    } @empty {
-      @if (!washLogService.loading()) {
-        <div class="empty-placeholder">No items found.</div>
-      }
     }
-  </div>
-
-  <footer
-    class="list-footer"
-    [hidden]="
-      washLogService.loading() || washLogService.washLogs().length === 0
-    "
-  >
-    <div class="divider"></div>
-    <span class="count-text"
-      >TOTAL {{ washLogService.washLogs().length }} ITEMS</span
+    <footer
+      class="list-footer"
+      [hidden]="
+        washLogService.loading() || washLogService.washLogs().length === 0
+      "
     >
-    @if (washLogService.loading()) {
-      <mat-spinner diameter="16"></mat-spinner>
-    }
-  </footer>
+      <div class="divider"></div>
+      <span class="count-text"
+        >TOTAL {{ washLogService.washLogs().length }} ITEMS</span
+      >
+      @if (washLogService.loading()) {
+        <mat-spinner diameter="16"></mat-spinner>
+      }
+    </footer>
+  </div>
 </div>

@@ -28,6 +28,7 @@ import { RecordStatus } from '../../../../core/models/status.enum';
     MatProgressSpinnerModule,
   ],
   templateUrl: './article-feed.html',
+  styleUrl: './article-feed.scss',
 })
 export class ArticleFeed implements OnInit, OnDestroy {
   public articleService = inject(ArticleService);

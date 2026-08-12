@@ -50,36 +50,13 @@
       <section class="form-group">
         <h3 class="group-header">System Access & Admin</h3>
 
-        <div
-          class="app-access-box"
-          style="
-            margin-bottom: 24px;
-            padding: 16px;
-            background: var(--mat-sys-surface-container-lowest);
-            border-radius: 8px;
-            border: 1px solid var(--mat-sys-outline-variant);
-          "
-        >
-          <div
-            style="
-              font-weight: 500;
-              margin-bottom: 8px;
-              color: var(--mat-sys-on-surface);
-            "
-          >
-            Module Access Permissions
-          </div>
-          <div
-            style="
-              font-size: 13px;
-              color: var(--mat-sys-outline);
-              margin-bottom: 16px;
-            "
-          >
+        <div class="app-access-box">
+          <div class="app-access-title">Module Access Permissions</div>
+          <div class="app-access-subtitle">
             Select which applications this user can sign in to.
           </div>
 
-          <div style="display: flex; gap: 24px; flex-wrap: wrap">
+          <div class="app-access-checkboxes">
             <mat-checkbox
               [(ngModel)]="hasJaxfrAccess"
               (ngModelChange)="markAsDirty()"
@@ -114,7 +91,7 @@
           </mat-form-field>
         </div>
 
-        <div class="fields-row-2" style="margin-top: 16px">
+        <div class="fields-row-2 mt-16">
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
             <mat-label>YY525 Identity Binding</mat-label>
             <mat-select [(ngModel)]="u.appsheet_525_user_id">
@@ -127,9 +104,8 @@
 
         <mat-form-field
           appearance="outline"
-          class="full-width"
+          class="full-width mt-16"
           subscriptSizing="dynamic"
-          style="margin-top: 16px"
         >
           <mat-label>Internal Remarks</mat-label>
           <textarea matInput rows="3" [(ngModel)]="u.remarks"></textarea>

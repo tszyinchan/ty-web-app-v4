@@ -4,14 +4,8 @@
       <section class="form-group">
         <h3 class="group-header">Version Info</h3>
         <div class="fields-grid-2">
-          <div style="display: flex; flex-direction: column; gap: 8px">
-            <div
-              style="
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
-                gap: 8px;
-              "
-            >
+          <div class="version-col">
+            <div class="version-grid">
               <mat-form-field appearance="outline" subscriptSizing="dynamic">
                 <mat-label>Major</mat-label>
                 <input
@@ -45,12 +39,12 @@
             </div>
 
             @if (!currentId) {
-              <div style="display: flex; gap: 8px; flex-wrap: wrap">
+              <div class="version-actions">
                 <button
                   mat-button
                   type="button"
                   (click)="bumpMajor()"
-                  style="flex: 1; min-width: 80px"
+                  class="version-btn"
                 >
                   + Major
                 </button>
@@ -58,7 +52,7 @@
                   mat-button
                   type="button"
                   (click)="bumpMinor()"
-                  style="flex: 1; min-width: 80px"
+                  class="version-btn"
                 >
                   + Minor
                 </button>
@@ -66,7 +60,7 @@
                   mat-button
                   type="button"
                   (click)="bumpPatch()"
-                  style="flex: 1; min-width: 80px"
+                  class="version-btn"
                 >
                   + Patch
                 </button>
@@ -74,13 +68,7 @@
             }
           </div>
 
-          <div
-            style="
-              display: flex;
-              flex-direction: column;
-              justify-content: flex-start;
-            "
-          >
+          <div class="release-date-col">
             <mat-form-field
               appearance="outline"
               subscriptSizing="dynamic"
@@ -179,21 +167,24 @@
           ></textarea>
         </mat-form-field>
 
-        <div class="fields-row-2" style="margin-top: 16px">
+        <div class="fields-row-2 mt-16">
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
             <mat-label>Status</mat-label>
             <mat-select [(ngModel)]="log.status">
-              <mat-option [value]="RecordStatus.Active">Active (Published)</mat-option>
-              <mat-option [value]="RecordStatus.Inactive">Inactive (Draft)</mat-option>
+              <mat-option [value]="RecordStatus.Active"
+                >Active (Published)</mat-option
+              >
+              <mat-option [value]="RecordStatus.Inactive"
+                >Inactive (Draft)</mat-option
+              >
             </mat-select>
           </mat-form-field>
         </div>
 
         <mat-form-field
           appearance="outline"
-          class="full-width"
+          class="full-width mt-16"
           subscriptSizing="dynamic"
-          style="margin-top: 16px"
         >
           <mat-label>Internal Remarks</mat-label>
           <textarea matInput rows="2" [(ngModel)]="log.remarks"></textarea>

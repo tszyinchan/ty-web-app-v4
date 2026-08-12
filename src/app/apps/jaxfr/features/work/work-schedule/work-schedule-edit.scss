@@ -1,0 +1,42 @@
+.shift-details-section {
+  background-color: var(--mat-sys-surface-variant);
+  padding: 16px;
+  border-radius: 12px;
+}
+
+.shift-details-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.shift-details-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+button.apply-shift-btn {
+  width: 100%;
+  margin-bottom: 16px;
+  height: 40px;
+  font-size: 14px;
+}
+
+.apply-shift-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  margin-right: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.shift-time-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 16px;
+}

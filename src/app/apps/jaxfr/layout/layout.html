@@ -7,7 +7,7 @@
   >
     <div class="sidebar-wrapper">
       <mat-toolbar class="sidebar-logo" routerLink="/welcome">
-        <img src="logo.svg" alt="Jaxfr Logo" class="brand-logo">
+        <img src="logo.svg" alt="Jaxfr Logo" class="brand-logo" />
       </mat-toolbar>
 
       <div class="sidebar-user-profile">
@@ -21,7 +21,10 @@
       <nav class="nav-container">
         @for (group of navMenu(); track group.title) {
           <mat-accordion displayMode="flat">
-            <mat-expansion-panel class="nav-panel" [expanded]="group.defaultExpanded ?? true">
+            <mat-expansion-panel
+              class="nav-panel"
+              [expanded]="group.defaultExpanded ?? true"
+            >
               <mat-expansion-panel-header>
                 <mat-panel-title>
                   <mat-icon>{{ group.icon }}</mat-icon>
@@ -89,18 +92,10 @@
                       <span class="status-text desktop-only">Syncing...</span>
                     }
                     @case ("unsaved") {
-                      <mat-icon
-                        style="
-                          color: var(--mat-sys-error);
-                          font-size: 16px;
-                          width: 16px;
-                          height: 16px;
-                        "
+                      <mat-icon class="error-icon-small"
                         >error_outline</mat-icon
                       >
-                      <span
-                        class="status-text desktop-only"
-                        style="color: var(--mat-sys-error)"
+                      <span class="status-text desktop-only error-text"
                         >Unsaved changes</span
                       >
                     }
@@ -112,20 +107,22 @@
                 </div>
               }
 
-              @for (action of getToggleActions(config.actions); track action.label) {
+              @for (
+                action of getToggleActions(config.actions);
+                track action.label
+              ) {
                 <mat-slide-toggle
                   color="primary"
-                  style="margin-right: 12px; font-weight: 500;"
+                  class="nav-slide-toggle"
                   [checked]="action.checked"
                   (change)="action.onChange && action.onChange($event.checked)"
                   [disabled]="action.disabled ? action.disabled() : false"
                 >
                   <span class="desktop-only">{{ action.label }}</span>
-                  
                   @if (action.icon) {
-                    <mat-icon class="mobile-only" style="vertical-align: middle; font-size: 20px; width: 20px; height: 20px;">
-                      {{ action.icon }}
-                    </mat-icon>
+                    <mat-icon class="mobile-only toggle-icon-mobile">{{
+                      action.icon
+                    }}</mat-icon>
                   }
                 </mat-slide-toggle>
               }
@@ -145,16 +142,19 @@
                 </button>
               }
 
-              @for (action of getIconActions(config.actions); track action.label) {
-    <button
-      mat-icon-button
-      (click)="action.onClick ? action.onClick() : null"
-      [disabled]="action.disabled ? action.disabled() : false"
-      [title]="action.label"
-    >
-      <mat-icon>{{ action.icon }}</mat-icon>
-    </button>
-  }
+              @for (
+                action of getIconActions(config.actions);
+                track action.label
+              ) {
+                <button
+                  mat-icon-button
+                  (click)="action.onClick ? action.onClick() : null"
+                  [disabled]="action.disabled ? action.disabled() : false"
+                  [title]="action.label"
+                >
+                  <mat-icon>{{ action.icon }}</mat-icon>
+                </button>
+              }
 
               @for (
                 action of getPrimaryActions(config.actions);

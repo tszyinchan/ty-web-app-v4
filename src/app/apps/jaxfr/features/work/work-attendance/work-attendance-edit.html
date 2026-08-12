@@ -45,39 +45,16 @@
         </div>
       </section>
 
-      <section
-        class="form-group"
-        style="
-          background-color: var(--mat-sys-surface-variant);
-          padding: 16px;
-          border-radius: 12px;
-        "
-      >
-        <div
-          style="
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
-          "
-        >
-          <h3 style="margin: 0; font-size: 16px; font-weight: 600">
-            Time Tracking
-          </h3>
+      <section class="form-group time-tracking-section">
+        <div class="time-tracking-header">
+          <h3 class="time-tracking-title">Time Tracking</h3>
           <mat-slide-toggle [(ngModel)]="attn.is_day_off" color="primary">
             Mark as Day Off
           </mat-slide-toggle>
         </div>
 
         @if (!attn.is_day_off) {
-          <div
-            class="btn-group-4"
-            style="
-              margin-bottom: 16px;
-              padding-bottom: 16px;
-              border-bottom: 1px solid var(--mat-sys-outline-variant);
-            "
-          >
+          <div class="btn-group-4 k-shortcut-row">
             <button
               mat-stroked-button
               color="primary"
@@ -119,8 +96,7 @@
           <mat-form-field
             appearance="outline"
             subscriptSizing="dynamic"
-            class="full-width"
-            style="margin-bottom: 16px"
+            class="full-width mb-16"
           >
             <mat-label>Select Employment</mat-label>
             <mat-select [(ngModel)]="attn.mplm_id" required>
@@ -136,7 +112,7 @@
           </mat-form-field>
 
           <div class="responsive-time-grid">
-            <div style="display: flex; flex-direction: column; gap: 6px">
+            <div class="time-field-col">
               <mat-form-field appearance="outline" subscriptSizing="dynamic">
                 <mat-label>Start Time (Clock In)</mat-label>
                 <input matInput type="time" [(ngModel)]="timeInputs().start" />
@@ -145,15 +121,14 @@
                 mat-button
                 color="primary"
                 type="button"
-                class="shortcut-btn"
+                class="shortcut-btn shortcut-btn-primary-tint"
                 (click)="updateTimeInput('start', '09:00')"
-                style="background: rgba(var(--mat-sys-primary-rgb), 0.08)"
               >
                 09:00
               </button>
             </div>
 
-            <div style="display: flex; flex-direction: column; gap: 6px">
+            <div class="time-field-col">
               <mat-form-field appearance="outline" subscriptSizing="dynamic">
                 <mat-label>Meal Start</mat-label>
                 <input
@@ -167,9 +142,8 @@
                   mat-button
                   color="primary"
                   type="button"
-                  class="shortcut-btn"
+                  class="shortcut-btn shortcut-btn-primary-tint"
                   (click)="updateTimeInput('meal_start', '12:15')"
-                  style="background: rgba(var(--mat-sys-primary-rgb), 0.08)"
                 >
                   12:15
                 </button>
@@ -177,9 +151,8 @@
                   mat-button
                   color="primary"
                   type="button"
-                  class="shortcut-btn"
+                  class="shortcut-btn shortcut-btn-primary-tint"
                   (click)="updateTimeInput('meal_start', '12:45')"
-                  style="background: rgba(var(--mat-sys-primary-rgb), 0.08)"
                 >
                   12:45
                 </button>
@@ -187,9 +160,8 @@
                   mat-button
                   color="primary"
                   type="button"
-                  class="shortcut-btn"
+                  class="shortcut-btn shortcut-btn-primary-tint"
                   (click)="updateTimeInput('meal_start', '13:15')"
-                  style="background: rgba(var(--mat-sys-primary-rgb), 0.08)"
                 >
                   13:15
                 </button>
@@ -197,16 +169,15 @@
                   mat-button
                   color="primary"
                   type="button"
-                  class="shortcut-btn"
+                  class="shortcut-btn shortcut-btn-primary-tint"
                   (click)="updateTimeInput('meal_start', '13:45')"
-                  style="background: rgba(var(--mat-sys-primary-rgb), 0.08)"
                 >
                   13:45
                 </button>
               </div>
             </div>
 
-            <div style="display: flex; flex-direction: column; gap: 6px">
+            <div class="time-field-col">
               <mat-form-field appearance="outline" subscriptSizing="dynamic">
                 <mat-label>Meal End</mat-label>
                 <input
@@ -219,20 +190,19 @@
                 mat-button
                 color="accent"
                 type="button"
-                class="shortcut-btn"
+                class="shortcut-btn shortcut-btn-accent-tint"
                 (click)="
                   updateTimeInput(
                     'meal_end',
                     addMins(timeInputs().meal_start, 30)
                   )
                 "
-                style="background: rgba(var(--mat-sys-accent-rgb), 0.1)"
               >
                 + 30 mins
               </button>
             </div>
 
-            <div style="display: flex; flex-direction: column; gap: 6px">
+            <div class="time-field-col">
               <mat-form-field appearance="outline" subscriptSizing="dynamic">
                 <mat-label>Break Start</mat-label>
                 <input
@@ -245,15 +215,14 @@
                 mat-button
                 color="primary"
                 type="button"
-                class="shortcut-btn"
+                class="shortcut-btn shortcut-btn-primary-tint"
                 (click)="updateTimeInput('break_start', timeInputs().meal_end)"
-                style="background: rgba(var(--mat-sys-primary-rgb), 0.08)"
               >
                 = Meal End
               </button>
             </div>
 
-            <div style="display: flex; flex-direction: column; gap: 6px">
+            <div class="time-field-col">
               <mat-form-field appearance="outline" subscriptSizing="dynamic">
                 <mat-label>Break End</mat-label>
                 <input
@@ -266,20 +235,19 @@
                 mat-button
                 color="accent"
                 type="button"
-                class="shortcut-btn"
+                class="shortcut-btn shortcut-btn-accent-tint"
                 (click)="
                   updateTimeInput(
                     'break_end',
                     addMins(timeInputs().break_start, 30)
                   )
                 "
-                style="background: rgba(var(--mat-sys-accent-rgb), 0.1)"
               >
                 + 30 mins
               </button>
             </div>
 
-            <div style="display: flex; flex-direction: column; gap: 6px">
+            <div class="time-field-col">
               <mat-form-field appearance="outline" subscriptSizing="dynamic">
                 <mat-label>End Time (Clock Out)</mat-label>
                 <input matInput type="time" [(ngModel)]="timeInputs().end" />
@@ -288,22 +256,15 @@
                 mat-button
                 color="primary"
                 type="button"
-                class="shortcut-btn"
+                class="shortcut-btn shortcut-btn-primary-tint"
                 (click)="updateTimeInput('end', '17:00')"
-                style="background: rgba(var(--mat-sys-primary-rgb), 0.08)"
               >
                 17:00
               </button>
             </div>
           </div>
         } @else {
-          <div
-            style="
-              color: var(--mat-sys-outline);
-              font-size: 14px;
-              padding: 8px 0;
-            "
-          >
+          <div class="day-off-message">
             This day is marked as a day off. No clock-in data needed.
           </div>
         }
@@ -314,21 +275,15 @@
 
         <mat-form-field
           appearance="outline"
-          class="full-width"
+          class="full-width mb-8"
           subscriptSizing="dynamic"
-          style="margin-bottom: 8px"
         >
           <mat-label>Log / Remarks</mat-label>
           <textarea matInput rows="10" [(ngModel)]="attn.log"></textarea>
         </mat-form-field>
 
-        <mat-slide-toggle
-          [(ngModel)]="attn.log_is_secret"
-          style="margin-bottom: 16px"
-        >
-          <span style="font-size: 14px; color: var(--mat-sys-error)"
-            >Mark Log as Secret</span
-          >
+        <mat-slide-toggle [(ngModel)]="attn.log_is_secret" class="mb-16">
+          <span class="secret-label">Mark Log as Secret</span>
         </mat-slide-toggle>
 
         <mat-form-field

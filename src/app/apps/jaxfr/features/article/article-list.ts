@@ -22,6 +22,7 @@ import { ArticleService } from './article.service';
 import { DisplayNamePipe } from '../../../../core/pipes/display-name.pipe';
 import { exportToCsv } from '../../../../core/utils/csv-export.util';
 import { RecordStatus } from '../../../../core/models/status.enum';
+import { formatDate } from '../../../../core/utils/date-time.util';
 
 @Component({
   selector: 'app-article-list',
@@ -161,11 +162,8 @@ export class ArticleList implements OnInit, OnDestroy {
       a.status === RecordStatus.Active ? 'Published' : 'Draft',
     ]);
 
-    exportToCsv(
-      `Articles_${new Date().toISOString().split('T')[0]}`,
-      headers,
-      rows,
-    );
+    const dateStr = formatDate(new Date());
+    exportToCsv(`Articles_${dateStr}`, headers, rows);
   }
 
   ngOnDestroy() {

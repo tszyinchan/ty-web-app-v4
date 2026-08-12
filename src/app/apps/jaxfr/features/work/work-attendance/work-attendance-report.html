@@ -12,7 +12,7 @@
     </mat-button-toggle-group>
   </div>
 
-  <div class="list-container" style="padding-top: 0">
+  <div class="list-container pt-0">
     @if (workAttendanceService.loading() || workEmploymentService.loading()) {
       <div class="empty-placeholder">
         <mat-spinner diameter="32"></mat-spinner>
@@ -21,7 +21,7 @@
       @for (period of reportDataVM(); track period.periodLabel) {
         <div class="period-section">
           <h2 class="period-section-title">
-            <div style="display: flex; align-items: center; gap: 8px">
+            <div class="period-title-wrapper">
               <mat-icon>date_range</mat-icon>
               <span>{{ period.periodLabel }}</span>
             </div>

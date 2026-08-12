@@ -1,35 +1,27 @@
 <div class="feed-container">
   @if (loading()) {
-    <div style="text-align: center; padding: 40px;">
-      <mat-spinner diameter="32" style="margin: 0 auto;"></mat-spinner>
+    <div class="feed-loading">
+      <mat-spinner diameter="32"></mat-spinner>
     </div>
   } @else {
     @for (item of threadItems(); track item.id) {
       <mat-card class="feed-card">
         <mat-card-header class="custom-header">
-          <div
-            style="
-              display: flex;
-              justify-content: space-between;
-              width: 100%;
-              align-items: flex-start;
-              gap: 8px;
-            "
-          >
+          <div class="feed-card-header-row">
             <div class="article-title">{{ item.title }}</div>
 
-            <div style="display: flex; gap: 4px; margin-top: -8px; margin-right: -8px; flex-shrink: 0;">
+            <div class="feed-card-actions">
               <button
                 mat-icon-button
+                class="feed-card-action"
                 (click)="copyText(item.text)"
-                style="color: var(--mat-sys-outline);"
               >
                 <mat-icon>content_copy</mat-icon>
               </button>
               <button
                 mat-icon-button
+                class="feed-card-action"
                 (click)="onEdit(item.id)"
-                style="color: var(--mat-sys-outline);"
               >
                 <mat-icon>edit</mat-icon>
               </button>
@@ -39,7 +31,7 @@
           <div class="article-meta">
             {{ item.sessionDate }}
             @if (item.status === RecordStatus.Inactive) {
-              <span style="color: #e74c3c; margin-left: 4px;">· Inactive</span>
+              <span class="inactive-tag">· Inactive</span>
             }
           </div>
         </mat-card-header>
@@ -49,7 +41,7 @@
         </mat-card-content>
       </mat-card>
     } @empty {
-      <div style="text-align: center; padding: 40px; color: gray">
+      <div class="feed-empty-placeholder">
         No fit sessions found.
       </div>
     }

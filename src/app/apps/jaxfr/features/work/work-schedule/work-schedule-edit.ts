@@ -63,6 +63,7 @@ import { RecordStatus } from '../../../../../core/models/status.enum';
   ],
   providers: [DisplayNamePipe],
   templateUrl: './work-schedule-edit.html',
+  styleUrl: './work-schedule-edit.scss',
 })
 export class WorkScheduleEdit implements OnInit, OnDestroy, DoCheck {
   private route = inject(ActivatedRoute);

@@ -39,6 +39,11 @@
     color: var(--mat-sys-on-surface);
   }
 
+  .main-text-accent {
+    color: var(--mat-sys-primary);
+    margin-left: 8px;
+  }
+
   .sub-text {
     font-size: 11px;
     color: var(--mat-sys-outline);
@@ -57,6 +62,11 @@
     &.inactive {
       color: var(--mat-sys-error);
     }
+
+    &.day-off {
+      background-color: var(--mat-sys-surface-variant);
+      color: var(--mat-sys-on-surface-variant);
+    }
   }
 
   .chevron {
@@ -64,6 +74,34 @@
     font-size: 20px;
     width: 20px;
     height: 20px;
+  }
+}
+
+// Grouped-by-week list sections (schedule / attendance / fit lists)
+.week-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.week-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--mat-sys-surface-variant);
+  color: var(--mat-sys-on-surface-variant);
+  padding: 6px 16px;
+  margin: 16px 0 8px 0;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 6px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+
+  .week-header-count {
+    font-size: 12px;
+    opacity: 0.7;
   }
 }
 
@@ -86,6 +124,12 @@
     font-weight: 500;
     letter-spacing: 1px;
     color: var(--mat-sys-outline);
+  }
+
+  // Used when the footer hosts a mat-paginator instead of the usual count text.
+  &.paginated {
+    padding: 0;
+    display: block;
   }
 }
 

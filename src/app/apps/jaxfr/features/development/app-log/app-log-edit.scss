@@ -1,0 +1,28 @@
+.version-col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.version-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+  gap: 8px;
+}
+
+.version-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+button.version-btn {
+  flex: 1;
+  min-width: 80px;
+}
+
+.release-date-col {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}

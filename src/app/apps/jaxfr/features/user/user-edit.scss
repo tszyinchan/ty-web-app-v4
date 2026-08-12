@@ -1,0 +1,25 @@
+.app-access-box {
+  margin-bottom: 24px;
+  padding: 16px;
+  background: var(--mat-sys-surface-container-lowest);
+  border-radius: 8px;
+  border: 1px solid var(--mat-sys-outline-variant);
+
+  .app-access-title {
+    font-weight: 500;
+    margin-bottom: 8px;
+    color: var(--mat-sys-on-surface);
+  }
+
+  .app-access-subtitle {
+    font-size: 13px;
+    color: var(--mat-sys-outline);
+    margin-bottom: 16px;
+  }
+
+  .app-access-checkboxes {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+}

@@ -33,7 +33,7 @@
           </mat-form-field>
         </div>
 
-        <div class="fields-grid-2" style="margin-top: 16px">
+        <div class="fields-grid-2 mt-16">
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
             <mat-label>地點</mat-label>
             <input
@@ -55,9 +55,8 @@
 
         <mat-form-field
           appearance="outline"
-          class="full-width"
+          class="full-width mt-16"
           subscriptSizing="dynamic"
-          style="margin-top: 16px"
         >
           <mat-label>訓練備註</mat-label>
           <textarea
@@ -73,7 +72,7 @@
       <section class="form-group">
         <div class="section-header">
           <div>
-            <h3 class="group-header" style="margin-bottom: 4px">訓練項目</h3>
+            <h3 class="group-header mb-4">訓練項目</h3>
             <p class="section-subtitle">
               打字輸入動作名稱，系統會自動切換對應的項目欄位與類型。
             </p>
@@ -88,18 +87,12 @@
           <section class="entry-block">
             <div
               class="entry-block__header"
-              style="cursor: pointer; user-select: none"
               (click)="
                 updateEntryField(entryIndex, 'isExpanded', !entry.isExpanded)
               "
             >
-              <div
-                class="entry-block__title-row"
-                style="flex: 1; flex-wrap: wrap"
-              >
-                <mat-icon
-                  style="color: var(--mat-sys-outline); margin-right: 4px"
-                >
+              <div class="entry-block__title-row">
+                <mat-icon class="expand-icon">
                   {{ entry.isExpanded ? "expand_less" : "expand_more" }}
                 </mat-icon>
                 <h4>項目 {{ entryIndex + 1 }}</h4>
@@ -108,22 +101,10 @@
                 </span>
 
                 @if (!entry.isExpanded && entry.exercise_name) {
-                  <span
-                    style="
-                      font-weight: 500;
-                      color: var(--mat-sys-primary);
-                      margin-left: 8px;
-                    "
-                  >
+                  <span class="entry-name-preview">
                     {{ entry.exercise_name }}
                   </span>
-                  <span
-                    style="
-                      font-size: 13px;
-                      color: var(--mat-sys-outline);
-                      margin-left: 4px;
-                    "
-                  >
+                  <span class="entry-sets-count-preview">
                     ({{ entry.sets.length }} 組)
                   </span>
                 }
@@ -137,11 +118,7 @@
                 (click)="$event.stopPropagation()"
                 [name]="'show_advanced_' + entryIndex"
                 color="primary"
-                style="
-                  transform: scale(0.9);
-                  transform-origin: left center;
-                  margin-right: 8px;
-                "
+                class="advanced-toggle"
               >
                 顯示全部欄位
               </mat-slide-toggle>
@@ -194,7 +171,7 @@
               </div>
 
               @if (entry.showAdvanced) {
-                <div class="fields-grid-2" style="margin-top: 16px">
+                <div class="fields-grid-2 mt-16">
                   <mat-form-field
                     appearance="outline"
                     subscriptSizing="dynamic"
@@ -231,9 +208,8 @@
 
                 <mat-form-field
                   appearance="outline"
-                  class="full-width"
+                  class="full-width mt-16"
                   subscriptSizing="dynamic"
-                  style="margin-top: 16px"
                 >
                   <mat-label>項目備註</mat-label>
                   <textarea
@@ -250,7 +226,7 @@
               }
 
               <div class="sets-toolbar">
-                <div style="display: flex; align-items: center; gap: 12px">
+                <div class="sets-title-row">
                   <div class="sets-title">訓練組數</div>
                 </div>
 

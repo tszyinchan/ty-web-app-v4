@@ -55,9 +55,9 @@
   }
 }
 
-.submit-button {
+button.submit-button.mat-mdc-unelevated-button {
   margin-top: 8px;
   height: 48px;
   // 拒絕粗體
-  font-weight: 500 !important;
+  font-weight: 500;
 }

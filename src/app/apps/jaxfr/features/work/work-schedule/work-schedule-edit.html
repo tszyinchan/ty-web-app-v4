@@ -45,25 +45,9 @@
         </div>
       </section>
 
-      <section
-        class="form-group"
-        style="
-          background-color: var(--mat-sys-surface-variant);
-          padding: 16px;
-          border-radius: 12px;
-        "
-      >
-        <div
-          style="
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
-          "
-        >
-          <h3 style="margin: 0; font-size: 16px; font-weight: 600">
-            Shift Details
-          </h3>
+      <section class="form-group shift-details-section">
+        <div class="shift-details-header">
+          <h3 class="shift-details-title">Shift Details</h3>
           <mat-slide-toggle [(ngModel)]="scdl.is_day_off" color="primary">
             Mark as Day Off
           </mat-slide-toggle>
@@ -74,20 +58,10 @@
             mat-stroked-button
             color="primary"
             type="button"
+            class="apply-shift-btn"
             (click)="applyFixedShiftShortcut()"
-            style="width: 100%; margin-bottom: 16px; height: 40px; font-size: 14px;"
           >
-            <mat-icon
-              style="
-                font-size: 18px;
-                width: 18px;
-                height: 18px;
-                margin-right: 6px;
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-              "
-            >flash_on</mat-icon>
+            <mat-icon class="apply-shift-icon">flash_on</mat-icon>
             Apply 09:00 - 17:00 Shift
           </button>
 
@@ -108,13 +82,13 @@
               }
             </mat-select>
             @if (filteredEmployments().length === 0) {
-              <mat-hint style="color: var(--mat-sys-error)">
+              <mat-hint class="text-error">
                 No active employment found for this user.
               </mat-hint>
             }
           </mat-form-field>
 
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px;">
+          <div class="shift-time-grid">
             <mat-form-field appearance="outline" subscriptSizing="dynamic">
               <mat-label>Start Time</mat-label>
               <input
@@ -136,11 +110,10 @@
             </mat-form-field>
           </div>
 
-          <mat-form-field 
-            appearance="outline" 
-            subscriptSizing="dynamic" 
-            class="full-width"
-            style="margin-top: 16px;"
+          <mat-form-field
+            appearance="outline"
+            subscriptSizing="dynamic"
+            class="full-width mt-16"
           >
             <mat-label>Planned Meal (Minutes)</mat-label>
             <input
@@ -151,13 +124,7 @@
             />
           </mat-form-field>
         } @else {
-          <div
-            style="
-              color: var(--mat-sys-outline);
-              font-size: 14px;
-              padding: 8px 0;
-            "
-          >
+          <div class="day-off-message">
             This day is marked as a day off. Time and employment tracking are
             disabled.
           </div>
@@ -175,11 +142,7 @@
           <textarea matInput rows="3" [(ngModel)]="scdl.log"></textarea>
         </mat-form-field>
 
-        <mat-form-field
-          appearance="outline"
-          subscriptSizing="dynamic"
-          style="margin-top: 16px"
-        >
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="mt-16">
           <mat-label>Status</mat-label>
           <mat-select [(ngModel)]="scdl.status">
             <mat-option [value]="RecordStatus.Active">Active</mat-option>

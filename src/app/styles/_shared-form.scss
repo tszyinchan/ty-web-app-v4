@@ -32,6 +32,13 @@
   }
 }
 
+// "Day off" placeholder message shared by work-attendance-edit and work-schedule-edit
+.day-off-message {
+  color: var(--mat-sys-outline);
+  font-size: 14px;
+  padding: 8px 0;
+}
+
 .fields-grid-2,
 .fields-row-2 {
   display: grid;

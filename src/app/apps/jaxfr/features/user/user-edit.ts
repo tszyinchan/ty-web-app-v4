@@ -53,6 +53,7 @@ import { RecordStatus } from '../../../../core/models/status.enum';
   ],
   providers: [DisplayNamePipe, RoleLabelPipe, DisplayNameModePipe],
   templateUrl: './user-edit.html',
+  styleUrl: './user-edit.scss',
 })
 export class UserEdit implements OnInit, OnDestroy, DoCheck {
   private route = inject(ActivatedRoute);

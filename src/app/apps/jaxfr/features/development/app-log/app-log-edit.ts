@@ -52,6 +52,7 @@ import { RecordStatus } from '../../../../../core/models/status.enum';
   ],
   providers: [provideNativeDateAdapter(), DisplayNamePipe],
   templateUrl: './app-log-edit.html',
+  styleUrl: './app-log-edit.scss',
 })
 export class AppLogEdit implements OnInit, OnDestroy, DoCheck {
   private route = inject(ActivatedRoute);
