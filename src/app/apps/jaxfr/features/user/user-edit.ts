@@ -19,7 +19,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatSelectModule } from '@angular/material/select';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { SUBDOMAINS } from '../../../../app.constants';
-import { TyappUser } from '../../../../core/models/user.model';
+import { TyappUser, USER_ROLES } from '../../../../core/models/user.model';
 import { DisplayNameModePipe } from '../../../../core/pipes/display-name-mode.pipe';
 import { DisplayNamePipe } from '../../../../core/pipes/display-name.pipe';
 import { RoleLabelPipe } from '../../../../core/pipes/role-label.pipe';
@@ -61,7 +61,11 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
   private roleLabelPipe = inject(RoleLabelPipe);
   private displayNameModePipe = inject(DisplayNameModePipe);
 
-  readonly availableRoles = [1, 900, 998];
+  readonly availableRoles = [
+    USER_ROLES.USER,
+    USER_ROLES.ADMIN,
+    USER_ROLES.SUPER_ADMIN,
+  ];
   readonly availableModes = [1, 2, 3, 4, 5];
   readonly RecordStatus = RecordStatus;
 

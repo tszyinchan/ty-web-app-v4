@@ -2,10 +2,12 @@ import { Routes } from '@angular/router';
 import { AppLogList } from './app-log-list';
 import { AppLogEdit } from './app-log-edit';
 import { unsavedChangesGuard } from '../../../../../core/guards/unsaved-changes.guard';
+import { adminGuard } from '../../../../../core/guards/admin.guard';
 
 export const APP_LOG_ROUTES: Routes = [
   {
     path: '',
+    canActivate: [adminGuard],
     children: [
       { path: '', redirectTo: 'list', pathMatch: 'full' },
       { path: 'list', component: AppLogList },
