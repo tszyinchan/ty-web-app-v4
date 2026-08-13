@@ -4,6 +4,7 @@ import { authGuard } from './core/guards/auth.guard';
 import { SUBDOMAINS } from './app.constants';
 import { getCurrentSubdomain } from './core/utils/app-env.util';
 import { appAccessGuard } from './core/guards/app-access.guard';
+import { publicAccessGuard } from './core/guards/public-access.guard';
 
 const currentApp = getCurrentSubdomain();
 
@@ -184,9 +185,32 @@ const FILELINK_ROUTES: Routes = [
   },
 ];
 
+// No Layout, no authGuard/appAccessGuard - these routes are intentionally
+// public (no login). Access is instead gated per-request by publicAccessGuard
+// against a Supabase RPC (see .cursorrules "Share Subdomain Pattern").
+const SHARE_ROUTES: Routes = [
+  {
+    path: ':accessKey/:moduleId',
+    canActivate: [publicAccessGuard],
+    loadComponent: () =>
+      import('./apps/share/pages/share-gate/share-gate').then(
+        (m) => m.ShareGate,
+      ),
+  },
+  {
+    path: 'not-found',
+    loadComponent: () =>
+      import('./apps/share/pages/not-found/not-found').then(
+        (m) => m.NotFound,
+      ),
+  },
+  { path: '**', redirectTo: 'not-found' },
+];
+
 const routeMap: Record<string, Routes> = {
   [SUBDOMAINS.JAXFR]: JAXFR_ROUTES,
-  [SUBDOMAINS.FILELINK]: FILELINK_ROUTES
+  [SUBDOMAINS.FILELINK]: FILELINK_ROUTES,
+  [SUBDOMAINS.SHARE]: SHARE_ROUTES,
 };
 
 export const routes: Routes = routeMap[currentApp] || JAXFR_ROUTES;

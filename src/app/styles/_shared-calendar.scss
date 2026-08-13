@@ -1,0 +1,116 @@
+// Shared angular-calendar month-view styling (custom cell/header templates
+// and Material-token overrides for the third-party component's internal
+// markup) used by the admin Wash Log calendar and its public share
+// counterpart.
+
+.cal-custom-header {
+  display: flex;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+
+  .cal-header-cell {
+    flex: 1;
+    text-align: center;
+    padding: 6px 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--mat-sys-outline);
+  }
+}
+
+.cal-custom-cell {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 80px;
+
+  .cell-date-wrapper {
+    padding: 2px 4px;
+    text-align: center;
+
+    .cell-date {
+      font-size: 12px;
+      font-weight: 500;
+      display: inline-block;
+      padding: 2px;
+      border-radius: 4px;
+
+      &.is-out-of-month {
+        opacity: 0.4;
+      }
+
+      &.is-today {
+        color: var(--mat-sys-primary);
+      }
+    }
+  }
+
+  .cell-events-wrapper {
+    flex: 1;
+    padding: 0 2px 2px 2px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+}
+
+::ng-deep {
+  mwl-calendar-month-view {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+  }
+
+  .cal-month-view {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    background-color: var(--mat-sys-surface);
+  }
+
+  .cal-month-view .cal-days {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    border: none;
+  }
+
+  .cal-month-view .cal-cell-row {
+    display: flex;
+    flex: 1;
+    border-color: var(--mat-sys-outline-variant);
+  }
+
+  .cal-month-view .cal-day-cell {
+    border-color: var(--mat-sys-outline-variant);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .cal-month-view .cal-day-cell:not(.cal-in-month) {
+    background-color: var(--mat-sys-surface-variant);
+  }
+
+  .event-badge {
+    font-size: 10px;
+    line-height: 1.2;
+    background-color: var(--mat-sys-primary-container);
+    color: var(--mat-sys-on-primary-container);
+    padding: 2px;
+    border-radius: 4px;
+    text-align: center;
+
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (min-width: 768px) {
+  ::ng-deep .event-badge {
+    font-size: 11px;
+    padding: 4px 6px;
+    text-align: left;
+  }
+}

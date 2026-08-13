@@ -1,0 +1,12 @@
+:host {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background: var(--mat-sys-surface);
+}
+
+.not-found-message {
+  font-size: 14px;
+  color: var(--mat-sys-outline);
+}

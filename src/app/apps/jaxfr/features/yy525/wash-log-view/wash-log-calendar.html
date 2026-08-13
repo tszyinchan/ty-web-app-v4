@@ -24,7 +24,7 @@
           <span
             class="cell-date"
             [class.is-today]="day.isToday"
-            [style.opacity]="day.inMonth ? 1 : 0.4"
+            [class.is-out-of-month]="!day.inMonth"
           >
             {{ day.date | date: "d" }}
           </span>

@@ -7,5 +7,9 @@ export function getCurrentSubdomain(): string {
     return SUBDOMAINS.FILELINK;
   }
 
+  if (hostname.startsWith(SUBDOMAINS.SHARE)) {
+    return SUBDOMAINS.SHARE;
+  }
+
   return SUBDOMAINS.JAXFR;
 }

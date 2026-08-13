@@ -1,0 +1,7 @@
+@if (loadedComponent(); as cmp) {
+  <ng-container *ngComponentOutlet="cmp"></ng-container>
+} @else {
+  <div class="share-gate-loading">
+    <mat-spinner diameter="32"></mat-spinner>
+  </div>
+}

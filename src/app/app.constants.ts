@@ -2,10 +2,10 @@ export const APP_CONFIG = {
   appName: 'Jaxfr',
   version: {
     major: 4,
-    minor: 56,
-    patch: 7,
+    minor: 57,
+    patch: 0,
   },
-  versionDate: '2026-08-12',
+  versionDate: '2026-08-13',
 };
 
 export const WORK_SCHEDULE_NEW_RECORD_SHORTCUT = {
@@ -32,6 +32,7 @@ export const EXCHANGE_RATES: Record<string, number> = {
 export const SUBDOMAINS = {
   FILELINK: 'filelink',
   JAXFR: 'jaxfr',
+  SHARE: 'share',
 } as const;
 
 export const DEFAULT_ROUTES = {
