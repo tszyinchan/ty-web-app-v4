@@ -142,8 +142,8 @@ export class WorkAttendanceEdit implements OnInit, OnDestroy, DoCheck {
       start: '09:00',
       meal_start: mealStart,
       meal_end: addMinutesToTime(mealStart, 30),
-      break_start: addMinutesToTime(mealStart, 60),
-      break_end: addMinutesToTime(mealStart, 90),
+      break_start: addMinutesToTime(mealStart, 30),
+      break_end: addMinutesToTime(mealStart, 60),
       end: '17:00',
     });
 
