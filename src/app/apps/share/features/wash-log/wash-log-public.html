@@ -1,48 +1,5 @@
 <div class="public-washlog-page">
-  <div class="washlog-toolbar">
-    @if (viewMode() === "calendar") {
-      <h1 class="washlog-title">{{ viewDate() | date: "MMMM yyyy" }}</h1>
-    } @else {
-      <h1 class="washlog-title">Laundry Logs</h1>
-    }
-
-    <div class="washlog-toolbar-actions">
-      @if (viewMode() === "calendar") {
-        <button mat-icon-button (click)="previous()" aria-label="Previous Month">
-          <mat-icon>chevron_left</mat-icon>
-        </button>
-        <button mat-stroked-button (click)="goToToday()">Today</button>
-        <button mat-icon-button (click)="next()" aria-label="Next Month">
-          <mat-icon>chevron_right</mat-icon>
-        </button>
-      }
-      <button
-        mat-icon-button
-        (click)="washLogService.fetchAllLogs(true)"
-        [disabled]="washLogService.loading()"
-        aria-label="Refresh"
-      >
-        <mat-icon>refresh</mat-icon>
-      </button>
-      <button
-        mat-icon-button
-        (click)="toggleViewMode()"
-        [attr.aria-label]="
-          viewMode() === 'calendar' ? 'List View' : 'Calendar View'
-        "
-      >
-        <mat-icon>{{
-          viewMode() === "calendar" ? "view_list" : "calendar_month"
-        }}</mat-icon>
-      </button>
-    </div>
-  </div>
-
-  @if (washLogService.loading()) {
-    <div class="washlog-loading">
-      <mat-spinner diameter="32"></mat-spinner>
-    </div>
-  }
+  <app-toolbar></app-toolbar>
 
   @if (viewMode() === "calendar") {
     <div class="calendar-body">

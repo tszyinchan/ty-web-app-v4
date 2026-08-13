@@ -11,16 +11,13 @@ import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatExpansionModule } from '@angular/material/expansion';
-import { MatMenuModule } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import { AuthService } from '../../../core/services/auth.service';
-import { HeaderService, HeaderAction } from '../../../core/services/header.service';
+import { AppToolbar } from '../../../core/components/app-toolbar/app-toolbar';
 import { DisplayNamePipe } from '../../../core/pipes/display-name.pipe';
 import { RoleLabelPipe } from '../../../core/pipes/role-label.pipe';
 import { APP_CONFIG } from '../../../app.constants';
-import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 
 interface MenuLink {
   title: string;
@@ -47,12 +44,10 @@ interface MenuGroup {
     MatIconModule,
     MatButtonModule,
     MatExpansionModule,
-    MatMenuModule,
     MatDividerModule,
-    MatProgressSpinnerModule,
     DisplayNamePipe,
     RoleLabelPipe,
-    MatSlideToggleModule,
+    AppToolbar,
   ],
   templateUrl: './layout.html',
   styleUrl: './layout.scss',
@@ -62,7 +57,6 @@ export class Layout {
 
   private readonly auth = inject(AuthService);
   private readonly breakpointObserver = inject(BreakpointObserver);
-  public readonly headerService = inject(HeaderService);
 
   readonly isHandset = toSignal(
     this.breakpointObserver
@@ -165,20 +159,4 @@ export class Layout {
     const { major, minor, patch } = APP_CONFIG.version;
     return `${major}.${minor}.${patch}`;
   });
-
-  getPrimaryActions(actions?: HeaderAction[]) {
-    return (actions || []).filter((a) => a.type === 'primary');
-  }
-
-  getSecondaryActions(actions?: HeaderAction[]) {
-    return (actions || []).filter((a) => a.type === 'secondary');
-  }
-
-  getToggleActions(actions?: HeaderAction[]) {
-    return (actions || []).filter((a) => a.type === 'toggle');
-  }
-
-  getIconActions(actions?: HeaderAction[]) {
-    return (actions || []).filter((a) => a.type === 'icon');
-  }
 }
