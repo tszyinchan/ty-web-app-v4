@@ -40,30 +40,22 @@
 
             @if (!currentId) {
               <div class="version-actions">
-                <button
-                  mat-button
-                  type="button"
-                  (click)="bumpMajor()"
-                  class="version-btn"
+                <span class="version-hint"
+                  >Latest log: {{ formatVersion(baseVersion()) }}</span
                 >
-                  + Major
-                </button>
-                <button
-                  mat-button
-                  type="button"
-                  (click)="bumpMinor()"
-                  class="version-btn"
+                <mat-button-toggle-group
+                  [value]="selectedBump()"
+                  (change)="onVersionBumpChange($event)"
+                  hideSingleSelectionIndicator
+                  class="version-toggle"
                 >
-                  + Minor
-                </button>
-                <button
-                  mat-button
-                  type="button"
-                  (click)="bumpPatch()"
-                  class="version-btn"
-                >
-                  + Patch
-                </button>
+                  @for (bump of versionBumpOptions(); track bump.value) {
+                    <mat-button-toggle [value]="bump.value">
+                      <span class="bump-label">{{ bump.label }}</span>
+                      <span class="bump-preview">{{ bump.preview }}</span>
+                    </mat-button-toggle>
+                  }
+                </mat-button-toggle-group>
               </div>
             }
           </div>

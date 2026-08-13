@@ -12,7 +12,7 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
-import { MatButtonModule } from '@angular/material/button';
+import { MatButtonToggleChange, MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { provideNativeDateAdapter } from '@angular/material/core';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -35,6 +35,14 @@ import { DisplayNamePipe } from '../../../../../core/pipes/display-name.pipe';
 import { exportToCsv } from '../../../../../core/utils/csv-export.util';
 import { RecordStatus } from '../../../../../core/models/status.enum';
 
+type VersionBump = 'major' | 'minor' | 'patch' | 'keep';
+
+interface VersionTriple {
+  major: number;
+  minor: number;
+  patch: number;
+}
+
 @Component({
   selector: 'app-log-edit',
   standalone: true,
@@ -45,7 +53,7 @@ import { RecordStatus } from '../../../../../core/models/status.enum';
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
-    MatButtonModule,
+    MatButtonToggleModule,
     MatIconModule,
     MatDatepickerModule,
     MatAutocompleteModule,
@@ -111,6 +119,21 @@ export class AppLogEdit implements OnInit, OnDestroy, DoCheck {
 
   isSaveDisabled = signal(true);
 
+  readonly versionBumps: { value: VersionBump; label: string }[] = [
+    { value: 'major', label: 'Major +1' },
+    { value: 'minor', label: 'Minor +1' },
+    { value: 'patch', label: 'Patch +1' },
+    { value: 'keep', label: 'Keep' },
+  ];
+  baseVersion = signal<VersionTriple>({ major: 1, minor: 0, patch: 0 });
+  versionBumpOptions = computed(() =>
+    this.versionBumps.map((bump) => ({
+      ...bump,
+      preview: this.formatVersion(this.previewVersion(bump.value)),
+    })),
+  );
+  selectedBump = signal<VersionBump | null>('keep');
+
   @HostListener('window:beforeunload', ['$event'])
   onBeforeUnload(event: BeforeUnloadEvent) {
     if (this.isDirty()) {
@@ -140,6 +163,11 @@ export class AppLogEdit implements OnInit, OnDestroy, DoCheck {
 
       if (this.isSaveDisabled() !== disabled) {
         this.isSaveDisabled.set(disabled);
+      }
+
+      const bump = this.resolveSelectedBump(current);
+      if (this.selectedBump() !== bump) {
+        this.selectedBump.set(bump);
       }
     }
   }
@@ -214,21 +242,13 @@ export class AppLogEdit implements OnInit, OnDestroy, DoCheck {
         }
       });
     } else {
-      const logs = this.logService.logs();
-      let nextMajor = 1,
-        nextMinor = 0,
-        nextPatch = 0;
-      if (logs.length > 0) {
-        const latestLog = logs[0];
-        nextMajor = latestLog.version_major;
-        nextMinor = latestLog.version_minor + 1;
-        nextPatch = 0;
-      }
+      const latest = this.resolveLatestVersion(this.logService.logs());
+      this.baseVersion.set(latest);
 
       const newLog: Partial<AppLog> = {
-        version_major: nextMajor,
-        version_minor: nextMinor,
-        version_patch: nextPatch,
+        version_major: latest.major,
+        version_minor: latest.minor,
+        version_patch: latest.patch,
         version_date: new Date() as unknown as string,
         log_user: this.authService.userProfile()?.user_id || '',
         category_id: '',
@@ -241,33 +261,85 @@ export class AppLogEdit implements OnInit, OnDestroy, DoCheck {
     }
   }
 
-  bumpMajor() {
+  formatVersion(v: VersionTriple): string {
+    return `v${v.major}.${v.minor}.${v.patch}`;
+  }
+
+  previewVersion(kind: VersionBump): VersionTriple {
+    const base = this.baseVersion();
+    switch (kind) {
+      case 'major':
+        return { major: base.major + 1, minor: 0, patch: 0 };
+      case 'minor':
+        return { major: base.major, minor: base.minor + 1, patch: 0 };
+      case 'patch':
+        return { major: base.major, minor: base.minor, patch: base.patch + 1 };
+      case 'keep':
+        return { ...base };
+    }
+  }
+
+  applyVersionBump(kind: VersionBump) {
+    const next = this.previewVersion(kind);
     this.item.update((log) =>
       log
         ? {
             ...log,
-            version_major: (log.version_major || 0) + 1,
-            version_minor: 0,
-            version_patch: 0,
+            version_major: next.major,
+            version_minor: next.minor,
+            version_patch: next.patch,
           }
         : log,
     );
   }
-  bumpMinor() {
-    this.item.update((log) =>
-      log
-        ? {
-            ...log,
-            version_minor: (log.version_minor || 0) + 1,
-            version_patch: 0,
-          }
-        : log,
+
+  onVersionBumpChange(event: MatButtonToggleChange) {
+    if (this.isVersionBump(event.value)) this.applyVersionBump(event.value);
+  }
+
+  private isVersionBump(value: unknown): value is VersionBump {
+    return this.versionBumps.some((b) => b.value === value);
+  }
+
+  private resolveSelectedBump(log: Partial<AppLog> | null): VersionBump | null {
+    if (!log) return null;
+    return (
+      this.versionBumps
+        .map((b) => b.value)
+        .find((kind) => {
+          const next = this.previewVersion(kind);
+          return (
+            log.version_major === next.major &&
+            log.version_minor === next.minor &&
+            log.version_patch === next.patch
+          );
+        }) ?? null
     );
   }
-  bumpPatch() {
-    this.item.update((log) =>
-      log ? { ...log, version_patch: (log.version_patch || 0) + 1 } : log,
+
+  private resolveLatestVersion(logs: AppLog[]): VersionTriple {
+    if (logs.length === 0) return { major: 1, minor: 0, patch: 0 };
+    return logs.reduce<VersionTriple>(
+      (max, log) => {
+        const current = {
+          major: log.version_major,
+          minor: log.version_minor,
+          patch: log.version_patch,
+        };
+        return this.compareVersion(current, max) > 0 ? current : max;
+      },
+      {
+        major: logs[0].version_major,
+        minor: logs[0].version_minor,
+        patch: logs[0].version_patch,
+      },
     );
+  }
+
+  private compareVersion(a: VersionTriple, b: VersionTriple): number {
+    if (a.major !== b.major) return a.major - b.major;
+    if (a.minor !== b.minor) return a.minor - b.minor;
+    return a.patch - b.patch;
   }
 
   async onSave() {
