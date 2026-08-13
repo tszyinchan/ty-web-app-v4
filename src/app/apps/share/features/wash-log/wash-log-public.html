@@ -1,0 +1,131 @@
+<div class="public-washlog-page">
+  <div class="washlog-toolbar">
+    @if (viewMode() === "calendar") {
+      <h1 class="washlog-title">{{ viewDate() | date: "MMMM yyyy" }}</h1>
+    } @else {
+      <h1 class="washlog-title">Laundry Logs</h1>
+    }
+
+    <div class="washlog-toolbar-actions">
+      @if (viewMode() === "calendar") {
+        <button mat-icon-button (click)="previous()" aria-label="Previous Month">
+          <mat-icon>chevron_left</mat-icon>
+        </button>
+        <button mat-stroked-button (click)="goToToday()">Today</button>
+        <button mat-icon-button (click)="next()" aria-label="Next Month">
+          <mat-icon>chevron_right</mat-icon>
+        </button>
+      }
+      <button
+        mat-icon-button
+        (click)="washLogService.fetchAllLogs(true)"
+        [disabled]="washLogService.loading()"
+        aria-label="Refresh"
+      >
+        <mat-icon>refresh</mat-icon>
+      </button>
+      <button
+        mat-icon-button
+        (click)="toggleViewMode()"
+        [attr.aria-label]="
+          viewMode() === 'calendar' ? 'List View' : 'Calendar View'
+        "
+      >
+        <mat-icon>{{
+          viewMode() === "calendar" ? "view_list" : "calendar_month"
+        }}</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  @if (washLogService.loading()) {
+    <div class="washlog-loading">
+      <mat-spinner diameter="32"></mat-spinner>
+    </div>
+  }
+
+  @if (viewMode() === "calendar") {
+    <div class="calendar-body">
+      <mwl-calendar-month-view
+        [viewDate]="viewDate()"
+        [events]="calendarEventsVM()"
+        [cellTemplate]="customCellTemplate"
+        [headerTemplate]="customHeaderTemplate"
+      ></mwl-calendar-month-view>
+
+      <ng-template #customHeaderTemplate let-days="days">
+        <div class="cal-custom-header">
+          @for (day of days; track day.day) {
+            <div class="cal-header-cell">
+              {{ day.date | date: dayFormat() }}
+            </div>
+          }
+        </div>
+      </ng-template>
+
+      <ng-template #customCellTemplate let-day="day">
+        <div class="cal-custom-cell">
+          <div class="cell-date-wrapper">
+            <span
+              class="cell-date"
+              [class.is-today]="day.isToday"
+              [class.is-out-of-month]="!day.inMonth"
+            >
+              {{ day.date | date: "d" }}
+            </span>
+          </div>
+
+          <div class="cell-events-wrapper">
+            @for (event of day.events; track $index) {
+              <div class="event-badge">{{ event.title }}</div>
+            }
+          </div>
+        </div>
+      </ng-template>
+    </div>
+  } @else {
+    <div class="standard-list-view">
+      <div class="list-container">
+        @for (group of groupedListVM(); track group.periodLabel) {
+          <div class="week-group">
+            <div class="week-header">
+              <span>Week of {{ group.periodLabel }}</span>
+              <span class="week-header-count">{{ group.items.length }} items</span>
+            </div>
+
+            @for (item of group.items; track $index) {
+              <div class="item-link non-interactive">
+                <div class="item-content">
+                  <div class="item-info-group">
+                    <span class="main-text">
+                      {{ item.date }}
+                      <span class="wash-title">👕 {{ item.title }}</span>
+                    </span>
+                  </div>
+                  <div class="item-status-group">
+                    <mat-icon class="wash-icon">local_laundry_service</mat-icon>
+                  </div>
+                </div>
+              </div>
+            } @empty {
+              @if (!washLogService.loading()) {
+                <div class="empty-placeholder">No items found.</div>
+              }
+            }
+          </div>
+        }
+        <footer
+          class="list-footer"
+          [hidden]="
+            washLogService.loading() || washLogService.washLogs().length === 0
+          "
+        >
+          <div class="divider"></div>
+          <span class="count-text"
+            >TOTAL {{ washLogService.washLogs().length }} ITEMS</span
+          >
+        </footer>
+      </div>
+    </div>
+  }
+</div>

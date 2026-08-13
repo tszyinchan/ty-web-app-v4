@@ -110,12 +110,6 @@ export class Layout {
       links: [{ title: 'Filelink List', route: '/filelink/list' }],
     },
     {
-      title: 'YY525',
-      icon: 'local_laundry_service',
-      adminOnly: false,
-      links: [{ title: 'Laundry Calendar', route: '/yy525/wash-log/calendar' }],
-    },
-    {
       title: 'User Management',
       icon: 'people_outline',
       adminOnly: true,

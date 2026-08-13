@@ -13,9 +13,9 @@ type ShareModuleLoader = () => Promise<Type<unknown>>;
  */
 const SHARE_MODULE_LOADERS: Record<string, ShareModuleLoader> = {
   'wash-log-calendar': () =>
-    import(
-      '../../features/wash-log-calendar/wash-log-calendar-public'
-    ).then((m) => m.WashLogCalendarPublic),
+    import('../../features/wash-log/wash-log-public').then(
+      (m) => m.WashLogPublic,
+    ),
 };
 
 @Component({

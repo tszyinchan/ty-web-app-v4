@@ -8,15 +8,22 @@ import { BreakpointObserver } from '@angular/cdk/layout';
 import { CalendarMonthViewComponent, CalendarEvent } from 'angular-calendar';
 import { startOfDay, addMonths, subMonths } from 'date-fns';
 
-import { WashLogService } from '../../../jaxfr/features/yy525/wash-log-view/wash-log.service';
+import {
+  groupItemsByPeriod,
+  getWeekRange,
+} from '../../../../core/utils/date-time.util';
+import { WashLogService } from './wash-log.service';
+
+type WashLogViewMode = 'calendar' | 'list';
 
 /**
- * Public, no-login read-only counterpart of the admin Wash Log Calendar.
- * Reuses WashLogService as-is (no auth dependency), but has its own minimal
- * toolbar instead of HeaderService, since this page has no admin chrome.
+ * Public, no-login Wash Log module for the share subdomain. Combines the
+ * Calendar and weekly List views (previously two separate admin-only
+ * routes) into one component with a local view toggle, since a
+ * capability-URL page doesn't need its own sub-routing.
  */
 @Component({
-  selector: 'app-wash-log-calendar-public',
+  selector: 'app-wash-log-public',
   standalone: true,
   imports: [
     CommonModule,
@@ -25,13 +32,14 @@ import { WashLogService } from '../../../jaxfr/features/yy525/wash-log-view/wash
     MatProgressSpinnerModule,
     CalendarMonthViewComponent,
   ],
-  templateUrl: './wash-log-calendar-public.html',
-  styleUrl: './wash-log-calendar-public.scss',
+  templateUrl: './wash-log-public.html',
+  styleUrl: './wash-log-public.scss',
 })
-export class WashLogCalendarPublic implements OnInit {
+export class WashLogPublic implements OnInit {
   public washLogService = inject(WashLogService);
   private breakpointObserver = inject(BreakpointObserver);
 
+  viewMode = signal<WashLogViewMode>('calendar');
   viewDate = signal<Date>(new Date());
   dayFormat = signal<'EEE' | 'EEEEE'>('EEE');
 
@@ -48,6 +56,13 @@ export class WashLogCalendarPublic implements OnInit {
     });
   });
 
+  groupedListVM = computed(() => {
+    return groupItemsByPeriod(this.washLogService.washLogs(), (item) => {
+      const range = getWeekRange(item.date);
+      return range ? range.label : 'Unknown Week';
+    });
+  });
+
   ngOnInit() {
     this.breakpointObserver
       .observe('(max-width: 768px)')
@@ -56,6 +71,10 @@ export class WashLogCalendarPublic implements OnInit {
       });
 
     this.washLogService.fetchAllLogs();
+  }
+
+  toggleViewMode() {
+    this.viewMode.update((mode) => (mode === 'calendar' ? 'list' : 'calendar'));
   }
 
   previous() {

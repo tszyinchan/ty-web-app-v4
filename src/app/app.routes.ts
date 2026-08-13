@@ -102,18 +102,6 @@ const JAXFR_ROUTES: Routes = [
           ),
       },
       {
-        path: 'yy525',
-        children: [
-          {
-            path: 'wash-log',
-            loadChildren: () =>
-              import('./apps/jaxfr/features/yy525/wash-log-view/wash-log.routes').then(
-                (m) => m.WASH_LOG_ROUTES,
-              ),
-          },
-        ],
-      },
-      {
         path: 'filelink',
         loadChildren: () =>
           import('./apps/jaxfr/features/filelink/filelink.routes').then(

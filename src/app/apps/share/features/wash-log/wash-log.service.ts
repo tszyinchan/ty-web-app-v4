@@ -1,6 +1,6 @@
 import { Injectable, inject, NgZone, signal } from '@angular/core';
-import { environment } from '../../../../../../environments/environment';
-import { NotificationService } from '../../../../../core/services/notification.service';
+import { environment } from '../../../../../environments/environment';
+import { NotificationService } from '../../../../core/services/notification.service';
 import { WashLog } from './wash-log.model';
 
 @Injectable({ providedIn: 'root' })
