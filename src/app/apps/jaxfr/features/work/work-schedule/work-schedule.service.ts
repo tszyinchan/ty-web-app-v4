@@ -92,7 +92,7 @@ export class WorkScheduleService {
       return this.zone.run(() => {
         const saved = savedData as WorkSchedule;
         this.workSchedules.update((list) => {
-          let newList = isNew
+          const newList = isNew
             ? [saved, ...list]
             : list.map((item) =>
                 item.tb_tyapp_wk_scdl_id === saved.tb_tyapp_wk_scdl_id

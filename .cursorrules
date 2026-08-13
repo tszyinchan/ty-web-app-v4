@@ -56,6 +56,9 @@ This project previously over-invested in "industrial-grade" architecture (separa
 # 8. Testing & Workflow
 - **No Mandatory Tests:** Unit/e2e tests are not required at this team size. Do NOT auto-generate `.spec.ts` files unless explicitly requested.
 - **Lightweight Git Process:** No enforced PR review, commit message format, or branch protection is expected. Direct commits are normal; only follow a specific process if the user asks for one in a given session.
+- **ESLint (`npm run lint`):** Configured in `eslint.config.js` to check ONLY the "Hold the Line" items above — `no-explicit-any`, `no-console`, direct DOM manipulation (`document.getElementById`/`querySelector`/`element.style`), plus base bug-catchers (unused vars, `prefer-const`, etc.). Deliberately excludes `tseslint.configs.stylistic` and `angular.configs.templateAccessibility` (array-type/interface-vs-type preferences, WCAG a11y rules) — those are "Let It Go" style opinions, not real risk. The `src/app/apps/jaxfr/archive/` folder is excluded entirely (see Section 10). When a flagged line is a deliberate, documented exception (e.g. the two below), silence it with a scoped `// eslint-disable-next-line <rule>` plus a one-line comment explaining why — never disable a rule file-wide or globally to avoid a single legitimate case.
+  - `core/utils/csv-export.util.ts`: `link.style.visibility` is set on a detached, non-Angular-managed `<a>` element used only for the browser download trick — not part of the component tree, so the signal/class-binding rule doesn't apply.
+  - `main.ts`: `console.error` in the `bootstrapApplication().catch()` handler is kept because Angular DI (and `NotificationService`) doesn't exist yet if bootstrap itself fails.
 
 # 9. Versioning & Commit Convention
 - **Single Source of Truth:** `src/app/app.constants.ts` (`APP_CONFIG.version` + `versionDate`) is the authoritative app version. When committing a change, update it there.
@@ -66,3 +69,4 @@ This project previously over-invested in "industrial-grade" architecture (separa
 
 # 10. Exclusions
 - **IGNORE Archive Folder:** DO NOT review, audit, refactor, or draw context from any files within `src/app/apps/jaxfr/archive/`. Treat this folder as deprecated and non-existent.
+- **Known Accepted Risk — YY525 Finance Token:** `YY525_SOURCE.TOKEN` in `app.constants.ts` is a hardcoded GAS token consumed only by the archived `archive/features/yy525/yy525-data.service.ts` (still routed at `/archive/yy525`). This is the same class of exposure fixed for the Wash Log token, but the user has explicitly decided (2026-08-12) to leave it as-is for now. Do NOT re-flag this in future audits unless the user asks to revisit it.

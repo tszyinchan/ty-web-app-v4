@@ -22,6 +22,8 @@ export function exportToCsv(subject: string, headers: string[], rows: string[][]
   const link = document.createElement('a');
   link.setAttribute('href', url);
   link.setAttribute('download', `${filename}.csv`);
+  // Detached, non-Angular-managed element used only for the browser download trick below - not part of the component tree.
+  // eslint-disable-next-line no-restricted-syntax
   link.style.visibility = 'hidden';
   
   document.body.appendChild(link);

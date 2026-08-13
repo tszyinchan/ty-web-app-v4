@@ -335,7 +335,7 @@ export class ArticleEdit implements OnInit, OnDestroy, DoCheck {
       }
     }
 
-    const titleMatch = text.match(/^\s*([^\n\/]+\/\s*[^\n]+)\s*$/m);
+    const titleMatch = text.match(/^\s*([^\n/]+\/\s*[^\n]+)\s*$/m);
     if (titleMatch) {
       title = titleMatch[1].split(' / ')[0].trim();
     }

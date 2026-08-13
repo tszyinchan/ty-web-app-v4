@@ -81,7 +81,9 @@ export class ItemDetail implements OnInit {
             minimumFractionDigits: 0,
             maximumFractionDigits: 2,
           }).format(amountNum);
-        } catch (e) {}
+        } catch {
+          // Invalid currency code (e.g. legacy free-text data) - keep the plain fallback string above.
+        }
       }
 
       pairs.push({ key: '金額', value: displayValue, icon: 'payments' });

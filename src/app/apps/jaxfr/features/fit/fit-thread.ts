@@ -8,7 +8,6 @@ import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { HeaderService } from '../../../../core/services/header.service';
 import { NotificationService } from '../../../../core/services/notification.service';
 import { FitService } from './fit.service';
-import { FitSessionDetail, FitSideCode } from './fit.model';
 import { MatCardModule } from '@angular/material/card';
 import { RecordStatus } from '../../../../core/models/status.enum';
 import { FitThreadFormatterUtil } from './fit-thread-formatter.util';

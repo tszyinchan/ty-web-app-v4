@@ -18,18 +18,10 @@ import { HeaderService } from '../../../../core/services/header.service';
 import { AuthService } from '../../../../core/services/auth.service';
 import { UserService } from '../user/user.service';
 import { FilelinkService } from '../../../../core/domains/filelink/filelink.service';
-import { FilelinkItem } from '../../../../core/domains/filelink/filelink.model';
 import { exportToCsv } from '../../../../core/utils/csv-export.util';
 import { DisplayNamePipe } from '../../../../core/pipes/display-name.pipe';
 import { RecordStatus } from '../../../../core/models/status.enum';
 import { FilelinkSortOption, extractFolderContent, buildFileDisplayTitle, sortExplorerContent } from '../../../../core/domains/filelink/filelink.util';
-
-type SortOption =
-  | 'custom'
-  | 'name-asc'
-  | 'name-desc'
-  | 'date-desc'
-  | 'modified-desc';
 
 @Component({
   selector: 'app-filelink-list',

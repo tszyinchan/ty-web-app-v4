@@ -93,7 +93,7 @@ export class WorkAttendanceService {
       return this.zone.run(() => {
         const saved = savedData as WorkAttendance;
         this.workAttendances.update((list) => {
-          let newList = isNew
+          const newList = isNew
             ? [saved, ...list]
             : list.map((item) =>
                 item.tb_tyapp_wk_attn_id === saved.tb_tyapp_wk_attn_id

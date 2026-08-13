@@ -7,7 +7,6 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { APP_CONFIG, DEFAULT_ROUTES, SUBDOMAINS } from '../../app.constants';
 import { AuthService } from '../../core/services/auth.service';
-import { AuthError } from '@supabase/supabase-js';
 import { Router } from '@angular/router';
 import { getCurrentSubdomain } from '../../core/utils/app-env.util';
 

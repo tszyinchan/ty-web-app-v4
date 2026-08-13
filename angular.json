@@ -19,7 +19,10 @@
           "options": {
             "outputPath": "dist/ty-web-app-v4",
             "browser": "src/main.ts",
-            "polyfills": ["zone.js", "zone.js/plugins/zone-patch-fetch"],
+            "polyfills": [
+              "zone.js",
+              "zone.js/plugins/zone-patch-fetch"
+            ],
             "tsConfig": "tsconfig.app.json",
             "inlineStyleLanguage": "scss",
             "assets": [
@@ -93,8 +96,22 @@
               "node_modules/angular-calendar/css/angular-calendar.css"
             ]
           }
+        },
+        "lint": {
+          "builder": "@angular-eslint/builder:lint",
+          "options": {
+            "lintFilePatterns": [
+              "src/**/*.ts",
+              "src/**/*.html"
+            ]
+          }
         }
       }
     }
+  },
+  "cli": {
+    "schematicCollections": [
+      "angular-eslint"
+    ]
   }
 }

@@ -319,7 +319,6 @@ export class FilelinkEdit implements OnInit, OnDestroy, DoCheck {
   async onDelete() {
     if (!this.currentId) return;
     if (confirm('Are you sure you want to delete this file link?')) {
-      const pathToRestore = this.item()?.item_path || [];
       const success = await this.filelinkService.deleteItem(this.currentId);
 
       if (success) {
