@@ -1,0 +1,187 @@
+<div class="chat-shell" [class.room-open]="!!roomId()">
+  <aside class="room-pane">
+    <div class="room-search">
+      <mat-icon>search</mat-icon>
+      <input
+        type="search"
+        placeholder="Search rooms"
+        [ngModel]="searchQuery()"
+        (ngModelChange)="searchQuery.set($event)"
+      />
+    </div>
+
+    <div class="room-list">
+      @for (room of filteredRooms(); track room.tb_tyapp_chat_rm_id) {
+        <a
+          class="room-item"
+          [class.active]="room.tb_tyapp_chat_rm_id === roomId()"
+          [routerLink]="['/chat', room.tb_tyapp_chat_rm_id]"
+        >
+          <span class="room-name">{{ room.name }}</span>
+          <span class="room-members">{{ memberSummary(room.member_user_ids) }}</span>
+        </a>
+      } @empty {
+        @if (!chatService.loading()) {
+          <div class="empty-placeholder">No rooms yet. Create one to start chatting.</div>
+        }
+      }
+    </div>
+  </aside>
+
+  <section class="thread-pane">
+    @if (!roomId()) {
+      <div class="empty-thread">
+        <mat-icon>forum</mat-icon>
+        <p>Select a room, or create a new one.</p>
+      </div>
+    } @else {
+      <div class="message-list">
+        @for (vm of threadVm(); track vm.message.tb_tyapp_chat_msg_id) {
+          <article class="bubble-row" [class.mine]="vm.isMine">
+            <div class="bubble">
+              @if (!vm.isMine) {
+                <span class="author">{{ vm.authorName }}</span>
+              }
+
+              @if (vm.message.quote_message_id) {
+                <div class="quote-preview">
+                  @if (vm.quotedAuthor) {
+                    <span class="quote-author">{{ vm.quotedAuthor }}</span>
+                  }
+                  <span class="quote-text">{{
+                    quoteSnippet(vm.quotedPlain, vm.quotedDeleted)
+                  }}</span>
+                </div>
+              }
+
+              @if (vm.message.deleted_at) {
+                <p class="deleted-text">This message was deleted</p>
+              } @else {
+                <div class="ql-snow">
+                  <app-chat-html [html]="vm.message.body" />
+                </div>
+              }
+
+              <div class="bubble-meta">
+                <span>{{ vm.timeLabel }}</span>
+                @if (vm.message.edited_at && !vm.message.deleted_at) {
+                  <span>· edited</span>
+                }
+              </div>
+
+              @if (!vm.message.deleted_at && vm.reactionChips.length > 0) {
+                <div class="reaction-row">
+                  @for (chip of vm.reactionChips; track chip.emoji) {
+                    <button
+                      type="button"
+                      class="reaction-chip"
+                      [class.mine]="chip.mine"
+                      [matTooltip]="chip.tooltip"
+                      (click)="onToggleReaction(vm.message.tb_tyapp_chat_msg_id, chip.emoji)"
+                    >
+                      {{ chip.emoji }} {{ chip.count }}
+                    </button>
+                  }
+                </div>
+              }
+            </div>
+
+            @if (!vm.message.deleted_at) {
+              <button
+                mat-icon-button
+                class="msg-more"
+                [matMenuTriggerFor]="msgMenu"
+                aria-label="Message actions"
+              >
+                <mat-icon>more_vert</mat-icon>
+              </button>
+              <mat-menu #msgMenu="matMenu">
+                <button mat-menu-item (click)="startQuote(vm)">
+                  <mat-icon>format_quote</mat-icon>
+                  <span>Quote</span>
+                </button>
+                <button
+                  mat-menu-item
+                  [matMenuTriggerFor]="emojiMenu"
+                >
+                  <mat-icon>add_reaction</mat-icon>
+                  <span>React</span>
+                </button>
+                @if (vm.canEdit) {
+                  <button mat-menu-item (click)="startEdit(vm)">
+                    <mat-icon>edit</mat-icon>
+                    <span>Edit</span>
+                  </button>
+                }
+                @if (vm.canDelete) {
+                  <button mat-menu-item (click)="onDeleteMessage(vm)">
+                    <mat-icon>delete_outline</mat-icon>
+                    <span>Delete</span>
+                  </button>
+                }
+              </mat-menu>
+              <mat-menu #emojiMenu="matMenu">
+                @for (emoji of reactionEmojis; track emoji) {
+                  <button
+                    mat-menu-item
+                    (click)="onToggleReaction(vm.message.tb_tyapp_chat_msg_id, emoji)"
+                  >
+                    {{ emoji }}
+                  </button>
+                }
+              </mat-menu>
+            }
+          </article>
+        } @empty {
+          @if (!chatService.loading()) {
+            <div class="empty-placeholder">No messages yet.</div>
+          }
+        }
+        <div #bottomAnchor></div>
+      </div>
+
+      <div class="composer">
+        @if (editingMessageId()) {
+          <div class="composer-banner">
+            <span>Editing message</span>
+            <button mat-button type="button" (click)="cancelEdit()">Cancel</button>
+          </div>
+        } @else if (quoteDraft(); as quote) {
+          <div class="composer-banner">
+            <div class="quote-preview">
+              <span class="quote-author">{{ quote.authorName }}</span>
+              <span class="quote-text">{{ quoteSnippet(quote.plain, false) }}</span>
+            </div>
+            <button mat-icon-button type="button" (click)="clearQuote()" aria-label="Clear quote">
+              <mat-icon>close</mat-icon>
+            </button>
+          </div>
+        }
+
+        <quill-editor
+          theme="snow"
+          format="html"
+          [modules]="quillModules"
+          [sanitize]="false"
+          placeholder="Write a message..."
+          [ngModel]="draftHtml()"
+          (ngModelChange)="draftHtml.set($event)"
+          (onEditorCreated)="onEditorCreated($event)"
+        />
+
+        <div class="composer-actions">
+          <button
+            mat-flat-button
+            color="primary"
+            type="button"
+            [disabled]="isLoading()"
+            (click)="onSend()"
+          >
+            <mat-icon>{{ editingMessageId() ? 'check' : 'send' }}</mat-icon>
+            <span>{{ editingMessageId() ? 'Save' : 'Send' }}</span>
+          </button>
+        </div>
+      </div>
+    }
+  </section>
+</div>

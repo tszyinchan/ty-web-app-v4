@@ -33,7 +33,8 @@
             ],
             "styles": [
               "src/styles.scss",
-              "node_modules/angular-calendar/css/angular-calendar.css"
+              "node_modules/angular-calendar/css/angular-calendar.css",
+              "node_modules/quill/dist/quill.snow.css"
             ]
           },
           "configurations": {
@@ -93,7 +94,8 @@
             ],
             "styles": [
               "src/styles.scss",
-              "node_modules/angular-calendar/css/angular-calendar.css"
+              "node_modules/angular-calendar/css/angular-calendar.css",
+              "node_modules/quill/dist/quill.snow.css"
             ]
           }
         },

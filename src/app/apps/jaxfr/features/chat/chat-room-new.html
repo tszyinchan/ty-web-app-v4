@@ -1,0 +1,49 @@
+<div class="split-workspace">
+  <div class="form-scroll-area">
+    <section class="form-group">
+      <h3 class="group-header">Room</h3>
+
+      <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
+        <mat-label>Room name</mat-label>
+        <input matInput [(ngModel)]="name" placeholder="e.g. This week's groceries" />
+      </mat-form-field>
+    </section>
+
+    <section class="form-group">
+      <h3 class="group-header">Members</h3>
+
+      <p class="you-hint">You ({{ displayUserName(currentUserId()) }}) are included automatically.</p>
+
+      <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
+        <mat-label>Add people</mat-label>
+        <mat-chip-grid #userGrid aria-label="Room members">
+          @for (uid of memberUserIds(); track uid; let idx = $index) {
+            <mat-chip-row (removed)="removeMember(idx)">
+              {{ displayUserName(uid) }}
+              <button matChipRemove aria-label="remove member">
+                <mat-icon>cancel</mat-icon>
+              </button>
+            </mat-chip-row>
+          }
+          <input
+            placeholder="Search a person to add..."
+            #userInput
+            [matChipInputFor]="userGrid"
+            [matAutocomplete]="userAuto"
+            (input)="userSearch.set(userInput.value)"
+            (focus)="userSearch.set('')"
+          />
+        </mat-chip-grid>
+        <mat-autocomplete
+          #userAuto="matAutocomplete"
+          (optionSelected)="addMember($event); userInput.value = ''"
+        >
+          @for (opt of filteredUsers(); track opt.value) {
+            <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
+          }
+        </mat-autocomplete>
+        <mat-hint>A room needs you plus at least one other person.</mat-hint>
+      </mat-form-field>
+    </section>
+  </div>
+</div>

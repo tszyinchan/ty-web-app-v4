@@ -1,0 +1,251 @@
+:host {
+  display: block;
+  height: calc(100dvh - 64px);
+}
+
+.chat-shell {
+  display: flex;
+  height: 100%;
+  overflow: hidden;
+  background: var(--mat-sys-surface);
+}
+
+.room-pane {
+  width: 280px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--mat-sys-outline-variant);
+  background: var(--mat-sys-surface-container-low);
+}
+
+.room-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+
+  mat-icon {
+    color: var(--mat-sys-outline);
+  }
+
+  input {
+    flex: 1;
+    border: 0;
+    outline: none;
+    background: transparent;
+    color: var(--mat-sys-on-surface);
+    font: inherit;
+  }
+}
+
+.room-list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.room-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 16px;
+  text-decoration: none;
+  color: inherit;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+
+  &.active {
+    background: var(--mat-sys-primary-container);
+  }
+}
+
+.room-name {
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.room-members {
+  font-size: 12px;
+  color: var(--mat-sys-on-surface-variant);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.thread-pane {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.empty-thread,
+.empty-placeholder {
+  margin: auto;
+  text-align: center;
+  color: var(--mat-sys-on-surface-variant);
+  padding: 24px;
+
+  mat-icon {
+    font-size: 40px;
+    width: 40px;
+    height: 40px;
+  }
+}
+
+.message-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.bubble-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  max-width: 80%;
+
+  &.mine {
+    margin-left: auto;
+    flex-direction: row-reverse;
+  }
+}
+
+.bubble {
+  min-width: 0;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: var(--mat-sys-surface-container-high);
+}
+
+.bubble-row.mine .bubble {
+  background: var(--mat-sys-primary-container);
+}
+
+.author {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--mat-sys-primary);
+  margin-bottom: 4px;
+}
+
+.quote-preview {
+  border-left: 3px solid var(--mat-sys-primary);
+  padding: 4px 8px;
+  margin-bottom: 6px;
+  background: color-mix(in srgb, var(--mat-sys-surface) 70%, transparent);
+  border-radius: 0 6px 6px 0;
+}
+
+.quote-author {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.quote-text {
+  display: block;
+  font-size: 12px;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.deleted-text {
+  margin: 0;
+  font-style: italic;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.bubble-meta {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--mat-sys-outline);
+}
+
+.reaction-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.reaction-chip {
+  border: 1px solid var(--mat-sys-outline-variant);
+  background: var(--mat-sys-surface);
+  border-radius: 12px;
+  padding: 0 6px;
+  font-size: 12px;
+  cursor: pointer;
+
+  &.mine {
+    border-color: var(--mat-sys-primary);
+    background: var(--mat-sys-primary-container);
+  }
+}
+
+.msg-more {
+  opacity: 0.4;
+}
+
+.composer {
+  border-top: 1px solid var(--mat-sys-outline-variant);
+  padding: 8px 12px 12px;
+  background: var(--mat-sys-surface);
+}
+
+.composer-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.composer-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+quill-editor {
+  display: block;
+}
+
+:host ::ng-deep .ql-container {
+  min-height: 88px;
+  max-height: 200px;
+  overflow-y: auto;
+  font-size: 14px;
+}
+
+:host ::ng-deep .ql-toolbar.ql-snow,
+:host ::ng-deep .ql-container.ql-snow {
+  border-color: var(--mat-sys-outline-variant);
+}
+
+@media (max-width: 800px) {
+  .room-pane {
+    width: 100%;
+  }
+
+  .thread-pane {
+    display: none;
+  }
+
+  .chat-shell.room-open .room-pane {
+    display: none;
+  }
+
+  .chat-shell.room-open .thread-pane {
+    display: flex;
+    width: 100%;
+  }
+
+  .bubble-row {
+    max-width: 92%;
+  }
+}

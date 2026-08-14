@@ -109,6 +109,13 @@ const JAXFR_ROUTES: Routes = [
           ),
       },
       {
+        path: 'chat',
+        loadChildren: () =>
+          import('./apps/jaxfr/features/chat/chat.routes').then(
+            (m) => m.CHAT_ROUTES,
+          ),
+      },
+      {
         path: 'archive',
         children: [
           {

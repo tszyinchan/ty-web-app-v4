@@ -104,6 +104,12 @@ export class Layout {
       links: [{ title: 'Filelink List', route: '/filelink/list' }],
     },
     {
+      title: 'Chat',
+      icon: 'chat',
+      adminOnly: false,
+      links: [{ title: 'Rooms', route: '/chat' }],
+    },
+    {
       title: 'User Management',
       icon: 'people_outline',
       adminOnly: true,
