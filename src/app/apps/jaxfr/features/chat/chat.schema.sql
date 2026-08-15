@@ -3,8 +3,9 @@
 -- After it runs, confirm Realtime is enabled for both tables
 -- (Database → Replication, or the ALTER PUBLICATION statements below).
 --
--- Edit window is hardcoded to 5 minutes here. Keep it in sync with
--- CHAT_EDIT_WINDOW_MS in chat.constants.ts.
+-- Edit / delete windows come from tyapp_app_settings (see
+-- features/development/app-settings/app-settings.schema.sql).
+-- Run that schema first, or include it in chat.schema.patch.sql.
 
 -- ---------------------------------------------------------------------------
 -- Tables
@@ -134,6 +135,7 @@ SET search_path = public
 AS $$
 DECLARE
   v_row public.tyapp_chat_message;
+  v_edit_ms integer;
 BEGIN
   IF auth.uid() IS NULL THEN
     RAISE EXCEPTION 'Not authenticated';
@@ -157,8 +159,18 @@ BEGIN
     RAISE EXCEPTION 'Not a room member';
   END IF;
 
-  -- Keep in sync with CHAT_EDIT_WINDOW_MS in chat.constants.ts
-  IF now() > v_row.created_at + interval '5 minutes' THEN
+  SELECT chat_edit_window_ms
+  INTO v_edit_ms
+  FROM public.tyapp_app_settings
+  WHERE singleton_key = 1
+    AND deleted_at IS NULL
+    AND status = 1;
+
+  IF v_edit_ms IS NULL THEN
+    RAISE EXCEPTION 'App settings are missing';
+  END IF;
+
+  IF now() > v_row.created_at + (v_edit_ms * interval '1 millisecond') THEN
     RAISE EXCEPTION 'Edit window has expired';
   END IF;
 
@@ -262,13 +274,15 @@ AS $$
 DECLARE
   v_sender uuid;
   v_room_id uuid;
+  v_created_at timestamptz;
+  v_delete_ms integer;
 BEGIN
   IF auth.uid() IS NULL THEN
     RAISE EXCEPTION 'Not authenticated';
   END IF;
 
-  SELECT sender_user_id, room_id
-  INTO v_sender, v_room_id
+  SELECT sender_user_id, room_id, created_at
+  INTO v_sender, v_room_id, v_created_at
   FROM public.tyapp_chat_message
   WHERE tb_tyapp_chat_msg_id = record_id
     AND deleted_at IS NULL;
@@ -283,6 +297,21 @@ BEGIN
 
   IF NOT public.tyapp_chat_is_room_member(v_room_id) THEN
     RAISE EXCEPTION 'Not a room member';
+  END IF;
+
+  SELECT chat_delete_window_ms
+  INTO v_delete_ms
+  FROM public.tyapp_app_settings
+  WHERE singleton_key = 1
+    AND deleted_at IS NULL
+    AND status = 1;
+
+  IF v_delete_ms IS NULL THEN
+    RAISE EXCEPTION 'App settings are missing';
+  END IF;
+
+  IF now() > v_created_at + (v_delete_ms * interval '1 millisecond') THEN
+    RAISE EXCEPTION 'Delete window has expired';
   END IF;
 
   UPDATE public.tyapp_chat_message

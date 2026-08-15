@@ -1,5 +1,4 @@
 import DOMPurify, { type Config } from 'dompurify';
-import { CHAT_EDIT_WINDOW_MS } from './chat.constants';
 import { ChatMessage, ChatReactionEntry, ChatReactions } from './chat.model';
 
 const ALLOWED_CSS_PROPS = new Set([
@@ -82,21 +81,28 @@ export function canEditMessage(
   message: ChatMessage,
   currentUserId: string | undefined,
   nowMs: number,
+  windowMs: number | null | undefined,
 ): boolean {
   if (!currentUserId) return false;
   if (message.deleted_at) return false;
   if (message.sender_user_id !== currentUserId) return false;
   if (!message.created_at) return false;
-  return nowMs - new Date(message.created_at).getTime() < CHAT_EDIT_WINDOW_MS;
+  if (windowMs == null || windowMs <= 0) return false;
+  return nowMs - new Date(message.created_at).getTime() < windowMs;
 }
 
 export function canDeleteMessage(
   message: ChatMessage,
   currentUserId: string | undefined,
+  nowMs: number,
+  windowMs: number | null | undefined,
 ): boolean {
   if (!currentUserId) return false;
   if (message.deleted_at) return false;
-  return message.sender_user_id === currentUserId;
+  if (message.sender_user_id !== currentUserId) return false;
+  if (!message.created_at) return false;
+  if (windowMs == null || windowMs <= 0) return false;
+  return nowMs - new Date(message.created_at).getTime() < windowMs;
 }
 
 export function normalizeReactions(

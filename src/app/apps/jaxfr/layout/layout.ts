@@ -14,6 +14,7 @@ import { MatExpansionModule } from '@angular/material/expansion';
 import { MatDividerModule } from '@angular/material/divider';
 
 import { AuthService } from '../../../core/services/auth.service';
+import { AppSettingsService } from '../../../core/services/app-settings.service';
 import { AppToolbar } from '../../../core/components/app-toolbar/app-toolbar';
 import { DisplayNamePipe } from '../../../core/pipes/display-name.pipe';
 import { RoleLabelPipe } from '../../../core/pipes/role-label.pipe';
@@ -56,6 +57,7 @@ export class Layout {
   @ViewChild('drawer') drawer!: MatSidenav;
 
   private readonly auth = inject(AuthService);
+  private readonly appSettings = inject(AppSettingsService);
   private readonly breakpointObserver = inject(BreakpointObserver);
 
   readonly isHandset = toSignal(

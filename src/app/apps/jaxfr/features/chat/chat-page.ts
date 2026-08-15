@@ -26,6 +26,7 @@ import Quill from 'quill';
 import { QuillEditorComponent } from 'ngx-quill';
 
 import { AuthService } from '../../../../core/services/auth.service';
+import { AppSettingsService } from '../../../../core/services/app-settings.service';
 import { HeaderService } from '../../../../core/services/header.service';
 import { DisplayNamePipe } from '../../../../core/pipes/display-name.pipe';
 import { NotificationService } from '../../../../core/services/notification.service';
@@ -95,6 +96,7 @@ export class ChatPage implements OnInit, OnDestroy {
 
   readonly chatService = inject(ChatService);
   readonly userService = inject(UserService);
+  readonly appSettings = inject(AppSettingsService);
 
   readonly quillModules = CHAT_QUILL_MODULES;
   readonly reactionEmojis = CHAT_REACTION_EMOJIS;
@@ -191,10 +193,20 @@ export class ChatPage implements OnInit, OnDestroy {
           ? this.displayNamePipe.transform(sender)
           : 'Unknown User',
         timeLabel: message.created_at
-          ? format(new Date(message.created_at), 'MMM d, HH:mm')
+          ? format(new Date(message.created_at), 'yyyy-MM-dd HH:mm:ss')
           : '',
-        canEdit: canEditMessage(message, me, now),
-        canDelete: canDeleteMessage(message, me),
+        canEdit: canEditMessage(
+          message,
+          me,
+          now,
+          this.appSettings.settings()?.chat_edit_window_ms,
+        ),
+        canDelete: canDeleteMessage(
+          message,
+          me,
+          now,
+          this.appSettings.settings()?.chat_delete_window_ms,
+        ),
         quotedPlain: quoted ? quoted.body_plain : null,
         quotedAuthor: quotedSender
           ? this.displayNamePipe.transform(quotedSender)
@@ -223,7 +235,10 @@ export class ChatPage implements OnInit, OnDestroy {
             icon: 'refresh',
             type: 'secondary',
             disabled: () => loading,
-            onClick: () => void this.chatService.fetchRooms(true),
+            onClick: () => {
+              void this.appSettings.fetch();
+              void this.chatService.fetchRooms(true);
+            },
           },
           {
             label: 'New Room',
