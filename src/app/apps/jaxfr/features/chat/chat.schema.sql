@@ -321,6 +321,45 @@ BEGIN
 END;
 $$;
 
+CREATE OR REPLACE FUNCTION public.tyapp_chat_rename_room(
+  p_room_id uuid,
+  p_name text
+)
+RETURNS public.tyapp_chat_room
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_row public.tyapp_chat_room;
+  v_name text := trim(p_name);
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  IF v_name IS NULL OR length(v_name) = 0 THEN
+    RAISE EXCEPTION 'Room name is required';
+  END IF;
+
+  IF NOT public.tyapp_chat_is_room_member(p_room_id) THEN
+    RAISE EXCEPTION 'Not a room member';
+  END IF;
+
+  UPDATE public.tyapp_chat_room
+  SET name = v_name
+  WHERE tb_tyapp_chat_rm_id = p_room_id
+    AND deleted_at IS NULL
+  RETURNING * INTO v_row;
+
+  IF v_row.tb_tyapp_chat_rm_id IS NULL THEN
+    RAISE EXCEPTION 'Room not found';
+  END IF;
+
+  RETURN v_row;
+END;
+$$;
+
 -- ---------------------------------------------------------------------------
 -- Grants: members may SELECT/INSERT; UPDATE/DELETE go through RPCs
 -- ---------------------------------------------------------------------------
@@ -339,16 +378,14 @@ GRANT EXECUTE ON FUNCTION public.tyapp_chat_edit_message(uuid, text, text) TO au
 GRANT EXECUTE ON FUNCTION public.tyapp_chat_toggle_reaction(uuid, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.tyapp_chat_message_soft_delete_single_record(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.tyapp_chat_room_soft_delete_single_record(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.tyapp_chat_rename_room(uuid, text) TO authenticated;
 
 DROP POLICY IF EXISTS tyapp_chat_room_select ON public.tyapp_chat_room;
 CREATE POLICY tyapp_chat_room_select
   ON public.tyapp_chat_room
   FOR SELECT
   TO authenticated
-  USING (
-    deleted_at IS NULL
-    AND auth.uid() = ANY (member_user_ids)
-  );
+  USING (auth.uid() = ANY (member_user_ids));
 
 DROP POLICY IF EXISTS tyapp_chat_room_insert ON public.tyapp_chat_room;
 CREATE POLICY tyapp_chat_room_insert

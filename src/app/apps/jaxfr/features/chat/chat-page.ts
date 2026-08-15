@@ -122,6 +122,18 @@ export class ChatPage implements OnInit, OnDestroy {
   private bottomAnchor = viewChild<ElementRef<HTMLElement>>('bottomAnchor');
   private lastMessageCount = 0;
 
+  quoteDraftVm = computed(() => {
+    const draft = this.quoteDraft();
+    if (!draft) return null;
+    const source = this.chatService
+      .messages()
+      .find((item) => item.tb_tyapp_chat_msg_id === draft.id);
+    return {
+      ...draft,
+      deleted: !source || !!source.deleted_at,
+    };
+  });
+
   currentUserId = computed(() => this.auth.userProfile()?.user_id ?? '');
 
   isLoading = computed(() => this.chatService.loading());
@@ -189,7 +201,8 @@ export class ChatPage implements OnInit, OnDestroy {
           : quoted
             ? 'Unknown User'
             : null,
-        quotedDeleted: !!quoted?.deleted_at,
+        quotedDeleted:
+          !!message.quote_message_id && (!quoted || !!quoted.deleted_at),
         reactionChips,
       };
     });
@@ -206,6 +219,13 @@ export class ChatPage implements OnInit, OnDestroy {
         title: room?.name ?? 'Chat',
         actions: [
           {
+            label: 'Refresh',
+            icon: 'refresh',
+            type: 'secondary',
+            disabled: () => loading,
+            onClick: () => void this.chatService.fetchRooms(true),
+          },
+          {
             label: 'New Room',
             icon: 'add',
             type: id ? 'secondary' : 'primary',
@@ -214,6 +234,13 @@ export class ChatPage implements OnInit, OnDestroy {
           },
           ...(id
             ? [
+                {
+                  label: 'Rename',
+                  icon: 'edit',
+                  type: 'secondary' as const,
+                  disabled: () => loading,
+                  onClick: () => void this.onRenameRoom(),
+                },
                 {
                   label: 'Delete Room',
                   icon: 'delete_outline',
@@ -235,6 +262,19 @@ export class ChatPage implements OnInit, OnDestroy {
     });
 
     effect(() => {
+      const id = this.roomId();
+      const ready = this.chatService.roomsReady();
+      const rooms = this.chatService.rooms();
+      if (!id || !ready) return;
+      const stillThere = rooms.some((room) => room.tb_tyapp_chat_rm_id === id);
+      if (!stillThere) {
+        untracked(() => {
+          void this.router.navigate(['/chat']);
+        });
+      }
+    });
+
+    effect(() => {
       const count = this.threadVm().length;
       if (count !== this.lastMessageCount) {
         this.lastMessageCount = count;
@@ -246,10 +286,9 @@ export class ChatPage implements OnInit, OnDestroy {
   async ngOnInit() {
     this.nowTimer = setInterval(() => this.nowTick.set(Date.now()), 30000);
     await Promise.all([
-      this.chatService.fetchRooms(),
+      this.chatService.fetchRooms(true),
       this.userService.fetchAllUsers(),
     ]);
-    this.chatService.subscribeToRooms();
   }
 
   onEditorCreated(quill: Quill) {
@@ -360,6 +399,14 @@ export class ChatPage implements OnInit, OnDestroy {
     await this.chatService.deleteMessage(vm.message.tb_tyapp_chat_msg_id);
   }
 
+  async onRenameRoom() {
+    const room = this.selectedRoom();
+    if (!room) return;
+    const next = prompt('Room name', room.name);
+    if (next === null) return;
+    await this.chatService.renameRoom(room.tb_tyapp_chat_rm_id, next);
+  }
+
   async onDeleteRoom() {
     const room = this.selectedRoom();
     if (!room) return;
@@ -373,7 +420,7 @@ export class ChatPage implements OnInit, OnDestroy {
   ngOnDestroy() {
     if (this.nowTimer) clearInterval(this.nowTimer);
     this.headerService.clear();
-    void this.chatService.unsubscribeAll();
+    void this.chatService.unsubscribeFromMessages();
   }
 
   private async syncRoom(roomId: string | null) {

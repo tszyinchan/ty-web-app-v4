@@ -1,4 +1,4 @@
-import { Injectable, NgZone, inject, signal } from '@angular/core';
+import { Injectable, NgZone, effect, inject, signal, untracked } from '@angular/core';
 import {
   RealtimeChannel,
   RealtimePostgresChangesPayload,
@@ -25,16 +25,39 @@ export class ChatService {
   rooms = signal<ChatRoom[]>([]);
   messages = signal<ChatMessage[]>([]);
   loading = signal(false);
+  roomsReady = signal(false);
 
   private roomsLoaded = false;
-  private roomsChannel: RealtimeChannel | null = null;
+  private inboxChannel: RealtimeChannel | null = null;
   private messagesChannel: RealtimeChannel | null = null;
   private subscribedRoomId: string | null = null;
 
-  async fetchRooms(force = false): Promise<void> {
+  constructor() {
+    effect(() => {
+      const profile = this.auth.userProfile();
+      untracked(() => {
+        if (profile) {
+          this.subscribeToInbox();
+          void this.fetchRooms(true, { silent: true });
+        } else {
+          void this.unsubscribeAll();
+          this.roomsLoaded = false;
+          this.roomsReady.set(false);
+          this.rooms.set([]);
+          this.messages.set([]);
+        }
+      });
+    });
+  }
+
+  async fetchRooms(
+    force = false,
+    options?: { silent?: boolean },
+  ): Promise<void> {
     if (this.roomsLoaded && !force) return;
 
-    this.loading.set(true);
+    const silent = options?.silent ?? false;
+    if (!silent) this.loading.set(true);
     try {
       const { data, error } = await this.supabase
         .from('tyapp_chat_room')
@@ -48,11 +71,14 @@ export class ChatService {
       this.zone.run(() => {
         this.rooms.set((data as ChatRoom[]) || []);
         this.roomsLoaded = true;
-        this.loading.set(false);
+        this.roomsReady.set(true);
+        if (!silent) this.loading.set(false);
       });
     } catch (error: unknown) {
       this.notification.handleError('Fetch Rooms Failed', error);
-      this.zone.run(() => this.loading.set(false));
+      this.zone.run(() => {
+        if (!silent) this.loading.set(false);
+      });
     }
   }
 
@@ -254,6 +280,41 @@ export class ChatService {
     }
   }
 
+  async renameRoom(roomId: string, name: string): Promise<boolean> {
+    const trimmed = name.trim();
+    if (!trimmed) {
+      this.notification.handleError('Rename Failed', 'Room name is required');
+      return false;
+    }
+
+    this.loading.set(true);
+    try {
+      const { data, error } = await this.supabase.rpc('tyapp_chat_rename_room', {
+        p_room_id: roomId,
+        p_name: trimmed,
+      });
+      if (error) throw error;
+
+      const saved = data as ChatRoom;
+      return this.zone.run(() => {
+        this.rooms.update((list) =>
+          list.map((room) =>
+            room.tb_tyapp_chat_rm_id === saved.tb_tyapp_chat_rm_id ? saved : room,
+          ),
+        );
+        this.loading.set(false);
+        this.notification.showSuccess('Room renamed');
+        return true;
+      });
+    } catch (error: unknown) {
+      this.notification.handleError('Rename Failed', error);
+      return this.zone.run(() => {
+        this.loading.set(false);
+        return false;
+      });
+    }
+  }
+
   async toggleReaction(messageId: string, emoji: string): Promise<boolean> {
     try {
       const { data, error } = await this.supabase.rpc(
@@ -282,16 +343,23 @@ export class ChatService {
     }
   }
 
-  subscribeToRooms(): void {
-    if (this.roomsChannel) return;
+  subscribeToInbox(): void {
+    if (this.inboxChannel) return;
 
-    this.roomsChannel = this.supabase
-      .channel('jaxfr-chat-rooms')
+    this.inboxChannel = this.supabase
+      .channel('jaxfr-chat-inbox')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'tyapp_chat_room' },
         (payload) => {
           this.zone.run(() => this.applyRoomChange(payload));
+        },
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'tyapp_chat_message' },
+        (payload) => {
+          this.zone.run(() => this.applyInboxMessageInsert(payload));
         },
       )
       .subscribe();
@@ -329,9 +397,9 @@ export class ChatService {
 
   async unsubscribeAll(): Promise<void> {
     await this.unsubscribeFromMessages();
-    if (this.roomsChannel) {
-      await this.supabase.removeChannel(this.roomsChannel);
-      this.roomsChannel = null;
+    if (this.inboxChannel) {
+      await this.supabase.removeChannel(this.inboxChannel);
+      this.inboxChannel = null;
     }
   }
 
@@ -379,6 +447,44 @@ export class ChatService {
     });
   }
 
+  private applyInboxMessageInsert(
+    payload: RealtimePostgresChangesPayload<Record<string, unknown>>,
+  ): void {
+    const row = this.normalizeMessage(payload.new as unknown as ChatMessage);
+    if (!row?.tb_tyapp_chat_msg_id || !row.room_id) return;
+
+    const knownRoom = this.rooms().some(
+      (room) => room.tb_tyapp_chat_rm_id === row.room_id,
+    );
+    if (!knownRoom) {
+      void this.fetchRooms(true, { silent: true });
+    } else {
+      this.touchRoomLastMessage(row.room_id, row.created_at ?? null);
+    }
+
+    if (row.room_id === this.subscribedRoomId) {
+      this.upsertMessage(row);
+    }
+
+    const me = this.auth.userProfile()?.user_id;
+    if (row.sender_user_id !== me && row.room_id !== this.subscribedRoomId) {
+      const room = this.rooms().find(
+        (item) => item.tb_tyapp_chat_rm_id === row.room_id,
+      );
+      this.notification.showSuccess(`New message in ${room?.name ?? 'chat'}`);
+    }
+  }
+
+  private removeRoomFromList(roomId: string): void {
+    this.rooms.update((list) =>
+      list.filter((item) => item.tb_tyapp_chat_rm_id !== roomId),
+    );
+    if (this.subscribedRoomId === roomId) {
+      this.messages.set([]);
+      void this.unsubscribeFromMessages();
+    }
+  }
+
   private applyRoomChange(
     payload: RealtimePostgresChangesPayload<Record<string, unknown>>,
   ): void {
@@ -386,9 +492,7 @@ export class ChatService {
       const row = payload.new as unknown as ChatRoom;
       if (!row?.tb_tyapp_chat_rm_id) return;
       if (row.deleted_at) {
-        this.rooms.update((list) =>
-          list.filter((item) => item.tb_tyapp_chat_rm_id !== row.tb_tyapp_chat_rm_id),
-        );
+        this.removeRoomFromList(row.tb_tyapp_chat_rm_id);
         return;
       }
       this.rooms.update((list) => {
@@ -403,9 +507,7 @@ export class ChatService {
     if (payload.eventType === 'DELETE') {
       const oldRow = payload.old as { tb_tyapp_chat_rm_id?: string };
       if (!oldRow.tb_tyapp_chat_rm_id) return;
-      this.rooms.update((list) =>
-        list.filter((item) => item.tb_tyapp_chat_rm_id !== oldRow.tb_tyapp_chat_rm_id),
-      );
+      this.removeRoomFromList(oldRow.tb_tyapp_chat_rm_id);
     }
   }
 
@@ -418,15 +520,6 @@ export class ChatService {
       this.upsertMessage(row);
       if (payload.eventType === 'INSERT') {
         this.touchRoomLastMessage(row.room_id, row.created_at ?? null);
-        const me = this.auth.userProfile()?.user_id;
-        if (row.sender_user_id !== me && row.room_id !== this.subscribedRoomId) {
-          const room = this.rooms().find(
-            (item) => item.tb_tyapp_chat_rm_id === row.room_id,
-          );
-          this.notification.showSuccess(
-            `New message in ${room?.name ?? 'chat'}`,
-          );
-        }
       }
       return;
     }

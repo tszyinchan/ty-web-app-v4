@@ -43,9 +43,9 @@
                 <span class="author">{{ vm.authorName }}</span>
               }
 
-              @if (vm.message.quote_message_id) {
+              @if (!vm.message.deleted_at && vm.message.quote_message_id) {
                 <div class="quote-preview">
-                  @if (vm.quotedAuthor) {
+                  @if (vm.quotedAuthor && !vm.quotedDeleted) {
                     <span class="quote-author">{{ vm.quotedAuthor }}</span>
                   }
                   <span class="quote-text">{{
@@ -146,11 +146,11 @@
             <span>Editing message</span>
             <button mat-button type="button" (click)="cancelEdit()">Cancel</button>
           </div>
-        } @else if (quoteDraft(); as quote) {
+        } @else if (quoteDraftVm(); as quote) {
           <div class="composer-banner">
             <div class="quote-preview">
               <span class="quote-author">{{ quote.authorName }}</span>
-              <span class="quote-text">{{ quoteSnippet(quote.plain, false) }}</span>
+              <span class="quote-text">{{ quoteSnippet(quote.plain, quote.deleted) }}</span>
             </div>
             <button mat-icon-button type="button" (click)="clearQuote()" aria-label="Clear quote">
               <mat-icon>close</mat-icon>

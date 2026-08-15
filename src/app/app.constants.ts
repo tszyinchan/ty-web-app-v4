@@ -3,9 +3,9 @@ export const APP_CONFIG = {
   version: {
     major: 4,
     minor: 58,
-    patch: 0,
+    patch: 1,
   },
-  versionDate: '2026-08-14',
+  versionDate: '2026-08-15',
 };
 
 export const WORK_SCHEDULE_NEW_RECORD_SHORTCUT = {
