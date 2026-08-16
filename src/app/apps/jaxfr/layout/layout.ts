@@ -15,6 +15,7 @@ import { MatDividerModule } from '@angular/material/divider';
 
 import { AuthService } from '../../../core/services/auth.service';
 import { AppSettingsService } from '../../../core/services/app-settings.service';
+import { PresenceService } from '../../../core/services/presence.service';
 import { AppToolbar } from '../../../core/components/app-toolbar/app-toolbar';
 import { DisplayNamePipe } from '../../../core/pipes/display-name.pipe';
 import { RoleLabelPipe } from '../../../core/pipes/role-label.pipe';
@@ -58,6 +59,7 @@ export class Layout {
 
   private readonly auth = inject(AuthService);
   private readonly appSettings = inject(AppSettingsService);
+  private readonly presence = inject(PresenceService);
   private readonly breakpointObserver = inject(BreakpointObserver);
 
   readonly isHandset = toSignal(
@@ -160,6 +162,7 @@ export class Layout {
   }
 
   async onSignOut() {
+    await this.presence.flush();
     await this.auth.logout();
   }
 

@@ -32,7 +32,7 @@ import { AuthService } from '../../../../core/services/auth.service';
 import { AppSettingsService } from '../../../../core/services/app-settings.service';
 import { HeaderService } from '../../../../core/services/header.service';
 import { DisplayNamePipe } from '../../../../core/pipes/display-name.pipe';
-import { NotificationService } from '../../../../core/services/notification.service';
+import { PresenceService } from '../../../../core/services/presence.service';
 import { UserService } from '../user/user.service';
 import { ChatHtml } from './chat-html';
 import { ChatMsgAnchor } from './chat-msg-anchor';
@@ -52,6 +52,13 @@ import {
   truncatePlain,
   type ChatReaderChip,
 } from './chat.util';
+
+interface PresenceMemberVm {
+  userId: string;
+  name: string;
+  online: boolean;
+  status: string;
+}
 
 interface QuoteDraft {
   id: string;
@@ -113,6 +120,7 @@ export class ChatPage implements OnInit, OnDestroy {
   readonly chatService = inject(ChatService);
   readonly userService = inject(UserService);
   readonly appSettings = inject(AppSettingsService);
+  readonly presence = inject(PresenceService);
 
   readonly quillModules = CHAT_QUILL_MODULES;
   readonly reactionEmojis = CHAT_REACTION_EMOJIS;
@@ -176,6 +184,17 @@ export class ChatPage implements OnInit, OnDestroy {
     const rooms = this.chatService.rooms();
     if (!q) return rooms;
     return rooms.filter((room) => room.name.toLowerCase().includes(q));
+  });
+
+  threadPresence = computed(() => {
+    const room = this.selectedRoom();
+    if (!room) return null;
+    const members = this.otherMembers(room.member_user_ids);
+    if (members.length === 0) return null;
+    if (members.length === 1) {
+      return { kind: 'direct' as const, member: members[0] };
+    }
+    return { kind: 'group' as const, members };
   });
 
   threadVm = computed<ThreadMessageVm[]>(() => {
@@ -361,14 +380,26 @@ export class ChatPage implements OnInit, OnDestroy {
     );
   }
 
-  memberSummary(memberIds: string[]): string {
-    const names = memberIds
+  otherMembers(memberIds: string[]): PresenceMemberVm[] {
+    const me = this.currentUserId();
+    const users = this.userService.users();
+    this.presence.onlineUserIds();
+    this.presence.lastSeenByUserId();
+    return memberIds
+      .filter((id) => id !== me)
       .map((id) => {
-        const user = this.userService.users().find((u) => u.user_id === id);
-        return user ? this.displayNamePipe.transform(user) : null;
-      })
-      .filter((name): name is string => !!name);
-    return names.join(', ');
+        const user = users.find((item) => item.user_id === id);
+        const name = user
+          ? this.displayNamePipe.transform(user)
+          : 'Unknown User';
+        const online = this.presence.isOnline(id);
+        return {
+          userId: id,
+          name,
+          online,
+          status: this.presence.statusLabel(id) || name,
+        };
+      });
   }
 
   unreadCount(roomId: string): number {

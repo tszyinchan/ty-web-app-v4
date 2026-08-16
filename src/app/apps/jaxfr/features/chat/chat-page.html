@@ -23,7 +23,20 @@
               <span class="unread-badge">{{ unread }}</span>
             }
           </span>
-          <span class="room-members">{{ memberSummary(room.member_user_ids) }}</span>
+          <span class="room-members">
+            @for (
+              member of otherMembers(room.member_user_ids);
+              track member.userId
+            ) {
+              <span class="presence-member" [matTooltip]="member.status">
+                <span
+                  class="presence-dot"
+                  [class.online]="member.online"
+                ></span>
+                {{ member.name }}
+              </span>
+            }
+          </span>
         </a>
       } @empty {
         @if (!chatService.loading()) {
@@ -40,6 +53,27 @@
         <p>Select a room, or create a new one.</p>
       </div>
     } @else {
+      @if (threadPresence(); as presence) {
+        <div class="thread-presence">
+          @if (presence.kind === 'direct') {
+            <span
+              class="presence-dot"
+              [class.online]="presence.member.online"
+            ></span>
+            <span>{{ presence.member.status }}</span>
+          } @else {
+            @for (member of presence.members; track member.userId) {
+              <span class="presence-member" [matTooltip]="member.status">
+                <span
+                  class="presence-dot"
+                  [class.online]="member.online"
+                ></span>
+                {{ member.name }}
+              </span>
+            }
+          }
+        </div>
+      }
       <div class="message-list">
         @for (vm of threadVm(); track vm.message.tb_tyapp_chat_msg_id) {
           <article
