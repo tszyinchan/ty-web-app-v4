@@ -5,6 +5,7 @@
 -- 3) App-wide tyapp_app_settings singleton; edit/delete windows live there
 --    (drops the short-lived tyapp_chat_config if it was created)
 -- 4) Allow longer emoji sequences (ZWJ / skin tones) in reactions
+-- 5) Multi-quote: quote_message_id uuid → quote_message_ids uuid[]
 
 CREATE OR REPLACE FUNCTION public.tyapp_chat_rename_room(
   p_room_id uuid,
@@ -321,3 +322,40 @@ BEGIN
   RETURN v_reactions;
 END;
 $$;
+
+-- 5) Multi-quote: expand → backfill → drop. Idempotent.
+--    Re-running after quote_message_id is gone skips the backfill/drop.
+ALTER TABLE public.tyapp_chat_message
+  ADD COLUMN IF NOT EXISTS quote_message_ids uuid[] NOT NULL DEFAULT '{}';
+
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'tyapp_chat_message'
+      AND column_name = 'quote_message_id'
+  ) THEN
+    UPDATE public.tyapp_chat_message
+    SET quote_message_ids = ARRAY[quote_message_id]
+    WHERE quote_message_id IS NOT NULL
+      AND cardinality(COALESCE(quote_message_ids, '{}'::uuid[])) = 0;
+
+    ALTER TABLE public.tyapp_chat_message
+      DROP COLUMN quote_message_id;
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_constraint
+    WHERE conname = 'tyapp_chat_message_quote_ids_max'
+  ) THEN
+    ALTER TABLE public.tyapp_chat_message
+      ADD CONSTRAINT tyapp_chat_message_quote_ids_max
+      CHECK (cardinality(quote_message_ids) <= 10);
+  END IF;
+END $$;

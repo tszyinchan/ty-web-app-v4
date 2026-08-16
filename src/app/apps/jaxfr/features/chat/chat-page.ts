@@ -12,6 +12,7 @@ import {
   signal,
   untracked,
   viewChild,
+  viewChildren,
 } from '@angular/core';
 import 'emoji-picker-element';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -34,7 +35,12 @@ import { DisplayNamePipe } from '../../../../core/pipes/display-name.pipe';
 import { NotificationService } from '../../../../core/services/notification.service';
 import { UserService } from '../user/user.service';
 import { ChatHtml } from './chat-html';
-import { CHAT_QUILL_MODULES, CHAT_REACTION_EMOJIS } from './chat.constants';
+import { ChatMsgAnchor } from './chat-msg-anchor';
+import {
+  CHAT_QUOTE_MAX,
+  CHAT_QUILL_MODULES,
+  CHAT_REACTION_EMOJIS,
+} from './chat.constants';
 import { ChatMessage } from './chat.model';
 import { ChatService } from './chat.service';
 import {
@@ -54,6 +60,13 @@ interface QuoteDraft {
 const LONG_PRESS_MS = 450;
 const LONG_PRESS_MOVE_PX = 10;
 
+interface QuotedItemVm {
+  id: string;
+  plain: string | null;
+  author: string | null;
+  deleted: boolean;
+}
+
 interface ThreadMessageVm {
   message: ChatMessage;
   isMine: boolean;
@@ -61,9 +74,7 @@ interface ThreadMessageVm {
   timeLabel: string;
   canEdit: boolean;
   canDelete: boolean;
-  quotedPlain: string | null;
-  quotedAuthor: string | null;
-  quotedDeleted: boolean;
+  quotedItems: QuotedItemVm[];
   reactionChips: ReturnType<typeof toReactionChips>;
 }
 
@@ -81,6 +92,7 @@ interface ThreadMessageVm {
     MatTooltipModule,
     QuillEditorComponent,
     ChatHtml,
+    ChatMsgAnchor,
   ],
   providers: [DisplayNamePipe],
   templateUrl: './chat-page.html',
@@ -110,15 +122,18 @@ export class ChatPage implements OnInit, OnDestroy {
 
   nowTick = signal(Date.now());
   draftHtml = signal('');
-  quoteDraft = signal<QuoteDraft | null>(null);
+  quoteDraft = signal<QuoteDraft[]>([]);
   editingMessageId = signal<string | null>(null);
   searchQuery = signal('');
   reactionPickerMessageId = signal<string | null>(null);
   pinnedToolbarId = signal<string | null>(null);
+  highlightMsgId = signal<string | null>(null);
 
   private editor: Quill | null = null;
   private nowTimer: ReturnType<typeof setInterval> | undefined;
+  private highlightTimer: ReturnType<typeof setTimeout> | undefined;
   private bottomAnchor = viewChild<ElementRef<HTMLElement>>('bottomAnchor');
+  private msgAnchors = viewChildren(ChatMsgAnchor);
   private lastMessageCount = 0;
   private actionMenuOpen = false;
   private toolbarFromLongPress = false;
@@ -127,15 +142,17 @@ export class ChatPage implements OnInit, OnDestroy {
   private longPressStart: { x: number; y: number; id: string } | null = null;
 
   quoteDraftVm = computed(() => {
-    const draft = this.quoteDraft();
-    if (!draft) return null;
-    const source = this.chatService
-      .messages()
-      .find((item) => item.tb_tyapp_chat_msg_id === draft.id);
-    return {
-      ...draft,
-      deleted: !source || !!source.deleted_at,
-    };
+    const drafts = this.quoteDraft();
+    const messages = this.chatService.messages();
+    return drafts.map((draft) => {
+      const source = messages.find(
+        (item) => item.tb_tyapp_chat_msg_id === draft.id,
+      );
+      return {
+        ...draft,
+        deleted: !source || !!source.deleted_at,
+      };
+    });
   });
 
   currentUserId = computed(() => this.auth.userProfile()?.user_id ?? '');
@@ -167,12 +184,24 @@ export class ChatPage implements OnInit, OnDestroy {
 
     return messages.map((message) => {
       const sender = users.find((u) => u.user_id === message.sender_user_id);
-      const quoted = message.quote_message_id
-        ? byId.get(message.quote_message_id)
-        : undefined;
-      const quotedSender = quoted
-        ? users.find((u) => u.user_id === quoted.sender_user_id)
-        : undefined;
+      const quotedItems: QuotedItemVm[] = (
+        message.quote_message_ids ?? []
+      ).map((quoteId) => {
+        const quoted = byId.get(quoteId);
+        const quotedSender = quoted
+          ? users.find((u) => u.user_id === quoted.sender_user_id)
+          : undefined;
+        return {
+          id: quoteId,
+          plain: quoted ? quoted.body_plain : null,
+          author: quotedSender
+            ? this.displayNamePipe.transform(quotedSender)
+            : quoted
+              ? 'Unknown User'
+              : null,
+          deleted: !quoted || !!quoted.deleted_at,
+        };
+      });
 
       const reactionChips = toReactionChips(
         message.reactions,
@@ -204,14 +233,7 @@ export class ChatPage implements OnInit, OnDestroy {
           now,
           this.appSettings.settings()?.chat_delete_window_ms,
         ),
-        quotedPlain: quoted ? quoted.body_plain : null,
-        quotedAuthor: quotedSender
-          ? this.displayNamePipe.transform(quotedSender)
-          : quoted
-            ? 'Unknown User'
-            : null,
-        quotedDeleted:
-          !!message.quote_message_id && (!quoted || !!quoted.deleted_at),
+        quotedItems,
         reactionChips,
       };
     });
@@ -341,25 +363,74 @@ export class ChatPage implements OnInit, OnDestroy {
     return truncatePlain(plain ?? '');
   }
 
+  isInQuoteDraft(id: string): boolean {
+    return this.quoteDraft().some((item) => item.id === id);
+  }
+
   startQuote(vm: ThreadMessageVm) {
     if (vm.message.deleted_at) return;
-    this.quoteDraft.set({
-      id: vm.message.tb_tyapp_chat_msg_id,
-      plain: vm.message.body_plain,
-      authorName: vm.authorName,
-    });
+    if (this.editingMessageId()) return;
+
+    const id = vm.message.tb_tyapp_chat_msg_id;
+    const current = this.quoteDraft();
+    if (current.some((item) => item.id === id)) {
+      this.quoteDraft.set(current.filter((item) => item.id !== id));
+      this.clearPinnedToolbar();
+      return;
+    }
+    if (current.length >= CHAT_QUOTE_MAX) {
+      this.notification.handleError(
+        'Quote Failed',
+        `You can quote at most ${CHAT_QUOTE_MAX} messages`,
+      );
+      this.clearPinnedToolbar();
+      return;
+    }
+
+    this.quoteDraft.set([
+      ...current,
+      {
+        id,
+        plain: vm.message.body_plain,
+        authorName: vm.authorName,
+      },
+    ]);
     this.clearPinnedToolbar();
   }
 
+  removeQuote(id: string) {
+    this.quoteDraft.set(this.quoteDraft().filter((item) => item.id !== id));
+  }
+
   clearQuote() {
-    this.quoteDraft.set(null);
+    this.quoteDraft.set([]);
+  }
+
+  jumpToMessage(id: string) {
+    const anchor = this.msgAnchors().find((item) => item.msgId() === id);
+    if (!anchor) {
+      this.notification.handleError(
+        'Quote',
+        'Original message is not in this room',
+      );
+      return;
+    }
+    anchor.host.nativeElement.scrollIntoView({
+      behavior: 'smooth',
+      block: 'center',
+    });
+    this.highlightMsgId.set(id);
+    if (this.highlightTimer) clearTimeout(this.highlightTimer);
+    this.highlightTimer = setTimeout(() => {
+      if (this.highlightMsgId() === id) this.highlightMsgId.set(null);
+    }, 1600);
   }
 
   startEdit(vm: ThreadMessageVm) {
     if (!vm.canEdit) return;
     this.editingMessageId.set(vm.message.tb_tyapp_chat_msg_id);
     this.draftHtml.set(vm.message.body);
-    this.quoteDraft.set(null);
+    this.quoteDraft.set([]);
     this.editor?.clipboard.dangerouslyPasteHTML(vm.message.body);
     this.clearPinnedToolbar();
   }
@@ -402,11 +473,11 @@ export class ChatPage implements OnInit, OnDestroy {
       me,
       html,
       plain,
-      this.quoteDraft()?.id,
+      this.quoteDraft().map((item) => item.id),
     );
     if (saved) {
       this.draftHtml.set('');
-      this.quoteDraft.set(null);
+      this.quoteDraft.set([]);
       this.editor?.setText('');
     }
   }
@@ -531,6 +602,7 @@ export class ChatPage implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.cancelLongPressTimer();
+    if (this.highlightTimer) clearTimeout(this.highlightTimer);
     if (this.nowTimer) clearInterval(this.nowTimer);
     this.headerService.clear();
     void this.chatService.unsubscribeFromMessages();
@@ -561,7 +633,7 @@ export class ChatPage implements OnInit, OnDestroy {
 
   private async openRoom(roomId: string) {
     this.cancelEdit();
-    this.quoteDraft.set(null);
+    this.quoteDraft.set([]);
     await this.chatService.fetchMessages(roomId);
     await this.chatService.subscribeToMessages(roomId);
     this.lastMessageCount = 0;

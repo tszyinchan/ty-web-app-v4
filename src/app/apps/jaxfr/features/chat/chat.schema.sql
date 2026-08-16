@@ -34,13 +34,16 @@ CREATE TABLE IF NOT EXISTS public.tyapp_chat_message (
   msg_type smallint NOT NULL DEFAULT 1,
   body text NOT NULL DEFAULT '',
   body_plain text NOT NULL DEFAULT '',
-  quote_message_id uuid REFERENCES public.tyapp_chat_message (tb_tyapp_chat_msg_id),
+  quote_message_ids uuid[] NOT NULL DEFAULT '{}',
   reactions jsonb NOT NULL DEFAULT '{}'::jsonb,
   edited_at timestamptz,
   status smallint NOT NULL DEFAULT 1,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
-  deleted_at timestamptz
+  deleted_at timestamptz,
+  -- Keep in sync with CHAT_QUOTE_MAX in chat.constants.ts
+  CONSTRAINT tyapp_chat_message_quote_ids_max
+    CHECK (cardinality(quote_message_ids) <= 10)
 );
 
 CREATE INDEX IF NOT EXISTS tyapp_chat_message_room_created_idx

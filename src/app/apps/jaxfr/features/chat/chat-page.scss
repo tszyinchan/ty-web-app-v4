@@ -175,6 +175,10 @@
     transform: none;
     transition: none;
   }
+
+  .bubble-row.msg-highlight .bubble {
+    animation: none;
+  }
 }
 
 .toolbar-group {
@@ -205,6 +209,11 @@
 
 .toolbar-btn:hover {
   background: var(--mat-sys-surface-container);
+}
+
+.toolbar-btn.active {
+  color: var(--mat-sys-primary);
+  background: var(--mat-sys-primary-container);
 }
 
 .toolbar-btn.toolbar-emoji {
@@ -244,11 +253,37 @@
 }
 
 .quote-preview {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  border: 0;
   border-left: 3px solid var(--mat-sys-primary);
   padding: 4px 8px;
   margin-bottom: 6px;
   background: color-mix(in srgb, var(--mat-sys-surface) 70%, transparent);
   border-radius: 0 6px 6px 0;
+}
+
+.quote-preview:hover {
+  background: color-mix(in srgb, var(--mat-sys-surface) 40%, transparent);
+}
+
+.bubble-row.msg-highlight .bubble {
+  outline: 2px solid var(--mat-sys-primary);
+  outline-offset: 2px;
+  animation: msg-highlight-pulse 1.6s ease;
+}
+
+@keyframes msg-highlight-pulse {
+  0% {
+    outline-color: var(--mat-sys-primary);
+  }
+  100% {
+    outline-color: transparent;
+  }
 }
 
 .quote-author {
@@ -345,6 +380,24 @@ emoji-picker {
   gap: 8px;
   margin-bottom: 8px;
   font-size: 13px;
+}
+
+.composer-quotes {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.composer-quotes .composer-banner {
+  margin-bottom: 0;
+}
+
+.composer-quotes .quote-preview {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+  margin-bottom: 0;
 }
 
 .composer-actions {

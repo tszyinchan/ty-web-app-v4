@@ -7,13 +7,14 @@ import { NotificationService } from '../../../../core/services/notification.serv
 import { AuthService } from '../../../../core/services/auth.service';
 import { SupabaseService } from '../../../../core/services/supabase.service';
 import { RecordStatus } from '../../../../core/models/status.enum';
+import { CHAT_QUOTE_MAX } from './chat.constants';
 import {
   ChatMessage,
   ChatMessageType,
   ChatReactions,
   ChatRoom,
 } from './chat.model';
-import { normalizeReactions, sanitizeChatHtml } from './chat.util';
+import { normalizeQuoteIds, normalizeReactions, sanitizeChatHtml } from './chat.util';
 
 @Injectable({ providedIn: 'root' })
 export class ChatService {
@@ -154,10 +155,18 @@ export class ChatService {
     senderUserId: string,
     bodyHtml: string,
     bodyPlain: string,
-    quoteMessageId?: string | null,
+    quoteMessageIds?: string[],
   ): Promise<ChatMessage | null> {
     this.loading.set(true);
     try {
+      const inRoom = new Set(
+        this.messages()
+          .filter((item) => item.room_id === roomId)
+          .map((item) => item.tb_tyapp_chat_msg_id),
+      );
+      const quoteIds = [...new Set(quoteMessageIds ?? [])]
+        .filter((id) => inRoom.has(id))
+        .slice(0, CHAT_QUOTE_MAX);
       const { data, error } = await this.supabase
         .from('tyapp_chat_message')
         .insert({
@@ -166,7 +175,7 @@ export class ChatService {
           msg_type: ChatMessageType.Text,
           body: sanitizeChatHtml(bodyHtml),
           body_plain: bodyPlain.trim(),
-          quote_message_id: quoteMessageId || null,
+          quote_message_ids: quoteIds,
           reactions: {},
           status: RecordStatus.Active,
         })
@@ -404,10 +413,15 @@ export class ChatService {
   }
 
   private normalizeMessage(row: ChatMessage): ChatMessage {
+    const extra = row as unknown as Record<string, unknown>;
+    const legacyId =
+      typeof extra['quote_message_id'] === 'string'
+        ? extra['quote_message_id']
+        : null;
     return {
       ...row,
       reactions: normalizeReactions(row.reactions),
-      quote_message_id: row.quote_message_id || null,
+      quote_message_ids: normalizeQuoteIds(row.quote_message_ids, legacyId),
       edited_at: row.edited_at || null,
       deleted_at: row.deleted_at || null,
     };

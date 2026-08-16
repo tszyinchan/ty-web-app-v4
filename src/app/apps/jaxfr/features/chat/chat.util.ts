@@ -1,4 +1,5 @@
 import DOMPurify, { type Config } from 'dompurify';
+import { CHAT_QUOTE_MAX } from './chat.constants';
 import { ChatMessage, ChatReactionEntry, ChatReactions } from './chat.model';
 
 const ALLOWED_CSS_PROPS = new Set([
@@ -131,6 +132,18 @@ export function normalizeReactions(
     }
   }
   return result;
+}
+
+export function normalizeQuoteIds(
+  ids: unknown,
+  legacyId?: string | null,
+): string[] {
+  const fromArray = Array.isArray(ids)
+    ? ids.filter((id): id is string => typeof id === 'string' && id.length > 0)
+    : [];
+  if (fromArray.length > 0) return fromArray.slice(0, CHAT_QUOTE_MAX);
+  if (typeof legacyId === 'string' && legacyId.length > 0) return [legacyId];
+  return [];
 }
 
 export interface ReactionChipVm {

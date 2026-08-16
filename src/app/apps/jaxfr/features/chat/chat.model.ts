@@ -35,7 +35,7 @@ export interface ChatMessage {
   msg_type: ChatMessageType;
   body: string;
   body_plain: string;
-  quote_message_id?: string | null;
+  quote_message_ids: string[];
   reactions: ChatReactions;
   edited_at?: string | null;
   status: RecordStatus;
