@@ -1,7 +1,9 @@
 import { CommonModule } from '@angular/common';
 import {
   Component,
+  CUSTOM_ELEMENTS_SCHEMA,
   ElementRef,
+  HostListener,
   OnDestroy,
   OnInit,
   computed,
@@ -11,8 +13,8 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
+import 'emoji-picker-element';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -39,6 +41,7 @@ import {
   canDeleteMessage,
   canEditMessage,
   isPlainEmpty,
+  toReactionChips,
   truncatePlain,
 } from './chat.util';
 
@@ -47,6 +50,9 @@ interface QuoteDraft {
   plain: string;
   authorName: string;
 }
+
+const LONG_PRESS_MS = 450;
+const LONG_PRESS_MOVE_PX = 10;
 
 interface ThreadMessageVm {
   message: ChatMessage;
@@ -58,12 +64,7 @@ interface ThreadMessageVm {
   quotedPlain: string | null;
   quotedAuthor: string | null;
   quotedDeleted: boolean;
-  reactionChips: {
-    emoji: string;
-    count: number;
-    mine: boolean;
-    tooltip: string;
-  }[];
+  reactionChips: ReturnType<typeof toReactionChips>;
 }
 
 @Component({
@@ -84,6 +85,7 @@ interface ThreadMessageVm {
   providers: [DisplayNamePipe],
   templateUrl: './chat-page.html',
   styleUrl: './chat-page.scss',
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
 })
 export class ChatPage implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
@@ -92,7 +94,6 @@ export class ChatPage implements OnInit, OnDestroy {
   private auth = inject(AuthService);
   private notification = inject(NotificationService);
   private displayNamePipe = inject(DisplayNamePipe);
-  private breakpointObserver = inject(BreakpointObserver);
 
   readonly chatService = inject(ChatService);
   readonly userService = inject(UserService);
@@ -100,13 +101,7 @@ export class ChatPage implements OnInit, OnDestroy {
 
   readonly quillModules = CHAT_QUILL_MODULES;
   readonly reactionEmojis = CHAT_REACTION_EMOJIS;
-
-  readonly isHandset = toSignal(
-    this.breakpointObserver
-      .observe(Breakpoints.Handset)
-      .pipe(map((r) => r.matches)),
-    { initialValue: false },
-  );
+  readonly messageOverflowEnabled = false;
 
   readonly roomId = toSignal(
     this.route.paramMap.pipe(map((params) => params.get('roomId'))),
@@ -118,11 +113,18 @@ export class ChatPage implements OnInit, OnDestroy {
   quoteDraft = signal<QuoteDraft | null>(null);
   editingMessageId = signal<string | null>(null);
   searchQuery = signal('');
+  reactionPickerMessageId = signal<string | null>(null);
+  pinnedToolbarId = signal<string | null>(null);
 
   private editor: Quill | null = null;
   private nowTimer: ReturnType<typeof setInterval> | undefined;
   private bottomAnchor = viewChild<ElementRef<HTMLElement>>('bottomAnchor');
   private lastMessageCount = 0;
+  private actionMenuOpen = false;
+  private toolbarFromLongPress = false;
+  private lastPointerWasMouse = true;
+  private longPressTimer: ReturnType<typeof setTimeout> | undefined;
+  private longPressStart: { x: number; y: number; id: string } | null = null;
 
   quoteDraftVm = computed(() => {
     const draft = this.quoteDraft();
@@ -172,18 +174,13 @@ export class ChatPage implements OnInit, OnDestroy {
         ? users.find((u) => u.user_id === quoted.sender_user_id)
         : undefined;
 
-      const reactionChips = Object.entries(message.reactions).map(
-        ([emoji, entries]) => ({
-          emoji,
-          count: entries.length,
-          mine: entries.some((entry) => entry.user_id === me),
-          tooltip: entries
-            .map((entry) => {
-              const user = users.find((u) => u.user_id === entry.user_id);
-              return user ? this.displayNamePipe.transform(user) : 'Unknown';
-            })
-            .join(', '),
-        }),
+      const reactionChips = toReactionChips(
+        message.reactions,
+        me,
+        (userId) => {
+          const user = users.find((u) => u.user_id === userId);
+          return user ? this.displayNamePipe.transform(user) : 'Unknown';
+        },
       );
 
       return {
@@ -221,6 +218,14 @@ export class ChatPage implements OnInit, OnDestroy {
   });
 
   constructor() {
+    effect(() => {
+      this.roomId();
+      untracked(() => {
+        this.reactionPickerMessageId.set(null);
+        this.clearPinnedToolbar();
+      });
+    });
+
     effect(() => {
       const id = this.roomId();
       const room = this.selectedRoom();
@@ -343,6 +348,7 @@ export class ChatPage implements OnInit, OnDestroy {
       plain: vm.message.body_plain,
       authorName: vm.authorName,
     });
+    this.clearPinnedToolbar();
   }
 
   clearQuote() {
@@ -355,6 +361,7 @@ export class ChatPage implements OnInit, OnDestroy {
     this.draftHtml.set(vm.message.body);
     this.quoteDraft.set(null);
     this.editor?.clipboard.dangerouslyPasteHTML(vm.message.body);
+    this.clearPinnedToolbar();
   }
 
   cancelEdit() {
@@ -408,9 +415,99 @@ export class ChatPage implements OnInit, OnDestroy {
     await this.chatService.toggleReaction(messageId, emoji);
   }
 
+  onToolbarEmoji(vm: ThreadMessageVm, emoji: string) {
+    void this.onToggleReaction(vm.message.tb_tyapp_chat_msg_id, emoji);
+    if (this.toolbarFromLongPress) {
+      this.clearPinnedToolbar();
+    }
+  }
+
+  openReactionPicker(messageId: string) {
+    this.clearPinnedToolbar();
+    this.reactionPickerMessageId.set(messageId);
+  }
+
+  closeReactionPicker() {
+    this.reactionPickerMessageId.set(null);
+  }
+
+  onPickerEmoji(event: Event) {
+    const messageId = this.reactionPickerMessageId();
+    const unicode = (event as CustomEvent<{ unicode?: string }>).detail?.unicode;
+    const emoji = unicode?.trim() ?? '';
+    if (!messageId || !emoji) return;
+    this.closeReactionPicker();
+    void this.onToggleReaction(messageId, emoji);
+  }
+
+  onActionMenuOpened(messageId: string) {
+    this.actionMenuOpen = true;
+    this.pinnedToolbarId.set(messageId);
+  }
+
+  onActionMenuClosed() {
+    this.actionMenuOpen = false;
+    if (!this.toolbarFromLongPress) {
+      this.pinnedToolbarId.set(null);
+    }
+  }
+
+  onMessagePointerDown(event: PointerEvent, vm: ThreadMessageVm) {
+    this.lastPointerWasMouse = event.pointerType === 'mouse';
+    this.cancelLongPressTimer();
+    if (vm.message.deleted_at) return;
+    if (event.pointerType === 'mouse') return;
+
+    this.longPressStart = {
+      x: event.clientX,
+      y: event.clientY,
+      id: vm.message.tb_tyapp_chat_msg_id,
+    };
+    this.longPressTimer = setTimeout(() => {
+      if (!this.longPressStart) return;
+      this.toolbarFromLongPress = true;
+      this.pinnedToolbarId.set(this.longPressStart.id);
+      this.longPressStart = null;
+    }, LONG_PRESS_MS);
+  }
+
+  onMessagePointerMove(event: PointerEvent) {
+    if (!this.longPressStart) return;
+    const dx = event.clientX - this.longPressStart.x;
+    const dy = event.clientY - this.longPressStart.y;
+    if (dx * dx + dy * dy > LONG_PRESS_MOVE_PX * LONG_PRESS_MOVE_PX) {
+      this.cancelLongPressTimer();
+    }
+  }
+
+  onMessagePointerUp() {
+    this.cancelLongPressTimer();
+  }
+
+  onMessageContextMenu(event: Event, vm: ThreadMessageVm) {
+    if (vm.message.deleted_at) return;
+    if (!this.lastPointerWasMouse) {
+      event.preventDefault();
+    }
+  }
+
+  @HostListener('document:pointerdown')
+  onDocumentPointerDown() {
+    if (this.actionMenuOpen || !this.toolbarFromLongPress) return;
+    this.toolbarFromLongPress = false;
+    this.pinnedToolbarId.set(null);
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscapeReactionPicker() {
+    this.closeReactionPicker();
+    this.clearPinnedToolbar();
+  }
+
   async onDeleteMessage(vm: ThreadMessageVm) {
     if (!vm.canDelete) return;
     if (!confirm('Delete this message?')) return;
+    this.clearPinnedToolbar();
     await this.chatService.deleteMessage(vm.message.tb_tyapp_chat_msg_id);
   }
 
@@ -433,9 +530,24 @@ export class ChatPage implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.cancelLongPressTimer();
     if (this.nowTimer) clearInterval(this.nowTimer);
     this.headerService.clear();
     void this.chatService.unsubscribeFromMessages();
+  }
+
+  private clearPinnedToolbar() {
+    this.cancelLongPressTimer();
+    this.toolbarFromLongPress = false;
+    this.pinnedToolbarId.set(null);
+  }
+
+  private cancelLongPressTimer() {
+    if (this.longPressTimer) {
+      clearTimeout(this.longPressTimer);
+      this.longPressTimer = undefined;
+    }
+    this.longPressStart = null;
   }
 
   private async syncRoom(roomId: string | null) {

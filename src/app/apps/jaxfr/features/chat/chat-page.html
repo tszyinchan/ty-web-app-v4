@@ -37,7 +37,92 @@
     } @else {
       <div class="message-list">
         @for (vm of threadVm(); track vm.message.tb_tyapp_chat_msg_id) {
-          <article class="bubble-row" [class.mine]="vm.isMine">
+          <article
+            class="bubble-row"
+            [class.mine]="vm.isMine"
+            [class.toolbar-pinned]="
+              pinnedToolbarId() === vm.message.tb_tyapp_chat_msg_id
+            "
+            (pointerdown)="onMessagePointerDown($event, vm)"
+            (pointermove)="onMessagePointerMove($event)"
+            (pointerup)="onMessagePointerUp()"
+            (pointercancel)="onMessagePointerUp()"
+            (contextmenu)="onMessageContextMenu($event, vm)"
+          >
+            @if (!vm.message.deleted_at) {
+              <div
+                class="msg-toolbar"
+                (pointerdown)="$event.stopPropagation()"
+              >
+                <div class="toolbar-group">
+                  @for (emoji of reactionEmojis; track emoji) {
+                    <button
+                      type="button"
+                      class="toolbar-btn toolbar-emoji"
+                      [attr.aria-label]="'React with ' + emoji"
+                      (click)="onToolbarEmoji(vm, emoji)"
+                    >
+                      {{ emoji }}
+                    </button>
+                  }
+                  <button
+                    type="button"
+                    class="toolbar-btn"
+                    aria-label="More emojis"
+                    (click)="openReactionPicker(vm.message.tb_tyapp_chat_msg_id)"
+                  >
+                    <mat-icon>add</mat-icon>
+                  </button>
+                </div>
+
+                <div class="toolbar-split"></div>
+
+                <div class="toolbar-group">
+                  <button
+                    type="button"
+                    class="toolbar-btn"
+                    aria-label="Quote"
+                    (click)="startQuote(vm)"
+                  >
+                    <mat-icon>format_quote</mat-icon>
+                  </button>
+                  @if (vm.canEdit) {
+                    <button
+                      type="button"
+                      class="toolbar-btn"
+                      aria-label="Edit"
+                      (click)="startEdit(vm)"
+                    >
+                      <mat-icon>edit</mat-icon>
+                    </button>
+                  }
+                  @if (vm.canDelete) {
+                    <button
+                      type="button"
+                      class="toolbar-btn"
+                      aria-label="Delete"
+                      (click)="onDeleteMessage(vm)"
+                    >
+                      <mat-icon>delete_outline</mat-icon>
+                    </button>
+                  }
+                  @if (messageOverflowEnabled) {
+                    <button
+                      type="button"
+                      class="toolbar-btn"
+                      [matMenuTriggerFor]="msgOverflow"
+                      aria-label="More actions"
+                      (menuOpened)="onActionMenuOpened(vm.message.tb_tyapp_chat_msg_id)"
+                      (menuClosed)="onActionMenuClosed()"
+                    >
+                      <mat-icon>more_horiz</mat-icon>
+                    </button>
+                    <mat-menu #msgOverflow="matMenu"></mat-menu>
+                  }
+                </div>
+              </div>
+            }
+
             <div class="bubble">
               @if (!vm.isMine) {
                 <span class="author">{{ vm.authorName }}</span>
@@ -86,51 +171,6 @@
               }
             </div>
 
-            @if (!vm.message.deleted_at) {
-              <button
-                mat-icon-button
-                class="msg-more"
-                [matMenuTriggerFor]="msgMenu"
-                aria-label="Message actions"
-              >
-                <mat-icon>more_vert</mat-icon>
-              </button>
-              <mat-menu #msgMenu="matMenu">
-                <button mat-menu-item (click)="startQuote(vm)">
-                  <mat-icon>format_quote</mat-icon>
-                  <span>Quote</span>
-                </button>
-                <button
-                  mat-menu-item
-                  [matMenuTriggerFor]="emojiMenu"
-                >
-                  <mat-icon>add_reaction</mat-icon>
-                  <span>React</span>
-                </button>
-                @if (vm.canEdit) {
-                  <button mat-menu-item (click)="startEdit(vm)">
-                    <mat-icon>edit</mat-icon>
-                    <span>Edit</span>
-                  </button>
-                }
-                @if (vm.canDelete) {
-                  <button mat-menu-item (click)="onDeleteMessage(vm)">
-                    <mat-icon>delete_outline</mat-icon>
-                    <span>Delete</span>
-                  </button>
-                }
-              </mat-menu>
-              <mat-menu #emojiMenu="matMenu">
-                @for (emoji of reactionEmojis; track emoji) {
-                  <button
-                    mat-menu-item
-                    (click)="onToggleReaction(vm.message.tb_tyapp_chat_msg_id, emoji)"
-                  >
-                    {{ emoji }}
-                  </button>
-                }
-              </mat-menu>
-            }
           </article>
         } @empty {
           @if (!chatService.loading()) {
@@ -184,4 +224,14 @@
       </div>
     }
   </section>
+
+  @if (reactionPickerMessageId()) {
+    <div
+      class="reaction-picker-backdrop"
+      (click)="closeReactionPicker()"
+    ></div>
+    <div class="reaction-picker-panel">
+      <emoji-picker (emoji-click)="onPickerEmoji($event)"></emoji-picker>
+    </div>
+  }
 </div>

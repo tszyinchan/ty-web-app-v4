@@ -133,6 +133,45 @@ export function normalizeReactions(
   return result;
 }
 
+export interface ReactionChipVm {
+  emoji: string;
+  count: number;
+  mine: boolean;
+  tooltip: string;
+}
+
+/** Order chips by when that emoji first appeared on the message. */
+export function toReactionChips(
+  reactions: ChatReactions,
+  currentUserId: string | undefined,
+  labelForUserId: (userId: string) => string,
+): ReactionChipVm[] {
+  return Object.entries(reactions)
+    .map(([emoji, entries]) => {
+      let firstAt = Number.POSITIVE_INFINITY;
+      for (const entry of entries) {
+        const t = Date.parse(entry.created_at);
+        if (Number.isFinite(t) && t < firstAt) firstAt = t;
+      }
+      return {
+        emoji,
+        count: entries.length,
+        mine:
+          !!currentUserId &&
+          entries.some((entry) => entry.user_id === currentUserId),
+        tooltip: entries.map((entry) => labelForUserId(entry.user_id)).join(', '),
+        firstAt,
+      };
+    })
+    .sort((a, b) => a.firstAt - b.firstAt || a.emoji.localeCompare(b.emoji))
+    .map((item) => ({
+      emoji: item.emoji,
+      count: item.count,
+      mine: item.mine,
+      tooltip: item.tooltip,
+    }));
+}
+
 export function truncatePlain(text: string, max = 80): string {
   const trimmed = text.replace(/\s+/g, ' ').trim();
   if (trimmed.length <= max) return trimmed;

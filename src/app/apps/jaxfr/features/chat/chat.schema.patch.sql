@@ -4,6 +4,7 @@
 -- 2) Let members SELECT soft-deleted rooms so Realtime can broadcast deletes
 -- 3) App-wide tyapp_app_settings singleton; edit/delete windows live there
 --    (drops the short-lived tyapp_chat_config if it was created)
+-- 4) Allow longer emoji sequences (ZWJ / skin tones) in reactions
 
 CREATE OR REPLACE FUNCTION public.tyapp_chat_rename_room(
   p_room_id uuid,
@@ -240,5 +241,83 @@ BEGIN
   SET deleted_at = now()
   WHERE tb_tyapp_chat_msg_id = record_id
     AND deleted_at IS NULL;
+END;
+$$;
+
+-- Allow ZWJ / skin-tone sequences from the full emoji picker (was 16).
+CREATE OR REPLACE FUNCTION public.tyapp_chat_toggle_reaction(
+  p_message_id uuid,
+  p_emoji text
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_room_id uuid;
+  v_reactions jsonb;
+  v_list jsonb;
+  v_uid uuid := auth.uid();
+  v_found boolean;
+  v_new_list jsonb;
+BEGIN
+  IF v_uid IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  IF p_emoji IS NULL OR length(trim(p_emoji)) = 0 OR length(p_emoji) > 64 THEN
+    RAISE EXCEPTION 'Invalid emoji';
+  END IF;
+
+  SELECT room_id, reactions
+  INTO v_room_id, v_reactions
+  FROM public.tyapp_chat_message
+  WHERE tb_tyapp_chat_msg_id = p_message_id
+    AND deleted_at IS NULL;
+
+  IF v_room_id IS NULL THEN
+    RAISE EXCEPTION 'Message not found';
+  END IF;
+
+  IF NOT public.tyapp_chat_is_room_member(v_room_id) THEN
+    RAISE EXCEPTION 'Not a room member';
+  END IF;
+
+  v_reactions := COALESCE(v_reactions, '{}'::jsonb);
+  v_list := COALESCE(v_reactions -> p_emoji, '[]'::jsonb);
+
+  SELECT EXISTS (
+    SELECT 1
+    FROM jsonb_array_elements(v_list) e
+    WHERE e ->> 'user_id' = v_uid::text
+  )
+  INTO v_found;
+
+  IF v_found THEN
+    SELECT COALESCE(jsonb_agg(e), '[]'::jsonb)
+    INTO v_new_list
+    FROM jsonb_array_elements(v_list) e
+    WHERE e ->> 'user_id' <> v_uid::text;
+  ELSE
+    v_new_list := v_list || jsonb_build_array(
+      jsonb_build_object(
+        'user_id', v_uid,
+        'created_at', now()
+      )
+    );
+  END IF;
+
+  IF v_new_list = '[]'::jsonb THEN
+    v_reactions := v_reactions - p_emoji;
+  ELSE
+    v_reactions := jsonb_set(v_reactions, ARRAY[p_emoji], v_new_list);
+  END IF;
+
+  UPDATE public.tyapp_chat_message
+  SET reactions = v_reactions
+  WHERE tb_tyapp_chat_msg_id = p_message_id;
+
+  RETURN v_reactions;
 END;
 $$;

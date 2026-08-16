@@ -207,7 +207,7 @@ BEGIN
     RAISE EXCEPTION 'Not authenticated';
   END IF;
 
-  IF p_emoji IS NULL OR length(trim(p_emoji)) = 0 OR length(p_emoji) > 16 THEN
+  IF p_emoji IS NULL OR length(trim(p_emoji)) = 0 OR length(p_emoji) > 64 THEN
     RAISE EXCEPTION 'Invalid emoji';
   END IF;
 
