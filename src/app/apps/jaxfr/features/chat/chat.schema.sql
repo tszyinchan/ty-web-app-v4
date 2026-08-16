@@ -1,6 +1,6 @@
 -- Jaxfr Chat schema, RLS, and RPCs.
 -- Paste this entire file into the Supabase SQL editor.
--- After it runs, confirm Realtime is enabled for both tables
+-- After it runs, confirm Realtime is enabled for the chat tables
 -- (Database → Replication, or the ALTER PUBLICATION statements below).
 --
 -- Edit / delete windows come from tyapp_app_settings (see
@@ -55,6 +55,21 @@ CREATE INDEX IF NOT EXISTS tyapp_chat_room_last_msg_idx
 CREATE INDEX IF NOT EXISTS tyapp_chat_room_members_idx
   ON public.tyapp_chat_room USING GIN (member_user_ids);
 
+-- One watermark row per member per room (not per message).
+CREATE TABLE IF NOT EXISTS public.tyapp_chat_room_read (
+  tb_tyapp_chat_rd_id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tb_tyapp_chat_rd_seq_no bigint GENERATED ALWAYS AS IDENTITY,
+  room_id uuid NOT NULL REFERENCES public.tyapp_chat_room (tb_tyapp_chat_rm_id),
+  user_id uuid NOT NULL REFERENCES public.tyapp_user (user_id),
+  last_read_at timestamptz NOT NULL DEFAULT now(),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT tyapp_chat_room_read_unique UNIQUE (room_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS tyapp_chat_room_read_room_idx
+  ON public.tyapp_chat_room_read (room_id);
+
 -- ---------------------------------------------------------------------------
 -- updated_at + last_message_at
 -- ---------------------------------------------------------------------------
@@ -78,6 +93,12 @@ CREATE TRIGGER tyapp_chat_room_set_updated_at
 DROP TRIGGER IF EXISTS tyapp_chat_message_set_updated_at ON public.tyapp_chat_message;
 CREATE TRIGGER tyapp_chat_message_set_updated_at
   BEFORE UPDATE ON public.tyapp_chat_message
+  FOR EACH ROW
+  EXECUTE FUNCTION public.tyapp_chat_set_updated_at();
+
+DROP TRIGGER IF EXISTS tyapp_chat_room_read_set_updated_at ON public.tyapp_chat_room_read;
+CREATE TRIGGER tyapp_chat_room_read_set_updated_at
+  BEFORE UPDATE ON public.tyapp_chat_room_read
   FOR EACH ROW
   EXECUTE FUNCTION public.tyapp_chat_set_updated_at();
 
@@ -392,18 +413,75 @@ BEGIN
 END;
 $$;
 
+CREATE OR REPLACE FUNCTION public.tyapp_chat_mark_room_read(p_room_id uuid)
+RETURNS public.tyapp_chat_room_read
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_row public.tyapp_chat_room_read;
+  v_uid uuid := auth.uid();
+BEGIN
+  IF v_uid IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  IF NOT public.tyapp_chat_is_room_member(p_room_id) THEN
+    RAISE EXCEPTION 'Not a room member';
+  END IF;
+
+  INSERT INTO public.tyapp_chat_room_read (room_id, user_id, last_read_at)
+  VALUES (p_room_id, v_uid, now())
+  ON CONFLICT (room_id, user_id)
+  DO UPDATE SET
+    last_read_at = GREATEST(
+      public.tyapp_chat_room_read.last_read_at,
+      EXCLUDED.last_read_at
+    )
+  RETURNING * INTO v_row;
+
+  RETURN v_row;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.tyapp_chat_unread_counts()
+RETURNS TABLE (room_id uuid, unread_count bigint)
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT m.room_id, count(*)::bigint
+  FROM public.tyapp_chat_message m
+  INNER JOIN public.tyapp_chat_room r
+    ON r.tb_tyapp_chat_rm_id = m.room_id
+   AND r.deleted_at IS NULL
+   AND auth.uid() = ANY (r.member_user_ids)
+  LEFT JOIN public.tyapp_chat_room_read rd
+    ON rd.room_id = m.room_id
+   AND rd.user_id = auth.uid()
+  WHERE m.deleted_at IS NULL
+    AND m.sender_user_id IS DISTINCT FROM auth.uid()
+    AND (rd.last_read_at IS NULL OR m.created_at > rd.last_read_at)
+  GROUP BY m.room_id;
+$$;
+
 -- ---------------------------------------------------------------------------
 -- Grants: members may SELECT/INSERT; UPDATE/DELETE go through RPCs
 -- ---------------------------------------------------------------------------
 
 ALTER TABLE public.tyapp_chat_room ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tyapp_chat_message ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.tyapp_chat_room_read ENABLE ROW LEVEL SECURITY;
 
 REVOKE ALL ON public.tyapp_chat_room FROM PUBLIC, anon;
 REVOKE ALL ON public.tyapp_chat_message FROM PUBLIC, anon;
+REVOKE ALL ON public.tyapp_chat_room_read FROM PUBLIC, anon;
 
 GRANT SELECT, INSERT ON public.tyapp_chat_room TO authenticated;
 GRANT SELECT, INSERT ON public.tyapp_chat_message TO authenticated;
+GRANT SELECT ON public.tyapp_chat_room_read TO authenticated;
 
 GRANT EXECUTE ON FUNCTION public.tyapp_chat_is_room_member(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.tyapp_chat_edit_message(uuid, text, text) TO authenticated;
@@ -411,6 +489,8 @@ GRANT EXECUTE ON FUNCTION public.tyapp_chat_toggle_reaction(uuid, text) TO authe
 GRANT EXECUTE ON FUNCTION public.tyapp_chat_message_soft_delete_single_record(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.tyapp_chat_room_soft_delete_single_record(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.tyapp_chat_rename_room(uuid, text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.tyapp_chat_mark_room_read(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.tyapp_chat_unread_counts() TO authenticated;
 
 DROP POLICY IF EXISTS tyapp_chat_room_select ON public.tyapp_chat_room;
 CREATE POLICY tyapp_chat_room_select
@@ -448,12 +528,21 @@ CREATE POLICY tyapp_chat_message_insert
     AND public.tyapp_chat_is_room_member(room_id)
   );
 
+DROP POLICY IF EXISTS tyapp_chat_room_read_select ON public.tyapp_chat_room_read;
+CREATE POLICY tyapp_chat_room_read_select
+  ON public.tyapp_chat_room_read
+  FOR SELECT
+  TO authenticated
+  USING (public.tyapp_chat_is_room_member(room_id));
+
 -- ---------------------------------------------------------------------------
 -- Realtime
 -- ---------------------------------------------------------------------------
 
 ALTER TABLE public.tyapp_chat_room REPLICA IDENTITY FULL;
 ALTER TABLE public.tyapp_chat_message REPLICA IDENTITY FULL;
+ALTER TABLE public.tyapp_chat_room_read REPLICA IDENTITY FULL;
 
 ALTER PUBLICATION supabase_realtime ADD TABLE public.tyapp_chat_room;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.tyapp_chat_message;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.tyapp_chat_room_read;

@@ -1,6 +1,6 @@
 import DOMPurify, { type Config } from 'dompurify';
 import { CHAT_QUOTE_MAX } from './chat.constants';
-import { ChatMessage, ChatReactionEntry, ChatReactions } from './chat.model';
+import { ChatMessage, ChatReactionEntry, ChatReactions, ChatRoomRead } from './chat.model';
 
 const ALLOWED_CSS_PROPS = new Set([
   'color',
@@ -189,4 +189,69 @@ export function truncatePlain(text: string, max = 80): string {
   const trimmed = text.replace(/\s+/g, ' ').trim();
   if (trimmed.length <= max) return trimmed;
   return `${trimmed.slice(0, max)}…`;
+}
+
+export function initialsFromName(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return '?';
+  if (parts.length === 1) {
+    const token = parts[0];
+    return token.length === 1 ? token.toUpperCase() : token.slice(0, 2).toUpperCase();
+  }
+  return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+}
+
+export interface ChatReaderChip {
+  userId: string;
+  initials: string;
+  name: string;
+}
+
+/** Each other member's chip sits on the newest of *my* messages their watermark has reached. */
+export function readersByMessageId(
+  messages: ChatMessage[],
+  reads: ChatRoomRead[],
+  currentUserId: string,
+  labelForUserId: (userId: string) => string,
+): Map<string, ChatReaderChip[]> {
+  const result = new Map<string, ChatReaderChip[]>();
+  if (!currentUserId) return result;
+
+  const mine = messages
+    .filter(
+      (item) =>
+        item.sender_user_id === currentUserId &&
+        !item.deleted_at &&
+        !!item.created_at,
+    )
+    .sort((a, b) => (a.created_at ?? '').localeCompare(b.created_at ?? ''));
+
+  if (mine.length === 0) return result;
+
+  for (const read of reads) {
+    if (read.user_id === currentUserId) continue;
+    let match: ChatMessage | undefined;
+    for (const message of mine) {
+      if ((message.created_at ?? '') <= read.last_read_at) {
+        match = message;
+      } else {
+        break;
+      }
+    }
+    if (!match) continue;
+    const name = labelForUserId(read.user_id);
+    const list = result.get(match.tb_tyapp_chat_msg_id) ?? [];
+    list.push({
+      userId: read.user_id,
+      initials: initialsFromName(name),
+      name,
+    });
+    result.set(match.tb_tyapp_chat_msg_id, list);
+  }
+
+  for (const list of result.values()) {
+    list.sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  return result;
 }

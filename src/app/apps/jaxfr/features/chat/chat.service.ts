@@ -7,12 +7,13 @@ import { NotificationService } from '../../../../core/services/notification.serv
 import { AuthService } from '../../../../core/services/auth.service';
 import { SupabaseService } from '../../../../core/services/supabase.service';
 import { RecordStatus } from '../../../../core/models/status.enum';
-import { CHAT_QUOTE_MAX } from './chat.constants';
+import { CHAT_MARK_READ_DEBOUNCE_MS, CHAT_QUOTE_MAX } from './chat.constants';
 import {
   ChatMessage,
   ChatMessageType,
   ChatReactions,
   ChatRoom,
+  ChatRoomRead,
 } from './chat.model';
 import { normalizeQuoteIds, normalizeReactions, sanitizeChatHtml } from './chat.util';
 
@@ -25,6 +26,8 @@ export class ChatService {
 
   rooms = signal<ChatRoom[]>([]);
   messages = signal<ChatMessage[]>([]);
+  roomReads = signal<ChatRoomRead[]>([]);
+  unreadByRoomId = signal<Record<string, number>>({});
   loading = signal(false);
   roomsReady = signal(false);
 
@@ -32,6 +35,7 @@ export class ChatService {
   private inboxChannel: RealtimeChannel | null = null;
   private messagesChannel: RealtimeChannel | null = null;
   private subscribedRoomId: string | null = null;
+  private markReadTimer: ReturnType<typeof setTimeout> | undefined;
 
   constructor() {
     effect(() => {
@@ -46,6 +50,8 @@ export class ChatService {
           this.roomsReady.set(false);
           this.rooms.set([]);
           this.messages.set([]);
+          this.roomReads.set([]);
+          this.unreadByRoomId.set({});
         }
       });
     });
@@ -69,8 +75,11 @@ export class ChatService {
 
       if (error) throw error;
 
+      const unread = await this.loadUnreadCounts();
+
       this.zone.run(() => {
         this.rooms.set((data as ChatRoom[]) || []);
+        this.applyUnreadCounts(unread);
         this.roomsLoaded = true;
         this.roomsReady.set(true);
         if (!silent) this.loading.set(false);
@@ -100,6 +109,9 @@ export class ChatService {
         );
         this.loading.set(false);
       });
+      await this.fetchRoomReads(roomId);
+      this.zeroUnread(roomId);
+      this.scheduleMarkRead(roomId);
     } catch (error: unknown) {
       this.notification.handleError('Fetch Messages Failed', error);
       this.zone.run(() => {
@@ -189,6 +201,7 @@ export class ChatService {
         this.upsertMessage(saved);
         this.touchRoomLastMessage(roomId, saved.created_at ?? null);
         this.loading.set(false);
+        this.scheduleMarkRead(roomId);
         return saved;
       });
     } catch (error: unknown) {
@@ -371,6 +384,13 @@ export class ChatService {
           this.zone.run(() => this.applyInboxMessageInsert(payload));
         },
       )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'tyapp_chat_room_read' },
+        (payload) => {
+          this.zone.run(() => this.applyReadChange(payload));
+        },
+      )
       .subscribe();
   }
 
@@ -397,11 +417,13 @@ export class ChatService {
   }
 
   async unsubscribeFromMessages(): Promise<void> {
+    this.clearMarkReadTimer();
     if (this.messagesChannel) {
       await this.supabase.removeChannel(this.messagesChannel);
       this.messagesChannel = null;
     }
     this.subscribedRoomId = null;
+    this.roomReads.set([]);
   }
 
   async unsubscribeAll(): Promise<void> {
@@ -409,6 +431,119 @@ export class ChatService {
     if (this.inboxChannel) {
       await this.supabase.removeChannel(this.inboxChannel);
       this.inboxChannel = null;
+    }
+  }
+
+  private scheduleMarkRead(roomId: string): void {
+    this.clearMarkReadTimer();
+    this.markReadTimer = setTimeout(() => {
+      void this.markRoomRead(roomId);
+    }, CHAT_MARK_READ_DEBOUNCE_MS);
+  }
+
+  private async markRoomRead(roomId: string): Promise<void> {
+    if (this.subscribedRoomId !== roomId) return;
+    try {
+      const { data, error } = await this.supabase.rpc(
+        'tyapp_chat_mark_room_read',
+        { p_room_id: roomId },
+      );
+      if (error) throw error;
+      const saved = data as ChatRoomRead | null;
+      this.zone.run(() => {
+        if (saved) this.upsertRead(saved);
+        this.zeroUnread(roomId);
+      });
+    } catch (error: unknown) {
+      this.notification.handleError('Mark Read Failed', error);
+    }
+  }
+
+  private async fetchRoomReads(roomId: string): Promise<void> {
+    try {
+      const { data, error } = await this.supabase
+        .from('tyapp_chat_room_read')
+        .select('*')
+        .eq('room_id', roomId);
+
+      if (error) throw error;
+
+      this.zone.run(() => {
+        this.roomReads.set((data as ChatRoomRead[]) || []);
+      });
+    } catch (error: unknown) {
+      this.notification.handleError('Fetch Reads Failed', error);
+      this.zone.run(() => this.roomReads.set([]));
+    }
+  }
+
+  private async loadUnreadCounts(): Promise<Record<string, number>> {
+    try {
+      const { data, error } = await this.supabase.rpc(
+        'tyapp_chat_unread_counts',
+      );
+      if (error) throw error;
+      const map: Record<string, number> = {};
+      for (const row of (data as {
+        room_id: string;
+        unread_count: number | string;
+      }[]) || []) {
+        map[row.room_id] = Number(row.unread_count) || 0;
+      }
+      return map;
+    } catch (error: unknown) {
+      this.notification.handleError('Fetch Unread Failed', error);
+      return {};
+    }
+  }
+
+  private applyUnreadCounts(unread: Record<string, number>): void {
+    const next = { ...unread };
+    if (this.subscribedRoomId) next[this.subscribedRoomId] = 0;
+    this.unreadByRoomId.set(next);
+  }
+
+  private zeroUnread(roomId: string): void {
+    this.unreadByRoomId.update((current) => {
+      if ((current[roomId] ?? 0) === 0) return current;
+      return { ...current, [roomId]: 0 };
+    });
+  }
+
+  private bumpUnread(roomId: string): void {
+    this.unreadByRoomId.update((current) => ({
+      ...current,
+      [roomId]: (current[roomId] ?? 0) + 1,
+    }));
+  }
+
+  private clearMarkReadTimer(): void {
+    if (this.markReadTimer) {
+      clearTimeout(this.markReadTimer);
+      this.markReadTimer = undefined;
+    }
+  }
+
+  private upsertRead(saved: ChatRoomRead): void {
+    if (saved.room_id !== this.subscribedRoomId) return;
+    this.roomReads.update((list) => {
+      const index = list.findIndex((item) => item.user_id === saved.user_id);
+      if (index === -1) return [...list, saved];
+      const next = [...list];
+      next[index] = saved;
+      return next;
+    });
+  }
+
+  private applyReadChange(
+    payload: RealtimePostgresChangesPayload<Record<string, unknown>>,
+  ): void {
+    if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+      const row = payload.new as unknown as ChatRoomRead;
+      if (!row?.user_id || !row.room_id || !row.last_read_at) return;
+      this.upsertRead(row);
+      const me = this.auth.userProfile()?.user_id;
+      if (row.user_id === me) this.zeroUnread(row.room_id);
     }
   }
 
@@ -485,7 +620,10 @@ export class ChatService {
       const room = this.rooms().find(
         (item) => item.tb_tyapp_chat_rm_id === row.room_id,
       );
+      this.bumpUnread(row.room_id);
       this.notification.showSuccess(`New message in ${room?.name ?? 'chat'}`);
+    } else if (row.room_id === this.subscribedRoomId) {
+      this.scheduleMarkRead(row.room_id);
     }
   }
 
@@ -534,6 +672,7 @@ export class ChatService {
       this.upsertMessage(row);
       if (payload.eventType === 'INSERT') {
         this.touchRoomLastMessage(row.room_id, row.created_at ?? null);
+        this.scheduleMarkRead(row.room_id);
       }
       return;
     }

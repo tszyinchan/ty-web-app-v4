@@ -43,3 +43,13 @@ export interface ChatMessage {
   updated_at?: string;
   deleted_at?: string | null;
 }
+
+export interface ChatRoomRead {
+  tb_tyapp_chat_rd_id: string;
+  tb_tyapp_chat_rd_seq_no?: number;
+  room_id: string;
+  user_id: string;
+  last_read_at: string;
+  created_at?: string;
+  updated_at?: string;
+}

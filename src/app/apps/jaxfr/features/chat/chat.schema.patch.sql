@@ -6,6 +6,7 @@
 --    (drops the short-lived tyapp_chat_config if it was created)
 -- 4) Allow longer emoji sequences (ZWJ / skin tones) in reactions
 -- 5) Multi-quote: quote_message_id uuid → quote_message_ids uuid[]
+-- 6) Room read watermarks (已讀 initials + unread counts)
 
 CREATE OR REPLACE FUNCTION public.tyapp_chat_rename_room(
   p_room_id uuid,
@@ -358,4 +359,101 @@ BEGIN
       ADD CONSTRAINT tyapp_chat_message_quote_ids_max
       CHECK (cardinality(quote_message_ids) <= 10);
   END IF;
+END $$;
+
+-- 6) Room read watermarks. Idempotent.
+CREATE TABLE IF NOT EXISTS public.tyapp_chat_room_read (
+  tb_tyapp_chat_rd_id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tb_tyapp_chat_rd_seq_no bigint GENERATED ALWAYS AS IDENTITY,
+  room_id uuid NOT NULL REFERENCES public.tyapp_chat_room (tb_tyapp_chat_rm_id),
+  user_id uuid NOT NULL REFERENCES public.tyapp_user (user_id),
+  last_read_at timestamptz NOT NULL DEFAULT now(),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT tyapp_chat_room_read_unique UNIQUE (room_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS tyapp_chat_room_read_room_idx
+  ON public.tyapp_chat_room_read (room_id);
+
+DROP TRIGGER IF EXISTS tyapp_chat_room_read_set_updated_at ON public.tyapp_chat_room_read;
+CREATE TRIGGER tyapp_chat_room_read_set_updated_at
+  BEFORE UPDATE ON public.tyapp_chat_room_read
+  FOR EACH ROW
+  EXECUTE FUNCTION public.tyapp_chat_set_updated_at();
+
+CREATE OR REPLACE FUNCTION public.tyapp_chat_mark_room_read(p_room_id uuid)
+RETURNS public.tyapp_chat_room_read
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_row public.tyapp_chat_room_read;
+  v_uid uuid := auth.uid();
+BEGIN
+  IF v_uid IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  IF NOT public.tyapp_chat_is_room_member(p_room_id) THEN
+    RAISE EXCEPTION 'Not a room member';
+  END IF;
+
+  INSERT INTO public.tyapp_chat_room_read (room_id, user_id, last_read_at)
+  VALUES (p_room_id, v_uid, now())
+  ON CONFLICT (room_id, user_id)
+  DO UPDATE SET
+    last_read_at = GREATEST(
+      public.tyapp_chat_room_read.last_read_at,
+      EXCLUDED.last_read_at
+    )
+  RETURNING * INTO v_row;
+
+  RETURN v_row;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.tyapp_chat_unread_counts()
+RETURNS TABLE (room_id uuid, unread_count bigint)
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT m.room_id, count(*)::bigint
+  FROM public.tyapp_chat_message m
+  INNER JOIN public.tyapp_chat_room r
+    ON r.tb_tyapp_chat_rm_id = m.room_id
+   AND r.deleted_at IS NULL
+   AND auth.uid() = ANY (r.member_user_ids)
+  LEFT JOIN public.tyapp_chat_room_read rd
+    ON rd.room_id = m.room_id
+   AND rd.user_id = auth.uid()
+  WHERE m.deleted_at IS NULL
+    AND m.sender_user_id IS DISTINCT FROM auth.uid()
+    AND (rd.last_read_at IS NULL OR m.created_at > rd.last_read_at)
+  GROUP BY m.room_id;
+$$;
+
+ALTER TABLE public.tyapp_chat_room_read ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.tyapp_chat_room_read FROM PUBLIC, anon;
+GRANT SELECT ON public.tyapp_chat_room_read TO authenticated;
+GRANT EXECUTE ON FUNCTION public.tyapp_chat_mark_room_read(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.tyapp_chat_unread_counts() TO authenticated;
+
+DROP POLICY IF EXISTS tyapp_chat_room_read_select ON public.tyapp_chat_room_read;
+CREATE POLICY tyapp_chat_room_read_select
+  ON public.tyapp_chat_room_read
+  FOR SELECT
+  TO authenticated
+  USING (public.tyapp_chat_is_room_member(room_id));
+
+ALTER TABLE public.tyapp_chat_room_read REPLICA IDENTITY FULL;
+
+DO $$
+BEGIN
+  ALTER PUBLICATION supabase_realtime ADD TABLE public.tyapp_chat_room_read;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
 END $$;

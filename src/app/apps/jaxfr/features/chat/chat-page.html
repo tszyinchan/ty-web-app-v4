@@ -17,7 +17,12 @@
           [class.active]="room.tb_tyapp_chat_rm_id === roomId()"
           [routerLink]="['/chat', room.tb_tyapp_chat_rm_id]"
         >
-          <span class="room-name">{{ room.name }}</span>
+          <span class="room-item-top">
+            <span class="room-name">{{ room.name }}</span>
+            @if (unreadCount(room.tb_tyapp_chat_rm_id); as unread) {
+              <span class="unread-badge">{{ unread }}</span>
+            }
+          </span>
           <span class="room-members">{{ memberSummary(room.member_user_ids) }}</span>
         </a>
       } @empty {
@@ -183,6 +188,17 @@
                 </div>
               }
             </div>
+
+            @if (vm.readers.length > 0) {
+              <div class="reader-row">
+                @for (reader of vm.readers; track reader.userId) {
+                  <span
+                    class="reader-chip"
+                    [matTooltip]="reader.name"
+                  >{{ reader.initials }}</span>
+                }
+              </div>
+            }
 
           </article>
         } @empty {

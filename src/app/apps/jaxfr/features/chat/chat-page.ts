@@ -47,8 +47,10 @@ import {
   canDeleteMessage,
   canEditMessage,
   isPlainEmpty,
+  readersByMessageId,
   toReactionChips,
   truncatePlain,
+  type ChatReaderChip,
 } from './chat.util';
 
 interface QuoteDraft {
@@ -76,6 +78,7 @@ interface ThreadMessageVm {
   canDelete: boolean;
   quotedItems: QuotedItemVm[];
   reactionChips: ReturnType<typeof toReactionChips>;
+  readers: ChatReaderChip[];
 }
 
 @Component({
@@ -181,6 +184,15 @@ export class ChatPage implements OnInit, OnDestroy {
     const me = this.currentUserId();
     const now = this.nowTick();
     const byId = new Map(messages.map((m) => [m.tb_tyapp_chat_msg_id, m]));
+    const readersMap = readersByMessageId(
+      messages,
+      this.chatService.roomReads(),
+      me,
+      (userId) => {
+        const user = users.find((u) => u.user_id === userId);
+        return user ? this.displayNamePipe.transform(user) : 'Unknown User';
+      },
+    );
 
     return messages.map((message) => {
       const sender = users.find((u) => u.user_id === message.sender_user_id);
@@ -235,6 +247,7 @@ export class ChatPage implements OnInit, OnDestroy {
         ),
         quotedItems,
         reactionChips,
+        readers: readersMap.get(message.tb_tyapp_chat_msg_id) ?? [],
       };
     });
   });
@@ -356,6 +369,11 @@ export class ChatPage implements OnInit, OnDestroy {
       })
       .filter((name): name is string => !!name);
     return names.join(', ');
+  }
+
+  unreadCount(roomId: string): number {
+    if (roomId === this.roomId()) return 0;
+    return this.chatService.unreadByRoomId()[roomId] ?? 0;
   }
 
   quoteSnippet(plain: string | null, deleted: boolean): string {
@@ -634,8 +652,8 @@ export class ChatPage implements OnInit, OnDestroy {
   private async openRoom(roomId: string) {
     this.cancelEdit();
     this.quoteDraft.set([]);
-    await this.chatService.fetchMessages(roomId);
     await this.chatService.subscribeToMessages(roomId);
+    await this.chatService.fetchMessages(roomId);
     this.lastMessageCount = 0;
     queueMicrotask(() => this.scrollToBottom());
   }
