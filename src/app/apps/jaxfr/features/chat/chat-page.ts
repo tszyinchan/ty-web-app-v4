@@ -32,6 +32,7 @@ import { AuthService } from '../../../../core/services/auth.service';
 import { AppSettingsService } from '../../../../core/services/app-settings.service';
 import { HeaderService } from '../../../../core/services/header.service';
 import { DisplayNamePipe } from '../../../../core/pipes/display-name.pipe';
+import { NotificationService } from '../../../../core/services/notification.service';
 import { PresenceService } from '../../../../core/services/presence.service';
 import { UserService } from '../user/user.service';
 import { ChatHtml } from './chat-html';
