@@ -5,6 +5,7 @@ import {
 } from '@supabase/supabase-js';
 import { NotificationService } from '../../../../core/services/notification.service';
 import { AuthService } from '../../../../core/services/auth.service';
+import { PushService } from '../../../../core/services/push.service';
 import { SupabaseService } from '../../../../core/services/supabase.service';
 import { RecordStatus } from '../../../../core/models/status.enum';
 import { CHAT_MARK_READ_DEBOUNCE_MS, CHAT_QUOTE_MAX } from './chat.constants';
@@ -22,6 +23,7 @@ export class ChatService {
   private supabase = inject(SupabaseService).client;
   private notification = inject(NotificationService);
   private auth = inject(AuthService);
+  private push = inject(PushService);
   private zone = inject(NgZone);
 
   rooms = signal<ChatRoom[]>([]);
@@ -622,6 +624,11 @@ export class ChatService {
       );
       this.bumpUnread(row.room_id);
       this.notification.showSuccess(`New message in ${room?.name ?? 'chat'}`);
+      this.push.showLocal({
+        title: room?.name ?? 'Jaxfr',
+        body: row.body_plain,
+        url: `/chat/${row.room_id}`,
+      });
     } else if (row.room_id === this.subscribedRoomId) {
       this.scheduleMarkRead(row.room_id);
     }
