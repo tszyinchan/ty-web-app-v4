@@ -53,26 +53,23 @@
         <p>Select a room, or create a new one.</p>
       </div>
     } @else {
-      @if (threadPresence(); as presence) {
-        <div class="thread-presence">
-          @if (presence.kind === 'direct') {
-            <span
-              class="presence-dot"
-              [class.online]="presence.member.online"
-            ></span>
-            <span>{{ presence.member.status }}</span>
-          } @else {
-            @for (member of presence.members; track member.userId) {
-              <span class="presence-member" [matTooltip]="member.status">
+      @if (threadPresence(); as members) {
+        @if (members.length > 0) {
+          <div class="thread-presence">
+            @for (member of members; track member.userId) {
+              <span class="presence-member">
                 <span
                   class="presence-dot"
                   [class.online]="member.online"
                 ></span>
-                {{ member.name }}
+                <span>{{ member.name }}</span>
+                @if (member.status) {
+                  <span>· {{ member.status }}</span>
+                }
               </span>
             }
-          }
-        </div>
+          </div>
+        }
       }
       <div class="message-list">
         @for (vm of threadVm(); track vm.message.tb_tyapp_chat_msg_id) {

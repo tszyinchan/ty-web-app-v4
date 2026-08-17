@@ -189,13 +189,8 @@ export class ChatPage implements OnInit, OnDestroy {
 
   threadPresence = computed(() => {
     const room = this.selectedRoom();
-    if (!room) return null;
-    const members = this.otherMembers(room.member_user_ids);
-    if (members.length === 0) return null;
-    if (members.length === 1) {
-      return { kind: 'direct' as const, member: members[0] };
-    }
-    return { kind: 'group' as const, members };
+    if (!room) return [];
+    return this.otherMembers(room.member_user_ids);
   });
 
   threadVm = computed<ThreadMessageVm[]>(() => {
@@ -398,7 +393,7 @@ export class ChatPage implements OnInit, OnDestroy {
           userId: id,
           name,
           online,
-          status: this.presence.statusLabel(id) || name,
+          status: this.presence.statusLabel(id),
         };
       });
   }
