@@ -4,8 +4,10 @@ import {
   CUSTOM_ELEMENTS_SCHEMA,
   ElementRef,
   HostListener,
+  Injector,
   OnDestroy,
   OnInit,
+  afterNextRender,
   computed,
   effect,
   inject,
@@ -14,6 +16,7 @@ import {
   viewChild,
   viewChildren,
 } from '@angular/core';
+import { BreakpointObserver } from '@angular/cdk/layout';
 import 'emoji-picker-element';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
@@ -53,6 +56,7 @@ import {
   truncatePlain,
   type ChatReaderChip,
 } from './chat.util';
+import { copyTextToClipboard } from '../../../../core/utils/copy-text.util';
 
 interface PresenceMemberVm {
   userId: string;
@@ -67,8 +71,8 @@ interface QuoteDraft {
   authorName: string;
 }
 
-const LONG_PRESS_MS = 450;
-const LONG_PRESS_MOVE_PX = 10;
+const TOUCH_TAP_MOVE_PX = 10;
+const CHAT_NARROW_MQ = '(max-width: 800px)';
 
 interface QuotedItemVm {
   id: string;
@@ -117,11 +121,20 @@ export class ChatPage implements OnInit, OnDestroy {
   private auth = inject(AuthService);
   private notification = inject(NotificationService);
   private displayNamePipe = inject(DisplayNamePipe);
+  private readonly injector = inject(Injector);
 
   readonly chatService = inject(ChatService);
   readonly userService = inject(UserService);
   readonly appSettings = inject(AppSettingsService);
   readonly presence = inject(PresenceService);
+  private readonly breakpointObserver = inject(BreakpointObserver);
+
+  readonly isNarrowChat = toSignal(
+    this.breakpointObserver
+      .observe(CHAT_NARROW_MQ)
+      .pipe(map((r) => r.matches)),
+    { initialValue: false },
+  );
 
   readonly quillModules = CHAT_QUILL_MODULES;
   readonly reactionEmojis = CHAT_REACTION_EMOJIS;
@@ -140,18 +153,19 @@ export class ChatPage implements OnInit, OnDestroy {
   reactionPickerMessageId = signal<string | null>(null);
   pinnedToolbarId = signal<string | null>(null);
   highlightMsgId = signal<string | null>(null);
+  presenceCollapsed = signal(true);
 
   private editor: Quill | null = null;
   private nowTimer: ReturnType<typeof setInterval> | undefined;
   private highlightTimer: ReturnType<typeof setTimeout> | undefined;
   private bottomAnchor = viewChild<ElementRef<HTMLElement>>('bottomAnchor');
+  private messageList = viewChild<ElementRef<HTMLElement>>('messageList');
   private msgAnchors = viewChildren(ChatMsgAnchor);
   private lastMessageCount = 0;
   private actionMenuOpen = false;
-  private toolbarFromLongPress = false;
+  private toolbarPinnedByTouch = false;
   private lastPointerWasMouse = true;
-  private longPressTimer: ReturnType<typeof setTimeout> | undefined;
-  private longPressStart: { x: number; y: number; id: string } | null = null;
+  private touchStart: { x: number; y: number; id: string } | null = null;
 
   quoteDraftVm = computed(() => {
     const drafts = this.quoteDraft();
@@ -192,6 +206,15 @@ export class ChatPage implements OnInit, OnDestroy {
     if (!room) return [];
     return this.otherMembers(room.member_user_ids);
   });
+
+  presenceToggleVisible = computed(() => {
+    const room = this.selectedRoom();
+    return !!room && room.member_user_ids.length > 2 && this.isNarrowChat();
+  });
+
+  presenceCompact = computed(
+    () => this.presenceToggleVisible() && this.presenceCollapsed(),
+  );
 
   threadVm = computed<ThreadMessageVm[]>(() => {
     const messages = this.chatService.messages();
@@ -273,6 +296,7 @@ export class ChatPage implements OnInit, OnDestroy {
       untracked(() => {
         this.reactionPickerMessageId.set(null);
         this.clearPinnedToolbar();
+        this.presenceCollapsed.set(true);
       });
     });
 
@@ -373,6 +397,20 @@ export class ChatPage implements OnInit, OnDestroy {
         this.sendFromEnter();
       },
       true,
+    );
+  }
+
+  togglePresenceBar() {
+    const list = this.messageList()?.nativeElement;
+    const prevHeight = list?.clientHeight ?? 0;
+    const prevTop = list?.scrollTop ?? 0;
+    this.presenceCollapsed.update((collapsed) => !collapsed);
+    afterNextRender(
+      () => {
+        if (!list) return;
+        list.scrollTop = prevTop + (prevHeight - list.clientHeight);
+      },
+      { injector: this.injector },
     );
   }
 
@@ -533,7 +571,7 @@ export class ChatPage implements OnInit, OnDestroy {
 
   onToolbarEmoji(vm: ThreadMessageVm, emoji: string) {
     void this.onToggleReaction(vm.message.tb_tyapp_chat_msg_id, emoji);
-    if (this.toolbarFromLongPress) {
+    if (this.toolbarPinnedByTouch) {
       this.clearPinnedToolbar();
     }
   }
@@ -563,41 +601,67 @@ export class ChatPage implements OnInit, OnDestroy {
 
   onActionMenuClosed() {
     this.actionMenuOpen = false;
-    if (!this.toolbarFromLongPress) {
+    if (!this.toolbarPinnedByTouch) {
       this.pinnedToolbarId.set(null);
+    }
+  }
+
+  async onCopyMessage(vm: ThreadMessageVm) {
+    const text = vm.message.body_plain?.trim() ?? '';
+    if (!text) return;
+    try {
+      await copyTextToClipboard(text);
+      this.notification.showSuccess('Copied');
+    } catch (error: unknown) {
+      this.notification.handleError('Copy Failed', error);
+    }
+    if (this.toolbarPinnedByTouch) {
+      this.clearPinnedToolbar();
     }
   }
 
   onMessagePointerDown(event: PointerEvent, vm: ThreadMessageVm) {
     this.lastPointerWasMouse = event.pointerType === 'mouse';
-    this.cancelLongPressTimer();
+    this.touchStart = null;
     if (vm.message.deleted_at) return;
     if (event.pointerType === 'mouse') return;
 
-    this.longPressStart = {
+    event.stopPropagation();
+    this.touchStart = {
       x: event.clientX,
       y: event.clientY,
       id: vm.message.tb_tyapp_chat_msg_id,
     };
-    this.longPressTimer = setTimeout(() => {
-      if (!this.longPressStart) return;
-      this.toolbarFromLongPress = true;
-      this.pinnedToolbarId.set(this.longPressStart.id);
-      this.longPressStart = null;
-    }, LONG_PRESS_MS);
   }
 
   onMessagePointerMove(event: PointerEvent) {
-    if (!this.longPressStart) return;
-    const dx = event.clientX - this.longPressStart.x;
-    const dy = event.clientY - this.longPressStart.y;
-    if (dx * dx + dy * dy > LONG_PRESS_MOVE_PX * LONG_PRESS_MOVE_PX) {
-      this.cancelLongPressTimer();
+    if (!this.touchStart) return;
+    const dx = event.clientX - this.touchStart.x;
+    const dy = event.clientY - this.touchStart.y;
+    if (dx * dx + dy * dy > TOUCH_TAP_MOVE_PX * TOUCH_TAP_MOVE_PX) {
+      this.touchStart = null;
     }
   }
 
-  onMessagePointerUp() {
-    this.cancelLongPressTimer();
+  onMessagePointerUp(event: PointerEvent) {
+    const start = this.touchStart;
+    this.touchStart = null;
+    if (!start || event.pointerType === 'mouse') return;
+
+    const target = event.target;
+    if (target instanceof Element && target.closest('a')) return;
+
+    this.clearNativeSelection();
+    if (this.pinnedToolbarId() === start.id) {
+      this.clearPinnedToolbar();
+      return;
+    }
+    this.toolbarPinnedByTouch = true;
+    this.pinnedToolbarId.set(start.id);
+  }
+
+  onMessagePointerCancel() {
+    this.touchStart = null;
   }
 
   onMessageContextMenu(event: Event, vm: ThreadMessageVm) {
@@ -609,8 +673,8 @@ export class ChatPage implements OnInit, OnDestroy {
 
   @HostListener('document:pointerdown')
   onDocumentPointerDown() {
-    if (this.actionMenuOpen || !this.toolbarFromLongPress) return;
-    this.toolbarFromLongPress = false;
+    if (this.actionMenuOpen || !this.toolbarPinnedByTouch) return;
+    this.toolbarPinnedByTouch = false;
     this.pinnedToolbarId.set(null);
   }
 
@@ -646,7 +710,7 @@ export class ChatPage implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    this.cancelLongPressTimer();
+    this.touchStart = null;
     if (this.highlightTimer) clearTimeout(this.highlightTimer);
     if (this.nowTimer) clearInterval(this.nowTimer);
     this.headerService.clear();
@@ -654,17 +718,14 @@ export class ChatPage implements OnInit, OnDestroy {
   }
 
   private clearPinnedToolbar() {
-    this.cancelLongPressTimer();
-    this.toolbarFromLongPress = false;
+    this.touchStart = null;
+    this.toolbarPinnedByTouch = false;
     this.pinnedToolbarId.set(null);
   }
 
-  private cancelLongPressTimer() {
-    if (this.longPressTimer) {
-      clearTimeout(this.longPressTimer);
-      this.longPressTimer = undefined;
-    }
-    this.longPressStart = null;
+  private clearNativeSelection() {
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
   }
 
   private async syncRoom(roomId: string | null) {

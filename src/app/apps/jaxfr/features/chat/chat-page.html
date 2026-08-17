@@ -55,23 +55,46 @@
     } @else {
       @if (threadPresence(); as members) {
         @if (members.length > 0) {
-          <div class="thread-presence">
-            @for (member of members; track member.userId) {
-              <span class="presence-member">
-                <span
-                  class="presence-dot"
-                  [class.online]="member.online"
-                ></span>
-                <span>{{ member.name }}</span>
-                @if (member.status) {
-                  <span>· {{ member.status }}</span>
-                }
-              </span>
+          <div
+            class="thread-presence"
+            [class.can-toggle]="presenceToggleVisible()"
+            [class.compact]="presenceCompact()"
+          >
+            <div class="thread-presence-list">
+              @for (member of members; track member.userId) {
+                <span class="presence-member">
+                  <span
+                    class="presence-dot"
+                    [class.online]="member.online"
+                  ></span>
+                  <span>{{ member.name }}</span>
+                  @if (member.status && !presenceCompact()) {
+                    <span>· {{ member.status }}</span>
+                  }
+                </span>
+              }
+            </div>
+            @if (presenceToggleVisible()) {
+              <button
+                type="button"
+                class="presence-toggle"
+                [attr.aria-expanded]="!presenceCollapsed()"
+                [attr.aria-label]="
+                  presenceCollapsed()
+                    ? 'Show last seen'
+                    : 'Hide last seen'
+                "
+                (click)="togglePresenceBar()"
+              >
+                <mat-icon>{{
+                  presenceCollapsed() ? 'expand_more' : 'expand_less'
+                }}</mat-icon>
+              </button>
             }
           </div>
         }
       }
-      <div class="message-list">
+      <div #messageList class="message-list">
         @for (vm of threadVm(); track vm.message.tb_tyapp_chat_msg_id) {
           <article
             class="bubble-row"
@@ -86,8 +109,8 @@
             [msgId]="vm.message.tb_tyapp_chat_msg_id"
             (pointerdown)="onMessagePointerDown($event, vm)"
             (pointermove)="onMessagePointerMove($event)"
-            (pointerup)="onMessagePointerUp()"
-            (pointercancel)="onMessagePointerUp()"
+            (pointerup)="onMessagePointerUp($event)"
+            (pointercancel)="onMessagePointerCancel()"
             (contextmenu)="onMessageContextMenu($event, vm)"
           >
             @if (!vm.message.deleted_at) {
@@ -127,6 +150,14 @@
                     (click)="startQuote(vm)"
                   >
                     <mat-icon>format_quote</mat-icon>
+                  </button>
+                  <button
+                    type="button"
+                    class="toolbar-btn"
+                    aria-label="Copy"
+                    (click)="onCopyMessage(vm)"
+                  >
+                    <mat-icon>content_copy</mat-icon>
                   </button>
                   @if (vm.canEdit) {
                     <button

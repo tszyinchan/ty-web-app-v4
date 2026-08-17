@@ -14,6 +14,8 @@ import { sanitizeChatHtml } from './chat.util';
       padding: 0;
       overflow: visible;
       font-size: inherit;
+      overflow-wrap: anywhere;
+      word-break: break-word;
     }
   `,
 })
