@@ -18,6 +18,7 @@ export interface ChatRoom {
   tb_tyapp_chat_rm_id: string;
   tb_tyapp_chat_rm_seq_no?: number;
   name: string;
+  description?: string | null;
   member_user_ids: string[];
   created_by: string;
   last_message_at?: string | null;

@@ -8,7 +8,7 @@ import { AuthService } from '../../../../core/services/auth.service';
 import { PushService } from '../../../../core/services/push.service';
 import { SupabaseService } from '../../../../core/services/supabase.service';
 import { RecordStatus } from '../../../../core/models/status.enum';
-import { CHAT_MARK_READ_DEBOUNCE_MS, CHAT_QUOTE_MAX } from './chat.constants';
+import { CHAT_MARK_READ_DEBOUNCE_MS, CHAT_QUOTE_MAX, CHAT_ROOM_DESCRIPTION_MAX } from './chat.constants';
 import {
   ChatMessage,
   ChatMessageType,
@@ -77,10 +77,14 @@ export class ChatService {
 
       if (error) throw error;
 
+      const me = this.auth.userProfile()?.user_id;
       const unread = await this.loadUnreadCounts();
+      const rows = ((data as ChatRoom[]) || []).filter(
+        (room) => !!me && room.member_user_ids.includes(me),
+      );
 
       this.zone.run(() => {
-        this.rooms.set((data as ChatRoom[]) || []);
+        this.rooms.set(rows);
         this.applyUnreadCounts(unread);
         this.roomsLoaded = true;
         this.roomsReady.set(true);
@@ -127,10 +131,20 @@ export class ChatService {
     name: string,
     memberUserIds: string[],
     createdBy: string,
+    description?: string,
   ): Promise<ChatRoom | null> {
     const uniqueMembers = [...new Set(memberUserIds)];
     if (!uniqueMembers.includes(createdBy)) {
       uniqueMembers.push(createdBy);
+    }
+
+    const desc = description?.trim() || null;
+    if (desc && desc.length > CHAT_ROOM_DESCRIPTION_MAX) {
+      this.notification.handleError(
+        'Create Room Failed',
+        `Description must be ${CHAT_ROOM_DESCRIPTION_MAX} characters or fewer`,
+      );
+      return null;
     }
 
     this.loading.set(true);
@@ -139,6 +153,7 @@ export class ChatService {
         .from('tyapp_chat_room')
         .insert({
           name: name.trim(),
+          description: desc,
           member_user_ids: uniqueMembers,
           created_by: createdBy,
           status: RecordStatus.Active,
@@ -150,7 +165,7 @@ export class ChatService {
 
       const saved = data as ChatRoom;
       return this.zone.run(() => {
-        this.rooms.update((list) => [saved, ...list]);
+        this.upsertRoom(saved);
         this.loading.set(false);
         this.notification.showSuccess('Room created');
         return saved;
@@ -321,17 +336,141 @@ export class ChatService {
 
       const saved = data as ChatRoom;
       return this.zone.run(() => {
-        this.rooms.update((list) =>
-          list.map((room) =>
-            room.tb_tyapp_chat_rm_id === saved.tb_tyapp_chat_rm_id ? saved : room,
-          ),
-        );
+        this.upsertRoom(saved);
         this.loading.set(false);
         this.notification.showSuccess('Room renamed');
         return true;
       });
     } catch (error: unknown) {
       this.notification.handleError('Rename Failed', error);
+      return this.zone.run(() => {
+        this.loading.set(false);
+        return false;
+      });
+    }
+  }
+
+  async setRoomDescription(
+    roomId: string,
+    description: string,
+  ): Promise<boolean> {
+    const trimmed = description.trim();
+    if (trimmed.length > CHAT_ROOM_DESCRIPTION_MAX) {
+      this.notification.handleError(
+        'Update Failed',
+        `Description must be ${CHAT_ROOM_DESCRIPTION_MAX} characters or fewer`,
+      );
+      return false;
+    }
+
+    this.loading.set(true);
+    try {
+      const { data, error } = await this.supabase.rpc(
+        'tyapp_chat_set_room_description',
+        {
+          p_room_id: roomId,
+          p_description: trimmed,
+        },
+      );
+      if (error) throw error;
+
+      const saved = data as ChatRoom;
+      return this.zone.run(() => {
+        this.upsertRoom(saved);
+        this.loading.set(false);
+        this.notification.showSuccess('Description saved');
+        return true;
+      });
+    } catch (error: unknown) {
+      this.notification.handleError('Update Failed', error);
+      return this.zone.run(() => {
+        this.loading.set(false);
+        return false;
+      });
+    }
+  }
+
+  async addRoomMembers(roomId: string, userIds: string[]): Promise<boolean> {
+    const uniqueIds = [...new Set(userIds.filter(Boolean))];
+    if (uniqueIds.length === 0) {
+      this.notification.handleError('Add Members Failed', 'Pick someone to add');
+      return false;
+    }
+
+    this.loading.set(true);
+    try {
+      const { data, error } = await this.supabase.rpc(
+        'tyapp_chat_add_room_members',
+        {
+          p_room_id: roomId,
+          p_user_ids: uniqueIds,
+        },
+      );
+      if (error) throw error;
+
+      const saved = data as ChatRoom;
+      return this.zone.run(() => {
+        this.upsertRoom(saved);
+        this.loading.set(false);
+        this.notification.showSuccess('Member added');
+        return true;
+      });
+    } catch (error: unknown) {
+      this.notification.handleError('Add Members Failed', error);
+      return this.zone.run(() => {
+        this.loading.set(false);
+        return false;
+      });
+    }
+  }
+
+  async removeRoomMember(roomId: string, userId: string): Promise<boolean> {
+    this.loading.set(true);
+    try {
+      const { data, error } = await this.supabase.rpc(
+        'tyapp_chat_remove_room_member',
+        {
+          p_room_id: roomId,
+          p_user_id: userId,
+        },
+      );
+      if (error) throw error;
+
+      const saved = data as ChatRoom;
+      return this.zone.run(() => {
+        this.upsertRoom(saved);
+        this.loading.set(false);
+        this.notification.showSuccess('Member removed');
+        return true;
+      });
+    } catch (error: unknown) {
+      this.notification.handleError('Remove Member Failed', error);
+      return this.zone.run(() => {
+        this.loading.set(false);
+        return false;
+      });
+    }
+  }
+
+  async leaveRoom(roomId: string): Promise<boolean> {
+    this.loading.set(true);
+    try {
+      const { data, error } = await this.supabase.rpc('tyapp_chat_leave_room', {
+        p_room_id: roomId,
+      });
+      if (error) throw error;
+
+      const saved = data as ChatRoom;
+      return this.zone.run(() => {
+        this.upsertRoom(saved);
+        this.loading.set(false);
+        this.notification.showSuccess(
+          saved.deleted_at ? 'Room deleted' : 'Left room',
+        );
+        return true;
+      });
+    } catch (error: unknown) {
+      this.notification.handleError('Leave Room Failed', error);
       return this.zone.run(() => {
         this.loading.set(false);
         return false;
@@ -649,17 +788,7 @@ export class ChatService {
   ): void {
     if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
       const row = payload.new as unknown as ChatRoom;
-      if (!row?.tb_tyapp_chat_rm_id) return;
-      if (row.deleted_at) {
-        this.removeRoomFromList(row.tb_tyapp_chat_rm_id);
-        return;
-      }
-      this.rooms.update((list) => {
-        const without = list.filter(
-          (item) => item.tb_tyapp_chat_rm_id !== row.tb_tyapp_chat_rm_id,
-        );
-        return this.sortRooms([row, ...without]);
-      });
+      this.upsertRoom(row);
       return;
     }
 
@@ -668,6 +797,21 @@ export class ChatService {
       if (!oldRow.tb_tyapp_chat_rm_id) return;
       this.removeRoomFromList(oldRow.tb_tyapp_chat_rm_id);
     }
+  }
+
+  private upsertRoom(row: ChatRoom): void {
+    if (!row?.tb_tyapp_chat_rm_id) return;
+    const me = this.auth.userProfile()?.user_id ?? '';
+    if (row.deleted_at || !me || !(row.member_user_ids ?? []).includes(me)) {
+      this.removeRoomFromList(row.tb_tyapp_chat_rm_id);
+      return;
+    }
+    this.rooms.update((list) => {
+      const without = list.filter(
+        (item) => item.tb_tyapp_chat_rm_id !== row.tb_tyapp_chat_rm_id,
+      );
+      return this.sortRooms([row, ...without]);
+    });
   }
 
   private applyMessageChange(

@@ -23,6 +23,9 @@
               <span class="unread-badge">{{ unread }}</span>
             }
           </span>
+          @if (room.description) {
+            <span class="room-item-desc">{{ room.description }}</span>
+          }
           <span class="room-members">
             @for (
               member of otherMembers(room.member_user_ids);
@@ -53,6 +56,11 @@
         <p>Select a room, or create a new one.</p>
       </div>
     } @else {
+      @if (selectedRoom(); as room) {
+        @if (room.description) {
+          <p class="thread-desc">{{ room.description }}</p>
+        }
+      }
       @if (threadPresence(); as members) {
         @if (members.length > 0) {
           <div

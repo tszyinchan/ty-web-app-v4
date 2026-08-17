@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { ChatPage } from './chat-page';
+import { ChatRoomManage } from './chat-room-manage';
 import { ChatRoomNew } from './chat-room-new';
 import { unsavedChangesGuard } from '../../../../core/guards/unsaved-changes.guard';
 
@@ -10,6 +11,11 @@ export const CHAT_ROUTES: Routes = [
       {
         path: 'new',
         component: ChatRoomNew,
+        canDeactivate: [unsavedChangesGuard],
+      },
+      {
+        path: ':roomId/manage',
+        component: ChatRoomManage,
         canDeactivate: [unsavedChangesGuard],
       },
       { path: ':roomId', component: ChatPage },

@@ -185,6 +185,12 @@ export class ChatPage implements OnInit, OnDestroy {
 
   isLoading = computed(() => this.chatService.loading());
 
+  isRoomCreator = computed(() => {
+    const room = this.selectedRoom();
+    const me = this.currentUserId();
+    return !!room && !!me && room.created_by === me;
+  });
+
   selectedRoom = computed(() => {
     const id = this.roomId();
     if (!id) return null;
@@ -198,7 +204,10 @@ export class ChatPage implements OnInit, OnDestroy {
     const q = this.searchQuery().toLowerCase().trim();
     const rooms = this.chatService.rooms();
     if (!q) return rooms;
-    return rooms.filter((room) => room.name.toLowerCase().includes(q));
+    return rooms.filter((room) => {
+      if (room.name.toLowerCase().includes(q)) return true;
+      return (room.description ?? '').toLowerCase().includes(q);
+    });
   });
 
   threadPresence = computed(() => {
@@ -304,6 +313,7 @@ export class ChatPage implements OnInit, OnDestroy {
       const id = this.roomId();
       const room = this.selectedRoom();
       const loading = this.isLoading();
+      const isCreator = this.isRoomCreator();
 
       this.headerService.setConfig({
         backLink: id ? '/chat' : undefined,
@@ -319,31 +329,43 @@ export class ChatPage implements OnInit, OnDestroy {
               void this.chatService.fetchRooms(true);
             },
           },
-          {
-            label: 'New Room',
-            icon: 'add',
-            type: id ? 'secondary' : 'primary',
-            disabled: () => loading,
-            onClick: () => void this.router.navigate(['/chat/new']),
-          },
-          ...(id
+          ...(!id
             ? [
                 {
-                  label: 'Rename',
-                  icon: 'edit',
-                  type: 'secondary' as const,
+                  label: 'New Room',
+                  icon: 'add',
+                  type: 'primary' as const,
                   disabled: () => loading,
-                  onClick: () => void this.onRenameRoom(),
-                },
-                {
-                  label: 'Delete Room',
-                  icon: 'delete_outline',
-                  type: 'secondary' as const,
-                  disabled: () => loading,
-                  onClick: () => void this.onDeleteRoom(),
+                  onClick: () => void this.router.navigate(['/chat/new']),
                 },
               ]
-            : []),
+            : isCreator
+              ? [
+                  {
+                    label: 'Manage Room',
+                    icon: 'settings',
+                    type: 'secondary' as const,
+                    disabled: () => loading,
+                    onClick: () =>
+                      void this.router.navigate(['/chat', id, 'manage']),
+                  },
+                ]
+              : [
+                  {
+                    label: 'Rename',
+                    icon: 'edit',
+                    type: 'secondary' as const,
+                    disabled: () => loading,
+                    onClick: () => void this.onRenameRoom(),
+                  },
+                  {
+                    label: 'Leave',
+                    icon: 'logout',
+                    type: 'secondary' as const,
+                    disabled: () => loading,
+                    onClick: () => void this.onLeaveRoom(),
+                  },
+                ]),
         ],
       });
     });
@@ -439,6 +461,22 @@ export class ChatPage implements OnInit, OnDestroy {
   unreadCount(roomId: string): number {
     if (roomId === this.roomId()) return 0;
     return this.chatService.unreadByRoomId()[roomId] ?? 0;
+  }
+
+  async onLeaveRoom() {
+    const room = this.selectedRoom();
+    if (!room || this.isRoomCreator()) return;
+    const willDelete = room.member_user_ids.length <= 2;
+    const ok = confirm(
+      willDelete
+        ? `Leave "${room.name}"? This will delete the room because a room needs at least two people.`
+        : `Leave "${room.name}"?`,
+    );
+    if (!ok) return;
+    const left = await this.chatService.leaveRoom(room.tb_tyapp_chat_rm_id);
+    if (left) {
+      await this.router.navigate(['/chat']);
+    }
   }
 
   quoteSnippet(plain: string | null, deleted: boolean): string {
@@ -697,16 +735,6 @@ export class ChatPage implements OnInit, OnDestroy {
     const next = prompt('Room name', room.name);
     if (next === null) return;
     await this.chatService.renameRoom(room.tb_tyapp_chat_rm_id, next);
-  }
-
-  async onDeleteRoom() {
-    const room = this.selectedRoom();
-    if (!room) return;
-    if (!confirm(`Delete room "${room.name}"?`)) return;
-    const ok = await this.chatService.deleteRoom(room.tb_tyapp_chat_rm_id);
-    if (ok) {
-      await this.router.navigate(['/chat']);
-    }
   }
 
   ngOnDestroy() {

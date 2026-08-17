@@ -1,0 +1,117 @@
+<div class="split-workspace">
+  @if (room(); as room) {
+    <div class="form-scroll-area">
+      <section class="form-group">
+        <h3 class="group-header">Room Name</h3>
+
+        <mat-form-field
+          appearance="outline"
+          class="full-width"
+          subscriptSizing="dynamic"
+        >
+          <mat-label>Room name</mat-label>
+          <input matInput [(ngModel)]="name" required />
+        </mat-form-field>
+      </section>
+
+      <section class="form-group">
+        <h3 class="group-header">Description</h3>
+
+        <mat-form-field
+          appearance="outline"
+          class="full-width"
+          subscriptSizing="dynamic"
+        >
+          <mat-label>Description (optional)</mat-label>
+          <textarea
+            matInput
+            rows="4"
+            [(ngModel)]="description"
+            [maxlength]="descriptionMax"
+            placeholder="What is this room for?"
+          ></textarea>
+          <mat-hint align="end"
+            >{{ description.trim().length }} / {{ descriptionMax }}</mat-hint
+          >
+        </mat-form-field>
+      </section>
+
+      <section class="form-group">
+        <h3 class="group-header">Members</h3>
+
+        <ul class="manage-member-list">
+          @for (userId of room.member_user_ids; track userId) {
+            <li class="manage-member">
+              <span class="manage-member-name">
+                {{ memberDisplayName(userId) }}
+                @if (userId === currentUserId()) {
+                  <span class="manage-tag">you</span>
+                }
+                @if (userId === room.created_by) {
+                  <span class="manage-tag">creator</span>
+                }
+              </span>
+              @if (userId !== room.created_by) {
+                <button
+                  mat-icon-button
+                  type="button"
+                  [disabled]="isLoading() || !canRemoveMembers()"
+                  [matTooltip]="
+                    canRemoveMembers()
+                      ? 'Remove from room'
+                      : 'A room needs at least two people. Delete the room instead.'
+                  "
+                  (click)="onRemoveMember(userId)"
+                >
+                  <mat-icon>person_remove</mat-icon>
+                </button>
+              }
+            </li>
+          }
+        </ul>
+
+        <mat-form-field
+          appearance="outline"
+          class="full-width"
+          subscriptSizing="dynamic"
+        >
+          <mat-label>Add people</mat-label>
+          <input
+            matInput
+            #manageUserInput
+            placeholder="Search a person to add..."
+            [matAutocomplete]="manageAuto"
+            (input)="userSearch.set(manageUserInput.value)"
+            (focus)="userSearch.set('')"
+          />
+          <mat-autocomplete
+            #manageAuto="matAutocomplete"
+            (optionSelected)="onAddMember($event); manageUserInput.value = ''"
+          >
+            @for (opt of filteredUsers(); track opt.value) {
+              <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
+            }
+          </mat-autocomplete>
+        </mat-form-field>
+      </section>
+
+      <section class="form-group danger-zone">
+        <h3 class="group-header">Danger Zone</h3>
+        <p class="danger-hint">
+          Deleting the room removes it and all its messages for every member.
+          This cannot be undone.
+        </p>
+        <button
+          mat-stroked-button
+          type="button"
+          color="warn"
+          [disabled]="isLoading()"
+          (click)="onDeleteRoom()"
+        >
+          <mat-icon>delete_outline</mat-icon>
+          Delete Room
+        </button>
+      </section>
+    </div>
+  }
+</div>

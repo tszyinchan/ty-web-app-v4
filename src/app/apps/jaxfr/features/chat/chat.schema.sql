@@ -15,7 +15,11 @@ CREATE TABLE IF NOT EXISTS public.tyapp_chat_room (
   tb_tyapp_chat_rm_id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   tb_tyapp_chat_rm_seq_no bigint GENERATED ALWAYS AS IDENTITY,
   name text NOT NULL,
+  description text,
   member_user_ids uuid[] NOT NULL,
+  -- Lets a just-removed member still SELECT the row so Realtime can
+  -- deliver the membership UPDATE (app then drops the room locally).
+  former_member_user_ids uuid[] NOT NULL DEFAULT '{}',
   created_by uuid NOT NULL REFERENCES public.tyapp_user (user_id),
   last_message_at timestamptz,
   status smallint NOT NULL DEFAULT 1,
@@ -23,7 +27,10 @@ CREATE TABLE IF NOT EXISTS public.tyapp_chat_room (
   updated_at timestamptz NOT NULL DEFAULT now(),
   deleted_at timestamptz,
   CONSTRAINT tyapp_chat_room_name_not_blank CHECK (length(trim(name)) > 0),
-  CONSTRAINT tyapp_chat_room_min_members CHECK (cardinality(member_user_ids) >= 2)
+  CONSTRAINT tyapp_chat_room_min_members CHECK (cardinality(member_user_ids) >= 2),
+  -- Keep in sync with CHAT_ROOM_DESCRIPTION_MAX in chat.constants.ts
+  CONSTRAINT tyapp_chat_room_description_len
+    CHECK (description IS NULL OR length(description) <= 500)
 );
 
 CREATE TABLE IF NOT EXISTS public.tyapp_chat_message (
@@ -139,6 +146,23 @@ AS $$
     FROM public.tyapp_chat_room r
     WHERE r.tb_tyapp_chat_rm_id = p_room_id
       AND r.deleted_at IS NULL
+      AND auth.uid() = ANY (r.member_user_ids)
+  );
+$$;
+
+CREATE OR REPLACE FUNCTION public.tyapp_chat_is_room_creator(p_room_id uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.tyapp_chat_room r
+    WHERE r.tb_tyapp_chat_rm_id = p_room_id
+      AND r.deleted_at IS NULL
+      AND r.created_by = auth.uid()
       AND auth.uid() = ANY (r.member_user_ids)
   );
 $$;
@@ -358,8 +382,8 @@ BEGIN
     RAISE EXCEPTION 'Not authenticated';
   END IF;
 
-  IF NOT public.tyapp_chat_is_room_member(record_id) THEN
-    RAISE EXCEPTION 'Not a room member';
+  IF NOT public.tyapp_chat_is_room_creator(record_id) THEN
+    RAISE EXCEPTION 'Only the room creator can delete this room';
   END IF;
 
   UPDATE public.tyapp_chat_message
@@ -408,6 +432,231 @@ BEGIN
   IF v_row.tb_tyapp_chat_rm_id IS NULL THEN
     RAISE EXCEPTION 'Room not found';
   END IF;
+
+  RETURN v_row;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.tyapp_chat_set_room_description(
+  p_room_id uuid,
+  p_description text
+)
+RETURNS public.tyapp_chat_room
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_row public.tyapp_chat_room;
+  v_desc text := nullif(trim(p_description), '');
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  IF NOT public.tyapp_chat_is_room_creator(p_room_id) THEN
+    RAISE EXCEPTION 'Only the room creator can edit the description';
+  END IF;
+
+  IF v_desc IS NOT NULL AND length(v_desc) > 500 THEN
+    RAISE EXCEPTION 'Description is too long';
+  END IF;
+
+  UPDATE public.tyapp_chat_room
+  SET description = v_desc
+  WHERE tb_tyapp_chat_rm_id = p_room_id
+    AND deleted_at IS NULL
+  RETURNING * INTO v_row;
+
+  IF v_row.tb_tyapp_chat_rm_id IS NULL THEN
+    RAISE EXCEPTION 'Room not found';
+  END IF;
+
+  RETURN v_row;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.tyapp_chat_add_room_members(
+  p_room_id uuid,
+  p_user_ids uuid[]
+)
+RETURNS public.tyapp_chat_room
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_row public.tyapp_chat_room;
+  v_add uuid[];
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  IF NOT public.tyapp_chat_is_room_creator(p_room_id) THEN
+    RAISE EXCEPTION 'Only the room creator can add members';
+  END IF;
+
+  SELECT *
+  INTO v_row
+  FROM public.tyapp_chat_room
+  WHERE tb_tyapp_chat_rm_id = p_room_id
+    AND deleted_at IS NULL;
+
+  IF v_row.tb_tyapp_chat_rm_id IS NULL THEN
+    RAISE EXCEPTION 'Room not found';
+  END IF;
+
+  SELECT COALESCE(array_agg(DISTINCT u.user_id), '{}')
+  INTO v_add
+  FROM unnest(COALESCE(p_user_ids, '{}')) AS x(id)
+  INNER JOIN public.tyapp_user u
+    ON u.user_id = x.id
+   AND u.deleted_at IS NULL
+  WHERE NOT (x.id = ANY (v_row.member_user_ids));
+
+  IF cardinality(v_add) = 0 THEN
+    RAISE EXCEPTION 'No valid users to add';
+  END IF;
+
+  UPDATE public.tyapp_chat_room
+  SET
+    member_user_ids = v_row.member_user_ids || v_add,
+    former_member_user_ids = COALESCE((
+      SELECT array_agg(f)
+      FROM unnest(v_row.former_member_user_ids) AS f
+      WHERE NOT (f = ANY (v_add))
+    ), '{}')
+  WHERE tb_tyapp_chat_rm_id = p_room_id
+    AND deleted_at IS NULL
+  RETURNING * INTO v_row;
+
+  RETURN v_row;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.tyapp_chat_remove_room_member(
+  p_room_id uuid,
+  p_user_id uuid
+)
+RETURNS public.tyapp_chat_room
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_row public.tyapp_chat_room;
+  v_remaining uuid[];
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  IF NOT public.tyapp_chat_is_room_creator(p_room_id) THEN
+    RAISE EXCEPTION 'Only the room creator can remove members';
+  END IF;
+
+  IF p_user_id IS NULL THEN
+    RAISE EXCEPTION 'User is required';
+  END IF;
+
+  IF p_user_id = auth.uid() THEN
+    RAISE EXCEPTION 'Room creator cannot leave the room. Delete the room instead.';
+  END IF;
+
+  SELECT *
+  INTO v_row
+  FROM public.tyapp_chat_room
+  WHERE tb_tyapp_chat_rm_id = p_room_id
+    AND deleted_at IS NULL;
+
+  IF v_row.tb_tyapp_chat_rm_id IS NULL THEN
+    RAISE EXCEPTION 'Room not found';
+  END IF;
+
+  IF NOT (p_user_id = ANY (v_row.member_user_ids)) THEN
+    RAISE EXCEPTION 'User is not a room member';
+  END IF;
+
+  v_remaining := array_remove(v_row.member_user_ids, p_user_id);
+
+  IF cardinality(v_remaining) < 2 THEN
+    RAISE EXCEPTION 'A room needs at least two people. Delete the room instead.';
+  END IF;
+
+  UPDATE public.tyapp_chat_room
+  SET
+    member_user_ids = v_remaining,
+    former_member_user_ids = array_append(v_row.former_member_user_ids, p_user_id)
+  WHERE tb_tyapp_chat_rm_id = p_room_id
+    AND deleted_at IS NULL
+  RETURNING * INTO v_row;
+
+  RETURN v_row;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.tyapp_chat_leave_room(p_room_id uuid)
+RETURNS public.tyapp_chat_room
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_row public.tyapp_chat_room;
+  v_uid uuid := auth.uid();
+  v_remaining uuid[];
+BEGIN
+  IF v_uid IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  SELECT *
+  INTO v_row
+  FROM public.tyapp_chat_room
+  WHERE tb_tyapp_chat_rm_id = p_room_id
+    AND deleted_at IS NULL;
+
+  IF v_row.tb_tyapp_chat_rm_id IS NULL THEN
+    RAISE EXCEPTION 'Room not found';
+  END IF;
+
+  IF NOT (v_uid = ANY (v_row.member_user_ids)) THEN
+    RAISE EXCEPTION 'Not a room member';
+  END IF;
+
+  -- The creator is the only one who can manage membership and delete the
+  -- room, so they are never allowed to leave (must delete the room instead).
+  IF v_row.created_by = v_uid THEN
+    RAISE EXCEPTION 'Room creator cannot leave the room. Delete the room instead.';
+  END IF;
+
+  v_remaining := array_remove(v_row.member_user_ids, v_uid);
+
+  -- A room cannot exist with fewer than 2 members: leaving as the
+  -- second-to-last person soft-deletes the room (same as Delete).
+  IF cardinality(v_remaining) < 2 THEN
+    UPDATE public.tyapp_chat_message
+    SET deleted_at = now()
+    WHERE room_id = p_room_id
+      AND deleted_at IS NULL;
+
+    UPDATE public.tyapp_chat_room
+    SET deleted_at = now()
+    WHERE tb_tyapp_chat_rm_id = p_room_id
+      AND deleted_at IS NULL
+    RETURNING * INTO v_row;
+
+    RETURN v_row;
+  END IF;
+
+  UPDATE public.tyapp_chat_room
+  SET
+    member_user_ids = v_remaining,
+    former_member_user_ids = array_append(v_row.former_member_user_ids, v_uid)
+  WHERE tb_tyapp_chat_rm_id = p_room_id
+    AND deleted_at IS NULL
+  RETURNING * INTO v_row;
 
   RETURN v_row;
 END;
@@ -484,11 +733,16 @@ GRANT SELECT, INSERT ON public.tyapp_chat_message TO authenticated;
 GRANT SELECT ON public.tyapp_chat_room_read TO authenticated;
 
 GRANT EXECUTE ON FUNCTION public.tyapp_chat_is_room_member(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.tyapp_chat_is_room_creator(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.tyapp_chat_edit_message(uuid, text, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.tyapp_chat_toggle_reaction(uuid, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.tyapp_chat_message_soft_delete_single_record(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.tyapp_chat_room_soft_delete_single_record(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.tyapp_chat_rename_room(uuid, text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.tyapp_chat_set_room_description(uuid, text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.tyapp_chat_add_room_members(uuid, uuid[]) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.tyapp_chat_remove_room_member(uuid, uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.tyapp_chat_leave_room(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.tyapp_chat_mark_room_read(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.tyapp_chat_unread_counts() TO authenticated;
 
@@ -497,7 +751,10 @@ CREATE POLICY tyapp_chat_room_select
   ON public.tyapp_chat_room
   FOR SELECT
   TO authenticated
-  USING (auth.uid() = ANY (member_user_ids));
+  USING (
+    auth.uid() = ANY (member_user_ids)
+    OR auth.uid() = ANY (former_member_user_ids)
+  );
 
 DROP POLICY IF EXISTS tyapp_chat_room_insert ON public.tyapp_chat_room;
 CREATE POLICY tyapp_chat_room_insert

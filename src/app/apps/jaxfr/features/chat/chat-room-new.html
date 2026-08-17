@@ -7,6 +7,18 @@
         <mat-label>Room name</mat-label>
         <input matInput [(ngModel)]="name" placeholder="e.g. This week's groceries" />
       </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
+        <mat-label>Description (optional)</mat-label>
+        <textarea
+          matInput
+          rows="3"
+          [(ngModel)]="description"
+          [maxlength]="descriptionMax"
+          placeholder="What is this room for?"
+        ></textarea>
+        <mat-hint align="end">{{ description.trim().length }} / {{ descriptionMax }}</mat-hint>
+      </mat-form-field>
     </section>
 
     <section class="form-group">

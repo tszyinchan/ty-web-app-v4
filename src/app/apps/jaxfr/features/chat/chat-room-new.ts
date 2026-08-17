@@ -31,6 +31,7 @@ import { SelectOption } from '../../../../core/models/common.model';
 import { DisplayNamePipe } from '../../../../core/pipes/display-name.pipe';
 import { NotificationService } from '../../../../core/services/notification.service';
 import { UserService } from '../user/user.service';
+import { CHAT_ROOM_DESCRIPTION_MAX } from './chat.constants';
 import { ChatService } from './chat.service';
 
 @Component({
@@ -60,7 +61,10 @@ export class ChatRoomNew implements OnInit, OnDestroy, DoCheck, HasUnsavedChange
   readonly chatService = inject(ChatService);
   readonly userService = inject(UserService);
 
+  readonly descriptionMax = CHAT_ROOM_DESCRIPTION_MAX;
+
   name = '';
+  description = '';
   memberUserIds = signal<string[]>([]);
   userSearch = signal('');
   isDirtyFlag = false;
@@ -102,7 +106,9 @@ export class ChatRoomNew implements OnInit, OnDestroy, DoCheck, HasUnsavedChange
 
   ngDoCheck() {
     this.isDirtyFlag =
-      this.name.trim().length > 0 || this.memberUserIds().length > 0;
+      this.name.trim().length > 0 ||
+      this.description.trim().length > 0 ||
+      this.memberUserIds().length > 0;
   }
 
   displayUserName(id: string): string {
@@ -166,6 +172,7 @@ export class ChatRoomNew implements OnInit, OnDestroy, DoCheck, HasUnsavedChange
       name,
       [...this.memberUserIds(), me],
       me,
+      this.description,
     );
     if (room) {
       this.isDirtyFlag = false;

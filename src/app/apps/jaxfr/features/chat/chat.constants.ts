@@ -4,6 +4,8 @@ export const CHAT_REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢'] a
 
 export const CHAT_QUOTE_MAX = 10;
 
+export const CHAT_ROOM_DESCRIPTION_MAX = 500;
+
 export const CHAT_MARK_READ_DEBOUNCE_MS = 1000;
 
 export const CHAT_QUILL_MODULES: QuillModules = {
