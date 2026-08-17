@@ -3,7 +3,7 @@ export const APP_CONFIG = {
   version: {
     major: 4,
     minor: 60,
-    patch: 0,
+    patch: 1,
   },
   versionDate: '2026-08-17',
 };
@@ -39,3 +39,7 @@ export const DEFAULT_ROUTES = {
   [SUBDOMAINS.FILELINK]: '/',
   [SUBDOMAINS.JAXFR]: '/welcome',
 } as const;
+
+/** Public VAPID key for Web Push. Private key stays in Edge Function secrets. */
+export const VAPID_PUBLIC_KEY =
+  'BNEEaxEKPtWjK7tPIzXc4IPdLCYAMdzLB3aH_tt0ZFdQIFA_ZF25_3EsIyySPT0sG5QOmgeAraKFSzY0qjlzEFw';

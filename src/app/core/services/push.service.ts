@@ -1,22 +1,14 @@
 import { Injectable, NgZone, effect, inject, signal, untracked } from '@angular/core';
 import { Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { environment } from '../../../environments/environment';
+import { VAPID_PUBLIC_KEY } from '../../app.constants';
 import { AuthService } from './auth.service';
 import { NotificationService } from './notification.service';
 import { SupabaseService } from './supabase.service';
-import {
-  truncatePushBody,
-  urlBase64ToUint8Array,
-  vapidPublicKeyFromEnv,
-} from '../utils/push.util';
+import { truncatePushBody, urlBase64ToUint8Array } from '../utils/push.util';
 
 const SW_URL = '/push-sw.js';
 const PUSH_NAVIGATE = 'PUSH_NAVIGATE';
-
-interface EnvironmentWithVapid {
-  vapidPublicKey?: string;
-}
 
 interface PushNavigateMessage {
   type?: unknown;
@@ -32,9 +24,7 @@ export class PushService {
   private router = inject(Router);
   private zone = inject(NgZone);
 
-  private readonly vapidPublicKey = vapidPublicKeyFromEnv(
-    (environment as EnvironmentWithVapid).vapidPublicKey,
-  );
+  private readonly vapidPublicKey = VAPID_PUBLIC_KEY;
 
   /** True after this browser has an active Web Push subscription saved. */
   pushReady = signal(false);
@@ -140,7 +130,13 @@ export class PushService {
   }
 
   private async subscribeAndSave(): Promise<void> {
-    if (!this.vapidPublicKey) return;
+    if (!this.vapidPublicKey) {
+      this.notification.handleError(
+        'Push Subscribe Failed',
+        new Error('VAPID public key is missing'),
+      );
+      return;
+    }
     if (!('PushManager' in window)) return;
 
     try {

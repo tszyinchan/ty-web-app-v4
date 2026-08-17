@@ -1,9 +1,5 @@
 export const PUSH_BODY_MAX = 120;
 
-export function vapidPublicKeyFromEnv(value: unknown): string {
-  return typeof value === 'string' ? value.trim() : '';
-}
-
 export function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
