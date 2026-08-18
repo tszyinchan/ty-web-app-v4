@@ -1,0 +1,103 @@
+<div class="split-workspace">
+  <div class="form-scroll-area">
+    <section class="form-group">
+      <h3 class="group-header">Push Notifications</h3>
+
+      @if (pushService.isIosNonStandalone()) {
+        <p class="ios-hint">
+          On iPhone/iPad, push notifications only work after you add this
+          site to your Home Screen (Share &rarr; Add to Home Screen) and
+          open it from that icon instead of Safari.
+        </p>
+      }
+
+      <p class="status-line">
+        <mat-icon
+          [class.status-icon-ok]="pushService.pushReady()"
+          [class.status-icon-warn]="pushService.permissionStatus() === 'denied'"
+        >
+          {{
+            pushService.pushReady()
+              ? "notifications_active"
+              : "notifications_off"
+          }}
+        </mat-icon>
+        <span>{{ statusLabel() }}</span>
+      </p>
+
+      <p class="device-line">This device: {{ thisDeviceLabel }}</p>
+
+      @if (pushService.permissionStatus() === "denied") {
+        <p class="denied-hint">
+          Notifications are blocked for this site in your browser. Open your
+          browser's site settings for this page and allow notifications,
+          then come back here.
+        </p>
+      } @else if (!pushService.isSupported()) {
+        <p class="denied-hint">
+          Your current browser doesn't support Web Push, so this can't be
+          enabled here.
+        </p>
+      } @else if (!pushService.pushReady()) {
+        <button
+          mat-flat-button
+          color="primary"
+          type="button"
+          [disabled]="enabling()"
+          (click)="onEnable()"
+        >
+          <mat-icon>notifications_active</mat-icon>
+          Enable Notifications
+        </button>
+      } @else {
+        <button
+          mat-stroked-button
+          type="button"
+          [disabled]="disabling()"
+          (click)="onDisable()"
+        >
+          <mat-icon>notifications_off</mat-icon>
+          Disable on This Device
+        </button>
+      }
+    </section>
+
+    @if (isAdmin()) {
+      <section class="form-group">
+        <h3 class="group-header">All Subscribed Devices</h3>
+
+        @if (adminLoading()) {
+          <mat-spinner diameter="24"></mat-spinner>
+        } @else if (adminSubscriptions().length === 0) {
+          <p class="empty-hint">No devices are subscribed yet.</p>
+        } @else {
+          <ul class="device-list">
+            @for (sub of adminSubscriptions(); track sub.tb_tyapp_usr_psh_id) {
+              <li class="device-row">
+                <div class="device-info">
+                  <span class="device-owner">{{
+                    subscriberName(sub.user_id)
+                  }}</span>
+                  <span class="device-detail">{{
+                    deviceLabel(sub.user_agent)
+                  }}</span>
+                  <span class="device-detail">
+                    Last updated: {{ sub.updated_at | date: "medium" }}
+                  </span>
+                </div>
+                <button
+                  mat-icon-button
+                  type="button"
+                  matTooltip="Revoke this device"
+                  (click)="onRevoke(sub)"
+                >
+                  <mat-icon>delete_outline</mat-icon>
+                </button>
+              </li>
+            }
+          </ul>
+        }
+      </section>
+    }
+  </div>
+</div>

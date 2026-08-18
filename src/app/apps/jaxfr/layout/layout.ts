@@ -119,6 +119,12 @@ export class Layout {
       links: [{ title: 'Rooms', route: '/chat' }],
     },
     {
+      title: 'Settings',
+      icon: 'settings',
+      adminOnly: false,
+      links: [{ title: 'Notifications', route: '/settings/notifications' }],
+    },
+    {
       title: 'User Management',
       icon: 'people_outline',
       adminOnly: true,

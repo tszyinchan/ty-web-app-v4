@@ -116,6 +116,13 @@ const JAXFR_ROUTES: Routes = [
           ),
       },
       {
+        path: 'settings',
+        loadChildren: () =>
+          import('./apps/jaxfr/features/settings/settings.routes').then(
+            (m) => m.SETTINGS_ROUTES,
+          ),
+      },
+      {
         path: 'archive',
         children: [
           {

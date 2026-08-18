@@ -1,11 +1,16 @@
-import { Injectable, NgZone, effect, inject, signal, untracked } from '@angular/core';
+import { Injectable, NgZone, computed, effect, inject, signal, untracked } from '@angular/core';
 import { Router } from '@angular/router';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { VAPID_PUBLIC_KEY } from '../../app.constants';
 import { AuthService } from './auth.service';
 import { NotificationService } from './notification.service';
 import { SupabaseService } from './supabase.service';
-import { truncatePushBody, urlBase64ToUint8Array } from '../utils/push.util';
+import { TyappPushSubscription } from '../models/push-subscription.model';
+import {
+  isIosNonStandalone,
+  isPushSupported,
+  truncatePushBody,
+  urlBase64ToUint8Array,
+} from '../utils/push.util';
 
 const SW_URL = '/push-sw.js';
 const PUSH_NAVIGATE = 'PUSH_NAVIGATE';
@@ -15,12 +20,13 @@ interface PushNavigateMessage {
   url?: unknown;
 }
 
+type PushPermissionStatus = NotificationPermission | 'unsupported';
+
 @Injectable({ providedIn: 'root' })
 export class PushService {
   private supabase = inject(SupabaseService).client;
   private auth = inject(AuthService);
   private notification = inject(NotificationService);
-  private snackBar = inject(MatSnackBar);
   private router = inject(Router);
   private zone = inject(NgZone);
 
@@ -29,9 +35,14 @@ export class PushService {
   /** True after this browser has an active Web Push subscription saved. */
   pushReady = signal(false);
 
+  /** Mirrors the browser's Notification.permission (or 'unsupported'). */
+  permissionStatus = signal<PushPermissionStatus>(this.readPermission());
+
+  readonly isSupported = computed(() => this.permissionStatus() !== 'unsupported');
+  readonly isIosNonStandalone = computed(() => isIosNonStandalone());
+
   private swRegistered = false;
   private messagesBound = false;
-  private permissionPrompted = false;
   private starting = false;
 
   constructor() {
@@ -69,19 +80,97 @@ export class PushService {
     };
   }
 
+  /** Re-reads the live browser permission into `permissionStatus`. */
+  refreshStatus(): void {
+    this.permissionStatus.set(this.readPermission());
+  }
+
+  /**
+   * Must be called directly from a user gesture (e.g. a button click) with
+   * no prior `await`, otherwise iOS Safari treats it as not user-initiated
+   * and silently ignores it.
+   */
+  async requestPermissionAndSubscribe(): Promise<void> {
+    if (!isPushSupported()) return;
+    try {
+      const result = await Notification.requestPermission();
+      this.permissionStatus.set(result);
+      if (result !== 'granted') return;
+      await this.registerServiceWorker();
+      await this.subscribeAndSave();
+    } catch (error: unknown) {
+      this.notification.handleError('Notification Permission Failed', error);
+    }
+  }
+
+  /** Unsubscribes this browser/device only; other devices are unaffected. */
+  async unsubscribeThisDevice(): Promise<void> {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      const subscription = await registration.pushManager.getSubscription();
+      if (!subscription) {
+        this.zone.run(() => this.pushReady.set(false));
+        return;
+      }
+
+      const endpoint = subscription.endpoint;
+      await subscription.unsubscribe();
+
+      const { error } = await this.supabase.rpc(
+        'tyapp_push_delete_subscription',
+        { p_endpoint: endpoint },
+      );
+      if (error) throw error;
+
+      this.zone.run(() => this.pushReady.set(false));
+      this.notification.showSuccess('Notifications disabled on this device');
+    } catch (error: unknown) {
+      this.notification.handleError('Disable Notifications Failed', error);
+    }
+  }
+
+  /** Admin only (enforced by RLS): every user's subscribed devices. */
+  async fetchAllSubscriptionsAdmin(): Promise<TyappPushSubscription[]> {
+    const { data, error } = await this.supabase
+      .from('tyapp_push_subscription')
+      .select('*')
+      .order('updated_at', { ascending: false });
+    if (error) {
+      this.notification.handleError('Fetch Subscriptions Failed', error);
+      return [];
+    }
+    return (data ?? []) as TyappPushSubscription[];
+  }
+
+  /** Admin only (enforced by RPC): revoke another user's device. */
+  async adminDeleteSubscription(id: string): Promise<boolean> {
+    const { error } = await this.supabase.rpc(
+      'tyapp_push_admin_delete_subscription',
+      { p_id: id },
+    );
+    if (error) {
+      this.notification.handleError('Revoke Subscription Failed', error);
+      return false;
+    }
+    this.notification.showSuccess('Subscription revoked');
+    return true;
+  }
+
+  private readPermission(): PushPermissionStatus {
+    if (!isPushSupported()) return 'unsupported';
+    return Notification.permission;
+  }
+
   private async start(): Promise<void> {
     if (this.starting) return;
-    if (!('serviceWorker' in navigator) || !('Notification' in window)) return;
-    if (!window.isSecureContext) return;
+    if (!isPushSupported()) return;
     this.starting = true;
     try {
       await this.registerServiceWorker();
+      this.zone.run(() => this.permissionStatus.set(Notification.permission));
       if (Notification.permission === 'granted') {
         await this.subscribeAndSave();
-        return;
-      }
-      if (Notification.permission === 'default') {
-        this.promptForPermission();
       }
     } finally {
       this.starting = false;
@@ -104,29 +193,6 @@ export class PushService {
         void this.router.navigateByUrl(data.url as string);
       });
     });
-  }
-
-  private promptForPermission(): void {
-    if (this.permissionPrompted) return;
-    this.permissionPrompted = true;
-    const ref = this.snackBar.open(
-      'Enable desktop notifications for chat?',
-      'Allow',
-      { duration: 12000 },
-    );
-    ref.onAction().subscribe(() => {
-      void this.requestPermissionAndSubscribe();
-    });
-  }
-
-  private async requestPermissionAndSubscribe(): Promise<void> {
-    try {
-      const result = await Notification.requestPermission();
-      if (result !== 'granted') return;
-      await this.subscribeAndSave();
-    } catch (error: unknown) {
-      this.notification.handleError('Notification Permission Failed', error);
-    }
   }
 
   private async subscribeAndSave(): Promise<void> {

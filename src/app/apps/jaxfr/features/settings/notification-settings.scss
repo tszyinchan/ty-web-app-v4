@@ -1,0 +1,73 @@
+.ios-hint {
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  background: var(--mat-sys-surface-container-low);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.status-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 4px;
+  font-size: 14px;
+}
+
+.status-icon-ok {
+  color: var(--mat-sys-primary);
+}
+
+.status-icon-warn {
+  color: var(--mat-sys-error);
+}
+
+.device-line {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.denied-hint,
+.empty-hint {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.device-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.device-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 40px;
+  padding: 8px 8px 8px 12px;
+  border-radius: 8px;
+  background: var(--mat-sys-surface-container-low);
+}
+
+.device-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.device-owner {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.device-detail {
+  font-size: 12px;
+  color: var(--mat-sys-on-surface-variant);
+}

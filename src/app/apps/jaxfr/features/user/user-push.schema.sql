@@ -101,6 +101,42 @@ BEGIN
 END;
 $$;
 
+-- General-purpose admin check (not push-specific). Lives here because this
+-- is the first feature that needed it; reuse it from other schema files
+-- instead of re-inlining the same role >= 900 subquery.
+CREATE OR REPLACE FUNCTION public.tyapp_is_admin()
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT COALESCE(
+    (SELECT role FROM public.tyapp_user
+     WHERE user_id = auth.uid() AND deleted_at IS NULL) >= 900,
+    false
+  );
+$$;
+
+-- Admin-only: remove another user's device subscription (e.g. to debug a
+-- stuck/duplicate registration). The self-service delete above only allows
+-- removing your own (user_id = auth.uid()).
+CREATE OR REPLACE FUNCTION public.tyapp_push_admin_delete_subscription(p_id uuid)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF NOT public.tyapp_is_admin() THEN
+    RAISE EXCEPTION 'Only admins can remove other devices'' subscriptions';
+  END IF;
+
+  DELETE FROM public.tyapp_push_subscription
+  WHERE tb_tyapp_usr_psh_id = p_id;
+END;
+$$;
+
 ALTER TABLE public.tyapp_push_subscription ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.tyapp_push_subscription FROM PUBLIC, anon;
 GRANT SELECT ON public.tyapp_push_subscription TO authenticated;
@@ -108,11 +144,17 @@ GRANT EXECUTE ON FUNCTION public.tyapp_push_upsert_subscription(text, text, text
   TO authenticated;
 GRANT EXECUTE ON FUNCTION public.tyapp_push_delete_subscription(text)
   TO authenticated;
+GRANT EXECUTE ON FUNCTION public.tyapp_is_admin()
+  TO authenticated;
+GRANT EXECUTE ON FUNCTION public.tyapp_push_admin_delete_subscription(uuid)
+  TO authenticated;
 
+-- Admins can additionally see every user's subscription row (used by the
+-- Notification Settings admin section to list/debug all devices).
 DROP POLICY IF EXISTS tyapp_push_subscription_select
   ON public.tyapp_push_subscription;
 CREATE POLICY tyapp_push_subscription_select
   ON public.tyapp_push_subscription
   FOR SELECT
   TO authenticated
-  USING (user_id = auth.uid());
+  USING (user_id = auth.uid() OR public.tyapp_is_admin());
