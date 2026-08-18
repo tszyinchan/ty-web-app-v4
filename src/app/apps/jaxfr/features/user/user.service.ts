@@ -1,9 +1,18 @@
-import { Injectable, inject, NgZone, signal } from "@angular/core";
+import { Injectable, NgZone, effect, inject, signal, untracked } from "@angular/core";
+import {
+  RealtimeChannel,
+  RealtimePostgresChangesPayload,
+} from '@supabase/supabase-js';
 import { AuthService } from "../../../../core/services/auth.service";
 import { NotificationService } from "../../../../core/services/notification.service";
 import { SupabaseService } from "../../../../core/services/supabase.service";
 import { TyappUser } from "../../../../core/models/user.model";
 
+/**
+ * Shared, app-wide user directory. Other sessions may keep this cached list
+ * on screen for a long time (e.g. an open Chat room), so a Realtime
+ * subscription keeps display names/roles fresh without a manual refresh.
+ */
 @Injectable({ providedIn: 'root' })
 export class UserService {
   private supabase = inject(SupabaseService).client;
@@ -16,6 +25,20 @@ export class UserService {
 
   private initialized = false;
   private fetchPromise: Promise<void> | null = null;
+  private directoryChannel: RealtimeChannel | null = null;
+
+  constructor() {
+    effect(() => {
+      const profile = this.authService.userProfile();
+      untracked(() => {
+        if (profile) {
+          this.subscribeToDirectory();
+        } else {
+          void this.unsubscribeFromDirectory();
+        }
+      });
+    });
+  }
 
   fetchAllUsers(forceRefresh = false): Promise<void> {
     if (this.initialized && !forceRefresh) return Promise.resolve();
@@ -113,5 +136,72 @@ export class UserService {
         return false;
       });
     }
+  }
+
+  private subscribeToDirectory(): void {
+    if (this.directoryChannel) return;
+
+    this.directoryChannel = this.supabase
+      .channel('jaxfr-user-directory')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'tyapp_user' },
+        (payload) => {
+          this.zone.run(() => this.applyUserChange(payload));
+        },
+      )
+      .subscribe();
+  }
+
+  private async unsubscribeFromDirectory(): Promise<void> {
+    if (this.directoryChannel) {
+      await this.supabase.removeChannel(this.directoryChannel);
+      this.directoryChannel = null;
+    }
+  }
+
+  private applyUserChange(
+    payload: RealtimePostgresChangesPayload<Record<string, unknown>>,
+  ): void {
+    if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+      const row = payload.new as unknown as TyappUser;
+      if (!row?.user_id) return;
+
+      if (row.deleted_at) {
+        this.removeUserFromList(row.user_id);
+      } else {
+        this.upsertUser(row);
+      }
+
+      if (row.user_id === this.authService.userProfile()?.user_id) {
+        this.authService.updateLocalProfile(row);
+      }
+      return;
+    }
+
+    if (payload.eventType === 'DELETE') {
+      const oldRow = payload.old as { user_id?: string };
+      if (oldRow.user_id) this.removeUserFromList(oldRow.user_id);
+    }
+  }
+
+  private upsertUser(row: TyappUser): void {
+    this.users.update((list) => {
+      const index = list.findIndex((item) => item.user_id === row.user_id);
+      if (index === -1) {
+        return [...list, row].sort(
+          (a, b) => a.tb_tyapp_pofl_seq_no - b.tb_tyapp_pofl_seq_no,
+        );
+      }
+      const next = [...list];
+      next[index] = row;
+      return next;
+    });
+  }
+
+  private removeUserFromList(userId: string): void {
+    this.users.update((list) =>
+      list.filter((item) => item.user_id !== userId),
+    );
   }
 }
