@@ -1,7 +1,7 @@
 import { Directive, ElementRef, inject, input } from '@angular/core';
 
 @Directive({
-  selector: '[chatMsgAnchor]',
+  selector: '[appChatMsgAnchor]',
   standalone: true,
 })
 export class ChatMsgAnchor {

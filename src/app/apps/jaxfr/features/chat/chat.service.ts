@@ -689,15 +689,10 @@ export class ChatService {
   }
 
   private normalizeMessage(row: ChatMessage): ChatMessage {
-    const extra = row as unknown as Record<string, unknown>;
-    const legacyId =
-      typeof extra['quote_message_id'] === 'string'
-        ? extra['quote_message_id']
-        : null;
     return {
       ...row,
       reactions: normalizeReactions(row.reactions),
-      quote_message_ids: normalizeQuoteIds(row.quote_message_ids, legacyId),
+      quote_message_ids: normalizeQuoteIds(row.quote_message_ids),
       edited_at: row.edited_at || null,
       deleted_at: row.deleted_at || null,
     };

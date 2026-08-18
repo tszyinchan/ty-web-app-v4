@@ -30,7 +30,10 @@ import { HeaderService } from '../../../../core/services/header.service';
 import { HasUnsavedChanges } from '../../../../core/guards/unsaved-changes.guard';
 import { DisplayNamePipe } from '../../../../core/pipes/display-name.pipe';
 import { UserService } from '../user/user.service';
-import { CHAT_ROOM_DESCRIPTION_MAX } from './chat.constants';
+import {
+  CHAT_ROOM_DESCRIPTION_MAX,
+  CHAT_ROOM_MIN_MEMBERS,
+} from './chat.constants';
 import { ChatService } from './chat.service';
 
 @Component({
@@ -94,7 +97,7 @@ export class ChatRoomManage
   });
 
   canRemoveMembers = computed(
-    () => (this.room()?.member_user_ids.length ?? 0) > 2,
+    () => (this.room()?.member_user_ids.length ?? 0) > CHAT_ROOM_MIN_MEMBERS,
   );
 
   filteredUsers = computed(() => {

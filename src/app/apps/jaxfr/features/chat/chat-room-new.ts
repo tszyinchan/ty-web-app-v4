@@ -31,7 +31,10 @@ import { SelectOption } from '../../../../core/models/common.model';
 import { DisplayNamePipe } from '../../../../core/pipes/display-name.pipe';
 import { NotificationService } from '../../../../core/services/notification.service';
 import { UserService } from '../user/user.service';
-import { CHAT_ROOM_DESCRIPTION_MAX } from './chat.constants';
+import {
+  CHAT_ROOM_DESCRIPTION_MAX,
+  CHAT_ROOM_MIN_OTHER_MEMBERS,
+} from './chat.constants';
 import { ChatService } from './chat.service';
 
 @Component({
@@ -160,7 +163,7 @@ export class ChatRoomNew implements OnInit, OnDestroy, DoCheck, HasUnsavedChange
       this.notification.handleError('Create Room Failed', 'Room name is required');
       return;
     }
-    if (this.memberUserIds().length < 1) {
+    if (this.memberUserIds().length < CHAT_ROOM_MIN_OTHER_MEMBERS) {
       this.notification.handleError(
         'Create Room Failed',
         'Pick at least one other person',

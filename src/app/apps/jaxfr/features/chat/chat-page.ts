@@ -44,6 +44,7 @@ import {
   CHAT_QUOTE_MAX,
   CHAT_QUILL_MODULES,
   CHAT_REACTION_EMOJIS,
+  CHAT_ROOM_MIN_MEMBERS,
 } from './chat.constants';
 import { ChatMessage } from './chat.model';
 import { ChatService } from './chat.service';
@@ -459,7 +460,7 @@ export class ChatPage implements OnInit, OnDestroy {
   async onLeaveRoom() {
     const room = this.selectedRoom();
     if (!room || this.isRoomCreator()) return;
-    const willDelete = room.member_user_ids.length <= 2;
+    const willDelete = room.member_user_ids.length <= CHAT_ROOM_MIN_MEMBERS;
     const ok = confirm(
       willDelete
         ? `Leave "${room.name}"? This will delete the room because a room needs at least two people.`
