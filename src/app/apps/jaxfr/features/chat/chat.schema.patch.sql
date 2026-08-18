@@ -7,8 +7,9 @@
 -- 4) Allow longer emoji sequences (ZWJ / skin tones) in reactions
 -- 5) Multi-quote: quote_message_id uuid → quote_message_ids uuid[]
 -- 6) Room read watermarks (已讀 initials + unread counts)
--- 7) Optional room description; creator-only add/remove/delete;
---    any member can leave (last leave soft-deletes the room)
+-- 7) Optional room description; creator acts as admin (rename/description/
+--    members/delete); non-creator members can only leave (last leave
+--    soft-deletes the room; the creator can never leave, only delete)
 
 CREATE OR REPLACE FUNCTION public.tyapp_chat_rename_room(
   p_room_id uuid,
@@ -31,8 +32,8 @@ BEGIN
     RAISE EXCEPTION 'Room name is required';
   END IF;
 
-  IF NOT public.tyapp_chat_is_room_member(p_room_id) THEN
-    RAISE EXCEPTION 'Not a room member';
+  IF NOT public.tyapp_chat_is_room_creator(p_room_id) THEN
+    RAISE EXCEPTION 'Only the room creator can rename this room';
   END IF;
 
   UPDATE public.tyapp_chat_room
@@ -510,11 +511,9 @@ BEGIN
     RAISE EXCEPTION 'Only the room creator can delete this room';
   END IF;
 
-  UPDATE public.tyapp_chat_message
-  SET deleted_at = now()
-  WHERE room_id = record_id
-    AND deleted_at IS NULL;
-
+  -- Only the room itself is soft-deleted; messages are left as-is (they
+  -- become unreachable once the room's deleted_at is set, since RLS checks
+  -- room membership + deleted_at IS NULL for every message read).
   UPDATE public.tyapp_chat_room
   SET deleted_at = now()
   WHERE tb_tyapp_chat_rm_id = record_id
@@ -719,13 +718,10 @@ BEGIN
   v_remaining := array_remove(v_row.member_user_ids, v_uid);
 
   -- A room cannot exist with fewer than 2 members: leaving as the
-  -- second-to-last person soft-deletes the room (same as Delete).
+  -- second-to-last person soft-deletes the room (same as Delete). Only the
+  -- room itself is soft-deleted; messages are left as-is (see the note in
+  -- tyapp_chat_room_soft_delete_single_record).
   IF cardinality(v_remaining) < 2 THEN
-    UPDATE public.tyapp_chat_message
-    SET deleted_at = now()
-    WHERE room_id = p_room_id
-      AND deleted_at IS NULL;
-
     UPDATE public.tyapp_chat_room
     SET deleted_at = now()
     WHERE tb_tyapp_chat_rm_id = p_room_id

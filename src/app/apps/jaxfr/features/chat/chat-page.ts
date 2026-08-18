@@ -352,13 +352,6 @@ export class ChatPage implements OnInit, OnDestroy {
                 ]
               : [
                   {
-                    label: 'Rename',
-                    icon: 'edit',
-                    type: 'secondary' as const,
-                    disabled: () => loading,
-                    onClick: () => void this.onRenameRoom(),
-                  },
-                  {
                     label: 'Leave',
                     icon: 'logout',
                     type: 'secondary' as const,
@@ -727,14 +720,6 @@ export class ChatPage implements OnInit, OnDestroy {
     if (!confirm('Delete this message?')) return;
     this.clearPinnedToolbar();
     await this.chatService.deleteMessage(vm.message.tb_tyapp_chat_msg_id);
-  }
-
-  async onRenameRoom() {
-    const room = this.selectedRoom();
-    if (!room) return;
-    const next = prompt('Room name', room.name);
-    if (next === null) return;
-    await this.chatService.renameRoom(room.tb_tyapp_chat_rm_id, next);
   }
 
   ngOnDestroy() {

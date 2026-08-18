@@ -40,10 +40,32 @@
   border: 1px solid var(--mat-sys-error);
   border-radius: 8px;
   padding: 12px 16px;
+  background-color: var(--mat-sys-error-container);
+
+  h3.group-header,
+  .danger-hint {
+    color: var(--mat-sys-error);
+  }
+
+  // .group-header's border-left otherwise inherits the app's primary blue
+  // (see _shared-form.scss); force it red to match the rest of this section.
+  h3.group-header {
+    border-left-color: var(--mat-sys-error);
+  }
+
+  // The `color="warn"` input has no effect here: this app's M3 theme (see
+  // styles.scss `mat.theme(...)`) doesn't include the color-variants
+  // backwards-compatibility mixin, so mat-flat-button always renders with
+  // the default (primary) container/label tokens regardless of `color`.
+  // Set those tokens directly instead, same approach as the logout button
+  // in layout.scss.
+  button.mat-mdc-unelevated-button {
+    --mat-button-filled-container-color: var(--mat-sys-error);
+    --mat-button-filled-label-text-color: var(--mat-sys-on-error);
+  }
 }
 
 .danger-hint {
   margin: 0 0 12px;
   font-size: 13px;
-  color: var(--mat-sys-on-surface-variant);
 }

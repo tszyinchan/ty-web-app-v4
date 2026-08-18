@@ -141,7 +141,7 @@ export class ChatRoomManage
         actions: [
           {
             label: 'Save Changes',
-            icon: 'save',
+            icon: 'check',
             type: 'primary',
             disabled: () =>
               this.isLoading() || !this.isDirtyFlag || !this.name.trim(),
