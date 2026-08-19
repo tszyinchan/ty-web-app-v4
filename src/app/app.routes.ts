@@ -98,6 +98,8 @@ const JAXFR_ROUTES: Routes = [
       },
       {
         path: 'article',
+        canActivate: [featureAccessGuard],
+        data: { featureName: 'Article' },
         loadChildren: () =>
           import('./apps/jaxfr/features/article/article.routes').then(
             (m) => m.ARTICLE_ROUTES,
@@ -105,6 +107,8 @@ const JAXFR_ROUTES: Routes = [
       },
       {
         path: 'work',
+        canActivate: [featureAccessGuard],
+        data: { featureName: 'Work' },
         children: [
           {
             path: '',
@@ -139,6 +143,8 @@ const JAXFR_ROUTES: Routes = [
       },
       {
         path: 'fit',
+        canActivate: [featureAccessGuard],
+        data: { featureName: 'Fit' },
         loadChildren: () =>
           import('./apps/jaxfr/features/fit/fit.routes').then(
             (m) => m.FIT_ROUTES,
@@ -146,6 +152,8 @@ const JAXFR_ROUTES: Routes = [
       },
       {
         path: 'filelink',
+        canActivate: [featureAccessGuard],
+        data: { featureName: 'Filelink' },
         loadChildren: () =>
           import('./apps/jaxfr/features/filelink/filelink.routes').then(
             (m) => m.FILELINK_ROUTES,
@@ -153,6 +161,8 @@ const JAXFR_ROUTES: Routes = [
       },
       {
         path: 'chat',
+        canActivate: [featureAccessGuard],
+        data: { featureName: 'Chat' },
         loadChildren: () =>
           import('./apps/jaxfr/features/chat/chat.routes').then(
             (m) => m.CHAT_ROUTES,
@@ -160,6 +170,8 @@ const JAXFR_ROUTES: Routes = [
       },
       {
         path: 'settings',
+        canActivate: [featureAccessGuard],
+        data: { featureName: 'Settings' },
         loadChildren: () =>
           import('./apps/jaxfr/features/settings/settings.routes').then(
             (m) => m.SETTINGS_ROUTES,
@@ -167,6 +179,8 @@ const JAXFR_ROUTES: Routes = [
       },
       {
         path: 'archive',
+        canActivate: [featureAccessGuard],
+        data: { featureName: 'Archive' },
         children: [
           {
             path: '',

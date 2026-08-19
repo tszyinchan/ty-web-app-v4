@@ -30,11 +30,23 @@ import { DisplayNamePipe } from '../../../../core/pipes/display-name.pipe';
 import { RoleLabelPipe } from '../../../../core/pipes/role-label.pipe';
 import { AccessService } from '../../../../core/services/access.service';
 import { AppRegistryService } from '../../../../core/services/app-registry.service';
+import { AuthService } from '../../../../core/services/auth.service';
 import { HeaderService } from '../../../../core/services/header.service';
 import { exportToCsv } from '../../../../core/utils/csv-export.util';
 import { UserService } from './user.service';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { RecordStatus } from '../../../../core/models/status.enum';
+
+const ACCESS_FEATURE_NAMES = new Set([
+  'Work',
+  'Article',
+  'Fit',
+  'Filelink',
+  'Chat',
+  'Settings',
+  'User',
+  'Development',
+]);
 
 @Component({
   selector: 'app-user-edit',
@@ -65,6 +77,7 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
   public featureService = inject(AppFeatureService);
   public appRegistry = inject(AppRegistryService);
   private access = inject(AccessService);
+  private auth = inject(AuthService);
   private headerService = inject(HeaderService);
   private zone = inject(NgZone);
 
@@ -100,7 +113,12 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
   launcherFeatures = computed(() =>
     this.featureService
       .features()
-      .filter((feature) => feature.show_in_launcher),
+      .filter(
+        (feature) =>
+          feature.show_in_launcher ||
+          !!feature.route?.trim() ||
+          ACCESS_FEATURE_NAMES.has(feature.name),
+      ),
   );
 
   syncStatus = computed<'loading' | 'up-to-date' | 'unsaved' | 'none'>(() => {
@@ -182,6 +200,10 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
     this.originalAccessStr = this.accessSnapshot();
   }
 
+  isAccessLocked(): boolean {
+    return (this.user()?.role ?? 0) >= USER_ROLES.SUPER_ADMIN;
+  }
+
   featuresForApp(appId: string): AppFeature[] {
     return this.launcherFeatures().filter((feature) => feature.app_id === appId);
   }
@@ -194,7 +216,23 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
     return this.selectedFeatureIds.includes(featureId);
   }
 
+  onRoleChange(role: number) {
+    const original = JSON.parse(this.originalDataStr() || '{}') as {
+      role?: number;
+    };
+    const wasSuperAdmin = (original.role ?? 0) >= USER_ROLES.SUPER_ADMIN;
+    if (wasSuperAdmin && role < USER_ROLES.SUPER_ADMIN) {
+      this.selectedAppIds = this.appRegistry
+        .apps()
+        .map((app) => app.tb_tyapp_app_id);
+      this.selectedFeatureIds = this.launcherFeatures().map(
+        (feature) => feature.tb_tyapp_ap_ftr_id,
+      );
+    }
+  }
+
   toggleApp(appId: string, checked: boolean) {
+    if (this.isAccessLocked()) return;
     if (checked) {
       if (!this.selectedAppIds.includes(appId)) {
         this.selectedAppIds = [...this.selectedAppIds, appId];
@@ -212,6 +250,7 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
   }
 
   toggleFeature(feature: AppFeature, checked: boolean) {
+    if (this.isAccessLocked()) return;
     if (checked) {
       if (!this.selectedFeatureIds.includes(feature.tb_tyapp_ap_ftr_id)) {
         this.selectedFeatureIds = [
@@ -278,28 +317,48 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
 
     this.isSaving.set(true);
 
-    const allowedApps = this.appRegistry
-      .apps()
-      .filter((app) => this.selectedAppIds.includes(app.tb_tyapp_app_id))
-      .map((app) => app.name.toLowerCase());
-    data.allowed_apps = allowedApps;
+    if (data.role >= USER_ROLES.SUPER_ADMIN) {
+      data.allowed_apps = this.appRegistry
+        .apps()
+        .map((app) => app.name.toLowerCase());
 
-    const grantsOk = await this.access.replaceAppAccess(
-      data.user_id,
-      this.selectedAppIds,
-    );
-    if (!grantsOk) {
-      this.zone.run(() => this.isSaving.set(false));
-      return;
-    }
+      const grantsOk = await this.access.replaceAppAccess(data.user_id, []);
+      if (!grantsOk) {
+        this.zone.run(() => this.isSaving.set(false));
+        return;
+      }
 
-    const featureGrantsOk = await this.access.replaceFeatureAccess(
-      data.user_id,
-      this.selectedFeatureIds,
-    );
-    if (!featureGrantsOk) {
-      this.zone.run(() => this.isSaving.set(false));
-      return;
+      const featureGrantsOk = await this.access.replaceFeatureAccess(
+        data.user_id,
+        [],
+      );
+      if (!featureGrantsOk) {
+        this.zone.run(() => this.isSaving.set(false));
+        return;
+      }
+    } else {
+      data.allowed_apps = this.appRegistry
+        .apps()
+        .filter((app) => this.selectedAppIds.includes(app.tb_tyapp_app_id))
+        .map((app) => app.name.toLowerCase());
+
+      const grantsOk = await this.access.replaceAppAccess(
+        data.user_id,
+        this.selectedAppIds,
+      );
+      if (!grantsOk) {
+        this.zone.run(() => this.isSaving.set(false));
+        return;
+      }
+
+      const featureGrantsOk = await this.access.replaceFeatureAccess(
+        data.user_id,
+        this.selectedFeatureIds,
+      );
+      if (!featureGrantsOk) {
+        this.zone.run(() => this.isSaving.set(false));
+        return;
+      }
     }
 
     const success = await this.userService.updateUser(data.user_id, data);

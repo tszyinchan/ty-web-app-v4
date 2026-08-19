@@ -61,35 +61,35 @@ export class Welcome implements OnInit, OnDestroy {
 
   readonly tiles = computed(() => {
     this.access.myFeatureIds();
-    const isAdmin = this.auth.isAdmin();
+    const catalog = this.features.features();
+    const isSuperAdmin = this.auth.isSuperAdmin();
 
-    const featureTiles = this.features
-      .features()
+    const featureTiles = catalog
       .filter((feature) => {
         if (!feature.show_in_launcher) return false;
         if (feature.status !== RecordStatus.Active) return false;
         if (!feature.route || !feature.icon) return false;
-        if (feature.is_admin_only) return isAdmin;
-        return isAdmin || this.access.hasFeature(feature.tb_tyapp_ap_ftr_id);
+        return this.access.hasFeature(feature.tb_tyapp_ap_ftr_id);
       })
       .map((feature) => ({
         name: feature.name,
         icon: feature.icon as string,
-        route: HUB_ROUTES[feature.name] ?? feature.route as string,
+        route: HUB_ROUTES[feature.name] ?? (feature.route as string),
       }));
 
-    const dbNames = new Set(featureTiles.map((tile) => tile.name));
+    const shown = new Set(featureTiles.map((tile) => tile.name));
     const fallbackTiles = FALLBACK_TILES.filter((tile) => {
-      if (dbNames.has(tile.name)) return false;
-      if (tile.name === 'User' || tile.name === 'Development') return isAdmin;
-      return true;
+      if (shown.has(tile.name)) return false;
+      if (isSuperAdmin) return true;
+      const feature = catalog.find((row) => row.name === tile.name);
+      return !!feature && this.access.hasFeature(feature.tb_tyapp_ap_ftr_id);
     });
 
-    return [
-      ...featureTiles,
-      ...fallbackTiles,
-      { name: 'Archive', icon: 'folder', route: '/archive' },
-    ];
+    const tiles = [...featureTiles, ...fallbackTiles];
+    if (isSuperAdmin) {
+      tiles.push({ name: 'Archive', icon: 'folder', route: '/archive' });
+    }
+    return tiles;
   });
 
   ngOnInit() {

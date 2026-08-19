@@ -33,6 +33,7 @@ export class AccessService {
   }
 
   hasAppBySubdomain(subdomain: string): boolean {
+    if (this.auth.isSuperAdmin()) return true;
     const app = this.apps
       .apps()
       .find((a) => a.name.toLowerCase() === subdomain.toLowerCase());
@@ -41,6 +42,7 @@ export class AccessService {
   }
 
   hasFeature(featureId: string): boolean {
+    if (this.auth.isSuperAdmin()) return true;
     return this.myFeatureIds().has(featureId);
   }
 
