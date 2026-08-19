@@ -13,11 +13,22 @@
 
 .main-scroll-view {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   background-color: var(--mat-sys-surface);
 
   .page-container {
     min-height: 100%;
     background-color: var(--mat-sys-surface);
+  }
+
+  // Chat is a full-bleed pane; fill the leftover height under the toolbar
+  // instead of letting a magic `100dvh - Npx` leave a gap at the bottom.
+  &:has(app-chat-page) {
+    overflow: hidden;
+
+    .page-container {
+      height: 100%;
+    }
   }
 }
