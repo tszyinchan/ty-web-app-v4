@@ -157,6 +157,8 @@ export class WorkScheduleList implements OnInit, OnDestroy {
     );
 
     this.headerService.setConfig({
+      title: 'Schedule',
+      backLink: '/work',
       actions: [
         {
           label: 'Refresh',

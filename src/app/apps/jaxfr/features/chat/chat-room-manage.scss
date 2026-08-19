@@ -2,70 +2,8 @@
   width: 100%;
 }
 
-.manage-member-list {
-  margin: 0 0 12px;
-  padding: 0;
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.manage-member {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  min-height: 40px;
-  padding: 4px 8px;
-  border-radius: 8px;
-  background: var(--mat-sys-surface-container-low);
-}
-
-.manage-member-name {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-  font-size: 14px;
-}
-
-.manage-tag {
-  font-size: 11px;
-  color: var(--mat-sys-on-surface-variant);
-}
-
-.danger-zone {
-  border: 1px solid var(--mat-sys-error);
-  border-radius: 8px;
-  padding: 12px 16px;
-  background-color: var(--mat-sys-error-container);
-
-  h3.group-header,
-  .danger-hint {
-    color: var(--mat-sys-error);
-  }
-
-  // .group-header's border-left otherwise inherits the app's primary blue
-  // (see _shared-form.scss); force it red to match the rest of this section.
-  h3.group-header {
-    border-left-color: var(--mat-sys-error);
-  }
-
-  // The `color="warn"` input has no effect here: this app's M3 theme (see
-  // styles.scss `mat.theme(...)`) doesn't include the color-variants
-  // backwards-compatibility mixin, so mat-flat-button always renders with
-  // the default (primary) container/label tokens regardless of `color`.
-  // Set those tokens directly instead, same approach as the logout button
-  // in layout.scss.
-  button.mat-mdc-unelevated-button {
-    --mat-button-filled-container-color: var(--mat-sys-error);
-    --mat-button-filled-label-text-color: var(--mat-sys-on-error);
-  }
-}
-
 .danger-hint {
   margin: 0 0 12px;
   font-size: 13px;
+  color: var(--mat-sys-on-surface-variant);
 }

@@ -46,6 +46,9 @@ export class NotificationSettings implements OnInit, OnDestroy {
   readonly statusLabel = computed(() => {
     const status = this.pushService.permissionStatus();
     if (status === 'unsupported') return 'This browser does not support push notifications';
+    if (this.pushService.isIosNonStandalone()) {
+      return 'Open Jaxfr from the Home Screen icon first (Safari only)';
+    }
     if (status === 'denied') return 'Blocked in this browser';
     if (status === 'granted' && this.pushService.pushReady()) return 'Enabled on this device';
     if (status === 'granted') return 'Allowed, but not subscribed yet';

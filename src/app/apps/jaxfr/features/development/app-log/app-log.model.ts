@@ -7,7 +7,7 @@ export interface AppLog {
   version_minor: number;
   version_patch: number;
   version_date: string;
-  category_id: string;
+  feature_id: string;
   log_user: string;
   log_message: string;
   remarks?: string | null;

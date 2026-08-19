@@ -99,6 +99,13 @@ export class ArticleList implements OnInit, OnDestroy {
     this.headerService.setConfig({
       actions: [
         {
+          label: 'Feed',
+          icon: 'dynamic_feed',
+          type: 'secondary',
+          onClick: () =>
+            this.router.navigate(['../feed'], { relativeTo: this.route }),
+        },
+        {
           label: 'Refresh',
           icon: 'refresh',
           type: 'secondary',

@@ -51,24 +51,39 @@
         <h3 class="group-header">System Access & Admin</h3>
 
         <div class="app-access-box">
-          <div class="app-access-title">Module Access Permissions</div>
+          <div class="app-access-title">App & Feature Access</div>
           <div class="app-access-subtitle">
-            Select which applications this user can sign in to.
+            Apps control which subdomain this user can sign in to. Features
+            control which tiles they can open inside Jaxfr.
           </div>
 
-          <div class="app-access-checkboxes">
-            <mat-checkbox
-              [(ngModel)]="hasJaxfrAccess"
-              (ngModelChange)="markAsDirty()"
-            >
-              Jaxfr (Admin Portal)
-            </mat-checkbox>
-            <mat-checkbox
-              [(ngModel)]="hasFilelinkAccess"
-              (ngModelChange)="markAsDirty()"
-            >
-              Filelink (Frontend)
-            </mat-checkbox>
+          <div class="access-app-list">
+            @for (app of appRegistry.apps(); track app.tb_tyapp_app_id) {
+              <div class="access-app-block">
+                <mat-checkbox
+                  [checked]="isAppSelected(app.tb_tyapp_app_id)"
+                  (change)="toggleApp(app.tb_tyapp_app_id, $event.checked)"
+                >
+                  {{ app.name }}
+                </mat-checkbox>
+                <div class="access-feature-list">
+                  @for (
+                    feature of featuresForApp(app.tb_tyapp_app_id);
+                    track feature.tb_tyapp_ap_ftr_id
+                  ) {
+                    <mat-checkbox
+                      [checked]="isFeatureSelected(feature.tb_tyapp_ap_ftr_id)"
+                      (change)="toggleFeature(feature, $event.checked)"
+                    >
+                      {{ feature.name }}
+                      @if (feature.is_admin_only) {
+                        <span class="access-admin-tag">Admin only</span>
+                      }
+                    </mat-checkbox>
+                  }
+                </div>
+              </div>
+            }
           </div>
         </div>
 

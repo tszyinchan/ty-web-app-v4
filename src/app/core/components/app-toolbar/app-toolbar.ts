@@ -37,6 +37,10 @@ export class AppToolbar {
   showMenuButton = input(false);
   menuButtonClick = output<void>();
 
+  showHomeButton = input(false);
+  showSignOut = input(false);
+  signOutClick = output<void>();
+
   getPrimaryActions(actions?: HeaderAction[]) {
     return (actions || []).filter((a) => a.type === 'primary');
   }

@@ -236,10 +236,10 @@ export class ChatPage implements OnInit, OnDestroy {
       messages,
       this.chatService.roomReads(),
       me,
-      (userId) => {
-        const user = users.find((u) => u.user_id === userId);
-        return user ? this.displayNamePipe.transform(user) : 'Unknown User';
-      },
+      (userId) =>
+        this.displayNamePipe.transform(
+          users.find((u) => u.user_id === userId),
+        ),
     );
 
     return messages.map((message) => {
@@ -254,11 +254,7 @@ export class ChatPage implements OnInit, OnDestroy {
         return {
           id: quoteId,
           plain: quoted ? quoted.body_plain : null,
-          author: quotedSender
-            ? this.displayNamePipe.transform(quotedSender)
-            : quoted
-              ? 'Unknown User'
-              : null,
+          author: quoted ? this.displayNamePipe.transform(quotedSender) : null,
           deleted: !quoted || !!quoted.deleted_at,
         };
       });
@@ -266,18 +262,16 @@ export class ChatPage implements OnInit, OnDestroy {
       const reactionChips = toReactionChips(
         message.reactions,
         me,
-        (userId) => {
-          const user = users.find((u) => u.user_id === userId);
-          return user ? this.displayNamePipe.transform(user) : 'Unknown';
-        },
+        (userId) =>
+          this.displayNamePipe.transform(
+            users.find((u) => u.user_id === userId),
+          ),
       );
 
       return {
         message,
         isMine: message.sender_user_id === me,
-        authorName: sender
-          ? this.displayNamePipe.transform(sender)
-          : 'Unknown User',
+        authorName: this.displayNamePipe.transform(sender),
         timeLabel: message.created_at
           ? format(new Date(message.created_at), 'yyyy-MM-dd HH:mm:ss')
           : '',
@@ -343,12 +337,32 @@ export class ChatPage implements OnInit, OnDestroy {
             : isCreator
               ? [
                   {
+                    label: 'Members',
+                    icon: 'group',
+                    type: 'secondary' as const,
+                    disabled: () => loading,
+                    onClick: () =>
+                      void this.router.navigate([
+                        '/chat',
+                        id,
+                        'manage',
+                        'members',
+                      ]),
+                  },
+                  {
                     label: 'Manage Room',
                     icon: 'settings',
                     type: 'secondary' as const,
                     disabled: () => loading,
                     onClick: () =>
                       void this.router.navigate(['/chat', id, 'manage']),
+                  },
+                  {
+                    label: 'Delete Room',
+                    icon: 'delete_outline',
+                    type: 'secondary' as const,
+                    disabled: () => loading,
+                    onClick: () => void this.onDeleteRoom(),
                   },
                 ]
               : [
@@ -439,9 +453,7 @@ export class ChatPage implements OnInit, OnDestroy {
       .filter((id) => id !== me)
       .map((id) => {
         const user = users.find((item) => item.user_id === id);
-        const name = user
-          ? this.displayNamePipe.transform(user)
-          : 'Unknown User';
+        const name = this.displayNamePipe.transform(user);
         const online = this.presence.isOnline(id);
         return {
           userId: id,
@@ -469,6 +481,16 @@ export class ChatPage implements OnInit, OnDestroy {
     if (!ok) return;
     const left = await this.chatService.leaveRoom(room.tb_tyapp_chat_rm_id);
     if (left) {
+      await this.router.navigate(['/chat']);
+    }
+  }
+
+  async onDeleteRoom() {
+    const room = this.selectedRoom();
+    if (!room || !this.isRoomCreator()) return;
+    if (!confirm(`Delete room "${room.name}"? This cannot be undone.`)) return;
+    const ok = await this.chatService.deleteRoom(room.tb_tyapp_chat_rm_id);
+    if (ok) {
       await this.router.navigate(['/chat']);
     }
   }

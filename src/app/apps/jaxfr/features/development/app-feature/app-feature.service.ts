@@ -1,47 +1,47 @@
-import { Injectable, inject, NgZone, signal } from "@angular/core";
-import { NotificationService } from "../../../../../core/services/notification.service";
-import { SupabaseService } from "../../../../../core/services/supabase.service";
-import { AppCategory } from "./app-category.model";
+import { Injectable, NgZone, inject, signal } from '@angular/core';
+import { NotificationService } from '../../../../../core/services/notification.service';
+import { SupabaseService } from '../../../../../core/services/supabase.service';
+import { AppFeature } from './app-feature.model';
 
 @Injectable({ providedIn: 'root' })
-export class AppCategoryService {
+export class AppFeatureService {
   private supabase = inject(SupabaseService).client;
   private notification = inject(NotificationService);
   private zone = inject(NgZone);
 
-  categories = signal<AppCategory[]>([]);
+  features = signal<AppFeature[]>([]);
   loading = signal(false);
 
-  async fetchAllCategories(force = false) {
-    if (this.categories().length > 0 && !force) return;
+  async fetchAllFeatures(force = false) {
+    if (this.features().length > 0 && !force) return;
 
     this.loading.set(true);
     try {
       const { data, error } = await this.supabase
-        .from('tyapp_app_category')
+        .from('tyapp_app_feature')
         .select('*')
         .is('deleted_at', null)
-        .order('tb_tyapp_ap_ctgy_seq_no', { ascending: true });
+        .order('tb_tyapp_ap_ftr_seq_no', { ascending: true });
 
       if (error) throw error;
 
       this.zone.run(() => {
-        this.categories.set(data || []);
+        this.features.set(data || []);
         this.loading.set(false);
       });
     } catch (error: unknown) {
-      this.notification.handleError('Fetch Categories Failed', error);
+      this.notification.handleError('Fetch Features Failed', error);
       this.zone.run(() => this.loading.set(false));
     }
   }
 
-  async fetchCategoryById(id: string): Promise<AppCategory | null> {
+  async fetchFeatureById(id: string): Promise<AppFeature | null> {
     this.loading.set(true);
     try {
       const { data, error } = await this.supabase
-        .from('tyapp_app_category')
+        .from('tyapp_app_feature')
         .select('*')
-        .eq('tb_tyapp_ap_ctgy_id', id)
+        .eq('tb_tyapp_ap_ftr_id', id)
         .is('deleted_at', null)
         .single();
 
@@ -49,10 +49,10 @@ export class AppCategoryService {
 
       return this.zone.run(() => {
         this.loading.set(false);
-        return data as AppCategory;
+        return data as AppFeature;
       });
     } catch (error: unknown) {
-      this.notification.handleError('Fetch Category Error', error);
+      this.notification.handleError('Fetch Feature Error', error);
       return this.zone.run(() => {
         this.loading.set(false);
         return null;
@@ -60,29 +60,35 @@ export class AppCategoryService {
     }
   }
 
-  async saveCategory(category: Partial<AppCategory>): Promise<boolean> {
-    const isNew = !category.tb_tyapp_ap_ctgy_id;
+  async saveFeature(feature: Partial<AppFeature>): Promise<boolean> {
+    const isNew = !feature.tb_tyapp_ap_ftr_id;
 
     const {
-      tb_tyapp_ap_ctgy_seq_no,
+      tb_tyapp_ap_ftr_seq_no,
       created_at,
       updated_at,
       deleted_at,
       ...payload
-    } = category;
+    } = feature;
+
+    const savePayload = {
+      ...payload,
+      icon: payload.icon?.trim() || null,
+      route: payload.route?.trim() || null,
+    };
 
     this.loading.set(true);
 
     const query = isNew
       ? this.supabase
-          .from('tyapp_app_category')
-          .insert(payload)
+          .from('tyapp_app_feature')
+          .insert(savePayload)
           .select()
           .single()
       : this.supabase
-          .from('tyapp_app_category')
-          .update(payload)
-          .eq('tb_tyapp_ap_ctgy_id', category.tb_tyapp_ap_ctgy_id)
+          .from('tyapp_app_feature')
+          .update(savePayload)
+          .eq('tb_tyapp_ap_ftr_id', feature.tb_tyapp_ap_ftr_id)
           .select()
           .single();
 
@@ -91,12 +97,12 @@ export class AppCategoryService {
       if (error) throw error;
 
       return this.zone.run(() => {
-        const saved = data as AppCategory;
-        this.categories.update((list) =>
+        const saved = data as AppFeature;
+        this.features.update((list) =>
           isNew
             ? [...list, saved]
             : list.map((item) =>
-                item.tb_tyapp_ap_ctgy_id === saved.tb_tyapp_ap_ctgy_id
+                item.tb_tyapp_ap_ftr_id === saved.tb_tyapp_ap_ftr_id
                   ? saved
                   : item,
               ),
@@ -115,22 +121,22 @@ export class AppCategoryService {
     }
   }
 
-  async deleteCategory(id: string): Promise<boolean> {
+  async deleteFeature(id: string): Promise<boolean> {
     this.loading.set(true);
     try {
       const { error } = await this.supabase.rpc(
-        'tyapp_app_category_soft_delete_single_record',
+        'tyapp_app_feature_soft_delete_single_record',
         { record_id: id },
       );
 
       if (error) throw error;
 
       return this.zone.run(() => {
-        this.categories.update((list) =>
-          list.filter((item) => item.tb_tyapp_ap_ctgy_id !== id),
+        this.features.update((list) =>
+          list.filter((item) => item.tb_tyapp_ap_ftr_id !== id),
         );
         this.loading.set(false);
-        this.notification.showSuccess('Category deleted');
+        this.notification.showSuccess('Feature deleted');
         return true;
       });
     } catch (error: unknown) {

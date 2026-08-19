@@ -3,8 +3,9 @@ export function formatDeviceLabel(userAgent: string | null | undefined): string 
   if (!ua) return 'Unknown device';
 
   let browser = 'Unknown browser';
-  if (/edg\//i.test(ua)) browser = 'Edge';
+  if (/edg\/|edgios/i.test(ua)) browser = 'Edge';
   else if (/firefox|fxios/i.test(ua)) browser = 'Firefox';
+  else if (/ddg|duckduckgo/i.test(ua)) browser = 'DuckDuckGo';
   else if (/chrome|crios/i.test(ua)) browser = 'Chrome';
   else if (/safari/i.test(ua)) browser = 'Safari';
 

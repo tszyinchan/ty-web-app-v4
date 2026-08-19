@@ -16,6 +16,11 @@
     align-items: center;
   }
 
+  .sign-out-btn {
+    flex-shrink: 0;
+    color: var(--mat-sys-error);
+  }
+
   .header-portal-slot {
     flex: 1;
     display: flex;

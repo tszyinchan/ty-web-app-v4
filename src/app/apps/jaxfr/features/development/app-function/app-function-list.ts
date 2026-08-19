@@ -6,7 +6,7 @@ import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
 import { RouterModule, Router, ActivatedRoute } from "@angular/router";
 import { HeaderService } from "../../../../../core/services/header.service";
 import { exportToCsv } from "../../../../../core/utils/csv-export.util";
-import { AppCategoryService } from "../app-category/app-category.service";
+import { AppFeatureService } from '../app-feature/app-feature.service';
 import { AppFunctionService } from "./app-function.service";
 import { RecordStatus } from "../../../../../core/models/status.enum";
 
@@ -24,7 +24,7 @@ import { RecordStatus } from "../../../../../core/models/status.enum";
 })
 export class AppFunctionList implements OnInit, OnDestroy {
   public functionService = inject(AppFunctionService);
-  public categoryService = inject(AppCategoryService);
+  public featureService = inject(AppFeatureService);
   private headerService = inject(HeaderService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
@@ -33,22 +33,22 @@ export class AppFunctionList implements OnInit, OnDestroy {
 
   listVM = computed(() => {
     const functions = this.functionService.functions();
-    const categories = this.categoryService.categories();
+    const features = this.featureService.features();
 
     return functions.map((func) => {
-      const cat = categories.find(
-        (c) => c.tb_tyapp_ap_ctgy_id === func.category_id,
+      const feature = features.find(
+        (f) => f.tb_tyapp_ap_ftr_id === func.category_id,
       );
       return {
         ...func,
-        categoryName: cat ? cat.display_name : 'Unknown Category',
+        featureName: feature ? feature.name : 'Unknown Feature',
       };
     });
   });
 
   ngOnInit() {
     const isLoading = computed(
-      () => this.functionService.loading() || this.categoryService.loading(),
+      () => this.functionService.loading() || this.featureService.loading(),
     );
     const isExportDisabled = computed(
       () => isLoading() || this.functionService.functions().length === 0,
@@ -82,7 +82,7 @@ export class AppFunctionList implements OnInit, OnDestroy {
     });
 
     this.functionService.fetchAllFunctions();
-    this.categoryService.fetchAllCategories();
+    this.featureService.fetchAllFeatures();
   }
 
   ngOnDestroy() {
@@ -91,18 +91,18 @@ export class AppFunctionList implements OnInit, OnDestroy {
 
   async onRefresh() {
     await this.functionService.fetchAllFunctions(true);
-    await this.categoryService.fetchAllCategories(true);
+    await this.featureService.fetchAllFeatures(true);
   }
 
   onExport() {
     const data = this.listVM();
     if (data.length === 0) return;
 
-    const headers = ['Function ID', 'Function Name', 'Category Name', 'Status'];
+    const headers = ['Function ID', 'Function Name', 'Feature Name', 'Status'];
     const rows = data.map((item) => [
       item.tb_tyapp_ap_func_id,
       item.function_name,
-      item.categoryName,
+      item.featureName,
       item.status === RecordStatus.Active ? 'Active' : 'Inactive',
     ]);
 

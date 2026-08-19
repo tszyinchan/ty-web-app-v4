@@ -17,9 +17,28 @@
     margin-bottom: 16px;
   }
 
-  .app-access-checkboxes {
+  .access-app-list {
     display: flex;
-    gap: 24px;
-    flex-wrap: wrap;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .access-app-block {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .access-feature-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding-left: 28px;
+  }
+
+  .access-admin-tag {
+    margin-left: 8px;
+    font-size: 12px;
+    color: var(--mat-sys-outline);
   }
 }

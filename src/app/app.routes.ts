@@ -4,6 +4,7 @@ import { authGuard } from './core/guards/auth.guard';
 import { SUBDOMAINS } from './app.constants';
 import { getCurrentSubdomain } from './core/utils/app-env.util';
 import { appAccessGuard } from './core/guards/app-access.guard';
+import { featureAccessGuard } from './core/guards/feature-access.guard';
 import { publicAccessGuard } from './core/guards/public-access.guard';
 
 const currentApp = getCurrentSubdomain();
@@ -30,6 +31,8 @@ const JAXFR_ROUTES: Routes = [
       },
       {
         path: 'users',
+        canActivate: [featureAccessGuard],
+        data: { featureName: 'User' },
         loadChildren: () =>
           import('./apps/jaxfr/features/user/user.routes').then(
             (m) => m.USER_ROUTES,
@@ -37,13 +40,45 @@ const JAXFR_ROUTES: Routes = [
       },
       {
         path: 'development',
+        canActivate: [featureAccessGuard],
+        data: { featureName: 'Development' },
         children: [
           {
-            path: 'category',
-            loadChildren: () =>
-              import('./apps/jaxfr/features/development/app-category/app-category.routes').then(
-                (m) => m.APP_CATEGORY_ROUTES,
+            path: '',
+            loadComponent: () =>
+              import('./apps/jaxfr/pages/feature-hub/feature-hub').then(
+                (m) => m.FeatureHub,
               ),
+            data: { hub: 'development' },
+          },
+          {
+            path: 'feature',
+            loadChildren: () =>
+              import('./apps/jaxfr/features/development/app-feature/app-feature.routes').then(
+                (m) => m.APP_FEATURE_ROUTES,
+              ),
+          },
+          {
+            path: 'category',
+            children: [
+              {
+                path: '',
+                redirectTo: '/development/feature/list',
+                pathMatch: 'full',
+              },
+              {
+                path: 'list',
+                redirectTo: '/development/feature/list',
+              },
+              {
+                path: 'new',
+                redirectTo: '/development/feature/new',
+              },
+              {
+                path: 'edit/:id',
+                redirectTo: '/development/feature/edit/:id',
+              },
+            ],
           },
           {
             path: 'function',
@@ -71,6 +106,14 @@ const JAXFR_ROUTES: Routes = [
       {
         path: 'work',
         children: [
+          {
+            path: '',
+            loadComponent: () =>
+              import('./apps/jaxfr/pages/feature-hub/feature-hub').then(
+                (m) => m.FeatureHub,
+              ),
+            data: { hub: 'work' },
+          },
           {
             path: 'attendance',
             loadChildren: () =>
@@ -125,6 +168,14 @@ const JAXFR_ROUTES: Routes = [
       {
         path: 'archive',
         children: [
+          {
+            path: '',
+            loadComponent: () =>
+              import('./apps/jaxfr/pages/feature-hub/feature-hub').then(
+                (m) => m.FeatureHub,
+              ),
+            data: { hub: 'archive' },
+          },
           {
             path: 'tyweb',
             loadChildren: () =>

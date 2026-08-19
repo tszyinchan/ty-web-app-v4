@@ -93,6 +93,8 @@ export class WorkAttendanceList implements OnInit, OnDestroy {
     );
 
     this.headerService.setConfig({
+      title: 'Attendance',
+      backLink: '/work',
       actions: [
         {
           label: 'Refresh',

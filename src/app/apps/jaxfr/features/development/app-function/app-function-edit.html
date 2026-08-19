@@ -12,29 +12,29 @@
           </mat-form-field>
 
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>App Category</mat-label>
+            <mat-label>Feature</mat-label>
             <input 
               type="text"
               matInput 
               required
               [(ngModel)]="func.category_id"
-              (ngModelChange)="categorySearchQuery.set($event)"
-              (blur)="categoryBlurred.set(true)" 
+              (ngModelChange)="featureSearchQuery.set($event)"
+              (blur)="featureBlurred.set(true)" 
               [matAutocomplete]="auto">
             
             <mat-autocomplete 
               #auto="matAutocomplete" 
               autoActiveFirstOption 
-              [displayWith]="displayCategoryName.bind(this)">
-              @for (opt of filteredCategories(); track opt.value) {
+              [displayWith]="displayFeatureName.bind(this)">
+              @for (opt of filteredFeatures(); track opt.value) {
                 <mat-option [value]="opt.value">
                   {{ opt.label }}
                 </mat-option>
               }
             </mat-autocomplete>
 
-            @if (showCategoryError()) {
-              <mat-error>Please select a valid category from the list</mat-error>
+            @if (showFeatureError()) {
+              <mat-error>Please select a valid feature from the list</mat-error>
             }
           </mat-form-field>
           

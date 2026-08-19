@@ -1,74 +1,13 @@
-<mat-sidenav-container class="layout-shell">
-  <mat-sidenav
-    #drawer
-    class="sidebar"
-    [mode]="isHandset() ? 'over' : 'side'"
-    [opened]="!isHandset()"
-  >
-    <div class="sidebar-wrapper">
-      <mat-toolbar class="sidebar-logo" routerLink="/welcome">
-        <img src="logo.svg" alt="Jaxfr Logo" class="brand-logo" />
-      </mat-toolbar>
+<div class="layout-shell">
+  <app-toolbar
+    [showHomeButton]="showHomeButton()"
+    [showSignOut]="true"
+    (signOutClick)="onSignOut()"
+  ></app-toolbar>
 
-      <div class="sidebar-user-profile">
-        <mat-icon class="avatar">account_circle</mat-icon>
-        <div class="info">
-          <span class="name">{{ userProfile() | tyDisplayName }}</span>
-          <span class="role">{{ userProfile()?.role | tyRoleLabel }}</span>
-        </div>
-      </div>
-
-      <nav class="nav-container">
-        @for (group of navMenu(); track group.title) {
-          <mat-accordion displayMode="flat">
-            <mat-expansion-panel
-              class="nav-panel"
-              [expanded]="group.defaultExpanded ?? true"
-            >
-              <mat-expansion-panel-header>
-                <mat-panel-title>
-                  <mat-icon>{{ group.icon }}</mat-icon>
-                  <span>{{ group.title }}</span>
-                </mat-panel-title>
-              </mat-expansion-panel-header>
-
-              <div class="sub-menu">
-                @for (link of group.links; track link.route) {
-                  <a
-                    mat-list-item
-                    [routerLink]="link.route"
-                    routerLinkActive="active-sub-link"
-                    (click)="closeOnMobile()"
-                  >
-                    <span matListItemTitle>{{ link.title }}</span>
-                  </a>
-                }
-              </div>
-            </mat-expansion-panel>
-          </mat-accordion>
-        }
-      </nav>
-
-      <span class="spacer"></span>
-
-      <button mat-button class="sidebar-logout" (click)="onSignOut()">
-        <mat-icon>logout</mat-icon>
-        <span>Sign Out</span>
-      </button>
-      <div class="sidebar-footer">App Version: {{ appVersion() }}</div>
+  <main class="main-scroll-view">
+    <div class="page-container">
+      <router-outlet></router-outlet>
     </div>
-  </mat-sidenav>
-
-  <mat-sidenav-content class="content-wrapper">
-    <app-toolbar
-      [showMenuButton]="isHandset()"
-      (menuButtonClick)="drawer.toggle()"
-    ></app-toolbar>
-
-    <main class="main-scroll-view">
-      <div class="page-container">
-        <router-outlet></router-outlet>
-      </div>
-    </main>
-  </mat-sidenav-content>
-</mat-sidenav-container>
+  </main>
+</div>

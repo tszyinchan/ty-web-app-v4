@@ -50,6 +50,13 @@ export class FitThread implements OnInit, OnDestroy {
     this.headerService.setConfig({
       actions: [
         {
+          label: 'List',
+          icon: 'list',
+          type: 'secondary',
+          onClick: () =>
+            this.router.navigate(['../list'], { relativeTo: this.route }),
+        },
+        {
           label: 'Refresh',
           icon: 'refresh',
           type: 'secondary',

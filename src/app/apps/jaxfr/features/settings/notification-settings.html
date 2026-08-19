@@ -5,10 +5,20 @@
 
       @if (pushService.isIosNonStandalone()) {
         <p class="ios-hint">
-          On iPhone/iPad, push notifications only work after you add this
-          site to your Home Screen (Share &rarr; Add to Home Screen) and
-          open it from that icon instead of Safari.
+          On iPhone/iPad, Chrome and DuckDuckGo cannot receive Web Push —
+          they still run on Safari's engine, and Home Screen apps always
+          report as Safari. Use Safari only:
         </p>
+        <ol class="ios-steps">
+          <li>Open this site in Safari (not Chrome / DuckDuckGo).</li>
+          <li>Share &rarr; Add to Home Screen.</li>
+          <li>Open Jaxfr from that Home Screen icon (not from a browser tab).</li>
+          <li>Come back here and tap Enable Notifications.</li>
+          <li>
+            Also check iOS Settings &rarr; Notifications &rarr; Jaxfr and
+            make sure Allow Notifications is on.
+          </li>
+        </ol>
       }
 
       <p class="status-line">
@@ -37,6 +47,10 @@
         <p class="denied-hint">
           Your current browser doesn't support Web Push, so this can't be
           enabled here.
+        </p>
+      } @else if (pushService.isIosNonStandalone()) {
+        <p class="denied-hint">
+          Enable is locked until Jaxfr is opened from the Home Screen icon.
         </p>
       } @else if (!pushService.pushReady()) {
         <button

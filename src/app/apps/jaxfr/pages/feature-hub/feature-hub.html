@@ -1,0 +1,12 @@
+@if (hub; as config) {
+  <div class="hub-container">
+    <div class="launcher-grid">
+      @for (link of config.links; track link.route) {
+        <a class="launcher-tile" [routerLink]="link.route">
+          <mat-icon>{{ link.icon }}</mat-icon>
+          <span>{{ link.title }}</span>
+        </a>
+      }
+    </div>
+  </div>
+}

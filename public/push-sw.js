@@ -47,14 +47,9 @@ async function handlePush(event) {
     // Non-JSON payloads still show a generic notification.
   }
 
-  const windows = await self.clients.matchAll({
-    type: 'window',
-    includeUncontrolled: true,
-  });
-  if (windows.some((client) => client.focused)) {
-    return;
-  }
-
+  // iOS/iPadOS requires every push event to call showNotification().
+  // Skipping it (even when the app is focused) is treated as a silent push
+  // and Apple will stop delivering to this subscription.
   await self.registration.showNotification(title, {
     body,
     icon: ICON,
@@ -62,6 +57,23 @@ async function handlePush(event) {
     tag: url,
     renotify: true,
   });
+
+  const ua = self.navigator.userAgent || '';
+  const isIos =
+    /iphone|ipad|ipod/i.test(ua) ||
+    (self.navigator.platform === 'MacIntel' && self.navigator.maxTouchPoints > 1);
+  if (isIos) return;
+
+  const windows = await self.clients.matchAll({
+    type: 'window',
+    includeUncontrolled: true,
+  });
+  if (!windows.some((client) => client.focused)) return;
+
+  const notes = await self.registration.getNotifications({ tag: url });
+  for (const note of notes) {
+    note.close();
+  }
 }
 
 async function openUrl(url) {

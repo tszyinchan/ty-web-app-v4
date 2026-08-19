@@ -87,29 +87,46 @@
         <h3 class="group-header">Context & Author</h3>
         <div class="fields-grid-2">
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>App Category</mat-label>
+            <mat-label>App</mat-label>
+            <mat-select
+              [ngModel]="selectedAppId()"
+              (ngModelChange)="onAppChange($event)"
+              [ngModelOptions]="{ standalone: true }"
+              required
+            >
+              @for (app of appRegistry.apps(); track app.tb_tyapp_app_id) {
+                <mat-option [value]="app.tb_tyapp_app_id">{{
+                  app.name
+                }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Feature</mat-label>
             <input
               matInput
               required
-              #catInput
-              [(ngModel)]="log.category_id"
-              [matAutocomplete]="catAuto"
-              (focus)="catSearch.set('')"
-              (input)="catSearch.set(catInput.value)"
-              #catCtrl="ngModel"
+              #featureInput
+              [(ngModel)]="log.feature_id"
+              [matAutocomplete]="featureAuto"
+              (focus)="featureSearch.set('')"
+              (input)="featureSearch.set(featureInput.value)"
+              #featureCtrl="ngModel"
+              [disabled]="!selectedAppId()"
             />
             <mat-autocomplete
-              #catAuto="matAutocomplete"
+              #featureAuto="matAutocomplete"
               requireSelection
-              [displayWith]="displayCategoryName.bind(this)"
+              [displayWith]="displayFeatureName.bind(this)"
             >
-              @for (opt of filteredCategories(); track opt.value) {
+              @for (opt of filteredFeatures(); track opt.value) {
                 <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
               }
             </mat-autocomplete>
-            @if (catCtrl.invalid && (catCtrl.dirty || catCtrl.touched)) {
+            @if (featureCtrl.invalid && (featureCtrl.dirty || featureCtrl.touched)) {
               <mat-error
-                >Please select a valid category from the list.</mat-error
+                >Please select a valid feature from the list.</mat-error
               >
             }
           </mat-form-field>

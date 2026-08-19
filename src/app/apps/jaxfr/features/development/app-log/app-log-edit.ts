@@ -26,7 +26,8 @@ import {
   HeaderService,
   HeaderAction,
 } from '../../../../../core/services/header.service';
-import { AppCategoryService } from '../app-category/app-category.service';
+import { AppRegistryService } from '../../../../../core/services/app-registry.service';
+import { AppFeatureService } from '../app-feature/app-feature.service';
 import { UserService } from '../../user/user.service';
 import { AppLog } from './app-log.model';
 import { AppLogService } from './app-log.service';
@@ -70,7 +71,8 @@ export class AppLogEdit implements OnInit, OnDestroy, DoCheck {
   private displayNamePipe = inject(DisplayNamePipe);
 
   public logService = inject(AppLogService);
-  public categoryService = inject(AppCategoryService);
+  public featureService = inject(AppFeatureService);
+  public appRegistry = inject(AppRegistryService);
   public userService = inject(UserService);
   public authService = inject(AuthService);
 
@@ -81,19 +83,23 @@ export class AppLogEdit implements OnInit, OnDestroy, DoCheck {
   originalDataStr = signal<string>('');
   isDirty = signal(false);
 
-  catSearch = signal<string>('');
-  categoryOptions = computed<SelectOption[]>(() =>
-    this.categoryService
-      .categories()
-      .map((c) => ({ value: c.tb_tyapp_ap_ctgy_id, label: c.display_name })),
-  );
-  filteredCategories = computed(() => {
-    const q = this.catSearch().toLowerCase();
+  selectedAppId = signal<string>('');
+  featureSearch = signal<string>('');
+  featureOptions = computed<SelectOption[]>(() => {
+    const appId = this.selectedAppId();
+    if (!appId) return [];
+    return this.featureService
+      .features()
+      .filter((f) => f.app_id === appId)
+      .map((f) => ({ value: f.tb_tyapp_ap_ftr_id, label: f.name }));
+  });
+  filteredFeatures = computed(() => {
+    const q = this.featureSearch().toLowerCase();
     return q
-      ? this.categoryOptions().filter((opt) =>
+      ? this.featureOptions().filter((opt) =>
           opt.label.toLowerCase().includes(q),
         )
-      : this.categoryOptions();
+      : this.featureOptions();
   });
 
   userSearch = signal<string>('');
@@ -157,7 +163,8 @@ export class AppLogEdit implements OnInit, OnDestroy, DoCheck {
         this.logService.loading() ||
         (!!this.currentId && !currentlyDirty) ||
         !current.log_message?.trim() ||
-        !current.category_id ||
+        !current.feature_id ||
+        !this.selectedAppId() ||
         !current.log_user ||
         !current.version_date;
 
@@ -172,9 +179,15 @@ export class AppLogEdit implements OnInit, OnDestroy, DoCheck {
     }
   }
 
-  displayCategoryName(id: string): string {
-    const found = this.categoryOptions().find((opt) => opt.value === id);
+  displayFeatureName(id: string): string {
+    const found = this.featureOptions().find((opt) => opt.value === id);
     return found ? found.label : '';
+  }
+  displayAppName(id: string): string {
+    return (
+      this.appRegistry.apps().find((app) => app.tb_tyapp_app_id === id)?.name ??
+      ''
+    );
   }
   displayUserName(id: string): string {
     const found = this.userOptions().find((opt) => opt.value === id);
@@ -186,7 +199,8 @@ export class AppLogEdit implements OnInit, OnDestroy, DoCheck {
 
     await Promise.all([
       this.logService.fetchAllLogs(),
-      this.categoryService.fetchAllCategories(),
+      this.featureService.fetchAllFeatures(),
+      this.appRegistry.fetchAllApps(),
       this.userService.fetchAllUsers(),
     ]);
 
@@ -226,7 +240,7 @@ export class AppLogEdit implements OnInit, OnDestroy, DoCheck {
       if (cachedLog) {
         this.item.set(structuredClone(cachedLog));
         this.originalDataStr.set(JSON.stringify(cachedLog));
-        this.catSearch.set(cachedLog.category_id);
+        this.applyFeatureContext(cachedLog.feature_id);
         this.userSearch.set(cachedLog.log_user);
       }
 
@@ -235,7 +249,7 @@ export class AppLogEdit implements OnInit, OnDestroy, DoCheck {
         if (fresh) {
           this.item.set(structuredClone(fresh));
           this.originalDataStr.set(JSON.stringify(fresh));
-          this.catSearch.set(fresh.category_id);
+          this.applyFeatureContext(fresh.feature_id);
           this.userSearch.set(fresh.log_user);
         } else if (!cachedLog) {
           this.router.navigate(['/development/log/list']);
@@ -251,13 +265,38 @@ export class AppLogEdit implements OnInit, OnDestroy, DoCheck {
         version_patch: latest.patch,
         version_date: new Date() as unknown as string,
         log_user: this.authService.userProfile()?.user_id || '',
-        category_id: '',
+        feature_id: '',
         log_message: '',
         remarks: '',
         status: RecordStatus.Active,
       };
       this.item.set(newLog);
       this.originalDataStr.set(JSON.stringify(newLog));
+      this.selectedAppId.set(
+        this.appRegistry.apps().find((app) => app.name === 'Jaxfr')
+          ?.tb_tyapp_app_id ?? '',
+      );
+    }
+  }
+
+  applyFeatureContext(featureId: string) {
+    const feature = this.featureService
+      .features()
+      .find((f) => f.tb_tyapp_ap_ftr_id === featureId);
+    this.selectedAppId.set(feature?.app_id ?? '');
+    this.featureSearch.set(featureId);
+  }
+
+  onAppChange(appId: string) {
+    this.selectedAppId.set(appId);
+    const current = this.item();
+    if (!current?.feature_id) return;
+    const feature = this.featureService
+      .features()
+      .find((f) => f.tb_tyapp_ap_ftr_id === current.feature_id);
+    if (feature && feature.app_id !== appId) {
+      current.feature_id = '';
+      this.featureSearch.set('');
     }
   }
 
@@ -347,7 +386,7 @@ export class AppLogEdit implements OnInit, OnDestroy, DoCheck {
     if (
       !data ||
       !data.log_message?.trim() ||
-      !data.category_id ||
+      !data.feature_id ||
       !data.log_user
     )
       return;
@@ -394,7 +433,8 @@ export class AppLogEdit implements OnInit, OnDestroy, DoCheck {
       'Log ID',
       'Version',
       'Release Date',
-      'Category',
+      'App',
+      'Feature',
       'Author',
       'Message',
       'Status',
@@ -406,7 +446,8 @@ export class AppLogEdit implements OnInit, OnDestroy, DoCheck {
         this.currentId,
         `v${data.version_major}.${data.version_minor}.${data.version_patch}`,
         formattedDate,
-        this.displayCategoryName(data.category_id || ''),
+        this.displayAppName(this.selectedAppId()),
+        this.displayFeatureName(data.feature_id || ''),
         this.displayUserName(data.log_user || ''),
         data.log_message || '',
         data.status === RecordStatus.Active ? 'Published' : 'Draft',

@@ -5,7 +5,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { HeaderService } from '../../../../../core/services/header.service';
-import { AppCategoryService } from '../app-category/app-category.service';
+import { AppRegistryService } from '../../../../../core/services/app-registry.service';
+import { AppFeatureService } from '../app-feature/app-feature.service';
 import { UserService } from '../../user/user.service';
 import { AppLogService } from './app-log.service';
 import { DisplayNamePipe } from '../../../../../core/pipes/display-name.pipe';
@@ -27,7 +28,8 @@ import { RecordStatus } from '../../../../../core/models/status.enum';
 })
 export class AppLogList implements OnInit, OnDestroy {
   public logService = inject(AppLogService);
-  public categoryService = inject(AppCategoryService);
+  public featureService = inject(AppFeatureService);
+  public appRegistry = inject(AppRegistryService);
   public userService = inject(UserService);
 
   private headerService = inject(HeaderService);
@@ -40,17 +42,20 @@ export class AppLogList implements OnInit, OnDestroy {
 
   listVM = computed(() => {
     const logs = this.logService.logs();
-    const categories = this.categoryService.categories();
+    const features = this.featureService.features();
+    const apps = this.appRegistry.apps();
     const users = this.userService.users();
 
     return logs.map((log) => {
-      const cat = categories.find(
-        (c) => c.tb_tyapp_ap_ctgy_id === log.category_id,
+      const feature = features.find(
+        (f) => f.tb_tyapp_ap_ftr_id === log.feature_id,
       );
+      const app = apps.find((a) => a.tb_tyapp_app_id === feature?.app_id);
       const user = users.find((u) => u.user_id === log.log_user);
       return {
         ...log,
-        categoryName: cat ? cat.display_name : 'Unknown Category',
+        appName: app?.name ?? '',
+        featureName: feature ? feature.name : 'Unknown Feature',
         authorName: user
           ? this.displayNamePipe.transform(user)
           : 'Unknown Author',
@@ -62,11 +67,14 @@ export class AppLogList implements OnInit, OnDestroy {
     const isLoading = computed(
       () =>
         this.logService.loading() ||
-        this.categoryService.loading() ||
+        this.featureService.loading() ||
+        this.appRegistry.loading() ||
         this.userService.loading(),
     );
 
     this.headerService.setConfig({
+      title: 'App Logs',
+      backLink: '/development',
       actions: [
         {
           label: 'Refresh',
@@ -94,13 +102,15 @@ export class AppLogList implements OnInit, OnDestroy {
     });
 
     this.logService.fetchAllLogs();
-    this.categoryService.fetchAllCategories();
+    this.featureService.fetchAllFeatures();
+    this.appRegistry.fetchAllApps();
     this.userService.fetchAllUsers();
   }
 
   async onRefresh() {
     await this.logService.fetchAllLogs(true);
-    await this.categoryService.fetchAllCategories(true);
+    await this.featureService.fetchAllFeatures(true);
+    await this.appRegistry.fetchAllApps(true);
     await this.userService.fetchAllUsers(true);
   }
 
@@ -111,7 +121,8 @@ export class AppLogList implements OnInit, OnDestroy {
     const headers = [
       'Version',
       'Release Date',
-      'Category',
+      'App',
+      'Feature',
       'Author',
       'Message',
       'Status',
@@ -120,7 +131,8 @@ export class AppLogList implements OnInit, OnDestroy {
     const rows = logs.map((l) => [
       `v${l.version_major}.${l.version_minor}.${l.version_patch}`,
       l.version_date,
-      l.categoryName,
+      l.appName,
+      l.featureName,
       l.authorName,
       l.log_message || '',
       l.status === RecordStatus.Active ? 'Published' : 'Draft',

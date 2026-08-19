@@ -6,6 +6,8 @@ import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { APP_CONFIG, DEFAULT_ROUTES, SUBDOMAINS } from '../../app.constants';
+import { AccessService } from '../../core/services/access.service';
+import { AppRegistryService } from '../../core/services/app-registry.service';
 import { AuthService } from '../../core/services/auth.service';
 import { Router } from '@angular/router';
 import { getCurrentSubdomain } from '../../core/utils/app-env.util';
@@ -27,6 +29,8 @@ import { getCurrentSubdomain } from '../../core/utils/app-env.util';
 export class Login implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
+  private readonly access = inject(AccessService);
+  private readonly appRegistry = inject(AppRegistryService);
   private readonly snack = inject(MatSnackBar);
   private readonly router = inject(Router);
 
@@ -100,9 +104,12 @@ export class Login implements OnInit {
       await this.authService.login(email, password);
 
       const currentApp = getCurrentSubdomain();
-      const profile = this.authService.userProfile();
+      await Promise.all([
+        this.appRegistry.fetchAllApps(),
+        this.access.fetchMyAccess(true),
+      ]);
 
-      if (!profile?.allowed_apps?.includes(currentApp)) {
+      if (!this.access.hasAppBySubdomain(currentApp)) {
         await this.authService.logout();
         throw new Error('APP_ACCESS_DENIED');
       }

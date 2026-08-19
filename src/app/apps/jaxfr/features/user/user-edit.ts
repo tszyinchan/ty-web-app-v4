@@ -18,7 +18,8 @@ import { MatInputModule } from '@angular/material/input';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatSelectModule } from '@angular/material/select';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
-import { SUBDOMAINS } from '../../../../app.constants';
+import { AppFeature } from '../development/app-feature/app-feature.model';
+import { AppFeatureService } from '../development/app-feature/app-feature.service';
 import {
   NameDisplayMode,
   TyappUser,
@@ -27,6 +28,8 @@ import {
 import { DisplayNameModePipe } from '../../../../core/pipes/display-name-mode.pipe';
 import { DisplayNamePipe } from '../../../../core/pipes/display-name.pipe';
 import { RoleLabelPipe } from '../../../../core/pipes/role-label.pipe';
+import { AccessService } from '../../../../core/services/access.service';
+import { AppRegistryService } from '../../../../core/services/app-registry.service';
 import { HeaderService } from '../../../../core/services/header.service';
 import { exportToCsv } from '../../../../core/utils/csv-export.util';
 import { UserService } from './user.service';
@@ -59,6 +62,9 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   public userService = inject(UserService);
+  public featureService = inject(AppFeatureService);
+  public appRegistry = inject(AppRegistryService);
+  private access = inject(AccessService);
   private headerService = inject(HeaderService);
   private zone = inject(NgZone);
 
@@ -87,9 +93,15 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
   originalDataStr = signal<string>('');
   isDirty = signal(false);
 
-  hasJaxfrAccess = false;
-  hasFilelinkAccess = false;
+  selectedAppIds: string[] = [];
+  selectedFeatureIds: string[] = [];
   private originalAccessStr = '';
+
+  launcherFeatures = computed(() =>
+    this.featureService
+      .features()
+      .filter((feature) => feature.show_in_launcher),
+  );
 
   syncStatus = computed<'loading' | 'up-to-date' | 'unsaved' | 'none'>(() => {
     if (this.isSaving() || this.userService.loading()) return 'loading';
@@ -110,6 +122,11 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
   async ngOnInit() {
     const id = this.route.snapshot.paramMap.get('id');
     if (!id) return;
+
+    await Promise.all([
+      this.appRegistry.fetchAllApps(),
+      this.featureService.fetchAllFeatures(),
+    ]);
 
     this.headerService.setConfig({
       backLink: '/users/list',
@@ -133,32 +150,91 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
 
     const cachedUser = this.userService.users().find((u) => u.user_id === id);
     if (cachedUser) {
-      this.setUserAndAccess(cachedUser);
+      this.user.set(structuredClone(cachedUser));
+      this.originalDataStr.set(JSON.stringify(cachedUser));
     }
 
-    const freshUser = await this.userService.fetchUserById(id);
+    const [freshUser, grants] = await Promise.all([
+      this.userService.fetchUserById(id),
+      this.access.fetchAccessForUser(id),
+    ]);
 
     this.zone.run(() => {
       if (freshUser) {
-        this.setUserAndAccess(freshUser);
-      } else if (!cachedUser) {
+        this.setUserAndAccess(freshUser, grants.appIds, grants.featureIds);
+      } else if (cachedUser) {
+        this.setUserAndAccess(cachedUser, grants.appIds, grants.featureIds);
+      } else {
         this.router.navigate(['/users/list']);
       }
     });
   }
 
-  private setUserAndAccess(u: TyappUser) {
+  private setUserAndAccess(
+    u: TyappUser,
+    appIds: string[],
+    featureIds: string[],
+  ) {
     this.user.set(structuredClone(u));
     this.originalDataStr.set(JSON.stringify(u));
+    this.selectedAppIds = [...appIds];
+    this.selectedFeatureIds = [...featureIds];
+    this.originalAccessStr = this.accessSnapshot();
+  }
 
-    const apps = u.allowed_apps || [];
-    this.hasJaxfrAccess = apps.includes(SUBDOMAINS.JAXFR);
-    this.hasFilelinkAccess = apps.includes(SUBDOMAINS.FILELINK);
+  featuresForApp(appId: string): AppFeature[] {
+    return this.launcherFeatures().filter((feature) => feature.app_id === appId);
+  }
 
-    this.originalAccessStr = JSON.stringify([
-      this.hasJaxfrAccess,
-      this.hasFilelinkAccess,
-    ]);
+  isAppSelected(appId: string): boolean {
+    return this.selectedAppIds.includes(appId);
+  }
+
+  isFeatureSelected(featureId: string): boolean {
+    return this.selectedFeatureIds.includes(featureId);
+  }
+
+  toggleApp(appId: string, checked: boolean) {
+    if (checked) {
+      if (!this.selectedAppIds.includes(appId)) {
+        this.selectedAppIds = [...this.selectedAppIds, appId];
+      }
+    } else {
+      this.selectedAppIds = this.selectedAppIds.filter((id) => id !== appId);
+      const featureIds = this.featuresForApp(appId).map(
+        (f) => f.tb_tyapp_ap_ftr_id,
+      );
+      this.selectedFeatureIds = this.selectedFeatureIds.filter(
+        (id) => !featureIds.includes(id),
+      );
+    }
+    this.markAsDirty();
+  }
+
+  toggleFeature(feature: AppFeature, checked: boolean) {
+    if (checked) {
+      if (!this.selectedFeatureIds.includes(feature.tb_tyapp_ap_ftr_id)) {
+        this.selectedFeatureIds = [
+          ...this.selectedFeatureIds,
+          feature.tb_tyapp_ap_ftr_id,
+        ];
+      }
+      if (!this.selectedAppIds.includes(feature.app_id)) {
+        this.selectedAppIds = [...this.selectedAppIds, feature.app_id];
+      }
+    } else {
+      this.selectedFeatureIds = this.selectedFeatureIds.filter(
+        (id) => id !== feature.tb_tyapp_ap_ftr_id,
+      );
+    }
+    this.markAsDirty();
+  }
+
+  private accessSnapshot(): string {
+    return JSON.stringify({
+      apps: [...this.selectedAppIds].sort(),
+      features: [...this.selectedFeatureIds].sort(),
+    });
   }
 
   @HostListener('window:beforeunload', ['$event'])
@@ -176,11 +252,7 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
 
     if (current && original) {
       const isBaseDirty = JSON.stringify(current) !== original;
-      const currentAccessStr = JSON.stringify([
-        this.hasJaxfrAccess,
-        this.hasFilelinkAccess,
-      ]);
-      const isAccessDirty = currentAccessStr !== this.originalAccessStr;
+      const isAccessDirty = this.accessSnapshot() !== this.originalAccessStr;
 
       const currentlyDirty = isBaseDirty || isAccessDirty;
 
@@ -206,20 +278,36 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
 
     this.isSaving.set(true);
 
-    const newAllowedApps: string[] = [];
-    if (this.hasJaxfrAccess) newAllowedApps.push(SUBDOMAINS.JAXFR);
-    if (this.hasFilelinkAccess) newAllowedApps.push(SUBDOMAINS.FILELINK);
-    data.allowed_apps = newAllowedApps;
+    const allowedApps = this.appRegistry
+      .apps()
+      .filter((app) => this.selectedAppIds.includes(app.tb_tyapp_app_id))
+      .map((app) => app.name.toLowerCase());
+    data.allowed_apps = allowedApps;
+
+    const grantsOk = await this.access.replaceAppAccess(
+      data.user_id,
+      this.selectedAppIds,
+    );
+    if (!grantsOk) {
+      this.zone.run(() => this.isSaving.set(false));
+      return;
+    }
+
+    const featureGrantsOk = await this.access.replaceFeatureAccess(
+      data.user_id,
+      this.selectedFeatureIds,
+    );
+    if (!featureGrantsOk) {
+      this.zone.run(() => this.isSaving.set(false));
+      return;
+    }
 
     const success = await this.userService.updateUser(data.user_id, data);
 
     this.zone.run(() => {
       if (success) {
         this.originalDataStr.set(JSON.stringify(data));
-        this.originalAccessStr = JSON.stringify([
-          this.hasJaxfrAccess,
-          this.hasFilelinkAccess,
-        ]);
+        this.originalAccessStr = this.accessSnapshot();
         this.isDirty.set(false);
         this.router.navigate(['/users/list']);
       }

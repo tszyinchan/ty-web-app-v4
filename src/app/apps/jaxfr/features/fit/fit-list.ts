@@ -92,6 +92,13 @@ export class FitList implements OnInit, OnDestroy {
     this.headerService.setConfig({
       actions: [
         {
+          label: 'Thread',
+          icon: 'forum',
+          type: 'secondary',
+          onClick: () =>
+            this.router.navigate(['../thread'], { relativeTo: this.route }),
+        },
+        {
           label: 'Refresh',
           icon: 'refresh',
           type: 'secondary',

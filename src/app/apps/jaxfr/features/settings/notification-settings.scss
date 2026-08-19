@@ -1,10 +1,21 @@
 .ios-hint {
-  margin: 0 0 12px;
+  margin: 0 0 8px;
   padding: 8px 12px;
   border-radius: 8px;
   font-size: 13px;
   background: var(--mat-sys-surface-container-low);
   color: var(--mat-sys-on-surface-variant);
+}
+
+.ios-steps {
+  margin: 0 0 12px;
+  padding: 0 12px 0 28px;
+  font-size: 13px;
+  color: var(--mat-sys-on-surface-variant);
+
+  li + li {
+    margin-top: 4px;
+  }
 }
 
 .status-line {

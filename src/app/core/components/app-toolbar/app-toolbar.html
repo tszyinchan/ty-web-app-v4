@@ -1,6 +1,10 @@
 <mat-toolbar class="dynamic-navbar">
   <div class="nav-slot">
-    @if (showMenuButton()) {
+    @if (showHomeButton()) {
+      <a mat-icon-button routerLink="/welcome" title="Home">
+        <mat-icon>home</mat-icon>
+      </a>
+    } @else if (showMenuButton()) {
       <button mat-icon-button (click)="menuButtonClick.emit()">
         <mat-icon>menu</mat-icon>
       </button>
@@ -134,4 +138,15 @@
       </div>
     }
   </div>
+
+  @if (showSignOut()) {
+    <button
+      mat-icon-button
+      class="sign-out-btn"
+      title="Sign Out"
+      (click)="signOutClick.emit()"
+    >
+      <mat-icon>logout</mat-icon>
+    </button>
+  }
 </mat-toolbar>

@@ -1,18 +1,21 @@
 import { inject } from '@angular/core';
-import { Router, CanActivateFn } from '@angular/router';
-import { AuthService } from '../services/auth.service';
-import { getCurrentSubdomain } from '../utils/app-env.util';
+import { CanActivateFn, Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { AccessService } from '../services/access.service';
+import { AppRegistryService } from '../services/app-registry.service';
+import { getCurrentSubdomain } from '../utils/app-env.util';
 
-export const appAccessGuard: CanActivateFn = () => {
-  const authService = inject(AuthService);
+export const appAccessGuard: CanActivateFn = async () => {
+  const access = inject(AccessService);
+  const apps = inject(AppRegistryService);
   const router = inject(Router);
   const snack = inject(MatSnackBar);
 
-  const profile = authService.userProfile();
   const currentApp = getCurrentSubdomain();
 
-  if (profile?.allowed_apps && profile.allowed_apps.includes(currentApp)) {
+  await Promise.all([apps.fetchAllApps(), access.fetchMyAccess()]);
+
+  if (access.hasAppBySubdomain(currentApp)) {
     return true;
   }
 

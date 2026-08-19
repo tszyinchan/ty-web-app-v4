@@ -1,0 +1,37 @@
+<div class="standard-list-view">
+  <div class="list-container">
+    @for (feature of listVM(); track feature.tb_tyapp_ap_ftr_id) {
+      <a class="item-link" [routerLink]="['../edit', feature.tb_tyapp_ap_ftr_id]">
+        <div class="item-content">
+          <div class="item-info-group">
+            <span class="main-text">{{ feature.name }}</span>
+            <span class="sub-text">
+              {{ feature.appName }}
+              @if (feature.show_in_launcher) {
+                · Launcher
+              }
+              @if (feature.is_admin_only) {
+                · Admin only
+              }
+            </span>
+          </div>
+
+          <div class="item-status-group">
+            <span
+              class="status-tag"
+              [class.inactive]="feature.status === RecordStatus.Inactive"
+            >
+              {{ feature.status === RecordStatus.Active ? 'Active' : 'Inactive' }}
+            </span>
+            <mat-icon class="chevron">chevron_right</mat-icon>
+          </div>
+        </div>
+      </a>
+    }
+  </div>
+
+  <footer class="list-footer">
+    <div class="divider"></div>
+    <span class="count-text">TOTAL {{ listVM().length }} ITEMS</span>
+  </footer>
+</div>

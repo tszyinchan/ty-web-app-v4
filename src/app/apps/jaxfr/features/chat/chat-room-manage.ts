@@ -13,27 +13,17 @@ import {
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import {
-  MatAutocompleteModule,
-  MatAutocompleteSelectedEvent,
-} from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
-import { MatTooltipModule } from '@angular/material/tooltip';
 import { ActivatedRoute, Router } from '@angular/router';
 import { map } from 'rxjs/operators';
 
 import { AuthService } from '../../../../core/services/auth.service';
 import { HeaderService } from '../../../../core/services/header.service';
 import { HasUnsavedChanges } from '../../../../core/guards/unsaved-changes.guard';
-import { DisplayNamePipe } from '../../../../core/pipes/display-name.pipe';
-import { UserService } from '../user/user.service';
-import {
-  CHAT_ROOM_DESCRIPTION_MAX,
-  CHAT_ROOM_MIN_MEMBERS,
-} from './chat.constants';
+import { CHAT_ROOM_DESCRIPTION_MAX } from './chat.constants';
 import { ChatService } from './chat.service';
 
 @Component({
@@ -44,12 +34,9 @@ import { ChatService } from './chat.service';
     FormsModule,
     MatButtonModule,
     MatFormFieldModule,
-    MatInputModule,
     MatIconModule,
-    MatAutocompleteModule,
-    MatTooltipModule,
+    MatInputModule,
   ],
-  providers: [DisplayNamePipe],
   templateUrl: './chat-room-manage.html',
   styleUrl: './chat-room-manage.scss',
 })
@@ -60,10 +47,8 @@ export class ChatRoomManage
   private router = inject(Router);
   private headerService = inject(HeaderService);
   private auth = inject(AuthService);
-  private displayNamePipe = inject(DisplayNamePipe);
 
   readonly chatService = inject(ChatService);
-  readonly userService = inject(UserService);
   readonly descriptionMax = CHAT_ROOM_DESCRIPTION_MAX;
 
   readonly roomId = toSignal(
@@ -73,8 +58,7 @@ export class ChatRoomManage
 
   name = '';
   description = '';
-  userSearch = signal('');
-  isDirtyFlag = false;
+  isDirty = signal(false);
 
   private originalName = '';
   private originalDescription = '';
@@ -96,24 +80,14 @@ export class ChatRoomManage
     return !!room && !!me && room.created_by === me;
   });
 
-  canRemoveMembers = computed(
-    () => (this.room()?.member_user_ids.length ?? 0) > CHAT_ROOM_MIN_MEMBERS,
-  );
-
-  filteredUsers = computed(() => {
-    const q = this.userSearch().toLowerCase().trim();
-    const members = new Set(this.room()?.member_user_ids ?? []);
-    return this.userService
-      .users()
-      .filter((user) => !members.has(user.user_id))
-      .map((user) => ({
-        value: user.user_id,
-        label: this.displayNamePipe.transform(user),
-      }))
-      .filter((opt) => (q ? opt.label.toLowerCase().includes(q) : true));
-  });
-
   isLoading = computed(() => this.chatService.loading());
+
+  syncStatus = computed<'loading' | 'up-to-date' | 'unsaved' | 'none'>(() => {
+    if (this.isLoading()) return 'loading';
+    if (this.isDirty()) return 'unsaved';
+    if (this.room()) return 'up-to-date';
+    return 'none';
+  });
 
   constructor() {
     effect(() => {
@@ -141,13 +115,14 @@ export class ChatRoomManage
       this.headerService.setConfig({
         backLink: roomId ? `/chat/${roomId}` : '/chat',
         title: room ? `Manage "${room.name}"` : 'Manage Room',
+        syncStatus: this.syncStatus,
         actions: [
           {
             label: 'Save Changes',
             icon: 'check',
             type: 'primary',
             disabled: () =>
-              this.isLoading() || !this.isDirtyFlag || !this.name.trim(),
+              this.isLoading() || !this.isDirty() || !this.name.trim(),
             onClick: () => void this.onSave(),
           },
         ],
@@ -155,13 +130,9 @@ export class ChatRoomManage
     });
   }
 
-  isDirty(): boolean {
-    return this.isDirtyFlag;
-  }
-
   @HostListener('window:beforeunload', ['$event'])
   onBeforeUnload(event: BeforeUnloadEvent) {
-    if (this.isDirtyFlag) {
+    if (this.isDirty()) {
       event.preventDefault();
       return false;
     }
@@ -169,26 +140,21 @@ export class ChatRoomManage
   }
 
   ngDoCheck() {
-    this.isDirtyFlag =
+    const currentlyDirty =
       this.name.trim() !== this.originalName.trim() ||
       this.description.trim() !== this.originalDescription.trim();
+    if (this.isDirty() !== currentlyDirty) {
+      this.isDirty.set(currentlyDirty);
+    }
   }
 
   async ngOnInit() {
-    await Promise.all([
-      this.chatService.fetchRooms(true),
-      this.userService.fetchAllUsers(),
-    ]);
+    await this.chatService.fetchRooms(true);
     const room = this.room();
     this.name = room?.name ?? '';
     this.description = room?.description ?? '';
     this.originalName = this.name;
     this.originalDescription = this.description;
-  }
-
-  memberDisplayName(userId: string): string {
-    const user = this.userService.users().find((item) => item.user_id === userId);
-    return user ? this.displayNamePipe.transform(user) : 'Unknown User';
   }
 
   async onSave() {
@@ -214,8 +180,19 @@ export class ChatRoomManage
     if (results.every(Boolean)) {
       this.originalName = name;
       this.originalDescription = this.description.trim();
-      this.isDirtyFlag = false;
+      this.isDirty.set(false);
     }
+  }
+
+  goToMembers() {
+    const room = this.room();
+    if (!room) return;
+    void this.router.navigate([
+      '/chat',
+      room.tb_tyapp_chat_rm_id,
+      'manage',
+      'members',
+    ]);
   }
 
   async onDeleteRoom() {
@@ -224,25 +201,9 @@ export class ChatRoomManage
     if (!confirm(`Delete room "${room.name}"? This cannot be undone.`)) return;
     const ok = await this.chatService.deleteRoom(room.tb_tyapp_chat_rm_id);
     if (ok) {
-      this.isDirtyFlag = false;
+      this.isDirty.set(false);
       await this.router.navigate(['/chat']);
     }
-  }
-
-  async onAddMember(event: MatAutocompleteSelectedEvent) {
-    const room = this.room();
-    const userId = String(event.option.value);
-    if (!room || !userId) return;
-    this.userSearch.set('');
-    await this.chatService.addRoomMembers(room.tb_tyapp_chat_rm_id, [userId]);
-  }
-
-  async onRemoveMember(userId: string) {
-    const room = this.room();
-    if (!room) return;
-    const name = this.memberDisplayName(userId);
-    if (!confirm(`Remove ${name} from this room?`)) return;
-    await this.chatService.removeRoomMember(room.tb_tyapp_chat_rm_id, userId);
   }
 
   ngOnDestroy() {

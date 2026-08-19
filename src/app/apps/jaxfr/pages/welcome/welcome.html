@@ -1,9 +1,27 @@
 <div class="welcome-container">
-  <h1>Welcome to {{ appName() }}!</h1>
-  <p>Today is {{ currentDate() | date: "mediumDate" }}.</p>
+  <header class="welcome-header">
+    <h1>Welcome to {{ appName }}</h1>
+    <p class="subtitle">
+      {{ currentDate | date: "mediumDate" }}
+      @if (userProfile(); as user) {
+        · {{ user | tyDisplayName }}
+      }
+    </p>
+    <p class="meta">App Version {{ appVersion() }} · {{ versionDate | date: "mediumDate" }}</p>
+  </header>
 
-  <div class="info-list">
-    <p>App Version: {{ appVersion() }}</p>
-    <p>Release Date: {{ versionDate() | date: "mediumDate" }}</p>
-  </div>
+  @if (loading()) {
+    <div class="loading-wrap">
+      <mat-spinner diameter="32"></mat-spinner>
+    </div>
+  } @else {
+    <div class="launcher-grid">
+      @for (tile of tiles(); track tile.route) {
+        <a class="launcher-tile" [routerLink]="tile.route">
+          <mat-icon>{{ tile.icon }}</mat-icon>
+          <span>{{ tile.name }}</span>
+        </a>
+      }
+    </div>
+  }
 </div>

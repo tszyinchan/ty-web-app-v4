@@ -1,0 +1,89 @@
+<div class="split-workspace">
+  @if (item(); as f) {
+    <div class="form-scroll-area">
+      <section class="form-group">
+        <h3 class="group-header">Identity</h3>
+        <div class="fields-grid-2">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>App</mat-label>
+            <mat-select [(ngModel)]="f.app_id" required>
+              @for (app of appRegistry.apps(); track app.tb_tyapp_app_id) {
+                <mat-option [value]="app.tb_tyapp_app_id">{{
+                  app.name
+                }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field
+            appearance="outline"
+            class="full-width"
+            subscriptSizing="dynamic"
+          >
+            <mat-label>Name</mat-label>
+            <input matInput [(ngModel)]="f.name" required />
+          </mat-form-field>
+        </div>
+      </section>
+
+      <section class="form-group">
+        <h3 class="group-header">Launcher</h3>
+        <div class="toggle-row">
+          <mat-slide-toggle [(ngModel)]="f.show_in_launcher" color="primary">
+            Show in Welcome launcher
+          </mat-slide-toggle>
+          <mat-slide-toggle [(ngModel)]="f.is_admin_only" color="primary">
+            Admin only
+          </mat-slide-toggle>
+        </div>
+
+        <div class="fields-grid-2">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Icon</mat-label>
+            <input
+              matInput
+              [(ngModel)]="f.icon"
+              [required]="!!f.show_in_launcher"
+              placeholder="work"
+            />
+            @if (f.icon) {
+              <mat-icon matSuffix>{{ f.icon }}</mat-icon>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Route</mat-label>
+            <input
+              matInput
+              [(ngModel)]="f.route"
+              [required]="!!f.show_in_launcher"
+              placeholder="/work/attendance/list"
+            />
+          </mat-form-field>
+        </div>
+      </section>
+
+      <section class="form-group">
+        <h3 class="group-header">System Configuration</h3>
+        <div class="fields-row-2">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Status</mat-label>
+            <mat-select [(ngModel)]="f.status">
+              <mat-option [value]="RecordStatus.Active">Active</mat-option>
+              <mat-option [value]="RecordStatus.Inactive">Inactive</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+
+        <mat-form-field
+          appearance="outline"
+          class="full-width"
+          subscriptSizing="dynamic"
+        >
+          <mat-label>Internal Remarks</mat-label>
+          <textarea matInput rows="4" [(ngModel)]="f.remarks"></textarea>
+        </mat-form-field>
+      </section>
+    </div>
+  }
+</div>
