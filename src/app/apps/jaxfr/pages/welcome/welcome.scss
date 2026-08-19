@@ -7,14 +7,15 @@
 }
 
 .welcome-header {
-  margin-bottom: 24px;
+  margin-bottom: 28px;
 }
 
-h1 {
-  margin: 0 0 4px 0;
-  font-size: 28px;
-  font-weight: 500;
-  color: var(--mat-sys-on-surface);
+.brand-logo {
+  display: block;
+  height: 40px;
+  width: auto;
+  max-width: 220px;
+  margin-bottom: 10px;
 }
 
 .subtitle,

@@ -1,6 +1,6 @@
 <div class="welcome-container">
   <header class="welcome-header">
-    <h1>Welcome to {{ appName }}</h1>
+    <img src="logo.svg" alt="Jaxfr" class="brand-logo" />
     <p class="subtitle">
       {{ currentDate | date: "mediumDate" }}
       @if (userProfile(); as user) {
@@ -18,7 +18,9 @@
     <div class="launcher-grid">
       @for (tile of tiles(); track tile.route) {
         <a class="launcher-tile" [routerLink]="tile.route">
-          <mat-icon>{{ tile.icon }}</mat-icon>
+          <span class="launcher-icon">
+            <mat-icon>{{ tile.icon }}</mat-icon>
+          </span>
           <span>{{ tile.name }}</span>
         </a>
       }
