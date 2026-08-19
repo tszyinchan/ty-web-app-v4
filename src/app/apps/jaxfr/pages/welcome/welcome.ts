@@ -63,7 +63,9 @@ export class Welcome implements OnInit, OnDestroy {
     return `${major}.${minor}.${patch}`;
   });
 
-  readonly loading = this.features.loading;
+  readonly loading = computed(
+    () => this.features.loading() || this.apps.loading(),
+  );
 
   readonly tiles = computed(() => {
     this.access.myFeatureIds();
@@ -76,6 +78,7 @@ export class Welcome implements OnInit, OnDestroy {
         if (!feature.show_in_launcher) return false;
         if (feature.status !== RecordStatus.Active) return false;
         if (!feature.route || !feature.icon) return false;
+        if (!this.access.isAppActive(feature.app_id)) return false;
         return this.access.hasFeature(feature.tb_tyapp_ap_ftr_id);
       })
       .map((feature) => this.toTile(feature, apps));
@@ -84,6 +87,10 @@ export class Welcome implements OnInit, OnDestroy {
     const fallbackTiles = FALLBACK_TILES.flatMap((tile) => {
       if (shown.has(tile.name)) return [];
       const feature = catalog.find((row) => row.name === tile.name);
+      const parent = this.parentApp(tile.name, feature, apps);
+      if (!parent || !this.access.isAppActive(parent.tb_tyapp_app_id)) {
+        return [];
+      }
       if (isSuperAdmin) {
         return [
           {
@@ -127,6 +134,20 @@ export class Welcome implements OnInit, OnDestroy {
       route: HUB_ROUTES[feature.name] ?? (feature.route as string),
       ...this.orderOf(feature, apps),
     };
+  }
+
+  private parentApp(
+    tileName: string,
+    feature: AppFeature | undefined,
+    apps: TyappApp[],
+  ): TyappApp | undefined {
+    if (feature) {
+      return apps.find((row) => row.tb_tyapp_app_id === feature.app_id);
+    }
+    return (
+      apps.find((row) => row.name === tileName) ??
+      apps.find((row) => row.name === 'Jaxfr')
+    );
   }
 
   private orderOf(feature: AppFeature | undefined, apps: TyappApp[]) {

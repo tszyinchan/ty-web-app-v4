@@ -1,4 +1,5 @@
 import { Injectable, NgZone, effect, inject, signal, untracked } from '@angular/core';
+import { RecordStatus } from '../models/status.enum';
 import { AuthService } from './auth.service';
 import { NotificationService } from './notification.service';
 import { SupabaseService } from './supabase.service';
@@ -37,8 +38,13 @@ export class AccessService {
     const app = this.apps
       .apps()
       .find((a) => a.name.toLowerCase() === subdomain.toLowerCase());
-    if (!app) return false;
+    if (!app || app.status !== RecordStatus.Active) return false;
     return this.myAppIds().has(app.tb_tyapp_app_id);
+  }
+
+  isAppActive(appId: string): boolean {
+    const app = this.apps.apps().find((a) => a.tb_tyapp_app_id === appId);
+    return app?.status === RecordStatus.Active;
   }
 
   hasFeature(featureId: string): boolean {

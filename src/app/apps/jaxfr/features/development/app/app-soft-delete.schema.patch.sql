@@ -14,6 +14,15 @@ BEGIN
     RAISE EXCEPTION 'Only admins can delete apps';
   END IF;
 
+  IF EXISTS (
+    SELECT 1
+    FROM public.tyapp_app_feature
+    WHERE app_id = record_id
+      AND deleted_at IS NULL
+  ) THEN
+    RAISE EXCEPTION 'Move or delete its features first.';
+  END IF;
+
   UPDATE public.tyapp_app
   SET deleted_at = now()
   WHERE tb_tyapp_app_id = record_id
