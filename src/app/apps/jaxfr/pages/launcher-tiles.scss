@@ -1,8 +1,8 @@
 .launcher-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, 96px);
+  width: 100%;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
   gap: 16px 8px;
-  justify-content: start;
 }
 
 a.launcher-tile {
