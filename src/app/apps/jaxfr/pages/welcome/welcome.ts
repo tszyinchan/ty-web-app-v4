@@ -5,11 +5,14 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { RouterModule } from '@angular/router';
 
 import { APP_CONFIG } from '../../../../app.constants';
+import { TyappApp } from '../../../../core/models/app.model';
 import { RecordStatus } from '../../../../core/models/status.enum';
 import { DisplayNamePipe } from '../../../../core/pipes/display-name.pipe';
 import { AccessService } from '../../../../core/services/access.service';
+import { AppRegistryService } from '../../../../core/services/app-registry.service';
 import { AuthService } from '../../../../core/services/auth.service';
 import { HeaderService } from '../../../../core/services/header.service';
+import { AppFeature } from '../../features/development/app-feature/app-feature.model';
 import { AppFeatureService } from '../../features/development/app-feature/app-feature.service';
 
 const HUB_ROUTES: Record<string, string> = {
@@ -28,6 +31,8 @@ const FALLBACK_TILES: { name: string; icon: string; route: string }[] = [
   { name: 'Development', icon: 'code', route: '/development' },
 ];
 
+const LAST_ORDER = Number.MAX_SAFE_INTEGER;
+
 @Component({
   selector: 'app-welcome',
   standalone: true,
@@ -45,6 +50,7 @@ export class Welcome implements OnInit, OnDestroy {
   private readonly auth = inject(AuthService);
   private readonly access = inject(AccessService);
   private readonly features = inject(AppFeatureService);
+  private readonly apps = inject(AppRegistryService);
   private readonly header = inject(HeaderService);
 
   readonly appName = APP_CONFIG.appName;
@@ -62,6 +68,7 @@ export class Welcome implements OnInit, OnDestroy {
   readonly tiles = computed(() => {
     this.access.myFeatureIds();
     const catalog = this.features.features();
+    const apps = this.apps.apps();
     const isSuperAdmin = this.auth.isSuperAdmin();
 
     const featureTiles = catalog
@@ -71,30 +78,69 @@ export class Welcome implements OnInit, OnDestroy {
         if (!feature.route || !feature.icon) return false;
         return this.access.hasFeature(feature.tb_tyapp_ap_ftr_id);
       })
-      .map((feature) => ({
-        name: feature.name,
-        icon: feature.icon as string,
-        route: HUB_ROUTES[feature.name] ?? (feature.route as string),
-      }));
+      .map((feature) => this.toTile(feature, apps));
 
     const shown = new Set(featureTiles.map((tile) => tile.name));
-    const fallbackTiles = FALLBACK_TILES.filter((tile) => {
-      if (shown.has(tile.name)) return false;
-      if (isSuperAdmin) return true;
+    const fallbackTiles = FALLBACK_TILES.flatMap((tile) => {
+      if (shown.has(tile.name)) return [];
       const feature = catalog.find((row) => row.name === tile.name);
-      return !!feature && this.access.hasFeature(feature.tb_tyapp_ap_ftr_id);
+      if (isSuperAdmin) {
+        return [
+          {
+            ...tile,
+            ...this.orderOf(feature, apps),
+          },
+        ];
+      }
+      if (!feature || !this.access.hasFeature(feature.tb_tyapp_ap_ftr_id)) {
+        return [];
+      }
+      return [
+        {
+          ...tile,
+          ...this.orderOf(feature, apps),
+        },
+      ];
     });
 
-    const tiles = [...featureTiles, ...fallbackTiles];
+    const tiles = [...featureTiles, ...fallbackTiles].sort((a, b) => {
+      const appDiff = a.appOrder - b.appOrder;
+      if (appDiff !== 0) return appDiff;
+      return a.order - b.order;
+    });
     if (isSuperAdmin) {
-      tiles.push({ name: 'Archive', icon: 'folder', route: '/archive' });
+      tiles.push({
+        name: 'Archive',
+        icon: 'folder',
+        route: '/archive',
+        appOrder: LAST_ORDER,
+        order: LAST_ORDER,
+      });
     }
     return tiles;
   });
 
+  private toTile(feature: AppFeature, apps: TyappApp[]) {
+    return {
+      name: feature.name,
+      icon: feature.icon as string,
+      route: HUB_ROUTES[feature.name] ?? (feature.route as string),
+      ...this.orderOf(feature, apps),
+    };
+  }
+
+  private orderOf(feature: AppFeature | undefined, apps: TyappApp[]) {
+    const app = apps.find((row) => row.tb_tyapp_app_id === feature?.app_id);
+    return {
+      appOrder: app?.customized_order ?? LAST_ORDER,
+      order: feature?.customized_order ?? LAST_ORDER,
+    };
+  }
+
   ngOnInit() {
     this.header.setConfig({ title: this.appName });
     void this.features.fetchAllFeatures();
+    void this.apps.fetchAllApps();
     void this.access.fetchMyAccess();
   }
 

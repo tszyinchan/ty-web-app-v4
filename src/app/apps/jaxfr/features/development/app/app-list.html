@@ -1,0 +1,33 @@
+<div class="standard-list-view">
+  <div class="list-container">
+    @for (app of listVM(); track app.tb_tyapp_app_id) {
+      <a class="item-link" [routerLink]="['../edit', app.tb_tyapp_app_id]">
+        <div class="item-content">
+          <div class="item-info-group">
+            <span class="main-text">{{ app.name }}</span>
+            <span class="sub-text">Order {{ app.customized_order }}</span>
+          </div>
+
+          <div class="item-status-group">
+            <span
+              class="status-tag"
+              [class.inactive]="app.status === RecordStatus.Inactive"
+            >
+              {{ app.status === RecordStatus.Active ? 'Active' : 'Inactive' }}
+            </span>
+            <mat-icon class="chevron">chevron_right</mat-icon>
+          </div>
+        </div>
+      </a>
+    } @empty {
+      @if (!appRegistry.loading()) {
+        <div class="empty-placeholder">No apps found.</div>
+      }
+    }
+  </div>
+
+  <footer class="list-footer">
+    <div class="divider"></div>
+    <span class="count-text">TOTAL {{ listVM().length }} ITEMS</span>
+  </footer>
+</div>

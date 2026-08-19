@@ -16,8 +16,8 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { TyappApp } from '../../../../../core/models/app.model';
 import { RecordStatus } from '../../../../../core/models/status.enum';
 import { AppRegistryService } from '../../../../../core/services/app-registry.service';
 import {
@@ -25,11 +25,9 @@ import {
   HeaderService,
 } from '../../../../../core/services/header.service';
 import { exportToCsv } from '../../../../../core/utils/csv-export.util';
-import { AppFeature } from './app-feature.model';
-import { AppFeatureService } from './app-feature.service';
 
 @Component({
-  selector: 'app-feature-edit',
+  selector: 'app-registry-edit',
   standalone: true,
   imports: [
     CommonModule,
@@ -40,22 +38,20 @@ import { AppFeatureService } from './app-feature.service';
     MatSelectModule,
     MatButtonModule,
     MatIconModule,
-    MatSlideToggleModule,
   ],
-  templateUrl: './app-feature-edit.html',
-  styleUrl: './app-feature-edit.scss',
+  templateUrl: './app-edit.html',
+  styleUrl: './app-edit.scss',
 })
-export class AppFeatureEdit implements OnInit, OnDestroy, DoCheck {
+export class AppEdit implements OnInit, OnDestroy, DoCheck {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private zone = inject(NgZone);
-  public featureService = inject(AppFeatureService);
   public appRegistry = inject(AppRegistryService);
   private headerService = inject(HeaderService);
 
   readonly RecordStatus = RecordStatus;
 
-  item = signal<Partial<AppFeature> | null>(null);
+  item = signal<Partial<TyappApp> | null>(null);
   currentId: string | null = null;
 
   originalDataStr = signal<string>('');
@@ -63,7 +59,7 @@ export class AppFeatureEdit implements OnInit, OnDestroy, DoCheck {
   isDirty = signal(false);
 
   syncStatus = computed<'loading' | 'up-to-date' | 'unsaved' | 'none'>(() => {
-    if (this.featureService.loading()) return 'loading';
+    if (this.appRegistry.loading()) return 'loading';
     if (this.isDirty()) return 'unsaved';
     if (this.currentId) return 'up-to-date';
     return 'none';
@@ -91,7 +87,7 @@ export class AppFeatureEdit implements OnInit, OnDestroy, DoCheck {
       });
     }
     actions.push({
-      label: this.currentId ? 'Save Changes' : 'Create Feature',
+      label: this.currentId ? 'Save Changes' : 'Create App',
       icon: 'check',
       type: 'primary',
       disabled: this.isSaveDisabled,
@@ -99,51 +95,44 @@ export class AppFeatureEdit implements OnInit, OnDestroy, DoCheck {
     });
 
     this.headerService.setConfig({
-      backLink: '/development/feature/list',
+      backLink: '/development/app/list',
       syncStatus: this.syncStatus,
       actions: actions,
     });
 
     if (this.currentId) {
-      const cached = this.featureService
-        .features()
-        .find((f) => f.tb_tyapp_ap_ftr_id === this.currentId);
+      const cached = this.appRegistry
+        .apps()
+        .find((app) => app.tb_tyapp_app_id === this.currentId);
       if (cached) {
         this.item.set(structuredClone(cached));
         this.originalDataStr.set(JSON.stringify(cached));
       }
 
-      const fresh = await this.featureService.fetchFeatureById(this.currentId);
+      const fresh = await this.appRegistry.fetchAppById(this.currentId);
 
       this.zone.run(() => {
         if (fresh) {
           this.item.set(structuredClone(fresh));
           this.originalDataStr.set(JSON.stringify(fresh));
         } else if (!cached) {
-          this.router.navigate(['/development/feature/list']);
+          this.router.navigate(['/development/app/list']);
         }
       });
     } else {
-      const jaxfr = this.appRegistry
-        .apps()
-        .find((app) => app.name === 'Jaxfr');
       const nextOrder =
-        this.featureService
-          .features()
-          .reduce((max, f) => Math.max(max, f.customized_order ?? 0), 0) + 1;
-      const newFeature: Partial<AppFeature> = {
-        app_id: jaxfr?.tb_tyapp_app_id ?? '',
-        customized_order: nextOrder,
+        this.appRegistry
+          .apps()
+          .reduce((max, app) => Math.max(max, app.customized_order ?? 0), 0) +
+        1;
+      const newApp: Partial<TyappApp> = {
         name: '',
-        icon: '',
-        route: '',
-        is_admin_only: false,
-        show_in_launcher: false,
+        customized_order: nextOrder,
         status: RecordStatus.Active,
         remarks: '',
       };
-      this.item.set(newFeature);
-      this.originalDataStr.set(JSON.stringify(newFeature));
+      this.item.set(newApp);
+      this.originalDataStr.set(JSON.stringify(newApp));
     }
   }
 
@@ -166,16 +155,10 @@ export class AppFeatureEdit implements OnInit, OnDestroy, DoCheck {
         this.isDirty.set(currentlyDirty);
       }
 
-      const launcherReady =
-        !current.show_in_launcher ||
-        (!!current.icon?.trim() && !!current.route?.trim());
-
       const disabled =
-        this.featureService.loading() ||
+        this.appRegistry.loading() ||
         (!!this.currentId && !currentlyDirty) ||
-        !current.name?.trim() ||
-        !current.app_id ||
-        !launcherReady;
+        !current.name?.trim();
 
       if (this.isSaveDisabled() !== disabled) {
         this.isSaveDisabled.set(disabled);
@@ -185,16 +168,13 @@ export class AppFeatureEdit implements OnInit, OnDestroy, DoCheck {
 
   async onSave() {
     const data = this.item();
-    if (!data || !data.name?.trim() || !data.app_id) return;
-    if (data.show_in_launcher && (!data.icon?.trim() || !data.route?.trim())) {
-      return;
-    }
+    if (!data || !data.name?.trim()) return;
 
-    const success = await this.featureService.saveFeature(data);
+    const success = await this.appRegistry.saveApp(data);
     if (success) {
       this.originalDataStr.set(JSON.stringify(data));
       this.isDirty.set(false);
-      this.router.navigate(['/development/feature/list']);
+      this.router.navigate(['/development/app/list']);
     }
   }
 
@@ -203,12 +183,12 @@ export class AppFeatureEdit implements OnInit, OnDestroy, DoCheck {
 
     if (
       confirm(
-        'Are you sure you want to delete this feature? This action might be irreversible.',
+        'Are you sure you want to delete this app? This action might be irreversible.',
       )
     ) {
-      const success = await this.featureService.deleteFeature(this.currentId);
+      const success = await this.appRegistry.deleteApp(this.currentId);
       if (success) {
-        this.router.navigate(['/development/feature/list']);
+        this.router.navigate(['/development/app/list']);
       }
     }
   }
@@ -218,39 +198,26 @@ export class AppFeatureEdit implements OnInit, OnDestroy, DoCheck {
   }
 
   onExport() {
-    const f = this.item();
-    if (!f || !this.currentId) return;
-
-    const appName =
-      this.appRegistry
-        .apps()
-        .find((app) => app.tb_tyapp_app_id === f.app_id)?.name ?? '';
+    const app = this.item();
+    if (!app || !this.currentId) return;
 
     const headers = [
-      'Feature ID',
-      'App',
+      'App ID',
       'Name',
-      'Icon',
-      'Route',
-      'Show in Launcher',
-      'Admin Only',
+      'Customized Order',
       'Status',
       'Internal Remarks',
     ];
     const rows = [
       [
         this.currentId,
-        appName,
-        f.name || '',
-        f.icon || '',
-        f.route || '',
-        f.show_in_launcher ? 'Yes' : 'No',
-        f.is_admin_only ? 'Yes' : 'No',
-        f.status === RecordStatus.Active ? 'Active' : 'Inactive',
-        f.remarks || '',
+        app.name || '',
+        String(app.customized_order ?? ''),
+        app.status === RecordStatus.Active ? 'Active' : 'Inactive',
+        app.remarks || '',
       ],
     ];
 
-    exportToCsv(`Feature_Detail_${f.name || this.currentId}`, headers, rows);
+    exportToCsv(`App_Detail_${app.name || this.currentId}`, headers, rows);
   }
 }

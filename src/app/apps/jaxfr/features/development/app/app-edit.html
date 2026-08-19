@@ -1,0 +1,56 @@
+<div class="split-workspace">
+  @if (item(); as app) {
+    <div class="form-scroll-area">
+      <section class="form-group">
+        <h3 class="group-header">Identity</h3>
+        <div class="fields-grid-2">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Name</mat-label>
+            <input
+              matInput
+              [(ngModel)]="app.name"
+              required
+              placeholder="Jaxfr"
+            />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Customized order</mat-label>
+            <input
+              matInput
+              type="number"
+              [(ngModel)]="app.customized_order"
+              placeholder="Lower shows first"
+            />
+          </mat-form-field>
+        </div>
+        <p class="group-note">
+          Login matches this name to the subdomain (Jaxfr, Filelink, Share).
+          Lower customized order shows first for every user.
+        </p>
+      </section>
+
+      <section class="form-group">
+        <h3 class="group-header">System Configuration</h3>
+        <div class="fields-row-2">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Status</mat-label>
+            <mat-select [(ngModel)]="app.status">
+              <mat-option [value]="RecordStatus.Active">Active</mat-option>
+              <mat-option [value]="RecordStatus.Inactive">Inactive</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+
+        <mat-form-field
+          appearance="outline"
+          class="full-width"
+          subscriptSizing="dynamic"
+        >
+          <mat-label>Internal Remarks</mat-label>
+          <textarea matInput rows="4" [(ngModel)]="app.remarks"></textarea>
+        </mat-form-field>
+      </section>
+    </div>
+  }
+</div>

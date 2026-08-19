@@ -52,6 +52,13 @@ const JAXFR_ROUTES: Routes = [
             data: { hub: 'development' },
           },
           {
+            path: 'app',
+            loadChildren: () =>
+              import('./apps/jaxfr/features/development/app/app.routes').then(
+                (m) => m.APP_REGISTRY_ROUTES,
+              ),
+          },
+          {
             path: 'feature',
             loadChildren: () =>
               import('./apps/jaxfr/features/development/app-feature/app-feature.routes').then(

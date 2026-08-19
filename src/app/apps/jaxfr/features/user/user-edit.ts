@@ -205,7 +205,9 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
   }
 
   featuresForApp(appId: string): AppFeature[] {
-    return this.launcherFeatures().filter((feature) => feature.app_id === appId);
+    return this.launcherFeatures()
+      .filter((feature) => feature.app_id === appId)
+      .sort((a, b) => a.customized_order - b.customized_order);
   }
 
   isAppSelected(appId: string): boolean {

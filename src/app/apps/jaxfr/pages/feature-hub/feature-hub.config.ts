@@ -34,6 +34,11 @@ export const FEATURE_HUBS: Record<string, FeatureHubConfig> = {
     title: 'Development',
     links: [
       {
+        title: 'Apps',
+        icon: 'apps',
+        route: '/development/app/list',
+      },
+      {
         title: 'App Features',
         icon: 'category',
         route: '/development/feature/list',

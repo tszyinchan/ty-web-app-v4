@@ -8,10 +8,9 @@ import { RecordStatus } from '../../../../../core/models/status.enum';
 import { AppRegistryService } from '../../../../../core/services/app-registry.service';
 import { HeaderService } from '../../../../../core/services/header.service';
 import { exportToCsv } from '../../../../../core/utils/csv-export.util';
-import { AppFeatureService } from './app-feature.service';
 
 @Component({
-  selector: 'app-feature-list',
+  selector: 'app-registry-list',
   standalone: true,
   imports: [
     CommonModule,
@@ -20,46 +19,27 @@ import { AppFeatureService } from './app-feature.service';
     MatIconModule,
     MatProgressSpinnerModule,
   ],
-  templateUrl: './app-feature-list.html',
+  templateUrl: './app-list.html',
 })
-export class AppFeatureList implements OnInit, OnDestroy {
-  public readonly featureService = inject(AppFeatureService);
-  private readonly appRegistry = inject(AppRegistryService);
+export class AppList implements OnInit, OnDestroy {
+  public readonly appRegistry = inject(AppRegistryService);
   private readonly headerService = inject(HeaderService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
 
   readonly RecordStatus = RecordStatus;
 
-  listVM = computed(() => {
-    const apps = this.appRegistry.apps();
-    return [...this.featureService.features()]
-      .map((feature) => {
-        const app = apps.find((a) => a.tb_tyapp_app_id === feature.app_id);
-        return {
-          ...feature,
-          appName: app?.name ?? 'Unknown App',
-          appOrder: app?.customized_order ?? 0,
-        };
-      })
-      .sort((a, b) => {
-        const appDiff = a.appOrder - b.appOrder;
-        if (appDiff !== 0) return appDiff;
-        return a.customized_order - b.customized_order;
-      });
-  });
+  listVM = computed(() => this.appRegistry.apps());
 
   ngOnInit() {
-    const isLoading = computed(
-      () => this.featureService.loading() || this.appRegistry.loading(),
-    );
+    const isLoading = computed(() => this.appRegistry.loading());
 
     const isExportDisabled = computed(
-      () => isLoading() || this.featureService.features().length === 0,
+      () => isLoading() || this.appRegistry.apps().length === 0,
     );
 
     this.headerService.setConfig({
-      title: 'App Features',
+      title: 'Apps',
       backLink: '/development',
       actions: [
         {
@@ -77,7 +57,7 @@ export class AppFeatureList implements OnInit, OnDestroy {
           onClick: () => this.onExport(),
         },
         {
-          label: 'New Feature',
+          label: 'New App',
           icon: 'add',
           type: 'primary',
           disabled: isLoading,
@@ -87,7 +67,6 @@ export class AppFeatureList implements OnInit, OnDestroy {
       ],
     });
 
-    void this.featureService.fetchAllFeatures();
     void this.appRegistry.fetchAllApps();
   }
 
@@ -96,35 +75,28 @@ export class AppFeatureList implements OnInit, OnDestroy {
   }
 
   async onRefresh() {
-    await this.featureService.fetchAllFeatures(true);
     await this.appRegistry.fetchAllApps(true);
   }
 
   onExport() {
-    const features = this.listVM();
-    if (features.length === 0) return;
+    const apps = this.listVM();
+    if (apps.length === 0) return;
 
     const headers = [
-      'Feature ID',
-      'App',
+      'App ID',
       'Name',
-      'Route',
       'Customized Order',
-      'Show in Launcher',
-      'Admin Only',
       'Status',
+      'Internal Remarks',
     ];
-    const rows = features.map((f) => [
-      f.tb_tyapp_ap_ftr_id,
-      f.appName,
-      f.name || '',
-      f.route || '',
-      String(f.customized_order),
-      f.show_in_launcher ? 'Yes' : 'No',
-      f.is_admin_only ? 'Yes' : 'No',
-      f.status === RecordStatus.Active ? 'Active' : 'Inactive',
+    const rows = apps.map((app) => [
+      app.tb_tyapp_app_id,
+      app.name || '',
+      String(app.customized_order),
+      app.status === RecordStatus.Active ? 'Active' : 'Inactive',
+      app.remarks || '',
     ]);
 
-    exportToCsv('Feature_List', headers, rows);
+    exportToCsv('App_List', headers, rows);
   }
 }

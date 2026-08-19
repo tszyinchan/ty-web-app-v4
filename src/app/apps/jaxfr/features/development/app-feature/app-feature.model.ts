@@ -3,6 +3,7 @@ import { RecordStatus } from '../../../../../core/models/status.enum';
 export interface AppFeature {
   tb_tyapp_ap_ftr_id: string;
   tb_tyapp_ap_ftr_seq_no: number;
+  customized_order: number;
   app_id: string;
   name: string;
   icon: string | null;

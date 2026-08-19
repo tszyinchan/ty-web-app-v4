@@ -15,6 +15,16 @@
             </mat-select>
           </mat-form-field>
 
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Customized order</mat-label>
+            <input
+              matInput
+              type="number"
+              [(ngModel)]="f.customized_order"
+              placeholder="Lower shows first"
+            />
+          </mat-form-field>
+
           <mat-form-field
             appearance="outline"
             class="full-width"
