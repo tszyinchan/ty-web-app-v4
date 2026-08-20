@@ -167,6 +167,15 @@ const JAXFR_ROUTES: Routes = [
           ),
       },
       {
+        path: 'tyweb',
+        canActivate: [featureAccessGuard],
+        data: { featureName: 'TyWeb' },
+        loadChildren: () =>
+          import('./apps/jaxfr/features/tyweb/tyweb.routes').then(
+            (m) => m.TYWEB_V5_ROUTES,
+          ),
+      },
+      {
         path: 'chat',
         canActivate: [featureAccessGuard],
         data: { featureName: 'Chat' },

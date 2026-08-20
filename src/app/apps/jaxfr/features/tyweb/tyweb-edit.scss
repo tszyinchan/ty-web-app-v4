@@ -1,0 +1,12 @@
+.toggle-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin-bottom: 16px;
+}
+
+.missing-note {
+  color: var(--mat-sys-outline);
+  font-size: 14px;
+  padding: 8px 0;
+}

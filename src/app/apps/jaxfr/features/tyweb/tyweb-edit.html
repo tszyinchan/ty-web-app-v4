@@ -1,0 +1,119 @@
+<div class="split-workspace">
+  @if (item(); as settings) {
+    <div class="form-scroll-area">
+      <section class="form-group">
+        <h3 class="group-header">Notice</h3>
+        <div class="toggle-row">
+          <mat-slide-toggle
+            [(ngModel)]="settings.notice_enabled"
+            color="primary"
+          >
+            Show notice
+          </mat-slide-toggle>
+          <mat-slide-toggle
+            [(ngModel)]="settings.notice_dismissible"
+            color="primary"
+          >
+            Dismissible
+          </mat-slide-toggle>
+        </div>
+        <mat-form-field
+          appearance="outline"
+          class="full-width"
+          subscriptSizing="dynamic"
+        >
+          <mat-label>Notice message</mat-label>
+          <textarea
+            matInput
+            rows="3"
+            [(ngModel)]="settings.notice_message"
+          ></textarea>
+        </mat-form-field>
+      </section>
+
+      <section class="form-group">
+        <h3 class="group-header">Popup</h3>
+        <div class="toggle-row">
+          <mat-slide-toggle
+            [(ngModel)]="settings.popup_enabled"
+            color="primary"
+          >
+            Show popup
+          </mat-slide-toggle>
+        </div>
+        <mat-form-field
+          appearance="outline"
+          class="full-width"
+          subscriptSizing="dynamic"
+        >
+          <mat-label>Popup title</mat-label>
+          <input matInput [(ngModel)]="settings.popup_title" />
+        </mat-form-field>
+        <mat-form-field
+          appearance="outline"
+          class="full-width mt-16"
+          subscriptSizing="dynamic"
+        >
+          <mat-label>Popup message</mat-label>
+          <textarea
+            matInput
+            rows="4"
+            [(ngModel)]="settings.popup_message"
+          ></textarea>
+        </mat-form-field>
+      </section>
+
+      <section class="form-group">
+        <h3 class="group-header">Contact</h3>
+        <div class="fields-grid-2">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Contact email</mat-label>
+            <input
+              matInput
+              type="email"
+              [(ngModel)]="settings.contact_email"
+            />
+          </mat-form-field>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Resume URL</mat-label>
+            <input matInput type="url" [(ngModel)]="settings.resume_url" />
+          </mat-form-field>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>LinkedIn URL</mat-label>
+            <input matInput type="url" [(ngModel)]="settings.linkedin_url" />
+          </mat-form-field>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>GitHub URL</mat-label>
+            <input matInput type="url" [(ngModel)]="settings.github_url" />
+          </mat-form-field>
+        </div>
+      </section>
+
+      <section class="form-group">
+        <h3 class="group-header">System</h3>
+        <div class="fields-row-2">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Status</mat-label>
+            <mat-select [(ngModel)]="settings.status">
+              <mat-option [value]="RecordStatus.Active">Active</mat-option>
+              <mat-option [value]="RecordStatus.Inactive">Inactive</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+        <mat-form-field
+          appearance="outline"
+          class="full-width mt-16"
+          subscriptSizing="dynamic"
+        >
+          <mat-label>Internal remarks</mat-label>
+          <textarea matInput rows="2" [(ngModel)]="settings.remarks"></textarea>
+        </mat-form-field>
+      </section>
+    </div>
+  } @else if (!tywebService.loading()) {
+    <p class="missing-note">
+      No TyWeb settings row found. The singleton record is missing or
+      soft-deleted.
+    </p>
+  }
+</div>
