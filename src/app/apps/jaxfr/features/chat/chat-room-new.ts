@@ -27,7 +27,6 @@ import {
   HeaderService,
 } from '../../../../core/services/header.service';
 import { HasUnsavedChanges } from '../../../../core/guards/unsaved-changes.guard';
-import { SelectOption } from '../../../../core/models/common.model';
 import { DisplayNamePipe } from '../../../../core/pipes/display-name.pipe';
 import { NotificationService } from '../../../../core/services/notification.service';
 import { UserService } from '../user/user.service';
@@ -73,25 +72,19 @@ export class ChatRoomNew implements OnInit, OnDestroy, DoCheck, HasUnsavedChange
   isDirtyFlag = false;
   isLoading = computed(() => this.chatService.loading());
 
-  userOptions = computed<SelectOption[]>(() =>
-    this.userService.users().map((u) => ({
-      value: u.user_id,
-      label: this.displayNamePipe.transform(u),
-    })),
-  );
-
   currentUserId = computed(() => this.auth.userProfile()?.user_id ?? '');
 
   filteredUsers = computed(() => {
     const q = this.userSearch().toLowerCase();
     const selected = this.memberUserIds();
     const me = this.currentUserId();
-    return this.userOptions().filter(
-      (opt) =>
-        opt.value !== me &&
-        !selected.includes(String(opt.value)) &&
-        (q ? opt.label.toLowerCase().includes(q) : true),
-    );
+    return this.userService
+      .usersSharingOneGroupWith([me, ...selected])
+      .map((user) => ({
+        value: user.user_id,
+        label: this.displayNamePipe.transform(user),
+      }))
+      .filter((opt) => (q ? opt.label.toLowerCase().includes(q) : true));
   });
 
   isDirty(): boolean {
@@ -115,12 +108,15 @@ export class ChatRoomNew implements OnInit, OnDestroy, DoCheck, HasUnsavedChange
   }
 
   displayUserName(id: string): string {
-    const found = this.userOptions().find((opt) => opt.value === id);
-    return found ? found.label : 'Unknown User';
+    const user = this.userService.users().find((item) => item.user_id === id);
+    return this.displayNamePipe.transform(user);
   }
 
   async ngOnInit() {
-    await this.userService.fetchAllUsers();
+    await Promise.all([
+      this.userService.fetchAllUsers(),
+      this.userService.fetchGroups(),
+    ]);
 
     const actions: HeaderAction[] = [
       {
@@ -171,9 +167,18 @@ export class ChatRoomNew implements OnInit, OnDestroy, DoCheck, HasUnsavedChange
       return;
     }
 
+    const members = [...this.memberUserIds(), me];
+    if (!this.userService.idsShareAGroup(members)) {
+      this.notification.handleError(
+        'Create Room Failed',
+        'Everyone in a room must belong to the same user group',
+      );
+      return;
+    }
+
     const room = await this.chatService.createRoom(
       name,
-      [...this.memberUserIds(), me],
+      members,
       me,
       this.description,
     );

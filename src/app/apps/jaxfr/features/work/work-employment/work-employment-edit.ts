@@ -71,7 +71,7 @@ export class WorkEmploymentEdit implements OnInit, OnDestroy, DoCheck {
 
   userSearch = signal<string>('');
   userOptions = computed<SelectOption[]>(() =>
-    this.userService.users().map((u) => ({
+    this.userService.pickerUsers().map((u) => ({
       value: u.user_id,
       label: this.displayNamePipe.transform(u),
     })),

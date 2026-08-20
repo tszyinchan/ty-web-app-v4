@@ -1,4 +1,4 @@
-import { Injectable, NgZone, effect, inject, signal, untracked } from "@angular/core";
+import { Injectable, NgZone, computed, effect, inject, signal, untracked } from "@angular/core";
 import {
   RealtimeChannel,
   RealtimePostgresChangesPayload,
@@ -6,7 +6,9 @@ import {
 import { AuthService } from "../../../../core/services/auth.service";
 import { NotificationService } from "../../../../core/services/notification.service";
 import { SupabaseService } from "../../../../core/services/supabase.service";
+import { RecordStatus } from "../../../../core/models/status.enum";
 import { TyappUser } from "../../../../core/models/user.model";
+import { UserGroup, UserGroupMember } from "./user-group.model";
 
 /**
  * Shared, app-wide user directory. Other sessions may keep this cached list
@@ -21,11 +23,35 @@ export class UserService {
   private zone = inject(NgZone);
 
   users = signal<TyappUser[]>([]);
+  groups = signal<UserGroup[]>([]);
+  groupMembers = signal<UserGroupMember[]>([]);
   loading = signal(false);
+  groupsLoading = signal(false);
+
+  /**
+   * People I may pick in Chat / Filelink: union of my active groups, plus me.
+   * Super Admin is not auto-included in every group — they must join a group
+   * to interact there.
+   */
+  visibleUsers = computed(() => {
+    const visibleIds = this.visibleUserIds();
+    return this.users().filter((user) => visibleIds.has(user.user_id));
+  });
+
+  /**
+   * Work pickers: Super Admin can assign records to anyone; others follow
+   * the same circle as Chat / Filelink.
+   */
+  pickerUsers = computed(() =>
+    this.authService.isSuperAdmin() ? this.users() : this.visibleUsers(),
+  );
 
   private initialized = false;
+  private groupsInitialized = false;
   private fetchPromise: Promise<void> | null = null;
+  private groupsFetchPromise: Promise<void> | null = null;
   private directoryChannel: RealtimeChannel | null = null;
+  private groupsChannel: RealtimeChannel | null = null;
 
   constructor() {
     effect(() => {
@@ -33,10 +59,67 @@ export class UserService {
       untracked(() => {
         if (profile) {
           this.subscribeToDirectory();
+          this.subscribeToGroups();
+          void this.fetchGroups();
         } else {
           void this.unsubscribeFromDirectory();
+          void this.unsubscribeFromGroups();
+          this.groups.set([]);
+          this.groupMembers.set([]);
+          this.groupsInitialized = false;
         }
       });
+    });
+  }
+
+  private visibleUserIds(): Set<string> {
+    const me = this.authService.userProfile()?.user_id;
+    const activeGroupIds = new Set(
+      this.groups()
+        .filter(
+          (group) =>
+            group.status === RecordStatus.Active && !group.deleted_at,
+        )
+        .map((group) => group.tb_tyapp_usr_grp_id),
+    );
+    const myGroupIds = new Set(
+      this.groupMembers()
+        .filter(
+          (member) => member.user_id === me && activeGroupIds.has(member.group_id),
+        )
+        .map((member) => member.group_id),
+    );
+    const ids = new Set(
+      this.groupMembers()
+        .filter((member) => myGroupIds.has(member.group_id))
+        .map((member) => member.user_id),
+    );
+    if (me) ids.add(me);
+    return ids;
+  }
+
+  idsShareAGroup(userIds: string[]): boolean {
+    const ids = [...new Set(userIds.filter(Boolean))];
+    if (ids.length < 2) return true;
+    const members = this.groupMembers();
+    return this.groups().some((group) => {
+      if (group.status !== RecordStatus.Active || group.deleted_at) {
+        return false;
+      }
+      const inGroup = new Set(
+        members
+          .filter((member) => member.group_id === group.tb_tyapp_usr_grp_id)
+          .map((member) => member.user_id),
+      );
+      return ids.every((id) => inGroup.has(id));
+    });
+  }
+
+  usersSharingOneGroupWith(userIds: string[]): TyappUser[] {
+    const required = [...new Set(userIds.filter(Boolean))];
+    return this.visibleUsers().filter((user) => {
+      if (required.includes(user.user_id)) return false;
+      return this.idsShareAGroup([...required, user.user_id]);
     });
   }
 
@@ -172,6 +255,208 @@ export class UserService {
     return next;
   }
 
+  fetchGroups(forceRefresh = false): Promise<void> {
+    if (this.groupsInitialized && !forceRefresh) return Promise.resolve();
+    if (this.groupsFetchPromise) return this.groupsFetchPromise;
+
+    this.groupsLoading.set(true);
+
+    const request = (async () => {
+      try {
+        const [groupRes, memberRes] = await Promise.all([
+          this.supabase
+            .from('tyapp_user_group')
+            .select('*')
+            .is('deleted_at', null)
+            .order('customized_order', { ascending: true })
+            .order('name', { ascending: true }),
+          this.supabase.from('tyapp_user_group_member').select('*'),
+        ]);
+
+        if (groupRes.error) throw groupRes.error;
+        if (memberRes.error) throw memberRes.error;
+
+        this.zone.run(() => {
+          this.groups.set((groupRes.data as UserGroup[]) || []);
+          this.groupMembers.set((memberRes.data as UserGroupMember[]) || []);
+          this.groupsInitialized = true;
+          this.groupsLoading.set(false);
+        });
+      } catch (error: unknown) {
+        this.notification.handleError('Fetch Groups Failed', error);
+        this.zone.run(() => this.groupsLoading.set(false));
+      } finally {
+        this.groupsFetchPromise = null;
+      }
+    })();
+
+    this.groupsFetchPromise = request;
+    return request;
+  }
+
+  memberUserIdsForGroup(groupId: string): string[] {
+    return this.groupMembers()
+      .filter((member) => member.group_id === groupId)
+      .map((member) => member.user_id);
+  }
+
+  async saveGroup(
+    group: Partial<UserGroup>,
+    memberUserIds: string[],
+  ): Promise<UserGroup | null> {
+    if (!this.authService.isSuperAdmin()) {
+      this.notification.handleError(
+        'Save Group Failed',
+        'Only a super admin can manage groups',
+      );
+      return null;
+    }
+
+    const isNew = !group.tb_tyapp_usr_grp_id;
+    const {
+      created_at,
+      updated_at,
+      deleted_at,
+      tb_tyapp_usr_grp_id,
+      ...payload
+    } = group;
+
+    const savePayload = {
+      ...payload,
+      name: payload.name?.trim() ?? '',
+      remarks: payload.remarks?.trim() || null,
+      customized_order: Number.isFinite(Number(payload.customized_order))
+        ? Number(payload.customized_order)
+        : 0,
+    };
+
+    this.groupsLoading.set(true);
+    try {
+      const query = isNew
+        ? this.supabase
+            .from('tyapp_user_group')
+            .insert(savePayload)
+            .select()
+            .single()
+        : this.supabase
+            .from('tyapp_user_group')
+            .update(savePayload)
+            .eq('tb_tyapp_usr_grp_id', tb_tyapp_usr_grp_id)
+            .select()
+            .single();
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      const saved = data as UserGroup;
+      const membersOk = await this.replaceGroupMembers(
+        saved.tb_tyapp_usr_grp_id,
+        memberUserIds,
+      );
+      if (!membersOk) {
+        this.zone.run(() => this.groupsLoading.set(false));
+        return null;
+      }
+
+      return this.zone.run(() => {
+        this.groups.update((list) => {
+          const next = isNew
+            ? [...list, saved]
+            : list.map((item) =>
+                item.tb_tyapp_usr_grp_id === saved.tb_tyapp_usr_grp_id
+                  ? saved
+                  : item,
+              );
+          return [...next].sort(
+            (a, b) => a.customized_order - b.customized_order,
+          );
+        });
+        this.groupsLoading.set(false);
+        this.notification.showSuccess('Saved successfully');
+        return saved;
+      });
+    } catch (error: unknown) {
+      this.notification.handleError('Save Group Failed', error);
+      return this.zone.run(() => {
+        this.groupsLoading.set(false);
+        return null;
+      });
+    }
+  }
+
+  async deleteGroup(groupId: string): Promise<boolean> {
+    if (!this.authService.isSuperAdmin()) {
+      this.notification.handleError(
+        'Delete Group Failed',
+        'Only a super admin can manage groups',
+      );
+      return false;
+    }
+
+    this.groupsLoading.set(true);
+    try {
+      const { error } = await this.supabase.rpc(
+        'tyapp_user_group_soft_delete_single_record',
+        { record_id: groupId },
+      );
+      if (error) throw error;
+
+      return this.zone.run(() => {
+        this.groups.update((list) =>
+          list.filter((item) => item.tb_tyapp_usr_grp_id !== groupId),
+        );
+        this.groupMembers.update((list) =>
+          list.filter((item) => item.group_id !== groupId),
+        );
+        this.groupsLoading.set(false);
+        this.notification.showSuccess('Group deleted');
+        return true;
+      });
+    } catch (error: unknown) {
+      this.notification.handleError('Delete Group Failed', error);
+      return this.zone.run(() => {
+        this.groupsLoading.set(false);
+        return false;
+      });
+    }
+  }
+
+  private async replaceGroupMembers(
+    groupId: string,
+    memberUserIds: string[],
+  ): Promise<boolean> {
+    const uniqueIds = [...new Set(memberUserIds.filter(Boolean))];
+    try {
+      const { error: delError } = await this.supabase
+        .from('tyapp_user_group_member')
+        .delete()
+        .eq('group_id', groupId);
+      if (delError) throw delError;
+
+      if (uniqueIds.length > 0) {
+        const { data, error: insError } = await this.supabase
+          .from('tyapp_user_group_member')
+          .insert(uniqueIds.map((user_id) => ({ group_id: groupId, user_id })))
+          .select();
+        if (insError) throw insError;
+
+        this.groupMembers.update((list) => [
+          ...list.filter((item) => item.group_id !== groupId),
+          ...((data as UserGroupMember[]) || []),
+        ]);
+      } else {
+        this.groupMembers.update((list) =>
+          list.filter((item) => item.group_id !== groupId),
+        );
+      }
+
+      return true;
+    } catch (error: unknown) {
+      this.notification.handleError('Save Group Members Failed', error);
+      return false;
+    }
+  }
+
   private subscribeToDirectory(): void {
     if (this.directoryChannel) return;
 
@@ -191,6 +476,35 @@ export class UserService {
     if (this.directoryChannel) {
       await this.supabase.removeChannel(this.directoryChannel);
       this.directoryChannel = null;
+    }
+  }
+
+  private subscribeToGroups(): void {
+    if (this.groupsChannel) return;
+
+    this.groupsChannel = this.supabase
+      .channel('jaxfr-user-groups')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'tyapp_user_group' },
+        () => {
+          void this.fetchGroups(true);
+        },
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'tyapp_user_group_member' },
+        () => {
+          void this.fetchGroups(true);
+        },
+      )
+      .subscribe();
+  }
+
+  private async unsubscribeFromGroups(): Promise<void> {
+    if (this.groupsChannel) {
+      await this.supabase.removeChannel(this.groupsChannel);
+      this.groupsChannel = null;
     }
   }
 

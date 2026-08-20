@@ -36,6 +36,7 @@ const CATEGORY_IMAGES: Record<string, string> = {
   Article: '/icons/3d/article.png',
   Fit: '/icons/3d/fit.png',
   Filelink: '/icons/3d/filelink.png',
+  TyWeb: '/icons/3d/web.png',
   Chat: '/icons/3d/chat.png',
   Settings: '/icons/3d/settings.png',
   User: '/icons/3d/user.png',
@@ -55,6 +56,7 @@ const TILE_TONES: Record<string, string> = {
   Article: 'gold',
   Fit: 'green',
   Filelink: 'teal',
+  TyWeb: 'teal',
   Chat: 'purple',
   Settings: 'slate',
   User: 'orange',
@@ -71,6 +73,7 @@ const FALLBACK_TILES: { name: string; icon: string; route: string }[] = [
   { name: 'Article', icon: 'article', route: '/article/feed' },
   { name: 'Fit', icon: 'fitness_center', route: '/fit/list' },
   { name: 'Filelink', icon: 'link', route: '/filelink/list' },
+  { name: 'TyWeb', icon: 'web', route: '/tyweb' },
   { name: 'Chat', icon: 'chat', route: '/chat' },
   { name: 'Settings', icon: 'settings', route: '/settings/notifications' },
   { name: 'User', icon: 'people_outline', route: '/users/list' },
@@ -100,6 +103,11 @@ const CATEGORY_LINKS: Record<string, FeatureHubLink[]> = {
     { title: 'Thread', icon: 'forum', route: '/fit/thread' },
   ],
 };
+
+const USER_LINKS: FeatureHubLink[] = [
+  { title: 'Users', icon: 'people_outline', route: '/users/list' },
+  { title: 'Groups', icon: 'groups', route: '/users/groups/list' },
+];
 
 @Component({
   selector: 'app-welcome',
@@ -210,12 +218,17 @@ export class Welcome implements OnInit, OnDestroy {
   private withLinks(
     tile: Omit<WelcomeCategory, 'links' | 'image'> & { image?: string | null },
   ): WelcomeCategory {
-    const links = CATEGORY_LINKS[tile.name] ?? [];
+    const links = this.linksFor(tile.name);
     return {
       ...tile,
       image: tile.image ?? CATEGORY_IMAGES[tile.name] ?? null,
       links: links.length > 1 ? links : [],
     };
+  }
+
+  private linksFor(name: string): FeatureHubLink[] {
+    if (name === 'User' && this.auth.isSuperAdmin()) return USER_LINKS;
+    return CATEGORY_LINKS[name] ?? [];
   }
 
   setViewMode(mode: WelcomeViewMode) {

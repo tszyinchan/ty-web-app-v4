@@ -71,10 +71,17 @@ export class UserList implements OnInit, OnDestroy {
           disabled: isExportDisabled,
           onClick: () => this.onExport(),
         },
+        {
+          label: 'Groups',
+          icon: 'groups',
+          type: 'secondary',
+          onClick: () => this.router.navigate(['/users/groups/list']),
+        },
       ],
     });
 
     this.userService.fetchAllUsers();
+    void this.userService.fetchGroups();
   }
 
   ngOnDestroy() {
@@ -96,6 +103,9 @@ export class UserList implements OnInit, OnDestroy {
   }
 
   async onRefresh() {
-    await this.userService.fetchAllUsers(true);
+    await Promise.all([
+      this.userService.fetchAllUsers(true),
+      this.userService.fetchGroups(true),
+    ]);
   }
 }

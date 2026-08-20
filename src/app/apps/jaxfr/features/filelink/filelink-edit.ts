@@ -29,10 +29,10 @@ import {
   HeaderService,
   HeaderAction,
 } from '../../../../core/services/header.service';
+import { NotificationService } from '../../../../core/services/notification.service';
 import { UserService } from '../user/user.service';
 
 import { FilelinkService } from '../../../../core/domains/filelink/filelink.service';
-import { SelectOption } from '../../../../core/models/common.model';
 import { DisplayNamePipe } from '../../../../core/pipes/display-name.pipe';
 import { RecordStatus } from '../../../../core/models/status.enum';
 import { FilelinkItem } from '../../../../core/domains/filelink/filelink.model';
@@ -62,6 +62,7 @@ export class FilelinkEdit implements OnInit, OnDestroy, DoCheck {
   private zone = inject(NgZone);
   private headerService = inject(HeaderService);
   private displayNamePipe = inject(DisplayNamePipe);
+  private notification = inject(NotificationService);
 
   public filelinkService = inject(FilelinkService);
   public userService = inject(UserService);
@@ -91,21 +92,19 @@ export class FilelinkEdit implements OnInit, OnDestroy, DoCheck {
   metaPairs = signal<{ k: string; v: string }[]>([]);
 
   userSearch = signal<string>('');
-  userOptions = computed<SelectOption[]>(() =>
-    this.userService.users().map((u) => ({
-      value: u.user_id,
-      label: this.displayNamePipe.transform(u),
-    })),
-  );
 
   filteredUsers = computed(() => {
     const q = this.userSearch().toLowerCase();
-    const currentAllowed = this.item()?.allowed_users || [];
-    return this.userOptions().filter(
-      (opt) =>
-        !currentAllowed.includes(String(opt.value)) &&
-        (q ? opt.label.toLowerCase().includes(q) : true),
-    );
+    const item = this.item();
+    const owner = item?.user_id || this.authService.userProfile()?.user_id || '';
+    const allowed = item?.allowed_users || [];
+    return this.userService
+      .usersSharingOneGroupWith([owner, ...allowed])
+      .map((u) => ({
+        value: u.user_id,
+        label: this.displayNamePipe.transform(u),
+      }))
+      .filter((opt) => (q ? opt.label.toLowerCase().includes(q) : true));
   });
 
   syncStatus = computed<'loading' | 'up-to-date' | 'unsaved' | 'none'>(() => {
@@ -157,8 +156,8 @@ export class FilelinkEdit implements OnInit, OnDestroy, DoCheck {
   }
 
   displayUserName(id: string): string {
-    const found = this.userOptions().find((opt) => opt.value === id);
-    return found ? found.label : 'Unknown User';
+    const user = this.userService.users().find((item) => item.user_id === id);
+    return this.displayNamePipe.transform(user);
   }
 
   async ngOnInit() {
@@ -167,6 +166,7 @@ export class FilelinkEdit implements OnInit, OnDestroy, DoCheck {
     await Promise.all([
       this.filelinkService.fetchAllItems(),
       this.userService.fetchAllUsers(),
+      this.userService.fetchGroups(),
     ]);
 
     const actions: HeaderAction[] = [];
@@ -253,17 +253,21 @@ export class FilelinkEdit implements OnInit, OnDestroy, DoCheck {
   }
 
   addAllowedUser(event: MatAutocompleteSelectedEvent): void {
-    const userId = event.option.value;
-    this.item.update((curr) => {
-      if (!curr) return curr;
-      if (!(curr.allowed_users || []).includes(userId)) {
-        return {
-          ...curr,
-          allowed_users: [...(curr.allowed_users || []), userId],
-        };
-      }
-      return curr;
-    });
+    const userId = String(event.option.value);
+    this.userSearch.set('');
+    const curr = this.item();
+    if (!curr) return;
+    const allowed = curr.allowed_users || [];
+    if (allowed.includes(userId)) return;
+    const owner = curr.user_id || this.authService.userProfile()?.user_id || '';
+    if (!this.userService.idsShareAGroup([owner, ...allowed, userId])) {
+      this.notification.handleError(
+        'Add User Failed',
+        'Everyone granted access must belong to the same user group',
+      );
+      return;
+    }
+    this.item.set({ ...curr, allowed_users: [...allowed, userId] });
   }
 
   removeAllowedUser(index: number): void {
@@ -308,6 +312,18 @@ export class FilelinkEdit implements OnInit, OnDestroy, DoCheck {
   async onSave() {
     const data = this.item();
     if (!data || !data.user_id) return;
+
+    const allowed = data.allowed_users || [];
+    if (
+      allowed.length > 0 &&
+      !this.userService.idsShareAGroup([data.user_id, ...allowed])
+    ) {
+      this.notification.handleError(
+        'Save Failed',
+        'Everyone granted access must belong to the same user group',
+      );
+      return;
+    }
 
     const success = await this.filelinkService.saveItem(data);
     if (success) {

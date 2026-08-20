@@ -17,6 +17,7 @@ import {
   ChatRoomRead,
 } from './chat.model';
 import { normalizeQuoteIds, normalizeReactions, sanitizeChatHtml } from './chat.util';
+import { UserService } from '../user/user.service';
 
 @Injectable({ providedIn: 'root' })
 export class ChatService {
@@ -24,6 +25,7 @@ export class ChatService {
   private notification = inject(NotificationService);
   private auth = inject(AuthService);
   private push = inject(PushService);
+  private userService = inject(UserService);
   private zone = inject(NgZone);
 
   rooms = signal<ChatRoom[]>([]);
@@ -136,6 +138,14 @@ export class ChatService {
     const uniqueMembers = [...new Set(memberUserIds)];
     if (!uniqueMembers.includes(createdBy)) {
       uniqueMembers.push(createdBy);
+    }
+
+    if (!this.userService.idsShareAGroup(uniqueMembers)) {
+      this.notification.handleError(
+        'Create Room Failed',
+        'Everyone in a room must belong to the same user group',
+      );
+      return null;
     }
 
     const desc = description?.trim() || null;
@@ -394,6 +404,18 @@ export class ChatService {
     const uniqueIds = [...new Set(userIds.filter(Boolean))];
     if (uniqueIds.length === 0) {
       this.notification.handleError('Add Members Failed', 'Pick someone to add');
+      return false;
+    }
+
+    const room = this.rooms().find((item) => item.tb_tyapp_chat_rm_id === roomId);
+    if (
+      room &&
+      !this.userService.idsShareAGroup([...room.member_user_ids, ...uniqueIds])
+    ) {
+      this.notification.handleError(
+        'Add Members Failed',
+        'Everyone in a room must belong to the same user group',
+      );
       return false;
     }
 

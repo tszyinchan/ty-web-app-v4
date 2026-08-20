@@ -1,0 +1,44 @@
+<div class="standard-list-view">
+  <div class="list-container">
+    @for (group of userService.groups(); track group.tb_tyapp_usr_grp_id) {
+      <a class="item-link" [routerLink]="['../edit', group.tb_tyapp_usr_grp_id]">
+        <div class="item-content">
+          <div class="item-info-group">
+            <span class="main-text">{{ group.name }}</span>
+            <span class="sub-text"
+              >{{ memberCount(group.tb_tyapp_usr_grp_id) }} members · Order
+              {{ group.customized_order }}</span
+            >
+          </div>
+
+          <div class="item-status-group">
+            <span
+              class="status-tag"
+              [class.inactive]="group.status === RecordStatus.Inactive"
+            >
+              {{ group.status === RecordStatus.Active ? 'Active' : 'Inactive' }}
+            </span>
+            <mat-icon class="chevron">chevron_right</mat-icon>
+          </div>
+        </div>
+      </a>
+    } @empty {
+      @if (!userService.groupsLoading()) {
+        <div class="empty-placeholder">
+          No groups yet. Create a group to control who can see and select each
+          other in Chat, Filelink, and Work.
+        </div>
+      }
+    }
+  </div>
+
+  <footer
+    class="list-footer"
+    [hidden]="userService.groupsLoading() || userService.groups().length === 0"
+  >
+    <div class="divider"></div>
+    <span class="count-text"
+      >TOTAL {{ userService.groups().length }} ITEMS</span
+    >
+  </footer>
+</div>

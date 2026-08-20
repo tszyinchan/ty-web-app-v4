@@ -79,10 +79,9 @@ export class ChatRoomMembers implements OnInit, OnDestroy {
 
   filteredUsers = computed(() => {
     const q = this.userSearch().toLowerCase().trim();
-    const members = new Set(this.room()?.member_user_ids ?? []);
+    const members = this.room()?.member_user_ids ?? [];
     return this.userService
-      .users()
-      .filter((user) => !members.has(user.user_id))
+      .usersSharingOneGroupWith(members)
       .map((user) => ({
         value: user.user_id,
         label: this.displayNamePipe.transform(user),
@@ -126,6 +125,7 @@ export class ChatRoomMembers implements OnInit, OnDestroy {
     await Promise.all([
       this.chatService.fetchRooms(true),
       this.userService.fetchAllUsers(),
+      this.userService.fetchGroups(),
     ]);
   }
 
