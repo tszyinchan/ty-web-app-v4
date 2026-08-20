@@ -36,31 +36,33 @@
         </mat-form-field>
       </section>
 
-      <section class="form-group">
-        <h3 class="group-header">Members</h3>
-        <button mat-stroked-button type="button" (click)="goToMembers()">
-          <mat-icon>group</mat-icon>
-          Manage Members
-        </button>
-      </section>
+      @if (isCreator()) {
+        <section class="form-group">
+          <h3 class="group-header">Members</h3>
+          <button mat-stroked-button type="button" (click)="goToMembers()">
+            <mat-icon>group</mat-icon>
+            Manage Members
+          </button>
+        </section>
 
-      <section class="form-group">
-        <h3 class="group-header">Danger Zone</h3>
-        <p class="danger-hint">
-          Deleting the room removes it for every member. This cannot be
-          undone.
-        </p>
-        <button
-          mat-stroked-button
-          type="button"
-          color="warn"
-          [disabled]="isLoading()"
-          (click)="onDeleteRoom()"
-        >
-          <mat-icon>delete_outline</mat-icon>
-          Delete Room
-        </button>
-      </section>
+        <section class="form-group">
+          <h3 class="group-header">Danger Zone</h3>
+          <p class="danger-hint">
+            Deleting the room removes it for every member. This cannot be
+            undone.
+          </p>
+          <button
+            mat-stroked-button
+            type="button"
+            color="warn"
+            [disabled]="isLoading()"
+            (click)="onDeleteRoom()"
+          >
+            <mat-icon>delete_outline</mat-icon>
+            Delete Room
+          </button>
+        </section>
+      }
     </div>
   }
 </div>

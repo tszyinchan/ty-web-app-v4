@@ -334,46 +334,52 @@ export class ChatPage implements OnInit, OnDestroy {
                   onClick: () => void this.router.navigate(['/chat/new']),
                 },
               ]
-            : isCreator
-              ? [
-                  {
-                    label: 'Members',
-                    icon: 'group',
-                    type: 'secondary' as const,
-                    disabled: () => loading,
-                    onClick: () =>
-                      void this.router.navigate([
-                        '/chat',
-                        id,
-                        'manage',
-                        'members',
-                      ]),
-                  },
-                  {
-                    label: 'Manage Room',
-                    icon: 'settings',
-                    type: 'secondary' as const,
-                    disabled: () => loading,
-                    onClick: () =>
-                      void this.router.navigate(['/chat', id, 'manage']),
-                  },
-                  {
-                    label: 'Delete Room',
-                    icon: 'delete_outline',
-                    type: 'secondary' as const,
-                    disabled: () => loading,
-                    onClick: () => void this.onDeleteRoom(),
-                  },
-                ]
-              : [
-                  {
-                    label: 'Leave',
-                    icon: 'logout',
-                    type: 'secondary' as const,
-                    disabled: () => loading,
-                    onClick: () => void this.onLeaveRoom(),
-                  },
-                ]),
+            : [
+                ...(isCreator
+                  ? [
+                      {
+                        label: 'Members',
+                        icon: 'group',
+                        type: 'secondary' as const,
+                        disabled: () => loading,
+                        onClick: () =>
+                          void this.router.navigate([
+                            '/chat',
+                            id,
+                            'manage',
+                            'members',
+                          ]),
+                      },
+                    ]
+                  : []),
+                {
+                  label: 'Manage Room',
+                  icon: 'settings',
+                  type: 'secondary' as const,
+                  disabled: () => loading,
+                  onClick: () =>
+                    void this.router.navigate(['/chat', id, 'manage']),
+                },
+                ...(isCreator
+                  ? [
+                      {
+                        label: 'Delete Room',
+                        icon: 'delete_outline',
+                        type: 'secondary' as const,
+                        disabled: () => loading,
+                        onClick: () => void this.onDeleteRoom(),
+                      },
+                    ]
+                  : [
+                      {
+                        label: 'Leave',
+                        icon: 'logout',
+                        type: 'secondary' as const,
+                        disabled: () => loading,
+                        onClick: () => void this.onLeaveRoom(),
+                      },
+                    ]),
+              ]),
         ],
       });
     });

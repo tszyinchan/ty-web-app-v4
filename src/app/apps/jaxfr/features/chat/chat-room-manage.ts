@@ -93,17 +93,11 @@ export class ChatRoomManage
     effect(() => {
       const room = this.room();
       const ready = this.chatService.roomsReady();
-      const me = this.currentUserId();
       untracked(() => {
         if (!ready || this.redirected) return;
         if (!room) {
           this.redirected = true;
           void this.router.navigate(['/chat']);
-          return;
-        }
-        if (!!me && room.created_by !== me) {
-          this.redirected = true;
-          void this.router.navigate(['/chat', room.tb_tyapp_chat_rm_id]);
         }
       });
     });
@@ -181,12 +175,13 @@ export class ChatRoomManage
       this.originalName = name;
       this.originalDescription = this.description.trim();
       this.isDirty.set(false);
+      await this.router.navigate(['/chat', room.tb_tyapp_chat_rm_id]);
     }
   }
 
   goToMembers() {
     const room = this.room();
-    if (!room) return;
+    if (!room || !this.isCreator()) return;
     void this.router.navigate([
       '/chat',
       room.tb_tyapp_chat_rm_id,
@@ -197,7 +192,7 @@ export class ChatRoomManage
 
   async onDeleteRoom() {
     const room = this.room();
-    if (!room) return;
+    if (!room || !this.isCreator()) return;
     if (!confirm(`Delete room "${room.name}"? This cannot be undone.`)) return;
     const ok = await this.chatService.deleteRoom(room.tb_tyapp_chat_rm_id);
     if (ok) {

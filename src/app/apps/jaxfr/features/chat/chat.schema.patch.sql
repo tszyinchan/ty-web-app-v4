@@ -7,9 +7,10 @@
 -- 4) Allow longer emoji sequences (ZWJ / skin tones) in reactions
 -- 5) Multi-quote: quote_message_id uuid → quote_message_ids uuid[]
 -- 6) Room read watermarks (已讀 initials + unread counts)
--- 7) Optional room description; creator acts as admin (rename/description/
---    members/delete); non-creator members can only leave (last leave
---    soft-deletes the room; the creator can never leave, only delete)
+-- 7) Optional room description; any member can rename / edit description;
+--    creator acts as admin for members/delete; non-creator members can
+--    leave (last leave soft-deletes the room; the creator can never leave,
+--    only delete)
 
 CREATE OR REPLACE FUNCTION public.tyapp_chat_rename_room(
   p_room_id uuid,
@@ -32,8 +33,8 @@ BEGIN
     RAISE EXCEPTION 'Room name is required';
   END IF;
 
-  IF NOT public.tyapp_chat_is_room_creator(p_room_id) THEN
-    RAISE EXCEPTION 'Only the room creator can rename this room';
+  IF NOT public.tyapp_chat_is_room_member(p_room_id) THEN
+    RAISE EXCEPTION 'Only room members can rename this room';
   END IF;
 
   UPDATE public.tyapp_chat_room
@@ -538,8 +539,8 @@ BEGIN
     RAISE EXCEPTION 'Not authenticated';
   END IF;
 
-  IF NOT public.tyapp_chat_is_room_creator(p_room_id) THEN
-    RAISE EXCEPTION 'Only the room creator can edit the description';
+  IF NOT public.tyapp_chat_is_room_member(p_room_id) THEN
+    RAISE EXCEPTION 'Only room members can edit the description';
   END IF;
 
   IF v_desc IS NOT NULL AND length(v_desc) > 500 THEN
