@@ -185,3 +185,36 @@
   background: linear-gradient(90deg, #c5c5c5, #e8e8e8);
 }
 
+@media (max-width: 600px) {
+  .aero-chrome {
+    padding: 8px 12px;
+  }
+
+  .aero-body {
+    padding: 16px 12px 24px;
+  }
+
+  .welcome-head {
+    margin-bottom: 16px;
+  }
+
+  .cp-grid {
+    grid-template-columns: 1fr;
+    column-gap: 16px;
+    row-gap: 16px;
+  }
+
+  .cp-item {
+    gap: 12px;
+    padding: 6px 8px;
+  }
+
+  .explorer-group + .explorer-group {
+    margin-top: 16px;
+  }
+
+  .explorer-heading {
+    padding: 0 8px 8px;
+  }
+}
+
