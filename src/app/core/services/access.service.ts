@@ -101,6 +101,13 @@ export class AccessService {
   async fetchAccessForUser(
     userId: string,
   ): Promise<{ appIds: string[]; featureIds: string[] }> {
+    if (
+      !this.auth.isSuperAdmin() &&
+      userId !== this.auth.userProfile()?.user_id
+    ) {
+      return { appIds: [], featureIds: [] };
+    }
+
     try {
       const [appRes, featureRes] = await Promise.all([
         this.supabase
@@ -129,6 +136,14 @@ export class AccessService {
   }
 
   async replaceAppAccess(userId: string, appIds: string[]): Promise<boolean> {
+    if (!this.auth.isSuperAdmin()) {
+      this.notification.handleError(
+        'Save App Access Failed',
+        'Only a super admin can change app access',
+      );
+      return false;
+    }
+
     try {
       const { error: delError } = await this.supabase
         .from('tyapp_user_app_access')
@@ -157,6 +172,14 @@ export class AccessService {
     userId: string,
     featureIds: string[],
   ): Promise<boolean> {
+    if (!this.auth.isSuperAdmin()) {
+      this.notification.handleError(
+        'Save Feature Access Failed',
+        'Only a super admin can change feature access',
+      );
+      return false;
+    }
+
     try {
       const { error: delError } = await this.supabase
         .from('tyapp_user_feature_access')

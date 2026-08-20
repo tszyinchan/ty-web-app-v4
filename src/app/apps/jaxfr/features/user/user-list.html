@@ -1,3 +1,4 @@
+@if (showDirectory()) {
 <div class="standard-list-view">
   <div class="list-container">
     @for (user of userService.users(); track user.user_id) {
@@ -35,3 +36,4 @@
     }
   </footer>
 </div>
+}

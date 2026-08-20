@@ -99,6 +99,7 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
   ];
   readonly NameDisplayMode = NameDisplayMode;
   readonly RecordStatus = RecordStatus;
+  readonly canManageUsers = this.auth.isSuperAdmin;
 
   user = signal<TyappUser | null>(null);
   isSaving = signal(false);
@@ -139,15 +140,28 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
 
   async ngOnInit() {
     const id = this.route.snapshot.paramMap.get('id');
-    if (!id) return;
+    const myId = this.auth.userProfile()?.user_id;
+    if (!id || !myId) {
+      void this.router.navigate(['/welcome']);
+      return;
+    }
 
-    await Promise.all([
-      this.appRegistry.fetchAllApps(),
-      this.featureService.fetchAllFeatures(),
-    ]);
+    if (!this.auth.isSuperAdmin() && id !== myId) {
+      void this.router.navigate(['/users/edit', myId], { replaceUrl: true });
+      return;
+    }
+
+    const canManage = this.auth.isSuperAdmin();
+
+    if (canManage) {
+      await Promise.all([
+        this.appRegistry.fetchAllApps(),
+        this.featureService.fetchAllFeatures(),
+      ]);
+    }
 
     this.headerService.setConfig({
-      backLink: '/users/list',
+      backLink: canManage ? '/users/list' : '/welcome',
       syncStatus: this.syncStatus,
       actions: [
         {
@@ -174,7 +188,9 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
 
     const [freshUser, grants] = await Promise.all([
       this.userService.fetchUserById(id),
-      this.access.fetchAccessForUser(id),
+      canManage
+        ? this.access.fetchAccessForUser(id)
+        : Promise.resolve({ appIds: [] as string[], featureIds: [] as string[] }),
     ]);
 
     this.zone.run(() => {
@@ -183,7 +199,7 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
       } else if (cachedUser) {
         this.setUserAndAccess(cachedUser, grants.appIds, grants.featureIds);
       } else {
-        this.router.navigate(['/users/list']);
+        this.router.navigate(canManage ? ['/users/list'] : ['/welcome']);
       }
     });
   }
@@ -201,7 +217,10 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
   }
 
   isAccessLocked(): boolean {
-    return (this.user()?.role ?? 0) >= USER_ROLES.SUPER_ADMIN;
+    return (
+      !this.auth.isSuperAdmin() ||
+      (this.user()?.role ?? 0) >= USER_ROLES.SUPER_ADMIN
+    );
   }
 
   featuresForApp(appId: string): AppFeature[] {
@@ -293,7 +312,9 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
 
     if (current && original) {
       const isBaseDirty = JSON.stringify(current) !== original;
-      const isAccessDirty = this.accessSnapshot() !== this.originalAccessStr;
+      const isAccessDirty =
+        this.auth.isSuperAdmin() &&
+        this.accessSnapshot() !== this.originalAccessStr;
 
       const currentlyDirty = isBaseDirty || isAccessDirty;
 
@@ -319,58 +340,74 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
 
     this.isSaving.set(true);
 
-    if (data.role >= USER_ROLES.SUPER_ADMIN) {
-      data.allowed_apps = this.appRegistry
-        .apps()
-        .map((app) => app.name.toLowerCase());
+    const canManage = this.auth.isSuperAdmin();
+    let success: boolean;
 
-      const grantsOk = await this.access.replaceAppAccess(data.user_id, []);
-      if (!grantsOk) {
-        this.zone.run(() => this.isSaving.set(false));
-        return;
+    if (canManage) {
+      if (data.role >= USER_ROLES.SUPER_ADMIN) {
+        data.allowed_apps = this.appRegistry
+          .apps()
+          .map((app) => app.name.toLowerCase());
+
+        const grantsOk = await this.access.replaceAppAccess(data.user_id, []);
+        if (!grantsOk) {
+          this.zone.run(() => this.isSaving.set(false));
+          return;
+        }
+
+        const featureGrantsOk = await this.access.replaceFeatureAccess(
+          data.user_id,
+          [],
+        );
+        if (!featureGrantsOk) {
+          this.zone.run(() => this.isSaving.set(false));
+          return;
+        }
+      } else {
+        data.allowed_apps = this.appRegistry
+          .apps()
+          .filter((app) => this.selectedAppIds.includes(app.tb_tyapp_app_id))
+          .map((app) => app.name.toLowerCase());
+
+        const grantsOk = await this.access.replaceAppAccess(
+          data.user_id,
+          this.selectedAppIds,
+        );
+        if (!grantsOk) {
+          this.zone.run(() => this.isSaving.set(false));
+          return;
+        }
+
+        const featureGrantsOk = await this.access.replaceFeatureAccess(
+          data.user_id,
+          this.selectedFeatureIds,
+        );
+        if (!featureGrantsOk) {
+          this.zone.run(() => this.isSaving.set(false));
+          return;
+        }
       }
 
-      const featureGrantsOk = await this.access.replaceFeatureAccess(
-        data.user_id,
-        [],
-      );
-      if (!featureGrantsOk) {
-        this.zone.run(() => this.isSaving.set(false));
-        return;
-      }
+      success = await this.userService.updateUser(data.user_id, data);
     } else {
-      data.allowed_apps = this.appRegistry
-        .apps()
-        .filter((app) => this.selectedAppIds.includes(app.tb_tyapp_app_id))
-        .map((app) => app.name.toLowerCase());
-
-      const grantsOk = await this.access.replaceAppAccess(
-        data.user_id,
-        this.selectedAppIds,
-      );
-      if (!grantsOk) {
-        this.zone.run(() => this.isSaving.set(false));
-        return;
-      }
-
-      const featureGrantsOk = await this.access.replaceFeatureAccess(
-        data.user_id,
-        this.selectedFeatureIds,
-      );
-      if (!featureGrantsOk) {
-        this.zone.run(() => this.isSaving.set(false));
-        return;
-      }
+      success = await this.userService.updateUser(data.user_id, {
+        legal_first_name: data.legal_first_name,
+        legal_middle_name: data.legal_middle_name,
+        legal_last_name: data.legal_last_name,
+        preferred_first_name: data.preferred_first_name,
+        customized_display_name: data.customized_display_name,
+        name_display_mode: data.name_display_mode,
+      });
     }
-
-    const success = await this.userService.updateUser(data.user_id, data);
 
     this.zone.run(() => {
       if (success) {
-        this.originalDataStr.set(JSON.stringify(data));
+        this.originalDataStr.set(JSON.stringify(this.user()));
         this.originalAccessStr = this.accessSnapshot();
         this.isDirty.set(false);
-        this.router.navigate(['/users/list']);
+        if (canManage) {
+          this.router.navigate(['/users/list']);
+        }
       }
       this.isSaving.set(false);
     });

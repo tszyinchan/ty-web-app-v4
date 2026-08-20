@@ -47,101 +47,105 @@
         </div>
       </section>
 
-      <section class="form-group">
-        <h3 class="group-header">System Access & Admin</h3>
+      @if (canManageUsers()) {
+        <section class="form-group">
+          <h3 class="group-header">System Access & Admin</h3>
 
-        <div class="app-access-box">
-          <div class="app-access-title">App & Feature Access</div>
-          <div class="app-access-subtitle">
-            @if (isAccessLocked()) {
-              Super admin has access to all apps and features. Grant checkboxes
-              are not used for this role.
-            } @else {
-              Apps control which subdomain this user can sign in to. Features
-              control which tiles they can open inside Jaxfr.
+          <div class="app-access-box">
+            <div class="app-access-title">App & Feature Access</div>
+            <div class="app-access-subtitle">
+              @if (isAccessLocked()) {
+                Super admin has access to all apps and features. Grant checkboxes
+                are not used for this role.
+              } @else {
+                Apps control which subdomain this user can sign in to. Features
+                control which tiles they can open inside Jaxfr.
+              }
+            </div>
+
+            @if (!isAccessLocked()) {
+              <div class="access-app-list">
+                @for (app of appRegistry.apps(); track app.tb_tyapp_app_id) {
+                  <div class="access-app-block">
+                    <mat-checkbox
+                      [checked]="isAppSelected(app.tb_tyapp_app_id)"
+                      (change)="toggleApp(app.tb_tyapp_app_id, $event.checked)"
+                    >
+                      {{ app.name }}
+                    </mat-checkbox>
+                    <div class="access-feature-list">
+                      @for (
+                        feature of featuresForApp(app.tb_tyapp_app_id);
+                        track feature.tb_tyapp_ap_ftr_id
+                      ) {
+                        <mat-checkbox
+                          [checked]="
+                            isFeatureSelected(feature.tb_tyapp_ap_ftr_id)
+                          "
+                          (change)="toggleFeature(feature, $event.checked)"
+                        >
+                          {{ feature.name }}
+                          @if (feature.is_admin_only) {
+                            <span class="access-admin-tag">Admin only</span>
+                          }
+                        </mat-checkbox>
+                      } @empty {
+                        <p class="access-feature-empty">
+                          No features under this app.
+                        </p>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
             }
           </div>
 
-          @if (!isAccessLocked()) {
-            <div class="access-app-list">
-              @for (app of appRegistry.apps(); track app.tb_tyapp_app_id) {
-                <div class="access-app-block">
-                  <mat-checkbox
-                    [checked]="isAppSelected(app.tb_tyapp_app_id)"
-                    (change)="toggleApp(app.tb_tyapp_app_id, $event.checked)"
-                  >
-                    {{ app.name }}
-                  </mat-checkbox>
-                  <div class="access-feature-list">
-                    @for (
-                      feature of featuresForApp(app.tb_tyapp_app_id);
-                      track feature.tb_tyapp_ap_ftr_id
-                    ) {
-                      <mat-checkbox
-                        [checked]="
-                          isFeatureSelected(feature.tb_tyapp_ap_ftr_id)
-                        "
-                        (change)="toggleFeature(feature, $event.checked)"
-                      >
-                        {{ feature.name }}
-                        @if (feature.is_admin_only) {
-                          <span class="access-admin-tag">Admin only</span>
-                        }
-                      </mat-checkbox>
-                    } @empty {
-                      <p class="access-feature-empty">
-                        No features under this app.
-                      </p>
-                    }
-                  </div>
-                </div>
-              }
-            </div>
-          }
-        </div>
+          <div class="fields-row-2">
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-label>User Role</mat-label>
+              <mat-select
+                [(ngModel)]="u.role"
+                (ngModelChange)="onRoleChange($event)"
+              >
+                @for (r of availableRoles; track r) {
+                  <mat-option [value]="r">{{ r | tyRoleLabel }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-label>Status</mat-label>
+              <input
+                matInput
+                [value]="
+                  u.status === RecordStatus.Active ? 'Active' : 'Inactive'
+                "
+                disabled
+              />
+            </mat-form-field>
+          </div>
 
-        <div class="fields-row-2">
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>User Role</mat-label>
-            <mat-select
-              [(ngModel)]="u.role"
-              (ngModelChange)="onRoleChange($event)"
-            >
-              @for (r of availableRoles; track r) {
-                <mat-option [value]="r">{{ r | tyRoleLabel }}</mat-option>
-              }
-            </mat-select>
-          </mat-form-field>
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>Status</mat-label>
-            <input
-              matInput
-              [value]="u.status === RecordStatus.Active ? 'Active' : 'Inactive'"
-              disabled
-            />
-          </mat-form-field>
-        </div>
+          <div class="fields-row-2 mt-16">
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-label>YY525 Identity Binding</mat-label>
+              <mat-select [(ngModel)]="u.appsheet_525_user_id">
+                <mat-option [value]="null">None (Blank)</mat-option>
+                <mat-option value="cty">CTY</mat-option>
+                <mat-option value="frd">FRD</mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
 
-        <div class="fields-row-2 mt-16">
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>YY525 Identity Binding</mat-label>
-            <mat-select [(ngModel)]="u.appsheet_525_user_id">
-              <mat-option [value]="null">None (Blank)</mat-option>
-              <mat-option value="cty">CTY</mat-option>
-              <mat-option value="frd">FRD</mat-option>
-            </mat-select>
+          <mat-form-field
+            appearance="outline"
+            class="full-width mt-16"
+            subscriptSizing="dynamic"
+          >
+            <mat-label>Internal Remarks</mat-label>
+            <textarea matInput rows="3" [(ngModel)]="u.remarks"></textarea>
           </mat-form-field>
-        </div>
-
-        <mat-form-field
-          appearance="outline"
-          class="full-width mt-16"
-          subscriptSizing="dynamic"
-        >
-          <mat-label>Internal Remarks</mat-label>
-          <textarea matInput rows="3" [(ngModel)]="u.remarks"></textarea>
-        </mat-form-field>
-      </section>
+        </section>
+      }
     </div>
 
     <aside class="preview-sidebar">

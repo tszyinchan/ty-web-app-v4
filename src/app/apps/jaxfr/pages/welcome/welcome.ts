@@ -167,13 +167,17 @@ export class Welcome implements OnInit, OnDestroy {
       if (!parent || !this.access.isAppActive(parent.tb_tyapp_app_id)) {
         return [];
       }
+      const resolved = {
+        ...tile,
+        route: this.featureHubRoute(tile.name, tile.route),
+      };
       if (isSuperAdmin) {
-        return [this.withLinks({ ...tile, ...this.orderOf(feature, apps) })];
+        return [this.withLinks({ ...resolved, ...this.orderOf(feature, apps) })];
       }
       if (!feature || !this.access.hasFeature(feature.tb_tyapp_ap_ftr_id)) {
         return [];
       }
-      return [this.withLinks({ ...tile, ...this.orderOf(feature, apps) })];
+      return [this.withLinks({ ...resolved, ...this.orderOf(feature, apps) })];
     });
 
     const categories = [...featureTiles, ...fallbackTiles].sort((a, b) => {
@@ -189,9 +193,18 @@ export class Welcome implements OnInit, OnDestroy {
       name: feature.name,
       icon: feature.icon as string,
       image: CATEGORY_IMAGES[feature.name] ?? null,
-      route: HUB_ROUTES[feature.name] ?? (feature.route as string),
+      route: this.featureHubRoute(feature.name, feature.route as string),
       ...this.orderOf(feature, apps),
     });
+  }
+
+  private featureHubRoute(featureName: string, fallbackRoute: string): string {
+    if (HUB_ROUTES[featureName]) return HUB_ROUTES[featureName];
+    if (featureName === 'User' && !this.auth.isSuperAdmin()) {
+      const myId = this.auth.userProfile()?.user_id;
+      if (myId) return `/users/edit/${myId}`;
+    }
+    return fallbackRoute;
   }
 
   private withLinks(

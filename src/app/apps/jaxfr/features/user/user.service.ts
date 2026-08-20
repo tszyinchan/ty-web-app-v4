@@ -102,6 +102,17 @@ export class UserService {
     userId: string,
     updates: Partial<TyappUser>,
   ): Promise<boolean> {
+    if (!this.authService.isSuperAdmin()) {
+      if (userId !== this.authService.userProfile()?.user_id) {
+        this.notification.handleError(
+          'Update Error',
+          'You can only edit your own profile',
+        );
+        return false;
+      }
+      updates = this.selfProfileUpdates(updates);
+    }
+
     this.loading.set(true);
     try {
       const { data, error } = await this.supabase
@@ -136,6 +147,29 @@ export class UserService {
         return false;
       });
     }
+  }
+
+  private selfProfileUpdates(updates: Partial<TyappUser>): Partial<TyappUser> {
+    const next: Partial<TyappUser> = {};
+    if (updates.legal_first_name !== undefined) {
+      next.legal_first_name = updates.legal_first_name;
+    }
+    if (updates.legal_middle_name !== undefined) {
+      next.legal_middle_name = updates.legal_middle_name;
+    }
+    if (updates.legal_last_name !== undefined) {
+      next.legal_last_name = updates.legal_last_name;
+    }
+    if (updates.preferred_first_name !== undefined) {
+      next.preferred_first_name = updates.preferred_first_name;
+    }
+    if (updates.customized_display_name !== undefined) {
+      next.customized_display_name = updates.customized_display_name;
+    }
+    if (updates.name_display_mode !== undefined) {
+      next.name_display_mode = updates.name_display_mode;
+    }
+    return next;
   }
 
   private subscribeToDirectory(): void {
