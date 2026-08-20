@@ -17,6 +17,12 @@ export const featureAccessGuard: CanActivateFn = async (route) => {
     return router.createUrlTree(['/welcome']);
   }
 
+  if (featureName === 'Archive') {
+    return auth.isSuperAdmin()
+      ? true
+      : router.createUrlTree(['/welcome']);
+  }
+
   if (auth.isSuperAdmin()) {
     return true;
   }

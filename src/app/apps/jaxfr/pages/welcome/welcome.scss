@@ -5,16 +5,21 @@
   height: 100%;
 }
 
+.chrome-logo {
+  display: block;
+  height: 28px;
+  width: auto;
+  max-width: 160px;
+}
+
 .welcome-head {
   margin-bottom: 28px;
 }
 
-.brand-logo {
-  display: block;
-  height: 40px;
-  width: auto;
-  max-width: 220px;
-  margin-bottom: 10px;
+.welcome-meta {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: #555;
 }
 
 .welcome-wait {
@@ -22,3 +27,161 @@
   font-size: 13px;
   color: #555;
 }
+
+.cp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  column-gap: 48px;
+  row-gap: 28px;
+}
+
+.cp-item {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  position: relative;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+}
+
+.cp-item.solo {
+  align-items: center;
+}
+
+.cp-item:hover {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), #d6ebfa);
+  border-color: #9cc4e4;
+}
+
+.cp-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  background: transparent;
+
+  img {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.28));
+  }
+
+  mat-icon {
+    font-size: 28px;
+    width: 28px;
+    height: 28px;
+    color: #1d6fbf;
+    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
+  }
+}
+
+.cp-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding-top: 2px;
+}
+
+.cp-item.solo .cp-text {
+  padding-top: 0;
+}
+
+.cp-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #217346;
+  text-decoration: none;
+}
+
+.cp-title::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+.cp-item:hover .cp-title {
+  text-decoration: underline;
+}
+
+.cp-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+  column-gap: 6px;
+  row-gap: 2px;
+}
+
+.cp-link {
+  font-size: 12px;
+  color: #0066cc;
+  text-decoration: none;
+}
+
+.cp-link:hover {
+  text-decoration: underline;
+}
+
+.cp-sep {
+  font-size: 12px;
+  color: #8aa0b4;
+}
+
+.explorer-group + .explorer-group {
+  margin-top: 28px;
+}
+
+.explorer-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 0 10px 8px;
+  border: 0;
+  background: transparent;
+  font: 600 13px "Segoe UI", Tahoma, sans-serif;
+  color: #5a5a5a;
+  text-align: left;
+}
+
+.explorer-chevron {
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 6px solid #6a6a6a;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.explorer-heading.collapsed .explorer-chevron {
+  transform: rotate(-90deg);
+}
+
+.explorer-panel {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 0.22s ease;
+}
+
+.explorer-panel.collapsed {
+  grid-template-rows: 0fr;
+}
+
+.explorer-panel-inner {
+  overflow: hidden;
+  min-height: 0;
+}
+
+.explorer-rule {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, #c5c5c5, #e8e8e8);
+}
+

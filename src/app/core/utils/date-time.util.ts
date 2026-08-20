@@ -1,3 +1,6 @@
+/** Default UI date format (YYYY-MM-DD). Also wired as Angular DatePipe default. */
+export const DATE_DISPLAY_FORMAT = 'yyyy-MM-dd';
+
 export function parseLocalDate(
   dateStr: string | null | undefined,
 ): Date | null {

@@ -1,5 +1,4 @@
-import { DatePipe } from '@angular/common';
-import { Component, OnDestroy, OnInit, computed, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 import { RouterModule } from '@angular/router';
 
@@ -12,8 +11,44 @@ import { AppRegistryService } from '../../../../core/services/app-registry.servi
 import { AuthService } from '../../../../core/services/auth.service';
 import { HeaderService } from '../../../../core/services/header.service';
 import { PresenceService } from '../../../../core/services/presence.service';
+import { FeatureHubLink, FEATURE_HUBS } from '../feature-hub/feature-hub.config';
 import { AppFeature } from '../../features/development/app-feature/app-feature.model';
 import { AppFeatureService } from '../../features/development/app-feature/app-feature.service';
+
+interface WelcomeCategory {
+  name: string;
+  icon: string;
+  image: string | null;
+  route: string;
+  appOrder: number;
+  order: number;
+  links: FeatureHubLink[];
+}
+
+interface WelcomeArchiveItem {
+  title: string;
+  route: string;
+  image: string | null;
+}
+
+const CATEGORY_IMAGES: Record<string, string> = {
+  Work: '/icons/3d/work.png',
+  Article: '/icons/3d/article.png',
+  Fit: '/icons/3d/fit.png',
+  Filelink: '/icons/3d/filelink.png',
+  Chat: '/icons/3d/chat.png',
+  Settings: '/icons/3d/settings.png',
+  User: '/icons/3d/user.png',
+  Development: '/icons/3d/development.png',
+};
+
+const ARCHIVE_IMAGES: Record<string, string> = {
+  analytics: '/icons/3d/analytics.png',
+  calendar_view_month: '/icons/3d/calendar.png',
+  web: '/icons/3d/web.png',
+  payments: '/icons/3d/payments.png',
+  savings: '/icons/3d/savings.png',
+};
 
 const TILE_TONES: Record<string, string> = {
   Work: 'blue',
@@ -24,7 +59,6 @@ const TILE_TONES: Record<string, string> = {
   Settings: 'slate',
   User: 'orange',
   Development: 'red',
-  Archive: 'slate',
 };
 
 const HUB_ROUTES: Record<string, string> = {
@@ -45,10 +79,25 @@ const FALLBACK_TILES: { name: string; icon: string; route: string }[] = [
 
 const LAST_ORDER = Number.MAX_SAFE_INTEGER;
 
+const hubLinks = (hub: string): FeatureHubLink[] => FEATURE_HUBS[hub]?.links ?? [];
+
+const CATEGORY_LINKS: Record<string, FeatureHubLink[]> = {
+  Work: hubLinks('work'),
+  Development: hubLinks('development'),
+  Article: [
+    { title: 'Feed', icon: 'dynamic_feed', route: '/article/feed' },
+    { title: 'List', icon: 'list', route: '/article/list' },
+  ],
+  Fit: [
+    { title: 'Sessions', icon: 'fitness_center', route: '/fit/list' },
+    { title: 'Thread', icon: 'forum', route: '/fit/thread' },
+  ],
+};
+
 @Component({
   selector: 'app-welcome',
   standalone: true,
-  imports: [DatePipe, RouterModule, MatIconModule, DisplayNamePipe],
+  imports: [RouterModule, MatIconModule, DisplayNamePipe],
   templateUrl: './welcome.html',
   styleUrl: './welcome.scss',
 })
@@ -60,9 +109,7 @@ export class Welcome implements OnInit, OnDestroy {
   private readonly header = inject(HeaderService);
   private readonly presence = inject(PresenceService);
 
-  readonly appName = APP_CONFIG.appName;
   readonly versionDate = APP_CONFIG.versionDate;
-  readonly currentDate = new Date();
   readonly userProfile = this.auth.userProfile;
 
   readonly appVersion = computed(() => {
@@ -70,11 +117,24 @@ export class Welcome implements OnInit, OnDestroy {
     return `${major}.${minor}.${patch}`;
   });
 
+  readonly showArchive = this.auth.isSuperAdmin;
+  readonly featuresOpen = signal(true);
+  readonly archiveOpen = signal(true);
+
+  readonly archiveItems = computed<WelcomeArchiveItem[]>(() => {
+    if (!this.auth.isSuperAdmin()) return [];
+    return hubLinks('archive').map((link) => ({
+      title: link.title,
+      route: link.route,
+      image: ARCHIVE_IMAGES[link.icon] ?? null,
+    }));
+  });
+
   readonly loading = computed(
     () => this.features.loading() || this.apps.loading(),
   );
 
-  readonly tiles = computed(() => {
+  readonly categories = computed(() => {
     this.access.myFeatureIds();
     const catalog = this.features.features();
     const apps = this.apps.apps();
@@ -82,13 +142,14 @@ export class Welcome implements OnInit, OnDestroy {
 
     const featureTiles = catalog
       .filter((feature) => {
+        if (feature.name === 'Archive') return false;
         if (!feature.show_in_launcher) return false;
         if (feature.status !== RecordStatus.Active) return false;
         if (!feature.route || !feature.icon) return false;
         if (!this.access.isAppActive(feature.app_id)) return false;
         return this.access.hasFeature(feature.tb_tyapp_ap_ftr_id);
       })
-      .map((feature) => this.toTile(feature, apps));
+      .map((feature) => this.toCategory(feature, apps));
 
     const shown = new Set(featureTiles.map((tile) => tile.name));
     const fallbackTiles = FALLBACK_TILES.flatMap((tile) => {
@@ -99,48 +160,49 @@ export class Welcome implements OnInit, OnDestroy {
         return [];
       }
       if (isSuperAdmin) {
-        return [
-          {
-            ...tile,
-            ...this.orderOf(feature, apps),
-          },
-        ];
+        return [this.withLinks({ ...tile, ...this.orderOf(feature, apps) })];
       }
       if (!feature || !this.access.hasFeature(feature.tb_tyapp_ap_ftr_id)) {
         return [];
       }
-      return [
-        {
-          ...tile,
-          ...this.orderOf(feature, apps),
-        },
-      ];
+      return [this.withLinks({ ...tile, ...this.orderOf(feature, apps) })];
     });
 
-    const tiles = [...featureTiles, ...fallbackTiles].sort((a, b) => {
+    const categories = [...featureTiles, ...fallbackTiles].sort((a, b) => {
       const appDiff = a.appOrder - b.appOrder;
       if (appDiff !== 0) return appDiff;
       return a.order - b.order;
     });
-    if (isSuperAdmin) {
-      tiles.push({
-        name: 'Archive',
-        icon: 'folder',
-        route: '/archive',
-        appOrder: LAST_ORDER,
-        order: LAST_ORDER,
-      });
-    }
-    return tiles;
+    return categories;
   });
 
-  private toTile(feature: AppFeature, apps: TyappApp[]) {
-    return {
+  private toCategory(feature: AppFeature, apps: TyappApp[]): WelcomeCategory {
+    return this.withLinks({
       name: feature.name,
       icon: feature.icon as string,
+      image: CATEGORY_IMAGES[feature.name] ?? null,
       route: HUB_ROUTES[feature.name] ?? (feature.route as string),
       ...this.orderOf(feature, apps),
+    });
+  }
+
+  private withLinks(
+    tile: Omit<WelcomeCategory, 'links' | 'image'> & { image?: string | null },
+  ): WelcomeCategory {
+    const links = CATEGORY_LINKS[tile.name] ?? [];
+    return {
+      ...tile,
+      image: tile.image ?? CATEGORY_IMAGES[tile.name] ?? null,
+      links: links.length > 1 ? links : [],
     };
+  }
+
+  toggleFeatures() {
+    this.featuresOpen.update((open) => !open);
+  }
+
+  toggleArchive() {
+    this.archiveOpen.update((open) => !open);
   }
 
   private parentApp(

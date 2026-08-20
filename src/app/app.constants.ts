@@ -2,10 +2,10 @@ export const APP_CONFIG = {
   appName: 'Jaxfr',
   version: {
     major: 4,
-    minor: 64,
-    patch: 3,
+    minor: 65,
+    patch: 0,
   },
-  versionDate: '2026-08-19',
+  versionDate: '2026-08-20',
 };
 
 export const WORK_SCHEDULE_NEW_RECORD_SHORTCUT = {

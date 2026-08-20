@@ -1,7 +1,7 @@
 <div class="aero-stage">
   <div class="aero-frame">
     <header class="aero-chrome">
-      <span class="aero-chrome-title">{{ appName }}</span>
+      <img src="logo.svg" alt="Jaxfr" class="chrome-logo" />
       <button class="gloss-btn" type="button" (click)="onSignOut()">
         Sign out
       </button>
@@ -9,34 +9,107 @@
 
     <main class="aero-body">
       <header class="welcome-head">
-        <img src="logo.svg" alt="Jaxfr" class="brand-logo" />
-        <p class="aero-sub">
-          {{ currentDate | date: "mediumDate" }}
-          @if (userProfile(); as user) {
-            · {{ user | tyDisplayName }}
-          }
-        </p>
-        <p class="aero-meta">
-          App Version {{ appVersion() }} · {{ versionDate | date: "mediumDate" }}
-        </p>
+        <p class="welcome-meta">Version: {{ appVersion() }} ({{ versionDate }})</p>
+        @if (userProfile(); as user) {
+          <p class="welcome-meta">Logged in as: {{ user | tyDisplayName }}</p>
+        }
       </header>
 
       @if (loading()) {
         <p class="welcome-wait">Please wait...</p>
       } @else {
-        <div class="aero-launcher">
-          @for (tile of tiles(); track tile.route) {
-            <a class="aero-tile" [routerLink]="tile.route">
-              <span
-                class="aero-tile-icon"
-                [class]="'aero-tile-icon ' + tileTone(tile.name)"
-              >
-                <mat-icon>{{ tile.icon }}</mat-icon>
-              </span>
-              <span class="aero-tile-name">{{ tile.name }}</span>
-            </a>
-          }
-        </div>
+        <section class="explorer-group">
+          <button
+            type="button"
+            class="explorer-heading"
+            [class.collapsed]="!featuresOpen()"
+            [attr.aria-expanded]="featuresOpen()"
+            (click)="toggleFeatures()"
+          >
+            <span class="explorer-chevron" aria-hidden="true"></span>
+            <span>Features ({{ categories().length }})</span>
+            <span class="explorer-rule"></span>
+          </button>
+
+          <div
+            class="explorer-panel"
+            [class.collapsed]="!featuresOpen()"
+            [inert]="!featuresOpen()"
+          >
+            <div class="explorer-panel-inner">
+              <div class="cp-grid">
+                @for (item of categories(); track item.route) {
+                  <article class="cp-item" [class.solo]="!item.links.length">
+                    <span
+                      class="cp-icon"
+                      [class]="'cp-icon ' + tileTone(item.name)"
+                    >
+                      @if (item.image) {
+                        <img [src]="item.image" alt="" />
+                      } @else {
+                        <mat-icon>{{ item.icon }}</mat-icon>
+                      }
+                    </span>
+                    <div class="cp-text">
+                      <a class="cp-title" [routerLink]="item.route">{{ item.name }}</a>
+                      @if (item.links.length) {
+                        <div class="cp-links">
+                          @for (link of item.links; track link.route; let last = $last) {
+                            <a class="cp-link" [routerLink]="link.route">{{ link.title }}</a>
+                            @if (!last) {
+                              <span class="cp-sep">|</span>
+                            }
+                          }
+                        </div>
+                      }
+                    </div>
+                  </article>
+                }
+              </div>
+            </div>
+          </div>
+        </section>
+
+        @if (showArchive()) {
+          <section class="explorer-group">
+            <button
+              type="button"
+              class="explorer-heading"
+              [class.collapsed]="!archiveOpen()"
+              [attr.aria-expanded]="archiveOpen()"
+              (click)="toggleArchive()"
+            >
+              <span class="explorer-chevron" aria-hidden="true"></span>
+              <span>Archive ({{ archiveItems().length }})</span>
+              <span class="explorer-rule"></span>
+            </button>
+
+            <div
+              class="explorer-panel"
+              [class.collapsed]="!archiveOpen()"
+              [inert]="!archiveOpen()"
+            >
+              <div class="explorer-panel-inner">
+                <div class="cp-grid">
+                  @for (item of archiveItems(); track item.route) {
+                    <article class="cp-item solo">
+                      <span class="cp-icon">
+                        @if (item.image) {
+                          <img [src]="item.image" alt="" />
+                        } @else {
+                          <mat-icon>folder</mat-icon>
+                        }
+                      </span>
+                      <div class="cp-text">
+                        <a class="cp-title" [routerLink]="item.route">{{ item.title }}</a>
+                      </div>
+                    </article>
+                  }
+                </div>
+              </div>
+            </div>
+          </section>
+        }
       }
     </main>
   </div>
