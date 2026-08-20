@@ -77,6 +77,13 @@ const FALLBACK_TILES: { name: string; icon: string; route: string }[] = [
   { name: 'Development', icon: 'code', route: '/development' },
 ];
 
+const WELCOME_VIEW_KEY = 'jaxfr-welcome-view';
+
+type WelcomeViewMode = 'list' | 'icons';
+
+const readWelcomeView = (): WelcomeViewMode =>
+  localStorage.getItem(WELCOME_VIEW_KEY) === 'icons' ? 'icons' : 'list';
+
 const LAST_ORDER = Number.MAX_SAFE_INTEGER;
 
 const hubLinks = (hub: string): FeatureHubLink[] => FEATURE_HUBS[hub]?.links ?? [];
@@ -118,6 +125,7 @@ export class Welcome implements OnInit, OnDestroy {
   });
 
   readonly showArchive = this.auth.isSuperAdmin;
+  readonly viewMode = signal<WelcomeViewMode>(readWelcomeView());
   readonly featuresOpen = signal(true);
   readonly archiveOpen = signal(true);
 
@@ -195,6 +203,11 @@ export class Welcome implements OnInit, OnDestroy {
       image: tile.image ?? CATEGORY_IMAGES[tile.name] ?? null,
       links: links.length > 1 ? links : [],
     };
+  }
+
+  setViewMode(mode: WelcomeViewMode) {
+    this.viewMode.set(mode);
+    localStorage.setItem(WELCOME_VIEW_KEY, mode);
   }
 
   toggleFeatures() {

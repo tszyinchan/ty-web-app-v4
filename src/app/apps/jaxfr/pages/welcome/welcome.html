@@ -9,10 +9,34 @@
 
     <main class="aero-body">
       <header class="welcome-head">
-        <p class="welcome-meta">Version: {{ appVersion() }} ({{ versionDate }})</p>
-        @if (userProfile(); as user) {
-          <p class="welcome-meta">Logged in as: {{ user | tyDisplayName }}</p>
-        }
+        <div class="welcome-meta-block">
+          <p class="welcome-meta">Version: {{ appVersion() }} ({{ versionDate }})</p>
+          @if (userProfile(); as user) {
+            <p class="welcome-meta">Logged in as: {{ user | tyDisplayName }}</p>
+          }
+        </div>
+        <div class="view-toggle" role="group" aria-label="Welcome view">
+          <button
+            type="button"
+            class="view-btn"
+            [class.active]="viewMode() === 'list'"
+            [attr.aria-pressed]="viewMode() === 'list'"
+            aria-label="List view"
+            (click)="setViewMode('list')"
+          >
+            <mat-icon>view_list</mat-icon>
+          </button>
+          <button
+            type="button"
+            class="view-btn"
+            [class.active]="viewMode() === 'icons'"
+            [attr.aria-pressed]="viewMode() === 'icons'"
+            aria-label="Icon view"
+            (click)="setViewMode('icons')"
+          >
+            <mat-icon>apps</mat-icon>
+          </button>
+        </div>
       </header>
 
       @if (loading()) {
@@ -37,7 +61,7 @@
             [inert]="!featuresOpen()"
           >
             <div class="explorer-panel-inner">
-              <div class="cp-grid">
+              <div class="cp-grid" [class.icon-view]="viewMode() === 'icons'">
                 @for (item of categories(); track item.route) {
                   <article class="cp-item" [class.solo]="!item.links.length">
                     <span
@@ -52,7 +76,7 @@
                     </span>
                     <div class="cp-text">
                       <a class="cp-title" [routerLink]="item.route">{{ item.name }}</a>
-                      @if (item.links.length) {
+                      @if (viewMode() === 'list' && item.links.length) {
                         <div class="cp-links">
                           @for (link of item.links; track link.route; let last = $last) {
                             <a class="cp-link" [routerLink]="link.route">{{ link.title }}</a>
@@ -90,7 +114,7 @@
               [inert]="!archiveOpen()"
             >
               <div class="explorer-panel-inner">
-                <div class="cp-grid">
+                <div class="cp-grid" [class.icon-view]="viewMode() === 'icons'">
                   @for (item of archiveItems(); track item.route) {
                     <article class="cp-item solo">
                       <span class="cp-icon">
