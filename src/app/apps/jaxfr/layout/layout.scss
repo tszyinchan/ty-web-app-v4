@@ -24,11 +24,21 @@
 
   // Chat is a full-bleed pane; fill the leftover height under the toolbar
   // instead of letting a magic `100dvh - Npx` leave a gap at the bottom.
-  &:has(app-chat-page) {
+  &:has(app-chat-page),
+  &:has(app-welcome) {
     overflow: hidden;
 
     .page-container {
       height: 100%;
     }
   }
+
+  &:has(app-welcome),
+  &:has(app-welcome) .page-container {
+    background-color: transparent;
+  }
+}
+
+.layout-shell:has(app-welcome) {
+  background-color: transparent;
 }

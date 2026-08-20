@@ -1,24 +1,23 @@
-/* login.scss */
+@use "../../styles/aero";
 
 :host {
   display: block;
+  height: 100dvh;
 }
 
 .login-container {
-  // 使用 fixed 脫離文檔流，直接鎖定視窗，解決所有 Scrollbar 問題
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100dvh;
-  
+
   display: flex;
   align-items: center;
   justify-content: center;
   background-color: var(--mat-sys-surface);
-  
-  // 雙重保險：確保這個容器內不會噴出滾動條
-  overflow: hidden; 
+
+  overflow: hidden;
 }
 
 .login-content {
@@ -32,12 +31,11 @@
 
   h1 {
     margin: 0;
-    // 拒絕粗體：改用 500 (Medium)
     font-weight: 500;
     font-size: 24px;
     letter-spacing: -0.5px;
   }
-  
+
   p {
     margin: 4px 0 0 0;
     font-size: 14px;
@@ -48,7 +46,7 @@
 .login-form {
   display: flex;
   flex-direction: column;
-  gap: 12px; // 緊湊間距
+  gap: 12px;
 
   .full-width {
     width: 100%;
@@ -58,6 +56,56 @@
 button.submit-button.mat-mdc-unelevated-button {
   margin-top: 8px;
   height: 48px;
-  // 拒絕粗體
   font-weight: 500;
+}
+
+.login-wrap {
+  max-width: 360px;
+  margin: 48px auto 0;
+}
+
+.login-wrap h1 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 400;
+  color: #0b6b0b;
+}
+
+.aero-login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 20px;
+
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 12px;
+  }
+}
+
+.aero-input {
+  width: 100%;
+}
+
+.pwd-row {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  align-items: center;
+
+  .aero-input {
+    flex: 1;
+  }
+
+  .gloss-btn {
+    min-width: 56px;
+  }
+}
+
+.gloss-btn.wide {
+  align-self: flex-start;
+  min-width: 96px;
+  height: 30px;
 }

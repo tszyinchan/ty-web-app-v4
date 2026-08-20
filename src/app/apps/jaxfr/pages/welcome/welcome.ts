@@ -1,7 +1,6 @@
 import { DatePipe } from '@angular/common';
 import { Component, OnDestroy, OnInit, computed, inject } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { RouterModule } from '@angular/router';
 
 import { APP_CONFIG } from '../../../../app.constants';
@@ -12,8 +11,21 @@ import { AccessService } from '../../../../core/services/access.service';
 import { AppRegistryService } from '../../../../core/services/app-registry.service';
 import { AuthService } from '../../../../core/services/auth.service';
 import { HeaderService } from '../../../../core/services/header.service';
+import { PresenceService } from '../../../../core/services/presence.service';
 import { AppFeature } from '../../features/development/app-feature/app-feature.model';
 import { AppFeatureService } from '../../features/development/app-feature/app-feature.service';
+
+const TILE_TONES: Record<string, string> = {
+  Work: 'blue',
+  Article: 'gold',
+  Fit: 'green',
+  Filelink: 'teal',
+  Chat: 'purple',
+  Settings: 'slate',
+  User: 'orange',
+  Development: 'red',
+  Archive: 'slate',
+};
 
 const HUB_ROUTES: Record<string, string> = {
   Work: '/work',
@@ -36,13 +48,7 @@ const LAST_ORDER = Number.MAX_SAFE_INTEGER;
 @Component({
   selector: 'app-welcome',
   standalone: true,
-  imports: [
-    DatePipe,
-    RouterModule,
-    MatIconModule,
-    MatProgressSpinnerModule,
-    DisplayNamePipe,
-  ],
+  imports: [DatePipe, RouterModule, MatIconModule, DisplayNamePipe],
   templateUrl: './welcome.html',
   styleUrl: './welcome.scss',
 })
@@ -52,6 +58,7 @@ export class Welcome implements OnInit, OnDestroy {
   private readonly features = inject(AppFeatureService);
   private readonly apps = inject(AppRegistryService);
   private readonly header = inject(HeaderService);
+  private readonly presence = inject(PresenceService);
 
   readonly appName = APP_CONFIG.appName;
   readonly versionDate = APP_CONFIG.versionDate;
@@ -158,8 +165,16 @@ export class Welcome implements OnInit, OnDestroy {
     };
   }
 
+  tileTone(name: string): string {
+    return TILE_TONES[name] ?? 'blue';
+  }
+
+  async onSignOut() {
+    await this.presence.flush();
+    await this.auth.logout();
+  }
+
   ngOnInit() {
-    this.header.setConfig({ title: this.appName });
     void this.features.fetchAllFeatures();
     void this.apps.fetchAllApps();
     void this.access.fetchMyAccess();

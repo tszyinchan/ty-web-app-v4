@@ -55,6 +55,8 @@ export class Login implements OnInit {
 
   readonly hidePassword = signal(true);
   readonly isLoading = signal(false);
+  readonly attempted = signal(false);
+  readonly isFilelink = getCurrentSubdomain() === SUBDOMAINS.FILELINK;
 
   readonly loginForm = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
@@ -94,7 +96,28 @@ export class Login implements OnInit {
     }
   }
 
+  showEmailRequired() {
+    return this.attempted() && this.loginForm.controls.email.errors?.['required'];
+  }
+
+  showEmailInvalid() {
+    return this.attempted() && this.loginForm.controls.email.errors?.['email'];
+  }
+
+  showPasswordRequired() {
+    return (
+      this.attempted() && this.loginForm.controls.password.errors?.['required']
+    );
+  }
+
+  showPasswordMin() {
+    return (
+      this.attempted() && this.loginForm.controls.password.errors?.['minlength']
+    );
+  }
+
   async onSubmit() {
+    this.attempted.set(true);
     if (this.loginForm.invalid || this.isLoading()) return;
     this.isLoading.set(true);
 

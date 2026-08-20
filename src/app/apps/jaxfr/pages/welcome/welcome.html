@@ -1,29 +1,43 @@
-<div class="welcome-container">
-  <header class="welcome-header">
-    <img src="logo.svg" alt="Jaxfr" class="brand-logo" />
-    <p class="subtitle">
-      {{ currentDate | date: "mediumDate" }}
-      @if (userProfile(); as user) {
-        · {{ user | tyDisplayName }}
-      }
-    </p>
-    <p class="meta">App Version {{ appVersion() }} · {{ versionDate | date: "mediumDate" }}</p>
-  </header>
+<div class="aero-stage">
+  <div class="aero-frame">
+    <header class="aero-chrome">
+      <span class="aero-chrome-title">{{ appName }}</span>
+      <button class="gloss-btn" type="button" (click)="onSignOut()">
+        Sign out
+      </button>
+    </header>
 
-  @if (loading()) {
-    <div class="loading-wrap">
-      <mat-spinner diameter="32"></mat-spinner>
-    </div>
-  } @else {
-    <div class="launcher-grid">
-      @for (tile of tiles(); track tile.route) {
-        <a class="launcher-tile" [routerLink]="tile.route">
-          <span class="launcher-icon">
-            <mat-icon>{{ tile.icon }}</mat-icon>
-          </span>
-          <span>{{ tile.name }}</span>
-        </a>
+    <main class="aero-body">
+      <header class="welcome-head">
+        <img src="logo.svg" alt="Jaxfr" class="brand-logo" />
+        <p class="aero-sub">
+          {{ currentDate | date: "mediumDate" }}
+          @if (userProfile(); as user) {
+            · {{ user | tyDisplayName }}
+          }
+        </p>
+        <p class="aero-meta">
+          App Version {{ appVersion() }} · {{ versionDate | date: "mediumDate" }}
+        </p>
+      </header>
+
+      @if (loading()) {
+        <p class="welcome-wait">Please wait...</p>
+      } @else {
+        <div class="aero-launcher">
+          @for (tile of tiles(); track tile.route) {
+            <a class="aero-tile" [routerLink]="tile.route">
+              <span
+                class="aero-tile-icon"
+                [class]="'aero-tile-icon ' + tileTone(tile.name)"
+              >
+                <mat-icon>{{ tile.icon }}</mat-icon>
+              </span>
+              <span class="aero-tile-name">{{ tile.name }}</span>
+            </a>
+          }
+        </div>
       }
-    </div>
-  }
+    </main>
+  </div>
 </div>

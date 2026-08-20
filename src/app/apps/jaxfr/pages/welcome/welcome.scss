@@ -1,12 +1,11 @@
-@use "../launcher-tiles";
+@use "../../../../styles/aero";
 
-.welcome-container {
-  padding: 24px 16px 40px;
-  max-width: 960px;
-  margin: 0 auto;
+:host {
+  display: block;
+  height: 100%;
 }
 
-.welcome-header {
+.welcome-head {
   margin-bottom: 28px;
 }
 
@@ -18,20 +17,8 @@
   margin-bottom: 10px;
 }
 
-.subtitle,
-.meta {
-  margin: 0;
-  font-size: 14px;
-  color: var(--mat-sys-on-surface-variant);
-}
-
-.meta {
-  margin-top: 4px;
-  font-size: 12px;
-}
-
-.loading-wrap {
-  display: flex;
-  justify-content: center;
-  padding: 32px 0;
+.welcome-wait {
+  margin: 24px 0;
+  font-size: 13px;
+  color: #555;
 }

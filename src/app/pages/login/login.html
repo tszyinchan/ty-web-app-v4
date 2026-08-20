@@ -1,62 +1,131 @@
-<div class="login-container">
-  <div class="login-content">
-    <header class="login-header">
-      <mat-icon class="brand-icon">{{ appIcon() }}</mat-icon>
-      <h1>{{ titlePrefix() }} {{ appName() }}</h1>
-      <p>{{ subtitle() }}</p>
-    </header>
+@if (isFilelink) {
+  <div class="login-container">
+    <div class="login-content">
+      <header class="login-header">
+        <mat-icon class="brand-icon">{{ appIcon() }}</mat-icon>
+        <h1>{{ titlePrefix() }} {{ appName() }}</h1>
+        <p>{{ subtitle() }}</p>
+      </header>
 
-    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
-      <mat-form-field appearance="outline" class="full-width">
-        <mat-label>{{ emailLabel() }}</mat-label>
-        <input
-          matInput
-          type="email"
-          formControlName="email"
-          placeholder="name@company.com"
-        />
-        @if (loginForm.controls.email.errors?.["required"]) {
-          <mat-error>{{ emailReqErr() }}</mat-error>
-        }
-        @if (loginForm.controls.email.errors?.["email"]) {
-          <mat-error>{{ emailInvErr() }}</mat-error>
-        }
-      </mat-form-field>
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>{{ emailLabel() }}</mat-label>
+          <input
+            matInput
+            type="email"
+            formControlName="email"
+            placeholder="name@company.com"
+          />
+          @if (loginForm.controls.email.errors?.["required"]) {
+            <mat-error>{{ emailReqErr() }}</mat-error>
+          }
+          @if (loginForm.controls.email.errors?.["email"]) {
+            <mat-error>{{ emailInvErr() }}</mat-error>
+          }
+        </mat-form-field>
 
-      <mat-form-field appearance="outline" class="full-width">
-        <mat-label>{{ pwdLabel() }}</mat-label>
-        <input
-          matInput
-          [type]="hidePassword() ? 'password' : 'text'"
-          formControlName="password"
-        />
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>{{ pwdLabel() }}</mat-label>
+          <input
+            matInput
+            [type]="hidePassword() ? 'password' : 'text'"
+            formControlName="password"
+          />
+          <button
+            type="button"
+            mat-icon-button
+            matSuffix
+            (click)="togglePasswordVisibility($event)"
+            tabindex="-1"
+          >
+            <mat-icon>{{
+              hidePassword() ? "visibility_off" : "visibility"
+            }}</mat-icon>
+          </button>
+          @if (loginForm.controls.password.errors?.["required"]) {
+            <mat-error>{{ pwdReqErr() }}</mat-error>
+          }
+          @if (loginForm.controls.password.errors?.["minlength"]) {
+            <mat-error>{{ pwdMinErr() }}</mat-error>
+          }
+        </mat-form-field>
+
         <button
-          type="button"
-          mat-icon-button
-          matSuffix
-          (click)="togglePasswordVisibility($event)"
-          tabindex="-1"
+          mat-flat-button
+          type="submit"
+          class="submit-button"
+          [disabled]="loginForm.invalid || isLoading()"
         >
-          <mat-icon>{{
-            hidePassword() ? "visibility_off" : "visibility"
-          }}</mat-icon>
+          {{ isLoading() ? signingInBtn() : signInBtn() }}
         </button>
-        @if (loginForm.controls.password.errors?.["required"]) {
-          <mat-error>{{ pwdReqErr() }}</mat-error>
-        }
-        @if (loginForm.controls.password.errors?.["minlength"]) {
-          <mat-error>{{ pwdMinErr() }}</mat-error>
-        }
-      </mat-form-field>
-
-      <button
-        mat-flat-button
-        type="submit"
-        class="submit-button"
-        [disabled]="loginForm.invalid || isLoading()"
-      >
-        {{ isLoading() ? signingInBtn() : signInBtn() }}
-      </button>
-    </form>
+      </form>
+    </div>
   </div>
-</div>
+} @else {
+  <div class="aero-stage">
+    <div class="aero-frame">
+      <main class="aero-body">
+        <div class="login-wrap">
+          <h1>{{ titlePrefix() }} {{ appName() }}</h1>
+          <p class="aero-sub">{{ subtitle() }}</p>
+
+          <form
+            [formGroup]="loginForm"
+            (ngSubmit)="onSubmit()"
+            class="aero-login-form"
+          >
+            <label>
+              {{ emailLabel() }}
+              <input
+                class="aero-input"
+                type="email"
+                formControlName="email"
+                autocomplete="username"
+              />
+              @if (showEmailRequired()) {
+                <span class="aero-field-error">{{ emailReqErr() }}</span>
+              }
+              @if (showEmailInvalid()) {
+                <span class="aero-field-error">{{ emailInvErr() }}</span>
+              }
+            </label>
+
+            <label>
+              {{ pwdLabel() }}
+              <span class="pwd-row">
+                <input
+                  class="aero-input"
+                  [type]="hidePassword() ? 'password' : 'text'"
+                  formControlName="password"
+                  autocomplete="current-password"
+                />
+                <button
+                  class="gloss-btn"
+                  type="button"
+                  (click)="togglePasswordVisibility($event)"
+                  tabindex="-1"
+                >
+                  {{ hidePassword() ? "Show" : "Hide" }}
+                </button>
+              </span>
+              @if (showPasswordRequired()) {
+                <span class="aero-field-error">{{ pwdReqErr() }}</span>
+              }
+              @if (showPasswordMin()) {
+                <span class="aero-field-error">{{ pwdMinErr() }}</span>
+              }
+            </label>
+
+            <button
+              class="gloss-btn primary wide"
+              type="submit"
+              [disabled]="loginForm.invalid || isLoading()"
+            >
+              {{ isLoading() ? signingInBtn() : signInBtn() }}
+            </button>
+          </form>
+        </div>
+      </main>
+    </div>
+  </div>
+}

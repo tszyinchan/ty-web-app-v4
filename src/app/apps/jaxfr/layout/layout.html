@@ -1,9 +1,11 @@
 <div class="layout-shell">
-  <app-toolbar
-    [showHomeButton]="showHomeButton()"
-    [showSignOut]="true"
-    (signOutClick)="onSignOut()"
-  ></app-toolbar>
+  @if (showHomeButton()) {
+    <app-toolbar
+      [showHomeButton]="true"
+      [showSignOut]="true"
+      (signOutClick)="onSignOut()"
+    ></app-toolbar>
+  }
 
   <main class="main-scroll-view">
     <div class="page-container">
