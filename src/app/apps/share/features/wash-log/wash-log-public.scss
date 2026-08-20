@@ -1,10 +1,11 @@
 @use '../../../../styles/shared-calendar';
+@use '../../../../styles/aero' as aero;
 
 :host {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: var(--mat-sys-surface);
+  @include aero.body-surface;
 }
 
 .public-washlog-page {
@@ -12,6 +13,7 @@
   flex-direction: column;
   flex: 1;
   min-height: 0;
+  font-family: "Segoe UI", Tahoma, sans-serif;
 }
 
 app-toolbar {
@@ -23,9 +25,9 @@ app-toolbar {
   min-height: 0;
   overflow: auto;
   margin: 8px;
-  border: 1px solid var(--mat-sys-outline-variant);
-  border-radius: 8px;
-  background: var(--mat-sys-surface);
+  border: 1px solid #c5d5e4;
+  border-radius: 3px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), #eaf4fc);
 }
 
 .standard-list-view {
@@ -35,12 +37,12 @@ app-toolbar {
 }
 
 .wash-title {
-  color: var(--mat-sys-primary);
+  color: #1b5fa8;
   margin-left: 8px;
 }
 
 .wash-icon {
-  color: var(--mat-sys-primary);
+  color: #1b5fa8;
   font-size: 20px;
   width: 20px;
   height: 20px;

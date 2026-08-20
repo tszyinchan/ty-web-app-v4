@@ -2,12 +2,18 @@
   <div class="hub-container">
     <div class="launcher-grid">
       @for (link of config.links; track link.route) {
-        <a class="launcher-tile" [routerLink]="link.route">
+        <article class="launcher-tile">
           <span class="launcher-icon">
-            <mat-icon>{{ link.icon }}</mat-icon>
+            @if (link.image) {
+              <img [src]="link.image" alt="" />
+            } @else {
+              <mat-icon>{{ link.icon }}</mat-icon>
+            }
           </span>
-          <span>{{ link.title }}</span>
-        </a>
+          <a class="launcher-title" [routerLink]="link.route">{{
+            link.title
+          }}</a>
+        </article>
       }
     </div>
   </div>

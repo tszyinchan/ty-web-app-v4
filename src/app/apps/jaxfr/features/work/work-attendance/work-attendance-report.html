@@ -19,16 +19,16 @@
       </div>
     } @else {
       @for (period of reportDataVM(); track period.periodLabel) {
-        <div class="period-section">
-          <h2 class="period-section-title">
-            <div class="period-title-wrapper">
+        <div class="week-group">
+          <div class="week-header">
+            <span class="week-header-label">
               <mat-icon>date_range</mat-icon>
               <span>{{ period.periodLabel }}</span>
-            </div>
-            <span class="period-total"
+            </span>
+            <span class="week-header-count"
               >{{ period.periodTotalHours | number: "1.2-2" }} hrs total</span
             >
-          </h2>
+          </div>
 
           <div class="emp-cards">
             @for (emp of period.employments; track emp.mplm_id) {

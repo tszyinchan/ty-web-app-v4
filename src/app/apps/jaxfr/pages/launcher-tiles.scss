@@ -5,48 +5,80 @@
   gap: 16px 8px;
 }
 
-a.launcher-tile {
+.launcher-tile {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  padding: 12px 8px 8px;
-  border-radius: 12px;
-  text-decoration: none;
-  text-align: center;
-  color: var(--mat-sys-on-surface);
-  background-color: transparent;
+  padding: 12px 6px 8px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  position: relative;
+  font-family: "Segoe UI", Tahoma, sans-serif;
+}
 
-  .launcher-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 56px;
-    height: 56px;
-    border-radius: 16px;
-    background-color: var(--mat-sys-primary-container);
+.launcher-tile:hover,
+.launcher-tile:focus-within {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), #d6ebfa);
+  border-color: #9cc4e4;
+}
 
-    mat-icon {
-      font-size: 28px;
-      width: 28px;
-      height: 28px;
-      color: var(--mat-sys-on-primary-container);
-    }
+.launcher-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  background: transparent;
+
+  img {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.28));
   }
 
-  span {
-    font-size: 13px;
-    font-weight: 500;
-    line-height: 1.25;
-    max-width: 100%;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    overflow: hidden;
+  mat-icon {
+    font-size: 28px;
+    width: 28px;
+    height: 28px;
+    color: #1d6fbf;
+    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
   }
 }
 
-a.launcher-tile:hover,
-a.launcher-tile:focus-visible {
-  background-color: var(--mat-sys-surface-container);
+.launcher-title {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: #1a1a1a;
+  text-align: center;
+  text-decoration: none;
+  max-width: 100%;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+.launcher-title::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+.launcher-tile:hover .launcher-title {
+  text-decoration: underline;
+}
+
+@media (max-width: 600px) {
+  .launcher-grid {
+    grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+    gap: 12px 8px;
+  }
+
+  .launcher-tile {
+    padding: 10px 4px 6px;
+  }
 }

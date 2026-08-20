@@ -1,6 +1,8 @@
+@use "../../../../../styles/aero" as aero;
+
 .toggle-header {
   padding: 16px 16px 8px;
-  background: var(--mat-sys-surface);
+  background: #eaf4fc;
   position: sticky;
   top: 0;
   z-index: 20;
@@ -14,52 +16,18 @@
   }
 }
 
-.period-section {
-  margin-bottom: 24px;
-}
-
-.period-section-title {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--mat-sys-on-surface);
-  margin: 24px 16px 12px;
-  padding-bottom: 8px;
-  border-bottom: 2px solid rgba(var(--mat-sys-primary-rgb), 0.1);
-
-  mat-icon {
-    font-size: 20px;
-    width: 20px;
-    height: 20px;
-    color: var(--mat-sys-primary);
-  }
-
-  .period-total {
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--mat-sys-primary);
-    background: rgba(var(--mat-sys-primary-rgb), 0.1);
-    padding: 4px 8px;
-    border-radius: 6px;
-  }
-}
-
 .emp-cards {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 0 16px;
+  padding: 0 16px 8px;
 
   .emp-card {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: var(--mat-sys-surface-variant);
+    @include aero.panel-surface;
     padding: 16px;
-    border-radius: 12px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 
     .emp-info {
       display: flex;
@@ -68,12 +36,12 @@
 
       .emp-name {
         font-weight: 600;
-        color: var(--mat-sys-on-surface);
+        color: #1a1a1a;
         font-size: 14px;
       }
       .emp-sub {
         font-size: 12px;
-        color: var(--mat-sys-outline);
+        color: #6a7a88;
       }
     }
 
@@ -81,10 +49,8 @@
       display: flex;
       align-items: baseline;
       gap: 4px;
-      background: var(--mat-sys-secondary);
-      color: var(--mat-sys-on-secondary);
+      @include aero.gloss-primary-surface;
       padding: 8px 16px;
-      border-radius: 8px;
 
       .hours-value {
         font-size: 20px;
@@ -98,10 +64,4 @@
       }
     }
   }
-}
-
-.period-title-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 8px;
 }

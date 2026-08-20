@@ -1,3 +1,5 @@
+@use "./aero" as aero;
+
 // Shared "feed" card layout used by article-feed and fit-thread (read-only card lists).
 .feed-container {
   max-width: 680px;
@@ -6,12 +8,12 @@
   display: flex;
   flex-direction: column;
   gap: 24px;
+  font-family: "Segoe UI", Tahoma, sans-serif;
 }
 
 mat-card.feed-card {
-  box-shadow: none;
-  border: 1px solid var(--mat-sys-outline-variant);
-  border-radius: 12px;
+  box-shadow: inset 0 1px 0 #fff, 0 1px 2px rgba(0, 40, 80, 0.08);
+  @include aero.panel-surface;
 }
 
 mat-card-header.custom-header {
@@ -30,12 +32,12 @@ mat-card-content.custom-content {
   font-weight: 700;
   line-height: 1.4;
   margin: 0 0 8px 0;
-  color: var(--mat-sys-on-surface);
+  color: #1a1a1a;
 }
 
 .article-meta {
   font-size: 14px;
-  color: var(--mat-sys-on-surface-variant);
+  color: #6a7a88;
   margin-bottom: 4px;
 }
 
@@ -44,7 +46,7 @@ mat-card-content.custom-content {
   word-break: break-word;
   line-height: 1.6;
   font-size: 15px;
-  color: var(--mat-sys-on-surface);
+  color: #1a1a1a;
 }
 
 .feed-card-header-row {
@@ -64,13 +66,13 @@ mat-card-content.custom-content {
 }
 
 button.feed-card-action {
-  color: var(--mat-sys-outline);
+  color: #6a7a88;
 }
 
 .feed-empty-placeholder {
   text-align: center;
   padding: 40px;
-  color: var(--mat-sys-outline);
+  color: #6a7a88;
 }
 
 .feed-loading {
@@ -86,8 +88,8 @@ button.feed-card-action {
   .feed-container {
     padding: 0;
     gap: 8px;
-    background-color: var(--mat-sys-surface-variant);
   }
+
   mat-card.feed-card {
     border-radius: 0;
     border-left: none;

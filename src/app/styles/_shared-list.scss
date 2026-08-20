@@ -89,27 +89,33 @@
 .week-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.78),
-    rgba(210, 232, 252, 0.5)
-  );
-  color: #5a5a5a;
-  padding: 6px 16px;
-  margin: 16px 0 8px 0;
-  font-size: 13px;
-  font-weight: 600;
-  border: 1px solid #c5d5e4;
-  border-radius: 3px;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
+  align-items: flex-end;
+  font: 600 15px "Segoe UI", Tahoma, sans-serif;
+  color: #217346;
+  margin: 24px 16px 12px;
+  padding: 0 0 8px;
+  border-bottom: 1px solid #c5d5e4;
+
+  .week-header-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+      color: #217346;
+    }
+  }
 
   .week-header-count {
-    font-size: 12px;
-    opacity: 0.7;
+    font-size: 13px;
+    font-weight: 700;
+    color: #1b5fa8;
+    background: linear-gradient(180deg, #f4f8fc, #dce8f2);
+    padding: 4px 8px;
+    border-radius: 3px;
   }
 }
 

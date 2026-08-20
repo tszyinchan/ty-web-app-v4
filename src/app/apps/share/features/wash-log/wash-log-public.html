@@ -46,7 +46,10 @@
         @for (group of groupedListVM(); track group.periodLabel) {
           <div class="week-group">
             <div class="week-header">
-              <span>Week of {{ group.periodLabel }}</span>
+              <span class="week-header-label">
+                <mat-icon>date_range</mat-icon>
+                <span>Week of {{ group.periodLabel }}</span>
+              </span>
               <span class="week-header-count">{{ group.items.length }} items</span>
             </div>
 
