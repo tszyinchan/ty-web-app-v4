@@ -2,7 +2,7 @@
 -- Paste into the Supabase SQL editor (safe to re-run).
 --
 -- The table already has one live row. This file restates the DDL, replaces
--- RLS, and registers the Jaxfr launcher feature "TyWeb".
+-- RLS, and promotes the existing App Feature row to launcher "Tyweb Control".
 --
 -- Access:
 --   authenticated  SELECT + UPDATE on the live row (any logged-in user).
@@ -11,8 +11,8 @@
 --                  read notice / popup / contact without a login.
 --   No INSERT / DELETE via the API — recreate the singleton in SQL if needed.
 --
--- The older launcher-off feature named "Tyweb" is a log-only tag for the
--- archived content manager. Leave it alone; this inserts a new "TyWeb" row.
+-- Reuses the historical App Feature row (id below, originally named
+-- "Tyweb") instead of inserting a second feature. Safe to re-run.
 
 CREATE OR REPLACE FUNCTION public.set_updated_at()
 RETURNS trigger
@@ -113,30 +113,17 @@ CREATE POLICY tyweb_v5_settings_anon_select
   USING (deleted_at IS NULL AND status = 1);
 
 -- ---------------------------------------------------------------------------
--- Jaxfr launcher feature
+-- Jaxfr launcher feature (reuse existing Tyweb row, do not insert)
 -- ---------------------------------------------------------------------------
 
-INSERT INTO public.tyapp_app_feature (
-  app_id, name, icon, route, is_admin_only, show_in_launcher, customized_order
-)
-SELECT
-  (SELECT tb_tyapp_app_id FROM public.tyapp_app WHERE name = 'Jaxfr' LIMIT 1),
-  'TyWeb',
-  'web',
-  '/tyweb',
-  false,
-  true,
-  COALESCE(
-    (
-      SELECT MAX(customized_order)
-      FROM public.tyapp_app_feature
-      WHERE deleted_at IS NULL
-    ),
-    0
-  ) + 1
-WHERE NOT EXISTS (
-  SELECT 1
-  FROM public.tyapp_app_feature
-  WHERE name = 'TyWeb'
-    AND deleted_at IS NULL
-);
+UPDATE public.tyapp_app_feature
+SET
+  name = 'Tyweb Control',
+  icon = 'web',
+  route = '/tyweb',
+  is_admin_only = false,
+  show_in_launcher = true,
+  status = 1,
+  deleted_at = NULL,
+  updated_at = NOW()
+WHERE tb_tyapp_ap_ftr_id = '03216432-fc54-4c5b-b84c-d30e599001fe';

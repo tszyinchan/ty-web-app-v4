@@ -42,7 +42,7 @@ const ACCESS_FEATURE_NAMES = new Set([
   'Article',
   'Fit',
   'Filelink',
-  'TyWeb',
+  'Tyweb Control',
   'Chat',
   'Settings',
   'User',

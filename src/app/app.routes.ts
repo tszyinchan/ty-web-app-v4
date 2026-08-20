@@ -169,7 +169,7 @@ const JAXFR_ROUTES: Routes = [
       {
         path: 'tyweb',
         canActivate: [featureAccessGuard],
-        data: { featureName: 'TyWeb' },
+        data: { featureName: 'Tyweb Control' },
         loadChildren: () =>
           import('./apps/jaxfr/features/tyweb/tyweb.routes').then(
             (m) => m.TYWEB_V5_ROUTES,
@@ -205,13 +205,6 @@ const JAXFR_ROUTES: Routes = [
                 (m) => m.FeatureHub,
               ),
             data: { hub: 'archive' },
-          },
-          {
-            path: 'tyweb',
-            loadChildren: () =>
-              import('./apps/jaxfr/archive/features/tyweb/tyweb.routes').then(
-                (m) => m.TYWEB_ROUTES,
-              ),
           },
           {
             path: 'yy525',

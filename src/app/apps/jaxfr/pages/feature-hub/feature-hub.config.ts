@@ -64,11 +64,6 @@ export const FEATURE_HUBS: Record<string, FeatureHubConfig> = {
         route: '/archive/yy525/yyems-analytics/monthly',
       },
       {
-        title: 'TyWeb Content Manager',
-        icon: 'web',
-        route: '/archive/tyweb/content',
-      },
-      {
         title: 'Wealth Transactions',
         icon: 'payments',
         route: '/archive/wealth/list',

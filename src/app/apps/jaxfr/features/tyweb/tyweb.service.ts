@@ -31,7 +31,7 @@ export class TywebService {
         return row;
       });
     } catch (error: unknown) {
-      this.notification.handleError('Fetch TyWeb Settings Failed', error);
+      this.notification.handleError('Fetch Tyweb Control Failed', error);
       return this.zone.run(() => {
         this.settings.set(null);
         this.loading.set(false);
@@ -44,7 +44,7 @@ export class TywebService {
     if (!settingsData.tb_tyweb_v5_stng_id) {
       this.notification.handleError(
         'Save Failed',
-        'TyWeb settings row is missing',
+        'Tyweb Control settings row is missing',
       );
       return false;
     }
@@ -72,7 +72,7 @@ export class TywebService {
       return this.zone.run(() => {
         this.settings.set(data as TyWebSettings);
         this.loading.set(false);
-        this.notification.showSuccess('TyWeb settings saved');
+        this.notification.showSuccess('Tyweb Control saved');
         return true;
       });
     } catch (error: unknown) {
