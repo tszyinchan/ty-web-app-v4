@@ -1,9 +1,5 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MatButtonModule } from '@angular/material/button';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { APP_CONFIG, DEFAULT_ROUTES, SUBDOMAINS } from '../../app.constants';
 import { AccessService } from '../../core/services/access.service';
@@ -15,14 +11,7 @@ import { getCurrentSubdomain } from '../../core/utils/app-env.util';
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [
-    ReactiveFormsModule,
-    MatButtonModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatIconModule,
-    MatSnackBarModule,
-  ],
+  imports: [ReactiveFormsModule, MatSnackBarModule],
   templateUrl: './login.html',
   styleUrl: './login.scss',
 })
@@ -35,7 +24,6 @@ export class Login implements OnInit {
   private readonly router = inject(Router);
 
   readonly appName = signal(APP_CONFIG.appName);
-  readonly appIcon = signal('admin_panel_settings');
   readonly titlePrefix = signal('Sign in to');
   readonly subtitle = signal('Enter your details below to continue.');
 
@@ -49,6 +37,8 @@ export class Login implements OnInit {
 
   readonly signInBtn = signal('Sign In');
   readonly signingInBtn = signal('Signing in...');
+  readonly revealPwdBtn = signal('Show');
+  readonly concealPwdBtn = signal('Hide');
   readonly defaultErrorMsg = signal(
     'Login failed. Please check your credentials.',
   );
@@ -73,7 +63,6 @@ export class Login implements OnInit {
 
     if (currentApp === SUBDOMAINS.FILELINK) {
       this.appName.set('Filelink');
-      this.appIcon.set('cloud_queue');
       this.titlePrefix.set('登入');
       this.subtitle.set('請輸入您的帳號密碼以存取檔案。');
 
@@ -87,10 +76,11 @@ export class Login implements OnInit {
 
       this.signInBtn.set('登入');
       this.signingInBtn.set('登入中...');
+      this.revealPwdBtn.set('顯示');
+      this.concealPwdBtn.set('隱藏');
       this.defaultErrorMsg.set('登入失敗，請檢查帳號密碼');
     } else {
       this.appName.set('Jaxfr');
-      this.appIcon.set('admin_panel_settings');
       this.titlePrefix.set('Sign in to');
       this.subtitle.set('Welcome back. Please sign in to your account.');
     }

@@ -1,3 +1,5 @@
+@use "../../../styles/aero" as aero;
+
 :host {
   display: block;
   height: 100dvh;
@@ -8,18 +10,18 @@
   flex-direction: column;
   height: 100%;
   overflow: hidden;
-  background-color: var(--mat-sys-surface);
+  @include aero.body-surface;
 }
 
 .main-scroll-view {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  background-color: var(--mat-sys-surface);
+  background: transparent;
 
   .page-container {
     min-height: 100%;
-    background-color: var(--mat-sys-surface);
+    background: transparent;
   }
 
   // Chat is a full-bleed pane; fill the leftover height under the toolbar
@@ -35,10 +37,10 @@
 
   &:has(app-welcome),
   &:has(app-welcome) .page-container {
-    background-color: transparent;
+    background: transparent;
   }
 }
 
 .layout-shell:has(app-welcome) {
-  background-color: transparent;
+  background: transparent;
 }

@@ -1,3 +1,17 @@
+@mixin chrome-surface {
+  background:
+    linear-gradient(
+      115deg,
+      rgba(255, 255, 255, 0.38) 0%,
+      rgba(255, 255, 255, 0.08) 36%,
+      rgba(255, 255, 255, 0.22) 48%,
+      rgba(255, 255, 255, 0.05) 100%
+    ),
+    linear-gradient(180deg, rgba(210, 232, 252, 0.45), rgba(140, 180, 220, 0.2));
+  backdrop-filter: blur(18px) saturate(1.3);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.35);
+}
+
 .aero-stage {
   display: flex;
   flex-direction: column;
@@ -24,17 +38,7 @@
   min-height: 56px;
   padding: 8px 16px;
   flex-shrink: 0;
-  background:
-    linear-gradient(
-      115deg,
-      rgba(255, 255, 255, 0.38) 0%,
-      rgba(255, 255, 255, 0.08) 36%,
-      rgba(255, 255, 255, 0.22) 48%,
-      rgba(255, 255, 255, 0.05) 100%
-    ),
-    linear-gradient(180deg, rgba(210, 232, 252, 0.45), rgba(140, 180, 220, 0.2));
-  backdrop-filter: blur(18px) saturate(1.3);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.35);
+  @include chrome-surface;
 }
 
 .aero-chrome-title {
@@ -43,12 +47,16 @@
   text-shadow: 0 0 8px #fff, 0 1px 0 #fff;
 }
 
+@mixin body-surface {
+  background: linear-gradient(180deg, #eaf4fc 0%, #ffffff 42%);
+}
+
 .aero-body {
   flex: 1;
   min-height: 0;
   overflow: auto;
   padding: 24px 28px 32px;
-  background: linear-gradient(180deg, #eaf4fc 0%, #ffffff 42%);
+  @include body-surface;
 }
 
 .aero-sub {
@@ -87,21 +95,43 @@
   font-size: 11px;
 }
 
-.gloss-btn {
-  min-width: 74px;
-  height: 26px;
-  padding: 0 12px;
+@mixin gloss-surface {
   border: 1px solid #6a8aaa;
   border-radius: 3px;
   background: linear-gradient(180deg, #f7fbff 0%, #d5e6f4 48%, #b7cfe4 100%);
   box-shadow: inset 0 1px 0 #fff, 0 1px 1px rgba(0, 0, 0, 0.12);
-  font: 13px "Segoe UI", Tahoma, sans-serif;
   color: #1a1a1a;
 }
 
-.gloss-btn:hover:not(:disabled) {
+@mixin gloss-surface-hover {
   border-color: #3c7fb1;
   background: linear-gradient(180deg, #fff 0%, #e3f2fc 50%, #c5e0f4 100%);
+}
+
+@mixin gloss-primary-surface {
+  border: 1px solid #2b5c8a;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #7ec4f5 0%, #2f7dcc 48%, #1b5fa8 100%);
+  color: #fff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    0 1px 1px rgba(0, 0, 0, 0.12);
+}
+
+@mixin gloss-primary-surface-hover {
+  background: linear-gradient(180deg, #9ad2fa 0%, #3b8fe0 48%, #226bb8 100%);
+}
+
+.gloss-btn {
+  min-width: 74px;
+  height: 26px;
+  padding: 0 12px;
+  @include gloss-surface;
+  font: 13px "Segoe UI", Tahoma, sans-serif;
+}
+
+.gloss-btn:hover:not(:disabled) {
+  @include gloss-surface-hover;
 }
 
 .gloss-btn:disabled {
@@ -109,12 +139,10 @@
 }
 
 .gloss-btn.primary {
-  border-color: #2b5c8a;
-  background: linear-gradient(180deg, #7ec4f5 0%, #2f7dcc 48%, #1b5fa8 100%);
-  color: #fff;
+  @include gloss-primary-surface;
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.2);
 }
 
 .gloss-btn.primary:hover:not(:disabled) {
-  background: linear-gradient(180deg, #9ad2fa 0%, #3b8fe0 48%, #226bb8 100%);
+  @include gloss-primary-surface-hover;
 }

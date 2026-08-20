@@ -1,4 +1,4 @@
-<mat-toolbar class="dynamic-navbar">
+<mat-toolbar class="dynamic-navbar" [class.aero]="appearance() === 'aero'">
   <div class="nav-slot">
     @if (showHomeButton()) {
       <a mat-icon-button routerLink="/welcome" title="Home">

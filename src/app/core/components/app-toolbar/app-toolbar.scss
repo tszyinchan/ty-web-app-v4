@@ -1,3 +1,5 @@
+@use "../../../styles/aero" as aero;
+
 .dynamic-navbar {
   position: relative;
   z-index: 2;
@@ -136,4 +138,77 @@
   font-size: 20px;
   width: 20px;
   height: 20px;
+}
+
+mat-toolbar.dynamic-navbar.aero {
+  @include aero.chrome-surface;
+  font-family: "Segoe UI", Tahoma, sans-serif;
+  color: #1a1a1a;
+  --mat-toolbar-container-background-color: transparent;
+  --mat-toolbar-container-text-color: #1a1a1a;
+  box-shadow: none;
+
+  a.mat-mdc-icon-button,
+  button.mat-mdc-icon-button {
+    color: #2a3a4a;
+  }
+
+  button.sign-out-btn {
+    color: #8a3030;
+  }
+
+  .page-title {
+    font: 600 16px / 1.2 "Segoe UI", Tahoma, sans-serif;
+    color: #1a1a1a;
+    text-shadow: 0 0 8px #fff, 0 1px 0 #fff;
+  }
+
+  .sync-status-indicator {
+    border-radius: 3px;
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.72),
+      rgba(210, 232, 252, 0.55)
+    );
+    border-color: #9cc4e4;
+
+    .status-text {
+      color: #3a4a5a;
+    }
+
+    .success-icon {
+      color: #1b5fa8;
+    }
+  }
+
+  button.mat-mdc-button:not(.mat-mdc-unelevated-button):not(.mat-mdc-icon-button) {
+    min-height: 32px;
+    border: 1px solid #6a8aaa;
+    border-radius: 3px;
+    background: linear-gradient(180deg, #f7fbff 0%, #d5e6f4 48%, #b7cfe4 100%);
+    box-shadow: inset 0 1px 0 #fff, 0 1px 1px rgba(0, 0, 0, 0.12);
+    color: #1a1a1a;
+  }
+
+  button.primary-action-btn.mat-mdc-unelevated-button {
+    min-height: 32px;
+    border: 1px solid #2b5c8a;
+    border-radius: 3px;
+    background: linear-gradient(180deg, #7ec4f5 0%, #2f7dcc 48%, #1b5fa8 100%);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.35),
+      0 1px 1px rgba(0, 0, 0, 0.12);
+    --mdc-filled-button-container-color: transparent;
+    --mdc-filled-button-label-text-color: #fff;
+    --mdc-filled-button-icon-color: #fff;
+    color: #fff;
+  }
+}
+
+@media (max-width: 800px) {
+  mat-toolbar.dynamic-navbar.aero {
+    .page-toolbar-wrapper .right-actions button.primary-action-btn.mat-mdc-unelevated-button {
+      border-radius: 3px;
+    }
+  }
 }

@@ -34,6 +34,8 @@ import { HeaderService, HeaderAction } from '../../services/header.service';
 export class AppToolbar {
   public headerService = inject(HeaderService);
 
+  appearance = input<'default' | 'aero'>('default');
+
   showMenuButton = input(false);
   menuButtonClick = output<void>();
 

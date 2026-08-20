@@ -4,8 +4,6 @@ import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { filter, map, startWith } from 'rxjs/operators';
 
 import { AppSettingsService } from '../../../core/services/app-settings.service';
-import { AuthService } from '../../../core/services/auth.service';
-import { PresenceService } from '../../../core/services/presence.service';
 import { PushService } from '../../../core/services/push.service';
 import { AppToolbar } from '../../../core/components/app-toolbar/app-toolbar';
 
@@ -17,8 +15,6 @@ import { AppToolbar } from '../../../core/components/app-toolbar/app-toolbar';
   styleUrl: './layout.scss',
 })
 export class Layout {
-  private readonly auth = inject(AuthService);
-  private readonly presence = inject(PresenceService);
   private readonly router = inject(Router);
 
   constructor() {
@@ -38,10 +34,5 @@ export class Layout {
   private isNotWelcome(url: string): boolean {
     const path = url.split('?')[0];
     return path !== '/' && path !== '/welcome';
-  }
-
-  async onSignOut() {
-    await this.presence.flush();
-    await this.auth.logout();
   }
 }

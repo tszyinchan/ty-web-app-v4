@@ -1,6 +1,7 @@
 @use "@angular/material" as mat;
 @use "app/styles/shared-list";
 @use "app/styles/shared-form";
+@use "app/styles/aero-controls";
 
 html {
   @include mat.theme(

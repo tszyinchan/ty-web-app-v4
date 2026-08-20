@@ -3,14 +3,5 @@
 .responsive-file-card {
   max-width: 800px;
   margin: 0 auto;
-  background: var(--mat-sys-surface);
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-
-  @media (max-width: 600px) {
-    border-radius: 0;
-    box-shadow: none;
-    max-width: 100%;
-  }
+  background: transparent;
 }

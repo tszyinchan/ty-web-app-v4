@@ -1,0 +1,44 @@
+@use "./aero" as aero;
+
+app-layout,
+app-portal-layout {
+  button.mat-mdc-unelevated-button:not(.action-btn) {
+    min-height: 32px;
+    @include aero.gloss-primary-surface;
+    font-family: "Segoe UI", Tahoma, sans-serif;
+    --mdc-filled-button-container-color: transparent;
+    --mdc-filled-button-label-text-color: #fff;
+    --mdc-filled-button-icon-color: #fff;
+    --mdc-filled-button-disabled-container-color: transparent;
+  }
+
+  button.mat-mdc-unelevated-button:not(.action-btn):hover:not(:disabled) {
+    @include aero.gloss-primary-surface-hover;
+  }
+
+  button.mat-mdc-outlined-button {
+    min-height: 32px;
+    @include aero.gloss-surface;
+    font-family: "Segoe UI", Tahoma, sans-serif;
+    --mdc-outlined-button-outline-color: transparent;
+    --mdc-outlined-button-label-text-color: #1a1a1a;
+    --mdc-outlined-button-hover-label-text-color: #1a1a1a;
+  }
+
+  button.mat-mdc-outlined-button:hover:not(:disabled) {
+    @include aero.gloss-surface-hover;
+  }
+}
+
+div.mat-mdc-menu-panel,
+div.mat-mdc-select-panel {
+  border: 1px solid #9cc4e4;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #f7fbff 0%, #eaf4fc 100%);
+  box-shadow: 0 2px 8px rgba(0, 40, 80, 0.16);
+}
+
+button.mat-mdc-menu-item:hover,
+button.mat-mdc-menu-item.mat-mdc-menu-item-highlighted {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), #d6ebfa);
+}

@@ -1,8 +1,9 @@
 .standard-list-view {
-  background-color: var(--mat-sys-surface);
+  background-color: transparent;
   display: flex;
   flex-direction: column;
   min-height: 100%;
+  font-family: "Segoe UI", Tahoma, sans-serif;
 }
 
 .list-container {
@@ -13,11 +14,12 @@
     text-decoration: none;
     color: inherit;
     padding: 12px 16px;
-    border-bottom: 1px solid var(--mat-sys-outline-variant);
-    transition: background-color 0.2s;
+    border-bottom: 1px solid #d4e0ea;
+    transition: background 0.15s ease, border-color 0.15s ease;
 
     &:hover {
-      background-color: var(--mat-sys-surface-container-lowest);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), #d6ebfa);
+      border-bottom-color: #9cc4e4;
     }
 
     .item-content {
@@ -35,18 +37,18 @@
 
   .main-text {
     font-size: 15px;
-    font-weight: 500;
-    color: var(--mat-sys-on-surface);
+    font-weight: 600;
+    color: #1a1a1a;
   }
 
   .main-text-accent {
-    color: var(--mat-sys-primary);
+    color: #0066cc;
     margin-left: 8px;
   }
 
   .sub-text {
     font-size: 11px;
-    color: var(--mat-sys-outline);
+    color: #6a7a88;
   }
 }
 
@@ -57,27 +59,28 @@
 
   .status-tag {
     font-size: 13px;
-    color: var(--mat-sys-on-surface-variant);
+    color: #3a4a5a;
 
     &.inactive {
-      color: var(--mat-sys-error);
+      color: #a31f1f;
     }
 
     &.day-off {
-      background-color: var(--mat-sys-surface-variant);
-      color: var(--mat-sys-on-surface-variant);
+      background: linear-gradient(180deg, #f4f8fc, #dce8f2);
+      color: #3a4a5a;
+      border-radius: 3px;
+      padding: 1px 8px;
     }
   }
 
   .chevron {
-    color: var(--mat-sys-outline-variant);
+    color: #8aa0b4;
     font-size: 20px;
     width: 20px;
     height: 20px;
   }
 }
 
-// Grouped-by-week list sections (schedule / attendance / fit lists)
 .week-group {
   display: flex;
   flex-direction: column;
@@ -87,17 +90,22 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: var(--mat-sys-surface-variant);
-  color: var(--mat-sys-on-surface-variant);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.78),
+    rgba(210, 232, 252, 0.5)
+  );
+  color: #5a5a5a;
   padding: 6px 16px;
   margin: 16px 0 8px 0;
   font-size: 13px;
   font-weight: 600;
-  border-radius: 6px;
+  border: 1px solid #c5d5e4;
+  border-radius: 3px;
   position: sticky;
   top: 0;
   z-index: 10;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
 
   .week-header-count {
     font-size: 12px;
@@ -115,7 +123,7 @@
   .divider {
     width: 32px;
     height: 2px;
-    background-color: var(--mat-sys-outline-variant);
+    background-color: #c5d5e4;
     border-radius: 1px;
   }
 
@@ -123,10 +131,9 @@
     font-size: 11px;
     font-weight: 500;
     letter-spacing: 1px;
-    color: var(--mat-sys-outline);
+    color: #6a7a88;
   }
 
-  // Used when the footer hosts a mat-paginator instead of the usual count text.
   &.paginated {
     padding: 0;
     display: block;
@@ -136,5 +143,5 @@
 .empty-placeholder {
   padding: 64px 24px;
   text-align: center;
-  color: var(--mat-sys-outline);
+  color: #6a7a88;
 }

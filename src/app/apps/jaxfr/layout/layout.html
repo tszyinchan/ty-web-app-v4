@@ -1,9 +1,8 @@
 <div class="layout-shell">
   @if (showHomeButton()) {
     <app-toolbar
+      appearance="aero"
       [showHomeButton]="true"
-      [showSignOut]="true"
-      (signOutClick)="onSignOut()"
     ></app-toolbar>
   }
 

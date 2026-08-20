@@ -282,7 +282,11 @@
           <textarea matInput rows="10" [(ngModel)]="attn.log"></textarea>
         </mat-form-field>
 
-        <mat-slide-toggle [(ngModel)]="attn.log_is_secret" class="mb-16">
+        <mat-slide-toggle
+          [(ngModel)]="attn.log_is_secret"
+          color="primary"
+          class="mb-16"
+        >
           <span class="secret-label">Mark Log as Secret</span>
         </mat-slide-toggle>
 
