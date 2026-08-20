@@ -11,8 +11,11 @@ export const USER_ROUTES: Routes = [
     children: [
       {
         path: '',
-        redirectTo: 'list',
-        pathMatch: 'full',
+        loadComponent: () =>
+          import('../../pages/feature-hub/feature-hub').then(
+            (m) => m.FeatureHub,
+          ),
+        data: { hub: 'user' },
       },
       {
         path: 'list',

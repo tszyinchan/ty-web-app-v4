@@ -50,6 +50,21 @@ export const FEATURE_HUBS: Record<string, FeatureHubConfig> = {
       },
     ],
   },
+  user: {
+    title: 'User',
+    links: [
+      {
+        title: 'Users',
+        icon: 'people_outline',
+        route: '/users/list',
+      },
+      {
+        title: 'Groups',
+        icon: 'groups',
+        route: '/users/groups/list',
+      },
+    ],
+  },
   archive: {
     title: 'Archive',
     links: [

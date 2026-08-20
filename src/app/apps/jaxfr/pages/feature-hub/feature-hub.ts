@@ -2,6 +2,7 @@ import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 
+import { AuthService } from '../../../../core/services/auth.service';
 import { HeaderService } from '../../../../core/services/header.service';
 import { FEATURE_HUBS, FeatureHubConfig } from './feature-hub.config';
 
@@ -16,11 +17,21 @@ export class FeatureHub implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly header = inject(HeaderService);
+  private readonly auth = inject(AuthService);
 
   hub: FeatureHubConfig | null = null;
 
   ngOnInit() {
     const hubKey = this.route.snapshot.data['hub'] as string | undefined;
+
+    if (hubKey === 'user' && !this.auth.isSuperAdmin()) {
+      const myId = this.auth.userProfile()?.user_id;
+      void this.router.navigate(myId ? ['/users/edit', myId] : ['/welcome'], {
+        replaceUrl: true,
+      });
+      return;
+    }
+
     this.hub = hubKey ? (FEATURE_HUBS[hubKey] ?? null) : null;
 
     if (!this.hub) {

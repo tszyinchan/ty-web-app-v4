@@ -46,7 +46,7 @@ export class UserGroupList implements OnInit, OnDestroy {
 
     this.headerService.setConfig({
       title: 'Groups',
-      backLink: '/users/list',
+      backLink: '/users',
       actions: [
         {
           label: 'Refresh',

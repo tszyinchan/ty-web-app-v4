@@ -65,6 +65,7 @@ const TILE_TONES: Record<string, string> = {
 const HUB_ROUTES: Record<string, string> = {
   Work: '/work',
   Development: '/development',
+  User: '/users',
 };
 
 const FALLBACK_TILES: { name: string; icon: string; route: string }[] = [
@@ -75,7 +76,7 @@ const FALLBACK_TILES: { name: string; icon: string; route: string }[] = [
   { name: 'Tyweb Control', icon: 'web', route: '/tyweb' },
   { name: 'Chat', icon: 'chat', route: '/chat' },
   { name: 'Settings', icon: 'settings', route: '/settings/notifications' },
-  { name: 'User', icon: 'people_outline', route: '/users/list' },
+  { name: 'User', icon: 'people_outline', route: '/users' },
   { name: 'Development', icon: 'code', route: '/development' },
 ];
 
@@ -93,6 +94,7 @@ const hubLinks = (hub: string): FeatureHubLink[] => FEATURE_HUBS[hub]?.links ?? 
 const CATEGORY_LINKS: Record<string, FeatureHubLink[]> = {
   Work: hubLinks('work'),
   Development: hubLinks('development'),
+  User: hubLinks('user'),
   Article: [
     { title: 'Feed', icon: 'dynamic_feed', route: '/article/feed' },
     { title: 'List', icon: 'list', route: '/article/list' },
@@ -102,11 +104,6 @@ const CATEGORY_LINKS: Record<string, FeatureHubLink[]> = {
     { title: 'Thread', icon: 'forum', route: '/fit/thread' },
   ],
 };
-
-const USER_LINKS: FeatureHubLink[] = [
-  { title: 'Users', icon: 'people_outline', route: '/users/list' },
-  { title: 'Groups', icon: 'groups', route: '/users/groups/list' },
-];
 
 @Component({
   selector: 'app-welcome',
@@ -206,11 +203,11 @@ export class Welcome implements OnInit, OnDestroy {
   }
 
   private featureHubRoute(featureName: string, fallbackRoute: string): string {
-    if (HUB_ROUTES[featureName]) return HUB_ROUTES[featureName];
     if (featureName === 'User' && !this.auth.isSuperAdmin()) {
       const myId = this.auth.userProfile()?.user_id;
       if (myId) return `/users/edit/${myId}`;
     }
+    if (HUB_ROUTES[featureName]) return HUB_ROUTES[featureName];
     return fallbackRoute;
   }
 
@@ -226,7 +223,7 @@ export class Welcome implements OnInit, OnDestroy {
   }
 
   private linksFor(name: string): FeatureHubLink[] {
-    if (name === 'User' && this.auth.isSuperAdmin()) return USER_LINKS;
+    if (name === 'User' && !this.auth.isSuperAdmin()) return [];
     return CATEGORY_LINKS[name] ?? [];
   }
 

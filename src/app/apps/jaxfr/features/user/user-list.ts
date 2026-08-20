@@ -56,6 +56,8 @@ export class UserList implements OnInit, OnDestroy {
     );
 
     this.headerService.setConfig({
+      title: 'Users',
+      backLink: '/users',
       actions: [
         {
           label: 'Refresh',
@@ -70,12 +72,6 @@ export class UserList implements OnInit, OnDestroy {
           type: 'secondary',
           disabled: isExportDisabled,
           onClick: () => this.onExport(),
-        },
-        {
-          label: 'Groups',
-          icon: 'groups',
-          type: 'secondary',
-          onClick: () => this.router.navigate(['/users/groups/list']),
         },
       ],
     });
