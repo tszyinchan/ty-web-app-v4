@@ -2,8 +2,8 @@ export const APP_CONFIG = {
   appName: 'Jaxfr',
   version: {
     major: 4,
-    minor: 71,
-    patch: 2,
+    minor: 72,
+    patch: 0,
   },
   versionDate: '2026-08-21',
 };
@@ -33,6 +33,7 @@ export const SUBDOMAINS = {
   FILELINK: 'filelink',
   JAXFR: 'jaxfr',
   SHARE: 'share',
+  TIME: 'time',
 } as const;
 
 export const DEFAULT_ROUTES = {

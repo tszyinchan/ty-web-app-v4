@@ -283,10 +283,21 @@ const SHARE_ROUTES: Routes = [
   { path: '**', redirectTo: 'not-found' },
 ];
 
+// Fully public clock for time.tszyin.com — no Layout, no login, no access check.
+const TIME_ROUTES: Routes = [
+  {
+    path: '',
+    loadComponent: () =>
+      import('./apps/time/time-clock').then((m) => m.TimeClock),
+  },
+  { path: '**', redirectTo: '' },
+];
+
 const routeMap: Record<string, Routes> = {
   [SUBDOMAINS.JAXFR]: JAXFR_ROUTES,
   [SUBDOMAINS.FILELINK]: FILELINK_ROUTES,
   [SUBDOMAINS.SHARE]: SHARE_ROUTES,
+  [SUBDOMAINS.TIME]: TIME_ROUTES,
 };
 
 export const routes: Routes = routeMap[currentApp] || JAXFR_ROUTES;

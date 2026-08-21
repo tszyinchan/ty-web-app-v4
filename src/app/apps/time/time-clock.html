@@ -1,0 +1,30 @@
+<div class="aero-stage">
+  <div class="aero-frame">
+    <header class="aero-chrome">
+      <span class="aero-chrome-title">Time</span>
+      <select
+        class="aero-input tz-select"
+        [value]="selectedZone()"
+        (change)="onZoneChange($event)"
+      >
+          <optgroup label="Pinned">
+            @for (zone of pinnedZones; track zone.id) {
+              <option [value]="zone.id">{{ zone.label }}</option>
+            }
+          </optgroup>
+          <optgroup label="All">
+            @for (zone of allZones; track zone.id) {
+              <option [value]="zone.id">{{ zone.label }}</option>
+            }
+          </optgroup>
+      </select>
+    </header>
+
+    <main class="aero-body">
+      <div class="clock">
+        <div class="clock-time">{{ clock().time }}</div>
+        <div class="clock-date">{{ clock().date }}</div>
+      </div>
+    </main>
+  </div>
+</div>

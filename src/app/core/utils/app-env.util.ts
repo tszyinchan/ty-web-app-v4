@@ -11,5 +11,9 @@ export function getCurrentSubdomain(): string {
     return SUBDOMAINS.SHARE;
   }
 
+  if (hostname.startsWith(SUBDOMAINS.TIME)) {
+    return SUBDOMAINS.TIME;
+  }
+
   return SUBDOMAINS.JAXFR;
 }
