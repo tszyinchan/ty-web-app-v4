@@ -112,11 +112,9 @@ export class ChatRoomMembers implements OnInit, OnDestroy {
 
     effect(() => {
       const roomId = this.roomId();
-      const room = this.room();
 
       this.headerService.setConfig({
         backLink: roomId ? `/chat/${roomId}` : '/chat',
-        title: room ? `Members of "${room.name}"` : 'Members',
       });
     });
   }

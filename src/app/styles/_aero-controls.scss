@@ -28,6 +28,33 @@ app-portal-layout {
   button.mat-mdc-outlined-button:hover:not(:disabled) {
     @include aero.gloss-surface-hover;
   }
+
+  button.shortcut-btn.mat-mdc-button,
+  button.shortcut-btn.mat-mdc-outlined-button {
+    min-height: 26px;
+    height: 26px;
+    padding: 0 10px;
+    @include aero.gloss-surface;
+    font: 13px "Segoe UI", Tahoma, sans-serif;
+    --mdc-text-button-label-text-color: #1a1a1a;
+    --mdc-outlined-button-outline-color: transparent;
+    --mdc-outlined-button-label-text-color: #1a1a1a;
+  }
+
+  button.shortcut-btn.mat-mdc-button:hover:not(:disabled),
+  button.shortcut-btn.mat-mdc-outlined-button:hover:not(:disabled) {
+    @include aero.gloss-surface-hover;
+  }
+
+  .mat-mdc-paginator {
+    background: transparent;
+    font-family: "Segoe UI", Tahoma, sans-serif;
+    --mat-paginator-container-background-color: transparent;
+    --mat-paginator-container-text-color: #3a4a5a;
+    --mat-paginator-enabled-icon-color: #1b5fa8;
+    --mat-paginator-disabled-icon-color: #8aa0b4;
+    border-top: 1px solid #c5d5e4;
+  }
 }
 
 div.mat-mdc-menu-panel,

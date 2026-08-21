@@ -104,11 +104,9 @@ export class ChatRoomManage
 
     effect(() => {
       const roomId = this.roomId();
-      const room = this.room();
 
       this.headerService.setConfig({
         backLink: roomId ? `/chat/${roomId}` : '/chat',
-        title: room ? `Manage "${room.name}"` : 'Manage Room',
         syncStatus: this.syncStatus,
         actions: [
           {

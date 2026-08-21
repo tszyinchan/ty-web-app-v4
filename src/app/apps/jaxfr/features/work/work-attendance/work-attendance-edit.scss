@@ -21,19 +21,10 @@
 button.shortcut-btn {
   &.mat-mdc-button,
   &.mat-mdc-outlined-button {
-    height: 32px;
-    line-height: 32px;
+    height: 26px;
+    line-height: 26px;
     font-size: 13px;
-    padding: 0 8px;
-    opacity: 0.9;
-  }
-
-  &.shortcut-btn-primary-tint {
-    background: rgba(var(--mat-sys-primary-rgb), 0.08);
-  }
-
-  &.shortcut-btn-accent-tint {
-    background: rgba(var(--mat-sys-accent-rgb), 0.1);
+    padding: 0 10px;
   }
 }
 
@@ -60,7 +51,7 @@ button.shortcut-btn {
 .k-shortcut-row {
   margin-bottom: 16px;
   padding-bottom: 16px;
-  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  border-bottom: 1px solid #c5d5e4;
 }
 
 .time-field-col {

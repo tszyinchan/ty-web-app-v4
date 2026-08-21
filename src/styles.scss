@@ -126,9 +126,22 @@ body {
   }
 
   @media (max-width: 800px) {
-    padding: 4px 8px;
+    padding: 0;
     margin-right: 4px;
     gap: 0;
+    height: 40px;
+    width: 40px;
+    min-width: 40px;
+    justify-content: center;
+    box-sizing: border-box;
+
+    .success-icon,
+    .error-icon-small,
+    mat-icon {
+      font-size: 22px;
+      width: 22px;
+      height: 22px;
+    }
   }
 }
 
