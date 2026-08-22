@@ -16,6 +16,28 @@ export function formatDate(d: Date): string {
     .split('T')[0];
 }
 
+/** Value for `<input type="datetime-local">` in the user's local timezone. */
+export function toDateTimeLocalValue(
+  iso: string | null | undefined,
+): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/** Convert a datetime-local value to an ISO timestamptz string. */
+export function fromDateTimeLocalValue(
+  value: string | null | undefined,
+): string | null {
+  const trimmed = value?.trim();
+  if (!trimmed) return null;
+  const d = new Date(trimmed);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toISOString();
+}
+
 export function extractTime(isoString: string | null | undefined): string {
   if (!isoString) return '';
   const d = new Date(isoString);

@@ -1,0 +1,53 @@
+<article class="paper">
+  <header class="paper-masthead">
+    <p class="paper-kicker">Doc Sign</p>
+    <h1 class="paper-title">{{ title() || 'Untitled document' }}</h1>
+    <div class="paper-meta">
+      @if (docDate()) {
+        <span>Date {{ docDate() }}</span>
+      }
+      @if (docDatetime()) {
+        <span>Date &amp; time {{ docDatetime() | date: 'yyyy-MM-dd HH:mm' }}</span>
+      }
+      @if (versionNo() > 0) {
+        <span>Version {{ versionNo() }}</span>
+      } @else {
+        <span>Draft</span>
+      }
+      <span>{{ lifecycleText() }}</span>
+    </div>
+  </header>
+
+  <div class="paper-body">
+    @for (block of blocks(); track $index) {
+      @if (block.kind === 'html') {
+        <div class="md-body" [innerHTML]="block.html"></div>
+      } @else {
+        <div class="drive-frame">
+          <iframe [src]="block.url" title="Google Drive preview"></iframe>
+        </div>
+      }
+    }
+  </div>
+
+  <footer class="paper-signatures">
+    <h2>Signatures</h2>
+    <div class="sig-grid">
+      @for (slot of signers(); track slot.userId) {
+        <div class="sig-slot" [class.signed]="!!slot.signedAt">
+          @if (slot.signedAt) {
+            <p class="sig-mark">{{ slot.signedName || slot.name }}</p>
+            <p class="sig-name">{{ slot.name }}</p>
+            <p class="sig-time">
+              Signed {{ slot.signedAt | date: 'yyyy-MM-dd HH:mm' }}
+            </p>
+          } @else {
+            <p class="sig-pending-line"></p>
+            <p class="sig-name">{{ slot.name }}</p>
+            <p class="sig-time">Pending</p>
+          }
+        </div>
+      }
+    </div>
+  </footer>
+</article>

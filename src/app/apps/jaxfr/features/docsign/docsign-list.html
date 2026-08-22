@@ -1,0 +1,70 @@
+<div class="standard-list-view">
+  <div class="list-search-container">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="list-search-input">
+      <mat-icon matPrefix>search</mat-icon>
+      <mat-label>Search documents by title, owner, or status...</mat-label>
+      <input matInput [(ngModel)]="searchQuery" (ngModelChange)="onSearchChange()">
+      @if (searchQuery()) {
+        <button mat-icon-button matSuffix (click)="searchQuery.set(''); onSearchChange()">
+          <mat-icon>close</mat-icon>
+        </button>
+      }
+    </mat-form-field>
+  </div>
+
+  <div class="list-container">
+    @for (item of pagedListVM(); track item.tb_tyapp_dsgn_id) {
+      <a class="item-link" [routerLink]="['../edit', item.tb_tyapp_dsgn_id]">
+        <div class="item-content">
+          <div class="item-info-group">
+            <span class="main-text">{{ item.title }}</span>
+            <span class="sub-text">
+              {{ item.ownerName }}
+              @if (item.doc_date) {
+                · {{ item.doc_date }}
+              }
+              @if (item.doc_datetime) {
+                · {{ item.doc_datetime | date: 'yyyy-MM-dd HH:mm' }}
+              }
+              @if (item.current_version_no > 0) {
+                · v{{ item.current_version_no }}
+              }
+              @if (item.lifecycle === 'pending' && item.missingLabel) {
+                · Waiting on {{ item.missingLabel }}
+              }
+            </span>
+          </div>
+          <div class="item-status-group">
+            <span
+              class="status-tag"
+              [class.inactive]="item.lifecycle === 'draft'"
+              [class.day-off]="item.lifecycle === 'locked'"
+            >
+              {{ item.lifecycleLabel }}
+            </span>
+            <mat-icon class="chevron">chevron_right</mat-icon>
+          </div>
+        </div>
+      </a>
+    } @empty {
+      @if (!docsignService.loading()) {
+        <div class="empty-placeholder">
+          No documents found matching your criteria.
+        </div>
+      }
+    }
+  </div>
+
+  <footer class="list-footer paginated">
+    <div class="divider"></div>
+    <mat-paginator
+      [length]="filteredListVM().length"
+      [pageSize]="pageSize()"
+      [pageIndex]="pageIndex()"
+      [pageSizeOptions]="[10, 25, 50, 100]"
+      (page)="onPageChange($event)"
+      aria-label="Select page of documents"
+    >
+    </mat-paginator>
+  </footer>
+</div>

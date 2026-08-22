@@ -185,6 +185,15 @@ const JAXFR_ROUTES: Routes = [
           ),
       },
       {
+        path: 'docsign',
+        canActivate: [featureAccessGuard],
+        data: { featureName: 'Doc Sign' },
+        loadChildren: () =>
+          import('./apps/jaxfr/features/docsign/docsign.routes').then(
+            (m) => m.DOCSIGN_ROUTES,
+          ),
+      },
+      {
         path: 'settings',
         canActivate: [featureAccessGuard],
         data: { featureName: 'Settings' },

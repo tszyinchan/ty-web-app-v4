@@ -1,0 +1,62 @@
+<div class="compare-page">
+  @if (doc(); as document) {
+    <header class="compare-toolbar">
+      <h1>{{ document.title }}</h1>
+      <div class="version-picks">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Older</mat-label>
+          <mat-select [ngModel]="leftNo()" (ngModelChange)="leftNo.set(+$event)">
+            @for (ver of versions(); track ver.tb_tyapp_dsgn_ver_id) {
+              <mat-option [value]="ver.version_no">v{{ ver.version_no }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Newer</mat-label>
+          <mat-select [ngModel]="rightNo()" (ngModelChange)="rightNo.set(+$event)">
+            @for (ver of versions(); track ver.tb_tyapp_dsgn_ver_id) {
+              <mat-option [value]="ver.version_no">v{{ ver.version_no }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
+      <p class="compare-meta">
+        v{{ leftNo() }} by {{ authorName(leftVersion()?.created_by) }}
+        · {{ leftVersion()?.created_at | date: 'yyyy-MM-dd HH:mm' }}
+        → v{{ rightNo() }} by {{ authorName(rightVersion()?.created_by) }}
+        · {{ rightVersion()?.created_at | date: 'yyyy-MM-dd HH:mm' }}
+      </p>
+    </header>
+
+    <div class="diff-board">
+      <section class="diff-pane">
+        <h2>v{{ leftNo() }}</h2>
+        <pre class="diff-body">
+          @for (line of diffSides().left; track trackLine($index, line)) {
+            <span
+              class="diff-line"
+              [class.is-added]="line.kind === 'added'"
+              [class.is-removed]="line.kind === 'removed'"
+              [class.is-empty]="line.kind === 'empty'"
+            >{{ line.text }}</span>
+          }
+        </pre>
+      </section>
+      <section class="diff-pane">
+        <h2>v{{ rightNo() }}</h2>
+        <pre class="diff-body">
+          @for (line of diffSides().right; track trackLine($index, line)) {
+            <span
+              class="diff-line"
+              [class.is-added]="line.kind === 'added'"
+              [class.is-removed]="line.kind === 'removed'"
+              [class.is-empty]="line.kind === 'empty'"
+            >{{ line.text }}</span>
+          }
+        </pre>
+      </section>
+    </div>
+  } @else if (!docsignService.loading()) {
+    <p class="empty-placeholder">Document not found.</p>
+  }
+</div>
