@@ -128,6 +128,14 @@
   background: linear-gradient(180deg, #9ad2fa 0%, #3b8fe0 48%, #226bb8 100%);
 }
 
+@mixin gloss-disabled-surface {
+  border: 1px solid #b4bac0;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #f4f5f6 0%, #e4e6e8 48%, #d0d3d6 100%);
+  color: #8a8f94;
+  box-shadow: inset 0 1px 0 #fff;
+}
+
 .gloss-btn {
   min-width: 74px;
   height: 26px;
@@ -140,8 +148,9 @@
   @include gloss-surface-hover;
 }
 
-.gloss-btn:disabled {
-  opacity: 0.55;
+.gloss-btn:disabled,
+.gloss-btn.primary:disabled {
+  @include gloss-disabled-surface;
 }
 
 .gloss-btn.primary {

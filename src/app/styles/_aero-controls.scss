@@ -16,6 +16,20 @@ app-portal-layout {
     @include aero.gloss-primary-surface-hover;
   }
 
+  button.mat-mdc-unelevated-button:not(.action-btn):disabled {
+    @include aero.gloss-disabled-surface;
+    --mdc-filled-button-label-text-color: #8a8f94;
+    --mdc-filled-button-icon-color: #8a8f94;
+    --mdc-filled-button-disabled-label-text-color: #8a8f94;
+    --mdc-filled-button-disabled-icon-color: #8a8f94;
+  }
+
+  button.mat-mdc-outlined-button:disabled {
+    @include aero.gloss-disabled-surface;
+    --mdc-outlined-button-label-text-color: #8a8f94;
+    --mdc-outlined-button-disabled-label-text-color: #8a8f94;
+  }
+
   button.mat-mdc-outlined-button {
     min-height: 32px;
     @include aero.gloss-surface;
@@ -44,6 +58,13 @@ app-portal-layout {
   button.shortcut-btn.mat-mdc-button:hover:not(:disabled),
   button.shortcut-btn.mat-mdc-outlined-button:hover:not(:disabled) {
     @include aero.gloss-surface-hover;
+  }
+
+  button.shortcut-btn.mat-mdc-button:disabled,
+  button.shortcut-btn.mat-mdc-outlined-button:disabled {
+    @include aero.gloss-disabled-surface;
+    --mdc-text-button-label-text-color: #8a8f94;
+    --mdc-outlined-button-label-text-color: #8a8f94;
   }
 
   .mat-mdc-paginator {

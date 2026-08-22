@@ -203,6 +203,11 @@ mat-toolbar.dynamic-navbar.aero {
     color: #1a1a1a;
   }
 
+  button.mat-mdc-button:not(.mat-mdc-unelevated-button):not(.mat-mdc-icon-button):disabled {
+    @include aero.gloss-disabled-surface;
+    color: #8a8f94;
+  }
+
   button.primary-action-btn.mat-mdc-unelevated-button {
     min-height: 32px;
     border: 1px solid #2b5c8a;
@@ -215,6 +220,19 @@ mat-toolbar.dynamic-navbar.aero {
     --mdc-filled-button-label-text-color: #fff;
     --mdc-filled-button-icon-color: #fff;
     color: #fff;
+  }
+
+  button.primary-action-btn.mat-mdc-unelevated-button:disabled {
+    @include aero.gloss-disabled-surface;
+    --mdc-filled-button-label-text-color: #8a8f94;
+    --mdc-filled-button-icon-color: #8a8f94;
+    --mdc-filled-button-disabled-label-text-color: #8a8f94;
+    --mdc-filled-button-disabled-icon-color: #8a8f94;
+    color: #8a8f94;
+  }
+
+  button.mat-mdc-icon-button:disabled {
+    color: #8a8f94;
   }
 }
 
