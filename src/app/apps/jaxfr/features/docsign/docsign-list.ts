@@ -17,12 +17,16 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 
 import { DisplayNamePipe } from '../../../../core/pipes/display-name.pipe';
+import { AuthService } from '../../../../core/services/auth.service';
 import { HeaderService } from '../../../../core/services/header.service';
 import { UserService } from '../user/user.service';
+import { DOCSIGN_LEASE_STALE_MS } from './docsign.constants';
 import { DocsignService } from './docsign.service';
 import {
   currentVersion,
+  documentNo,
   docsignLifecycle,
+  isEditLeaseStale,
   lifecycleLabel,
   unsignedSignerIds,
 } from './docsign.util';
@@ -53,6 +57,7 @@ export class DocsignList implements OnInit, OnDestroy {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private displayNamePipe = inject(DisplayNamePipe);
+  private auth = inject(AuthService);
 
   searchQuery = signal('');
   pageSize = signal(10);
@@ -72,12 +77,28 @@ export class DocsignList implements OnInit, OnDestroy {
         return user ? this.displayNamePipe.transform(user) : 'Unknown';
       });
       const owner = users.find((item) => item.user_id === doc.created_by);
+      const me = this.auth.userProfile()?.user_id;
+      const holder = doc.editing_by;
+      const occupied =
+        !doc.locked_at &&
+        !!holder &&
+        holder !== me &&
+        !isEditLeaseStale(doc.editing_heartbeat, DOCSIGN_LEASE_STALE_MS);
+      const holderUser = occupied
+        ? users.find((item) => item.user_id === holder)
+        : undefined;
       return {
         ...doc,
+        documentNo: documentNo(doc.tb_tyapp_dsgn_seq_no),
         lifecycle,
         lifecycleLabel: lifecycleLabel(lifecycle),
         ownerName: owner ? this.displayNamePipe.transform(owner) : 'Unknown',
         missingLabel: missing.join(', '),
+        inUseBy: holderUser
+          ? this.displayNamePipe.transform(holderUser)
+          : occupied
+            ? 'Unknown'
+            : '',
       };
     });
   });
@@ -89,8 +110,10 @@ export class DocsignList implements OnInit, OnDestroy {
     return list.filter(
       (item) =>
         item.title.toLowerCase().includes(q) ||
+        item.documentNo.toLowerCase().includes(q) ||
         item.ownerName.toLowerCase().includes(q) ||
-        item.lifecycleLabel.toLowerCase().includes(q),
+        item.lifecycleLabel.toLowerCase().includes(q) ||
+        item.inUseBy.toLowerCase().includes(q),
     );
   });
 
@@ -106,6 +129,14 @@ export class DocsignList implements OnInit, OnDestroy {
 
     this.headerService.setConfig({
       actions: [
+        {
+          label: 'My signature',
+          icon: 'draw',
+          type: 'secondary',
+          disabled: isLoading,
+          onClick: () =>
+            this.router.navigate(['../signature'], { relativeTo: this.route }),
+        },
         {
           label: 'Refresh',
           icon: 'refresh',

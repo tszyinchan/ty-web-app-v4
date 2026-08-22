@@ -2,12 +2,16 @@ import { RecordStatus } from '../../../../core/models/status.enum';
 
 export type DocsignLifecycle = 'draft' | 'pending' | 'locked';
 
+export enum DocsignSignatureKind {
+  Name = 'name',
+  Draw = 'draw',
+}
+
 export interface DocsignDocument {
   tb_tyapp_dsgn_id: string;
   tb_tyapp_dsgn_seq_no?: number;
   title: string;
   doc_date?: string | null;
-  doc_datetime?: string | null;
   remarks?: string | null;
   draft_content: string;
   created_by: string;
@@ -15,6 +19,8 @@ export interface DocsignDocument {
   sent_at?: string | null;
   current_version_no: number;
   locked_at?: string | null;
+  editing_by?: string | null;
+  editing_heartbeat?: string | null;
   status: RecordStatus;
   created_at?: string;
   updated_at?: string;
@@ -39,6 +45,20 @@ export interface DocsignSignature {
   user_id: string;
   signed_at: string;
   signed_name: string;
+  signed_mark?: string | null;
+  signed_svg?: string | null;
+  signature_id?: string | null;
+}
+
+export interface DocsignUserSignature {
+  tb_tyapp_usig_id: string;
+  tb_tyapp_usig_seq_no?: number;
+  user_id: string;
+  kind: DocsignSignatureKind;
+  signed_name: string;
+  signed_mark?: string | null;
+  svg_markup?: string | null;
+  created_at: string;
 }
 
 export interface DocsignDocumentDetail extends DocsignDocument {
@@ -50,7 +70,6 @@ export interface DocsignEditVm {
   tb_tyapp_dsgn_id?: string;
   title: string;
   doc_date: string;
-  doc_datetime: string;
   remarks: string;
   content: string;
   created_by: string;

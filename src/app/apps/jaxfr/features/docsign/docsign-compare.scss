@@ -76,6 +76,10 @@
 }
 
 @media (max-width: 800px) {
+  .compare-page {
+    padding: 16px 12px 32px;
+  }
+
   .diff-board {
     grid-template-columns: 1fr;
   }

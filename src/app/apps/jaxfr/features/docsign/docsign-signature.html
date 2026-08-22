@@ -1,0 +1,101 @@
+<div class="split-workspace">
+  <div class="form-scroll-area">
+    <section class="form-group">
+      <h3 class="group-header">Current signature</h3>
+      <p class="group-note">
+        Choose one way to sign. Saving creates a new signature; old documents keep the one they were signed with.
+      </p>
+
+      @if (docsignService.mySignature(); as current) {
+        <div class="sig-preview">
+          @if (currentSvg()) {
+            <div class="sig-svg" [innerHTML]="currentSvg()"></div>
+          } @else {
+            <p class="sig-mark">{{ current.signed_mark || current.signed_name }}</p>
+          }
+          <p class="sig-legal">{{ current.signed_name }}</p>
+          <p class="sig-meta">
+            {{ current.kind }} · saved {{ current.created_at | date: 'yyyy-MM-dd HH:mm' }}
+          </p>
+        </div>
+      } @else {
+        <p class="group-note">You do not have a signature yet.</p>
+      }
+    </section>
+
+    <section class="form-group">
+      <h3 class="group-header">New signature</h3>
+      <mat-button-toggle-group
+        [value]="kind()"
+        (change)="onKindChange($event)"
+        name="signatureKind"
+      >
+        <mat-button-toggle [value]="kindEnum.Name">Typed name</mat-button-toggle>
+        <mat-button-toggle [value]="kindEnum.Draw">Draw</mat-button-toggle>
+      </mat-button-toggle-group>
+
+      <mat-form-field appearance="outline" class="full-width mt-16" subscriptSizing="dynamic">
+        <mat-label>Name on documents</mat-label>
+        <input matInput [ngModel]="signedName()" (ngModelChange)="signedName.set($event)" />
+      </mat-form-field>
+
+      @if (kind() === kindEnum.Name) {
+        <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
+          <mat-label>Signature words</mat-label>
+          <input matInput [ngModel]="signedMark()" (ngModelChange)="signedMark.set($event)" />
+        </mat-form-field>
+        <p class="group-note">
+          Legal name is printed under the signature. Signature words are the script shown on the paper (for example Billy).
+        </p>
+      }
+
+      @if (kind() === kindEnum.Draw) {
+        <div class="draw-wrap">
+          <canvas
+            #sigCanvas
+            class="sig-canvas"
+            width="400"
+            height="160"
+            (pointerdown)="onPointerDown($event)"
+            (pointermove)="onPointerMove($event)"
+            (pointerup)="onPointerUp()"
+            (pointercancel)="onPointerUp()"
+          ></canvas>
+          <button mat-stroked-button type="button" (click)="clearDrawing()">Clear drawing</button>
+        </div>
+      }
+
+      <button
+        mat-flat-button
+        color="primary"
+        type="button"
+        class="mt-16"
+        [disabled]="docsignService.loading()"
+        (click)="onSave()"
+      >
+        Save as current signature
+      </button>
+    </section>
+
+    @if (history().length) {
+      <section class="form-group">
+        <h3 class="group-header">History</h3>
+        <ul class="sig-history">
+          @for (row of history(); track row.tb_tyapp_usig_id) {
+            <li>
+              @if (row.svgHtml) {
+                <div class="sig-svg" [innerHTML]="row.svgHtml"></div>
+              } @else {
+                <p class="sig-mark">{{ row.signed_mark || row.signed_name }}</p>
+              }
+              <p class="sig-legal">{{ row.signed_name }}</p>
+              <p class="sig-meta">
+                {{ row.kind }} · {{ row.created_at | date: 'yyyy-MM-dd HH:mm' }}
+              </p>
+            </li>
+          }
+        </ul>
+      </section>
+    }
+  </div>
+</div>

@@ -31,8 +31,22 @@ export class Layout {
     { initialValue: this.isNotWelcome(this.router.url) },
   );
 
+  readonly showToolbar = toSignal(
+    this.router.events.pipe(
+      filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+      map((event) => this.shouldShowToolbar(event.urlAfterRedirects)),
+      startWith(this.shouldShowToolbar(this.router.url)),
+    ),
+    { initialValue: this.shouldShowToolbar(this.router.url) },
+  );
+
   private isNotWelcome(url: string): boolean {
     const path = url.split('?')[0];
     return path !== '/' && path !== '/welcome';
+  }
+
+  private shouldShowToolbar(url: string): boolean {
+    const path = url.split('?')[0];
+    return this.isNotWelcome(path) && !path.includes('/docsign/print/');
   }
 }

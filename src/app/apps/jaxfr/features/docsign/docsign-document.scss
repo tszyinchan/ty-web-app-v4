@@ -1,30 +1,68 @@
-:host {
+.docsign-document-host {
   display: block;
 }
 
-.paper {
-  width: 210mm;
+.docsign-paper {
+  position: relative;
   max-width: 100%;
-  min-height: 297mm;
   margin: 0 auto;
-  padding: 20mm;
+  padding: 40px;
   background: #fff;
   color: #1a1a1a;
   box-shadow: 0 8px 32px rgba(32, 48, 64, 0.18);
   box-sizing: border-box;
+  overflow: visible;
+}
+
+.docsign-paper.print-mode {
+  box-shadow: none;
+  padding: 40px;
+}
+
+.paper-watermark {
+  position: absolute;
+  top: 28%;
+  left: 50%;
+  width: min(280px, 46%);
+  height: min(280px, 46%);
+  transform: translate(-50%, -30%);
+  background: url("/icons/3d/docsign.png") center / contain no-repeat;
+  opacity: 0.08;
+  pointer-events: none;
 }
 
 .paper-masthead {
-  border-bottom: 1px solid #c5d0d8;
+  position: relative;
+  border-bottom: 2px solid #1d4f7a;
   padding-bottom: 16px;
   margin-bottom: 24px;
 }
 
+.paper-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.paper-brand-icon {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
+
 .paper-kicker {
-  margin: 0 0 4px;
-  font-size: 11px;
-  letter-spacing: 0.16em;
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
+  color: #1d4f7a;
+  font-weight: 700;
+}
+
+.paper-brand-sub {
+  margin: 2px 0 0;
+  font-size: 11px;
   color: #6a7a88;
 }
 
@@ -44,65 +82,156 @@
 }
 
 .paper-body {
+  position: relative;
   font-size: 15px;
   line-height: 1.65;
 }
 
-.md-body {
+.docsign-paper .md-body {
   overflow-wrap: anywhere;
+}
 
-  :first-child {
-    margin-top: 0;
-  }
+.docsign-paper .md-body > :first-child {
+  margin-top: 0;
+}
 
-  h1,
-  h2,
-  h3,
-  h4 {
-    line-height: 1.3;
-    margin: 1.4em 0 0.5em;
-  }
+.docsign-paper .md-body h1,
+.docsign-paper .md-body h2,
+.docsign-paper .md-body h3,
+.docsign-paper .md-body h4,
+.docsign-paper .md-body h5,
+.docsign-paper .md-body h6 {
+  line-height: 1.3;
+  margin: 1.4em 0 0.5em;
+  font-weight: 650;
+}
 
-  h1 {
-    font-size: 1.4em;
-  }
+.docsign-paper .md-body h1 {
+  font-size: 1.28em;
+  padding-bottom: 0.2em;
+  border-bottom: 1px solid #e5edf3;
+}
 
-  h2 {
-    font-size: 1.2em;
-  }
+.docsign-paper .md-body h2 {
+  font-size: 1.16em;
+}
 
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 12px 0 20px;
-    font-size: 14px;
-  }
+.docsign-paper .md-body h3 {
+  font-size: 1.06em;
+}
 
-  th,
-  td {
-    border: 1px solid #c5d0d8;
-    padding: 6px 8px;
-    text-align: left;
-  }
+.docsign-paper .md-body h4,
+.docsign-paper .md-body h5,
+.docsign-paper .md-body h6 {
+  font-size: 1em;
+}
 
-  th {
-    background: #f3f6f9;
-  }
+.docsign-paper .md-body ul,
+.docsign-paper .md-body ol {
+  padding-left: 1.5em;
+  margin: 0.6em 0 1em;
+}
 
-  blockquote {
-    margin: 12px 0;
-    padding: 4px 12px;
-    border-left: 3px solid #9cc4e4;
-    color: #3a4a5a;
-  }
+.docsign-paper .md-body li {
+  margin: 0.2em 0;
+}
 
-  img {
-    max-width: 100%;
-  }
+.docsign-paper .md-body ul ul,
+.docsign-paper .md-body ol ol,
+.docsign-paper .md-body ul ol,
+.docsign-paper .md-body ol ul {
+  margin: 0.2em 0;
+}
 
-  a {
-    color: #0b63b6;
-  }
+.docsign-paper .md-body table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0 20px;
+  font-size: 14px;
+}
+
+.docsign-paper .md-body th,
+.docsign-paper .md-body td {
+  border: 1px solid #c5d0d8;
+  padding: 6px 8px;
+}
+
+.docsign-paper .md-body th {
+  background: #f3f6f9;
+}
+
+.docsign-paper .md-body th[align="center"],
+.docsign-paper .md-body td[align="center"] {
+  text-align: center;
+}
+
+.docsign-paper .md-body th[align="right"],
+.docsign-paper .md-body td[align="right"] {
+  text-align: right;
+}
+
+.docsign-paper .md-body th[align="left"],
+.docsign-paper .md-body td[align="left"] {
+  text-align: left;
+}
+
+.docsign-paper .md-body blockquote {
+  margin: 12px 0;
+  padding: 8px 14px;
+  border-left: 4px solid #2b7cb5;
+  background: #f4f8fb;
+  color: #3a4a5a;
+}
+
+.docsign-paper .md-body blockquote blockquote {
+  margin: 8px 0 4px;
+  border-left-color: #9cc4e4;
+  background: #eef4f8;
+}
+
+.docsign-paper .md-body pre {
+  margin: 12px 0 20px;
+  padding: 12px 14px;
+  overflow-x: auto;
+  background: #f3f6f9;
+  border: 1px solid #c5d0d8;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.docsign-paper .md-body code {
+  font-family: ui-monospace, Consolas, "Courier New", monospace;
+  font-size: 0.9em;
+  background: #eef3f7;
+  padding: 0.1em 0.35em;
+}
+
+.docsign-paper .md-body pre code {
+  background: none;
+  padding: 0;
+  font-size: 13px;
+}
+
+.docsign-paper .md-body hr {
+  border: 0;
+  border-top: 1px solid #c5d0d8;
+  margin: 20px 0;
+}
+
+.docsign-paper .md-body img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 12px 0;
+}
+
+.docsign-paper .md-body a {
+  color: #0b63b6;
+}
+
+.docsign-paper .md-body del,
+.docsign-paper .md-body s {
+  text-decoration: line-through;
 }
 
 .drive-frame {
@@ -111,41 +240,93 @@
   border-radius: 4px;
   overflow: hidden;
   min-height: 280px;
+}
 
-  iframe {
-    width: 100%;
-    height: 320px;
-    border: 0;
-  }
+.drive-frame iframe {
+  width: 100%;
+  height: 320px;
+  border: 0;
+}
+
+.drive-link {
+  margin: 16px 0;
+  font-size: 14px;
 }
 
 .paper-signatures {
+  position: relative;
   margin-top: 40px;
   padding-top: 16px;
-  border-top: 1px solid #c5d0d8;
+  border-top: 2px solid #1d4f7a;
+}
 
-  h2 {
-    margin: 0 0 16px;
-    font-size: 14px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: #5a6a78;
-  }
+.paper-signatures h2 {
+  margin: 0 0 16px;
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #1d4f7a;
 }
 
 .sig-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
 }
 
 .sig-slot {
+  position: relative;
+  box-sizing: border-box;
+  flex: 0 1 168px;
+  width: 168px;
+  max-width: 100%;
   min-height: 88px;
+  padding: 16px;
+  border: 1px dashed #c5d0d8;
+  overflow: visible;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.sig-slot.signed {
+  border: 1px solid #b7c9d6;
+  background: #f8fbfd;
+}
+
+.sig-seal {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  width: 44px;
+  height: 44px;
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.sig-badge {
+  margin: 0 0 8px;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #1d4f7a;
+  font-weight: 700;
+}
+
+.sig-svg {
+  margin: 0 0 4px;
+  min-height: 48px;
+}
+
+.sig-svg svg {
+  display: block;
+  width: 140px;
+  max-width: 70%;
+  height: 44px;
 }
 
 .sig-mark {
-  margin: 0 0 4px;
-  font-family: 'Segoe Script', 'Lucida Handwriting', cursive;
+  margin: 0 0 2px;
+  font-family: "Segoe Script", "Lucida Handwriting", cursive;
   font-size: 22px;
   line-height: 1.2;
 }
@@ -165,27 +346,68 @@
 
 .sig-slot.signed .sig-name {
   color: #1a1a1a;
+  font-weight: 600;
 }
 
 @media print {
-  :host {
+  .docsign-document-host,
+  .docsign-paper,
+  .docsign-paper.print-mode {
     box-shadow: none;
-  }
-
-  .paper {
     width: auto;
+    max-width: none;
     min-height: 0;
+    height: auto;
+    overflow: visible;
     margin: 0;
-    padding: 0;
-    box-shadow: none;
+    padding: 12mm;
   }
 
-  .drive-frame iframe {
-    height: 240px;
+  .paper-masthead,
+  .paper-signatures,
+  .sig-slot,
+  .drive-link,
+  .docsign-paper .md-body table,
+  .docsign-paper .md-body pre,
+  .docsign-paper .md-body blockquote,
+  .docsign-paper .md-body img {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .docsign-paper .md-body h1,
+  .docsign-paper .md-body h2,
+  .docsign-paper .md-body h3,
+  .docsign-paper .md-body h4,
+  .docsign-paper .md-body h5,
+  .docsign-paper .md-body h6 {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  .paper-watermark {
+    opacity: 0.06;
+  }
+
+  .drive-frame {
+    display: none;
   }
 }
 
-@page {
-  size: A4 portrait;
-  margin: 20mm;
+@media (max-width: 1100px) {
+  .docsign-paper {
+    padding: 24px;
+  }
+
+  .paper-title {
+    font-size: 22px;
+  }
+
+  .drive-frame {
+    min-height: 200px;
+  }
+
+  .drive-frame iframe {
+    height: 200px;
+  }
 }

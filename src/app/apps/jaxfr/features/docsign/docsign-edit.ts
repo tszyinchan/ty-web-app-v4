@@ -18,6 +18,7 @@ import {
   MatAutocompleteSelectedEvent,
 } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
+import { MatButtonToggleChange, MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
@@ -33,21 +34,20 @@ import {
   HeaderService,
 } from '../../../../core/services/header.service';
 import { NotificationService } from '../../../../core/services/notification.service';
-import {
-  fromDateTimeLocalValue,
-  toDateTimeLocalValue,
-} from '../../../../core/utils/date-time.util';
+import { formatDate } from '../../../../core/utils/date-time.util';
 import { UserService } from '../user/user.service';
 import {
   DocsignDocumentView,
   DocsignSignerSlot,
 } from './docsign-document';
+import { DOCSIGN_LEASE_HEARTBEAT_MS } from './docsign.constants';
 import { DocsignDocumentDetail, DocsignEditVm } from './docsign.model';
 import { DocsignService } from './docsign.service';
 import {
   MarkdownEditResult,
   bodyContent,
   currentVersion,
+  documentNo,
   docsignLifecycle,
   insertAtCursor,
   prefixSelectedLines,
@@ -65,6 +65,7 @@ import {
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule,
+    MatButtonToggleModule,
     MatIconModule,
     MatAutocompleteModule,
     MatChipsModule,
@@ -88,6 +89,8 @@ export class DocsignEdit implements OnInit, OnDestroy, DoCheck {
 
   readonly separatorKeysCodes = [ENTER, COMMA] as const;
   private bodyInput = viewChild<ElementRef<HTMLTextAreaElement>>('bodyInput');
+  private heartbeatTimer: ReturnType<typeof setInterval> | undefined;
+  private claimedId: string | null = null;
 
   item = signal<DocsignEditVm | null>(null);
   loaded = signal<DocsignDocumentDetail | null>(null);
@@ -98,6 +101,8 @@ export class DocsignEdit implements OnInit, OnDestroy, DoCheck {
   isDirty = signal(false);
   isSaveDisabled = signal(true);
   userSearch = signal('');
+  workspacePane = signal<'form' | 'paper'>('form');
+  printing = signal(false);
 
   syncStatus = computed<'loading' | 'up-to-date' | 'unsaved' | 'none'>(() => {
     if (this.docsignService.loading()) return 'loading';
@@ -150,7 +155,9 @@ export class DocsignEdit implements OnInit, OnDestroy, DoCheck {
         userId: id,
         name: user ? this.displayNamePipe.transform(user) : 'Unknown',
         signedName: sig?.signed_name ?? null,
+        signedMark: sig?.signed_mark ?? null,
         signedAt: sig?.signed_at ?? null,
+        signedSvg: sig?.signed_svg ?? null,
       };
     });
   });
@@ -159,18 +166,47 @@ export class DocsignEdit implements OnInit, OnDestroy, DoCheck {
     docsignLifecycle(this.item()?.sent_at, this.item()?.locked_at),
   );
 
+  paperDocumentNo = computed(() =>
+    documentNo(this.loaded()?.tb_tyapp_dsgn_seq_no),
+  );
+
   hasSignedCurrent = computed(() => {
     const me = this.authService.userProfile()?.user_id;
     if (!me) return false;
     return this.paperSigners().some((slot) => slot.userId === me && !!slot.signedAt);
   });
 
-  canSign = computed(() => {
+  isFormLocked = computed(() => this.isLocked() || this.hasSignedCurrent());
+
+  headerDirty = computed(() => {
+    const data = this.item();
+    if (!data || !this.originalDataStr()) return false;
+    const original = JSON.parse(this.originalDataStr()) as DocsignEditVm;
+    return (
+      data.title !== original.title ||
+      data.doc_date !== original.doc_date ||
+      data.remarks !== original.remarks ||
+      JSON.stringify(data.signer_user_ids) !==
+        JSON.stringify(original.signer_user_ids)
+    );
+  });
+
+  contentDirty = computed(() => {
+    const data = this.item();
+    if (!data || !this.originalDataStr()) return false;
+    const original = JSON.parse(this.originalDataStr()) as DocsignEditVm;
+    return data.content !== original.content;
+  });
+
+  canSignAndSend = computed(() => {
     const me = this.authService.userProfile()?.user_id;
     const item = this.item();
-    if (!me || !item?.sent_at || item.locked_at) return false;
+    if (!me || !item || !item.title.trim()) return false;
+    if (this.isFormLocked()) return false;
+    if (this.docsignService.loading()) return false;
+    if (!item.sent_at) return this.isOwner();
     if (!item.signer_user_ids.includes(me)) return false;
-    return !this.hasSignedCurrent();
+    return true;
   });
 
   @HostListener('window:beforeunload', ['$event'])
@@ -180,6 +216,21 @@ export class DocsignEdit implements OnInit, OnDestroy, DoCheck {
       return false;
     }
     return true;
+  }
+
+  @HostListener('window:pagehide')
+  onPageHide() {
+    void this.releaseClaim();
+  }
+
+  @HostListener('window:beforeprint')
+  onBeforePrint() {
+    this.printing.set(true);
+  }
+
+  @HostListener('window:afterprint')
+  onAfterPrint() {
+    this.printing.set(false);
   }
 
   ngDoCheck() {
@@ -194,13 +245,17 @@ export class DocsignEdit implements OnInit, OnDestroy, DoCheck {
 
     const disabled =
       this.docsignService.loading() ||
-      this.isLocked() ||
-      (!!this.currentId && !currentlyDirty) ||
-      !current.title.trim();
+      this.isFormLocked() ||
+      !current.title.trim() ||
+      (!currentlyDirty && !!this.currentId);
 
     if (this.isSaveDisabled() !== disabled) {
       this.isSaveDisabled.set(disabled);
     }
+  }
+
+  onPaneChange(event: MatButtonToggleChange) {
+    this.workspacePane.set(event.value === 'paper' ? 'paper' : 'form');
   }
 
   displayUserName(id: string): string {
@@ -215,31 +270,24 @@ export class DocsignEdit implements OnInit, OnDestroy, DoCheck {
 
     await Promise.all([
       this.docsignService.fetchAllDocuments(),
+      this.docsignService.fetchMySignatures(),
       this.userService.fetchAllUsers(),
       this.userService.fetchGroups(),
     ]);
 
     if (this.currentId) {
-      const cached = this.docsignService
-        .documents()
-        .find((doc) => doc.tb_tyapp_dsgn_id === this.currentId);
-      if (cached) this.applyLoaded(cached);
-
-      const fresh = await this.docsignService.fetchDocumentById(this.currentId);
-      this.zone.run(() => {
-        if (fresh) {
-          this.applyLoaded(fresh);
-        } else if (!cached) {
-          this.router.navigate(['/docsign/list']);
-        }
-        this.applyHeader();
-      });
+      const opened = await this.openExclusive(this.currentId);
+      if (!opened) {
+        this.router.navigate(['/docsign/list']);
+        return;
+      }
+      if (this.isFormLocked()) this.workspacePane.set('paper');
+      this.applyHeader();
     } else {
       const me = this.authService.userProfile()?.user_id || '';
       const blank: DocsignEditVm = {
         title: '',
-        doc_date: '',
-        doc_datetime: '',
+        doc_date: formatDate(new Date()),
         remarks: '',
         content: '',
         created_by: me,
@@ -259,7 +307,9 @@ export class DocsignEdit implements OnInit, OnDestroy, DoCheck {
     const userId = String(event.option.value);
     this.userSearch.set('');
     const curr = this.item();
-    if (!curr || this.isLocked() || !this.isOwner()) return;
+    if (!curr || this.isFormLocked() || !this.isOwner()) {
+      return;
+    }
     if (curr.signer_user_ids.includes(userId)) return;
     if (!this.userService.idsShareAGroup([...curr.signer_user_ids, userId])) {
       this.notification.handleError(
@@ -276,7 +326,9 @@ export class DocsignEdit implements OnInit, OnDestroy, DoCheck {
 
   removeSigner(userId: string): void {
     const curr = this.item();
-    if (!curr || this.isLocked() || !this.isOwner()) return;
+    if (!curr || this.isFormLocked() || !this.isOwner()) {
+      return;
+    }
     if (userId === curr.created_by) return;
     this.item.set({
       ...curr,
@@ -286,7 +338,7 @@ export class DocsignEdit implements OnInit, OnDestroy, DoCheck {
 
   async onSave() {
     const data = this.item();
-    if (!data || !data.title.trim()) return;
+    if (!data || !data.title.trim() || this.isFormLocked()) return;
 
     if (!this.userService.idsShareAGroup(data.signer_user_ids)) {
       this.notification.handleError(
@@ -297,12 +349,10 @@ export class DocsignEdit implements OnInit, OnDestroy, DoCheck {
     }
 
     if (!data.sent_at) {
-      const dates = this.payloadDates(data);
       const saved = await this.docsignService.saveDraft({
         id: data.tb_tyapp_dsgn_id ?? null,
         title: data.title.trim(),
-        docDate: dates.docDate,
-        docDatetime: dates.docDatetime,
+        docDate: this.optionalDate(data.doc_date),
         remarks: data.remarks,
         content: data.content,
         signerUserIds: data.signer_user_ids,
@@ -310,6 +360,7 @@ export class DocsignEdit implements OnInit, OnDestroy, DoCheck {
       if (saved) {
         this.currentId = saved.tb_tyapp_dsgn_id;
         this.applyLoaded(saved);
+        await this.claimExclusive(saved.tb_tyapp_dsgn_id);
         this.applyHeader();
         if (!this.route.snapshot.paramMap.get('id')) {
           await this.router.navigate(['/docsign/edit', saved.tb_tyapp_dsgn_id], {
@@ -320,104 +371,78 @@ export class DocsignEdit implements OnInit, OnDestroy, DoCheck {
       return;
     }
 
-    const original = JSON.parse(this.originalDataStr()) as DocsignEditVm;
-    const headerChanged =
-      data.title !== original.title ||
-      data.doc_date !== original.doc_date ||
-      data.doc_datetime !== original.doc_datetime ||
-      data.remarks !== original.remarks ||
-      JSON.stringify(data.signer_user_ids) !==
-        JSON.stringify(original.signer_user_ids);
-    const contentChanged = data.content !== original.content;
-
-    if (contentChanged) {
-      const loaded = this.loaded();
-      const version = loaded ? currentVersion(loaded) : undefined;
-      const signedCount = loaded
-        ? signaturesForVersion(loaded.signatures, version?.tb_tyapp_dsgn_ver_id)
-            .length
-        : 0;
-      if (signedCount > 0) {
-        const nextNo = (data.current_version_no || 0) + 1;
-        if (
-          !confirm(
-            `This will create version ${nextNo} and clear all current signatures.`,
-          )
-        ) {
-          return;
-        }
-      }
-    }
-
-    let saved: DocsignDocumentDetail | null = this.loaded();
-    if (headerChanged && this.isOwner() && data.tb_tyapp_dsgn_id) {
-      const dates = this.payloadDates(data);
-      saved = await this.docsignService.saveHeader({
-        id: data.tb_tyapp_dsgn_id,
-        title: data.title.trim(),
-        docDate: dates.docDate,
-        docDatetime: dates.docDatetime,
-        remarks: data.remarks,
-        signerUserIds: data.signer_user_ids,
-      });
-      if (!saved) return;
-    }
-
-    if (contentChanged && data.tb_tyapp_dsgn_id) {
-      saved = await this.docsignService.saveVersion(
-        data.tb_tyapp_dsgn_id,
-        data.content,
-      );
-      if (!saved) return;
-    }
-
+    if (!this.isOwner() || !data.tb_tyapp_dsgn_id || !this.headerDirty()) return;
+    const saved = await this.docsignService.saveHeader({
+      id: data.tb_tyapp_dsgn_id,
+      title: data.title.trim(),
+      docDate: this.optionalDate(data.doc_date),
+      remarks: data.remarks,
+      signerUserIds: data.signer_user_ids,
+    });
     if (saved) {
       this.applyLoaded(saved);
       this.applyHeader();
     }
   }
 
-  async onSend() {
+  async onSignAndSend() {
     const data = this.item();
-    if (!data || !data.title.trim()) return;
+    if (!data || !this.canSignAndSend()) return;
 
-    if (this.isDirty()) {
+    if (!this.docsignService.mySignature()) {
+      this.notification.handleError(
+        'Sign & Send Failed',
+        'Set up your signature first.',
+      );
+      await this.router.navigate(['/docsign/signature']);
+      return;
+    }
+
+    if (!this.userService.idsShareAGroup(data.signer_user_ids)) {
+      this.notification.handleError(
+        'Sign & Send Failed',
+        'Everyone on the signer list must belong to the same user group',
+      );
+      return;
+    }
+
+    if (!data.sent_at) {
+      if (this.isDirty() || !data.tb_tyapp_dsgn_id) {
+        await this.onSave();
+      }
+    } else if (this.headerDirty() && this.isOwner()) {
       await this.onSave();
     }
-    const id = this.item()?.tb_tyapp_dsgn_id;
-    if (!id || this.item()?.sent_at) return;
 
-    if (!confirm('Send this document to the signers? They will be able to see it.')) {
+    const latest = this.item();
+    if (!latest?.tb_tyapp_dsgn_id) return;
+
+    if (!latest.sent_at) {
+      if (
+        !confirm('Sign this document and send it to the other signers?')
+      ) {
+        return;
+      }
+    } else if (this.contentDirty()) {
+      const nextNo = (latest.current_version_no || 0) + 1;
+      if (
+        !confirm(
+          `This will create version ${nextNo}. Other people will need to sign the new version. You will be signed.`,
+        )
+      ) {
+        return;
+      }
+    } else if (!confirm('Sign the current version of this document?')) {
       return;
     }
 
-    const saved = await this.docsignService.sendDocument(id);
-    if (saved) {
-      this.applyLoaded(saved);
-      this.applyHeader();
-    }
-  }
-
-  async onSign() {
-    const data = this.item();
-    const me = this.authService.userProfile();
-    if (!data?.tb_tyapp_dsgn_id || !me || !this.canSign()) return;
-    if (this.isDirty()) {
-      this.notification.handleError(
-        'Sign Failed',
-        'Save your changes before signing.',
-      );
-      return;
-    }
-    if (!confirm('Sign the current version of this document?')) return;
-
-    const saved = await this.docsignService.signDocument(
-      data.tb_tyapp_dsgn_id,
-      this.displayNamePipe.transform(me),
+    const saved = await this.docsignService.signAndSend(
+      latest.tb_tyapp_dsgn_id,
+      latest.content,
     );
     if (saved) {
-      this.applyLoaded(saved);
-      this.applyHeader();
+      this.isDirty.set(false);
+      this.router.navigate(['/docsign/list']);
     }
   }
 
@@ -426,6 +451,7 @@ export class DocsignEdit implements OnInit, OnDestroy, DoCheck {
     if (!confirm('Are you sure you want to delete this document?')) return;
     const success = await this.docsignService.deleteDocument(this.currentId);
     if (success) {
+      this.claimedId = null;
       this.isDirty.set(false);
       this.router.navigateByUrl(this.returnUrl);
     }
@@ -436,8 +462,72 @@ export class DocsignEdit implements OnInit, OnDestroy, DoCheck {
     this.router.navigate(['/docsign/compare', this.currentId]);
   }
 
+  onPrint() {
+    window.print();
+  }
+
   ngOnDestroy() {
+    if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
+    void this.releaseClaim();
     this.headerService.clear();
+  }
+
+  private async openExclusive(id: string): Promise<boolean> {
+    const fresh = await this.docsignService.fetchDocumentById(id);
+    if (!fresh) return false;
+    if (fresh.locked_at) {
+      this.applyLoaded(fresh);
+      return true;
+    }
+    const claimed = await this.docsignService.claimEdit(id);
+    if (!claimed) return false;
+    this.applyLoaded(claimed);
+    this.claimedId = id;
+    this.startHeartbeat();
+    return true;
+  }
+
+  private async claimExclusive(id: string): Promise<void> {
+    if (this.loaded()?.locked_at || this.claimedId === id) return;
+    const claimed = await this.docsignService.claimEdit(id);
+    if (!claimed) return;
+    this.loaded.set(claimed);
+    this.claimedId = id;
+    this.startHeartbeat();
+  }
+
+  private startHeartbeat() {
+    if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
+    if (!this.claimedId) return;
+    this.heartbeatTimer = setInterval(() => {
+      if (!this.claimedId) return;
+      void this.docsignService.heartbeatEdit(this.claimedId).then((row) => {
+        this.zone.run(() => {
+          if (!row) return;
+          const me = this.authService.userProfile()?.user_id;
+          if (row.editing_by && me && row.editing_by !== me) {
+            this.claimedId = null;
+            this.notification.handleError(
+              'Document Closed',
+              'Another user opened this document.',
+            );
+            this.router.navigate(['/docsign/list']);
+            return;
+          }
+          this.loaded.set(row);
+        });
+      });
+    }, DOCSIGN_LEASE_HEARTBEAT_MS);
+  }
+
+  private async releaseClaim() {
+    const id = this.claimedId;
+    this.claimedId = null;
+    if (this.heartbeatTimer) {
+      clearInterval(this.heartbeatTimer);
+      this.heartbeatTimer = undefined;
+    }
+    if (id) await this.docsignService.releaseEdit(id);
   }
 
   private applyLoaded(doc: DocsignDocumentDetail) {
@@ -446,7 +536,6 @@ export class DocsignEdit implements OnInit, OnDestroy, DoCheck {
       tb_tyapp_dsgn_id: doc.tb_tyapp_dsgn_id,
       title: doc.title,
       doc_date: doc.doc_date ?? '',
-      doc_datetime: toDateTimeLocalValue(doc.doc_datetime),
       remarks: doc.remarks ?? '',
       content: bodyContent(doc),
       created_by: doc.created_by,
@@ -467,12 +556,21 @@ export class DocsignEdit implements OnInit, OnDestroy, DoCheck {
     const isOwner = this.isOwner();
     const actions: HeaderAction[] = [];
 
-    if (sent && this.currentId) {
+    const versionCount = this.loaded()?.versions.length ?? 0;
+    if (sent && this.currentId && versionCount > 1) {
       actions.push({
         label: 'Compare',
         icon: 'difference',
         type: 'secondary',
         onClick: () => this.onCompare(),
+      });
+    }
+    if (locked && this.currentId) {
+      actions.push({
+        label: 'Print',
+        icon: 'print',
+        type: 'secondary',
+        onClick: () => this.onPrint(),
       });
     }
     if (isOwner && this.currentId) {
@@ -483,37 +581,24 @@ export class DocsignEdit implements OnInit, OnDestroy, DoCheck {
         onClick: () => this.onDelete(),
       });
     }
-    if (!locked) {
+    if (!this.isFormLocked()) {
+      if (!sent) {
+        actions.push({
+          label: 'Save draft',
+          icon: 'check',
+          type: 'secondary',
+          disabled: this.isSaveDisabled,
+          onClick: () => this.onSave(),
+        });
+      }
       actions.push({
-        label: sent ? 'Save' : 'Save draft',
-        icon: 'check',
-        type: sent ? 'secondary' : 'primary',
-        disabled: this.isSaveDisabled,
-        onClick: () => this.onSave(),
-      });
-    }
-    if (!sent) {
-      actions.push({
-        label: 'Send to signers',
-        icon: 'send',
-        type: 'primary',
-        disabled: computed(
-          () =>
-            this.docsignService.loading() ||
-            !this.item()?.title.trim() ||
-            this.isSent(),
-        ),
-        onClick: () => this.onSend(),
-      });
-    } else if (!locked) {
-      actions.push({
-        label: 'Sign',
+        label: 'Sign & send',
         icon: 'draw',
         type: 'primary',
         disabled: computed(
-          () => this.docsignService.loading() || this.isDirty() || !this.canSign(),
+          () => this.docsignService.loading() || !this.canSignAndSend(),
         ),
-        onClick: () => this.onSign(),
+        onClick: () => this.onSignAndSend(),
       });
     }
 
@@ -600,7 +685,7 @@ export class DocsignEdit implements OnInit, OnDestroy, DoCheck {
   ) {
     const curr = this.item();
     const el = this.bodyInput()?.nativeElement;
-    if (!curr || !el || this.isLocked()) return;
+    if (!curr || !el || this.isFormLocked()) return;
     const result = transform(
       curr.content,
       el.selectionStart ?? curr.content.length,
@@ -613,14 +698,8 @@ export class DocsignEdit implements OnInit, OnDestroy, DoCheck {
     });
   }
 
-  private payloadDates(data: DocsignEditVm): {
-    docDate: string | null;
-    docDatetime: string | null;
-  } {
-    const date = (data.doc_date ?? '').trim();
-    return {
-      docDate: date ? date : null,
-      docDatetime: fromDateTimeLocalValue(data.doc_datetime),
-    };
+  private optionalDate(value: string): string | null {
+    const date = (value ?? '').trim();
+    return date ? date : null;
   }
 }

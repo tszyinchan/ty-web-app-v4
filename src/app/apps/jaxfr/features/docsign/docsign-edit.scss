@@ -1,15 +1,40 @@
 .split-workspace.docsign-workspace {
   display: grid;
-  grid-template-columns: minmax(280px, 1fr) minmax(360px, 1.15fr);
+  grid-template-columns: minmax(260px, 1fr) minmax(320px, 1.15fr);
   gap: 16px;
   align-items: start;
   max-width: 1480px;
+  padding: 16px 20px 32px;
+}
+
+.workspace-switch {
+  display: none;
+}
+
+.toggle-header .full-width-toggle {
+  width: 100%;
+}
+
+.toggle-header .full-width-toggle mat-button-toggle {
+  flex: 1;
+}
+
+.frozen-banner {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border: 1px solid #c5d5e4;
+  background: #f4f7fa;
+  color: #3a4a5a;
+  font-size: 13px;
+}
+
+.form-scroll-area,
+.paper-pane {
+  min-width: 0;
 }
 
 .paper-pane {
-  padding: 16px 16px 32px 0;
-  overflow: auto;
-  max-height: 100%;
+  padding: 8px 8px 32px 0;
 }
 
 .group-note {
@@ -76,26 +101,58 @@
   color: #6a7a88;
 }
 
-@media (max-width: 960px) {
-  .docsign-workspace {
+@media (max-width: 1100px) {
+  .split-workspace.docsign-workspace {
     grid-template-columns: 1fr;
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .workspace-switch {
+    display: block;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    margin: -12px -12px 0;
+    padding: 12px 12px 8px;
+    background: #eaf4fc;
+  }
+
+  .split-workspace.docsign-workspace:not(.show-paper) .paper-pane {
+    display: none;
+  }
+
+  .split-workspace.docsign-workspace.show-paper .form-scroll-area {
+    display: none;
   }
 
   .paper-pane {
-    padding: 0 16px 32px;
+    padding: 0 0 24px;
+  }
+
+  .md-canvas {
+    min-height: 240px;
   }
 }
 
 @media print {
-  .form-scroll-area {
+  .workspace-switch,
+  .form-scroll-area,
+  .split-workspace.docsign-workspace.show-paper .form-scroll-area {
     display: none;
   }
 
-  .docsign-workspace {
+  .split-workspace.docsign-workspace,
+  .split-workspace.docsign-workspace.show-paper {
     display: block;
+    padding: 0;
+    max-width: none;
   }
 
-  .paper-pane {
+  .paper-pane,
+  .split-workspace.docsign-workspace:not(.show-paper) .paper-pane,
+  .split-workspace.docsign-workspace.show-paper .paper-pane {
+    display: block;
     padding: 0;
     overflow: visible;
     max-height: none;

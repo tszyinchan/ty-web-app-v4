@@ -19,18 +19,21 @@
           <div class="item-info-group">
             <span class="main-text">{{ item.title }}</span>
             <span class="sub-text">
+              @if (item.documentNo) {
+                {{ item.documentNo }} ·
+              }
               {{ item.ownerName }}
               @if (item.doc_date) {
                 · {{ item.doc_date }}
-              }
-              @if (item.doc_datetime) {
-                · {{ item.doc_datetime | date: 'yyyy-MM-dd HH:mm' }}
               }
               @if (item.current_version_no > 0) {
                 · v{{ item.current_version_no }}
               }
               @if (item.lifecycle === 'pending' && item.missingLabel) {
                 · Waiting on {{ item.missingLabel }}
+              }
+              @if (item.inUseBy) {
+                · In use by {{ item.inUseBy }}
               }
             </span>
           </div>

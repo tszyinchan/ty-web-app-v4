@@ -5,6 +5,8 @@ import {
   DocsignDocument,
   DocsignDocumentDetail,
   DocsignSignature,
+  DocsignSignatureKind,
+  DocsignUserSignature,
   DocsignVersion,
 } from './docsign.model';
 
@@ -27,6 +29,8 @@ export class DocsignService {
 
   documents = signal<DocsignDocumentDetail[]>([]);
   loading = signal(false);
+  mySignature = signal<DocsignUserSignature | null>(null);
+  mySignatures = signal<DocsignUserSignature[]>([]);
 
   async fetchAllDocuments(force = false) {
     if (this.documents().length > 0 && !force) return;
@@ -37,7 +41,8 @@ export class DocsignService {
         .from('tyapp_docsign')
         .select(DETAIL_SELECT)
         .is('deleted_at', null)
-        .order('updated_at', { ascending: false });
+        .order('doc_date', { ascending: false, nullsFirst: false })
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
 
@@ -78,11 +83,28 @@ export class DocsignService {
     }
   }
 
+  async fetchMySignatures(force = false) {
+    if (this.mySignatures().length > 0 && !force) return;
+    try {
+      const { data, error } = await this.supabase
+        .from('tyapp_user_signature')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      this.zone.run(() => {
+        const rows = (data ?? []) as DocsignUserSignature[];
+        this.mySignatures.set(rows);
+        this.mySignature.set(rows[0] ?? null);
+      });
+    } catch (error: unknown) {
+      this.notification.handleError('Fetch Signature Failed', error);
+    }
+  }
+
   async saveDraft(payload: {
     id: string | null;
     title: string;
     docDate: string | null;
-    docDatetime: string | null;
     remarks: string;
     content: string;
     signerUserIds: string[];
@@ -93,7 +115,6 @@ export class DocsignService {
         p_id: payload.id,
         p_title: payload.title,
         p_doc_date: payload.docDate,
-        p_doc_datetime: payload.docDatetime,
         p_remarks: payload.remarks,
         p_draft_content: payload.content,
         p_signer_user_ids: payload.signerUserIds,
@@ -117,34 +138,10 @@ export class DocsignService {
     }
   }
 
-  async sendDocument(id: string): Promise<DocsignDocumentDetail | null> {
-    this.loading.set(true);
-    try {
-      const { data, error } = await this.supabase.rpc('tyapp_docsign_send', {
-        p_id: id,
-      });
-      if (error) throw error;
-
-      const saved = await this.reloadAfterMutation(data as DocsignDocument);
-      this.zone.run(() => {
-        this.loading.set(false);
-        this.notification.showSuccess('Document sent to signers');
-      });
-      return saved;
-    } catch (error: unknown) {
-      this.notification.handleError('Send Failed', error);
-      return this.zone.run(() => {
-        this.loading.set(false);
-        return null;
-      });
-    }
-  }
-
   async saveHeader(payload: {
     id: string;
     title: string;
     docDate: string | null;
-    docDatetime: string | null;
     remarks: string;
     signerUserIds: string[];
   }): Promise<DocsignDocumentDetail | null> {
@@ -156,7 +153,6 @@ export class DocsignService {
           p_id: payload.id,
           p_title: payload.title,
           p_doc_date: payload.docDate,
-          p_doc_datetime: payload.docDatetime,
           p_remarks: payload.remarks,
           p_signer_user_ids: payload.signerUserIds,
         },
@@ -178,14 +174,14 @@ export class DocsignService {
     }
   }
 
-  async saveVersion(
+  async signAndSend(
     id: string,
     content: string,
   ): Promise<DocsignDocumentDetail | null> {
     this.loading.set(true);
     try {
       const { data, error } = await this.supabase.rpc(
-        'tyapp_docsign_save_version',
+        'tyapp_docsign_sign_and_send',
         {
           p_id: id,
           p_content: content,
@@ -196,11 +192,17 @@ export class DocsignService {
       const saved = await this.reloadAfterMutation(data as DocsignDocument);
       this.zone.run(() => {
         this.loading.set(false);
-        this.notification.showSuccess('New version saved');
+        this.notification.showSuccess(
+          saved?.locked_at
+            ? 'Signed. Document is now locked.'
+            : saved?.current_version_no === 1 && saved.sent_at
+              ? 'Signed and sent'
+              : 'Signed',
+        );
       });
       return saved;
     } catch (error: unknown) {
-      this.notification.handleError('Save Version Failed', error);
+      this.notification.handleError('Sign & Send Failed', error);
       return this.zone.run(() => {
         this.loading.set(false);
         return null;
@@ -208,34 +210,76 @@ export class DocsignService {
     }
   }
 
-  async signDocument(
-    id: string,
-    signedName: string,
-  ): Promise<DocsignDocumentDetail | null> {
+  async saveUserSignature(payload: {
+    kind: DocsignSignatureKind;
+    signedName: string;
+    signedMark: string | null;
+    svgMarkup: string | null;
+  }): Promise<DocsignUserSignature | null> {
     this.loading.set(true);
     try {
-      const { data, error } = await this.supabase.rpc('tyapp_docsign_sign', {
-        p_id: id,
-        p_signed_name: signedName,
-      });
+      const { data, error } = await this.supabase.rpc(
+        'tyapp_docsign_save_user_signature',
+        {
+          p_kind: payload.kind,
+          p_signed_name: payload.signedName,
+          p_signed_mark: payload.signedMark,
+          p_svg_markup: payload.svgMarkup,
+        },
+      );
       if (error) throw error;
-
-      const saved = await this.reloadAfterMutation(data as DocsignDocument);
+      const saved = data as DocsignUserSignature;
       this.zone.run(() => {
+        this.mySignatures.update((list) => [saved, ...list]);
+        this.mySignature.set(saved);
         this.loading.set(false);
-        this.notification.showSuccess(
-          saved?.locked_at
-            ? 'Signed. Document is now locked.'
-            : 'Signed',
-        );
+        this.notification.showSuccess('Signature saved');
       });
       return saved;
     } catch (error: unknown) {
-      this.notification.handleError('Sign Failed', error);
+      this.notification.handleError('Save Signature Failed', error);
       return this.zone.run(() => {
         this.loading.set(false);
         return null;
       });
+    }
+  }
+
+  async claimEdit(id: string): Promise<DocsignDocumentDetail | null> {
+    try {
+      const { data, error } = await this.supabase.rpc(
+        'tyapp_docsign_claim_edit',
+        { p_id: id },
+      );
+      if (error) throw error;
+      return this.zone.run(() => {
+        const mapped = this.mergeLease(data as DocsignDocument);
+        return mapped;
+      });
+    } catch (error: unknown) {
+      this.notification.handleError('Open Document Failed', error);
+      return null;
+    }
+  }
+
+  async heartbeatEdit(id: string): Promise<DocsignDocumentDetail | null> {
+    try {
+      const { data, error } = await this.supabase.rpc(
+        'tyapp_docsign_heartbeat_edit',
+        { p_id: id },
+      );
+      if (error) throw error;
+      return this.zone.run(() => this.mergeLease(data as DocsignDocument));
+    } catch {
+      return null;
+    }
+  }
+
+  async releaseEdit(id: string): Promise<void> {
+    try {
+      await this.supabase.rpc('tyapp_docsign_release_edit', { p_id: id });
+    } catch {
+      return;
     }
   }
 
@@ -281,6 +325,25 @@ export class DocsignService {
     return mapped;
   }
 
+  private mergeLease(row: DocsignDocument): DocsignDocumentDetail {
+    const existing = this.documents().find(
+      (item) => item.tb_tyapp_dsgn_id === row.tb_tyapp_dsgn_id,
+    );
+    const mapped: DocsignDocumentDetail = existing
+      ? {
+          ...existing,
+          editing_by: row.editing_by,
+          editing_heartbeat: row.editing_heartbeat,
+        }
+      : {
+          ...row,
+          versions: [],
+          signatures: [],
+        };
+    this.upsertLocal(mapped);
+    return mapped;
+  }
+
   private upsertLocal(doc: DocsignDocumentDetail) {
     this.documents.update((list) => {
       const index = list.findIndex(
@@ -303,7 +366,6 @@ export class DocsignService {
       tb_tyapp_dsgn_seq_no: row.tb_tyapp_dsgn_seq_no,
       title: row.title,
       doc_date: row.doc_date,
-      doc_datetime: row.doc_datetime,
       remarks: row.remarks,
       draft_content: row.draft_content,
       created_by: row.created_by,
@@ -311,6 +373,8 @@ export class DocsignService {
       sent_at: row.sent_at,
       current_version_no: row.current_version_no,
       locked_at: row.locked_at,
+      editing_by: row.editing_by,
+      editing_heartbeat: row.editing_heartbeat,
       status: row.status,
       created_at: row.created_at,
       updated_at: row.updated_at,

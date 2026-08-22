@@ -1,0 +1,19 @@
+<div class="print-page">
+  <div class="print-actions">
+    <a routerLink="/docsign/list">Back to list</a>
+    <button type="button" class="gloss-btn primary" (click)="onPrint()">Print</button>
+  </div>
+
+  @if (loaded(); as doc) {
+    <app-docsign-document
+      [title]="doc.title"
+      [docDate]="doc.doc_date || null"
+      [documentNo]="documentNoLabel()"
+      [versionNo]="doc.current_version_no"
+      [lifecycle]="lifecycle()"
+      [content]="content()"
+      [signers]="paperSigners()"
+      [printMode]="true"
+    />
+  }
+</div>

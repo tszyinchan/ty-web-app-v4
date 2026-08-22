@@ -44,3 +44,22 @@
 .layout-shell:has(app-welcome) {
   background: transparent;
 }
+
+@media print {
+  :host {
+    height: auto;
+  }
+
+  app-toolbar {
+    display: none;
+  }
+
+  .layout-shell,
+  .main-scroll-view,
+  .main-scroll-view .page-container {
+    height: auto;
+    max-height: none;
+    overflow: visible;
+    background: #fff;
+  }
+}

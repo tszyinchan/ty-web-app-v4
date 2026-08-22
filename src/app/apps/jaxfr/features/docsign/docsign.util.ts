@@ -21,6 +21,7 @@ const PURIFY_CONFIG: Config = {
     'i',
     'u',
     's',
+    'del',
     'h1',
     'h2',
     'h3',
@@ -43,7 +44,7 @@ const PURIFY_CONFIG: Config = {
     'th',
     'td',
   ],
-  ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'target', 'rel'],
+  ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'target', 'rel', 'align'],
   ALLOWED_URI_REGEXP: /^(?:https?:)/i,
   KEEP_CONTENT: true,
 };
@@ -58,8 +59,16 @@ export function sanitizeDocsignHtml(html: string | null | undefined): string {
   return String(DOMPurify.sanitize(html, PURIFY_CONFIG));
 }
 
+const STANDALONE_IMAGE_RE =
+  /^(https?:\/\/[^\s)]+\.(?:png|jpe?g|gif|webp|svg)(?:\?[^\s)]*)?)\s*$/gim;
+
+function promoteStandaloneImageUrls(markdown: string): string {
+  return markdown.replace(STANDALONE_IMAGE_RE, '![]($1)');
+}
+
 export function renderMarkdown(markdown: string | null | undefined): string {
-  const raw = marked.parse(markdown ?? '', { async: false });
+  const prepared = promoteStandaloneImageUrls(markdown ?? '');
+  const raw = marked.parse(prepared, { async: false });
   return sanitizeDocsignHtml(typeof raw === 'string' ? raw : '');
 }
 
@@ -262,4 +271,49 @@ export function insertAtCursor(
   const next = source.slice(0, from) + snippet + source.slice(to);
   const cursor = from + snippet.length;
   return { next, cursorStart: cursor, cursorEnd: cursor };
+}
+
+const SIGNATURE_SVG_PURIFY: Config = {
+  ALLOWED_TAGS: ['svg', 'path', 'polyline', 'g', 'line'],
+  ALLOWED_ATTR: [
+    'xmlns',
+    'viewBox',
+    'width',
+    'height',
+    'd',
+    'fill',
+    'stroke',
+    'stroke-width',
+    'stroke-linecap',
+    'stroke-linejoin',
+    'points',
+    'x1',
+    'y1',
+    'x2',
+    'y2',
+  ],
+  KEEP_CONTENT: true,
+};
+
+export function sanitizeSignatureSvg(
+  svg: string | null | undefined,
+): string {
+  if (!svg) return '';
+  return String(DOMPurify.sanitize(svg, SIGNATURE_SVG_PURIFY));
+}
+
+export function isEditLeaseStale(
+  heartbeat: string | null | undefined,
+  staleMs: number,
+  nowMs = Date.now(),
+): boolean {
+  if (!heartbeat) return true;
+  const at = new Date(heartbeat).getTime();
+  if (Number.isNaN(at)) return true;
+  return nowMs - at > staleMs;
+}
+
+export function documentNo(seqNo: number | null | undefined): string {
+  if (!seqNo) return '';
+  return `DS-${seqNo}`;
 }

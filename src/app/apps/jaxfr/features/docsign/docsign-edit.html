@@ -1,16 +1,36 @@
-<div class="split-workspace docsign-workspace">
+<div
+  class="split-workspace docsign-workspace"
+  [class.show-paper]="workspacePane() === 'paper'"
+>
   @if (item(); as doc) {
+    <div class="toggle-header workspace-switch">
+      <mat-button-toggle-group
+        [value]="workspacePane()"
+        (change)="onPaneChange($event)"
+        class="full-width-toggle"
+      >
+        <mat-button-toggle value="form">Details</mat-button-toggle>
+        <mat-button-toggle value="paper">Paper</mat-button-toggle>
+      </mat-button-toggle-group>
+    </div>
+
     <div class="form-scroll-area">
+      @if (hasSignedCurrent() && !isLocked()) {
+        <p class="frozen-banner">
+          You already signed this version. Wait for another signer to change the document.
+        </p>
+      }
+
       <section class="form-group">
         <h3 class="group-header">Document</h3>
-        <p class="group-note">Date and date &amp; time are both optional. Fill in either, both, or neither.</p>
+        <p class="group-note">Date is optional. Signing time is recorded on each signature.</p>
         <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
           <mat-label>Title</mat-label>
           <input
             matInput
             [(ngModel)]="doc.title"
             required
-            [disabled]="isLocked() || (!isOwner() && isSent())"
+            [disabled]="isFormLocked() || (!isOwner() && isSent())"
           />
         </mat-form-field>
 
@@ -21,28 +41,18 @@
               matInput
               type="date"
               [(ngModel)]="doc.doc_date"
-              [disabled]="isLocked() || (!isOwner() && isSent())"
+              [disabled]="isFormLocked() || (!isOwner() && isSent())"
             />
           </mat-form-field>
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>Date &amp; time</mat-label>
+            <mat-label>Remarks (not signed)</mat-label>
             <input
               matInput
-              type="datetime-local"
-              [(ngModel)]="doc.doc_datetime"
-              [disabled]="isLocked() || (!isOwner() && isSent())"
+              [(ngModel)]="doc.remarks"
+              [disabled]="isFormLocked() || (!isOwner() && isSent())"
             />
           </mat-form-field>
         </div>
-
-        <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
-          <mat-label>Remarks (not signed)</mat-label>
-          <input
-            matInput
-            [(ngModel)]="doc.remarks"
-            [disabled]="isLocked() || (!isOwner() && isSent())"
-          />
-        </mat-form-field>
       </section>
 
       <section class="form-group">
@@ -54,11 +64,11 @@
             <mat-chip-row>{{ displayUserName(doc.created_by) }} (owner)</mat-chip-row>
             @for (uid of otherSignerIds(); track uid) {
               <mat-chip-row
-                [removable]="isOwner() && !isLocked()"
+                [removable]="isOwner() && !isFormLocked()"
                 (removed)="removeSigner(uid)"
               >
                 {{ displayUserName(uid) }}
-                @if (isOwner() && !isLocked()) {
+                @if (isOwner() && !isFormLocked()) {
                   <button matChipRemove>
                     <mat-icon>cancel</mat-icon>
                   </button>
@@ -70,7 +80,7 @@
               #userInput
               [matChipInputFor]="userGrid"
               [matAutocomplete]="userAuto"
-              [disabled]="!isOwner() || isLocked()"
+              [disabled]="!isOwner() || isFormLocked()"
               (input)="userSearch.set(userInput.value)"
               (focus)="userSearch.set('')"
             />
@@ -86,7 +96,7 @@
         </mat-form-field>
       </section>
 
-      @if (!isLocked()) {
+      @if (!isFormLocked()) {
         <section class="form-group">
           <h3 class="group-header">Body</h3>
           <div class="md-editor">
@@ -95,7 +105,6 @@
                 mat-icon-button
                 type="button"
                 title="Heading 1"
-                [disabled]="isLocked()"
                 (click)="formatHeading1()"
               >
                 <mat-icon>title</mat-icon>
@@ -104,7 +113,6 @@
                 mat-icon-button
                 type="button"
                 title="Heading 2"
-                [disabled]="isLocked()"
                 (click)="formatHeading2()"
               >
                 <mat-icon>format_size</mat-icon>
@@ -114,7 +122,6 @@
                 mat-icon-button
                 type="button"
                 title="Bold"
-                [disabled]="isLocked()"
                 (click)="formatBold()"
               >
                 <mat-icon>format_bold</mat-icon>
@@ -123,7 +130,6 @@
                 mat-icon-button
                 type="button"
                 title="Italic"
-                [disabled]="isLocked()"
                 (click)="formatItalic()"
               >
                 <mat-icon>format_italic</mat-icon>
@@ -132,7 +138,6 @@
                 mat-icon-button
                 type="button"
                 title="Inline code"
-                [disabled]="isLocked()"
                 (click)="formatCode()"
               >
                 <mat-icon>code</mat-icon>
@@ -142,7 +147,6 @@
                 mat-icon-button
                 type="button"
                 title="Bullet list"
-                [disabled]="isLocked()"
                 (click)="formatBulletList()"
               >
                 <mat-icon>format_list_bulleted</mat-icon>
@@ -151,7 +155,6 @@
                 mat-icon-button
                 type="button"
                 title="Numbered list"
-                [disabled]="isLocked()"
                 (click)="formatNumberedList()"
               >
                 <mat-icon>format_list_numbered</mat-icon>
@@ -160,7 +163,6 @@
                 mat-icon-button
                 type="button"
                 title="Quote"
-                [disabled]="isLocked()"
                 (click)="formatQuote()"
               >
                 <mat-icon>format_quote</mat-icon>
@@ -170,7 +172,6 @@
                 mat-icon-button
                 type="button"
                 title="Link"
-                [disabled]="isLocked()"
                 (click)="formatLink()"
               >
                 <mat-icon>link</mat-icon>
@@ -179,7 +180,6 @@
                 mat-icon-button
                 type="button"
                 title="Table"
-                [disabled]="isLocked()"
                 (click)="insertTable()"
               >
                 <mat-icon>table_chart</mat-icon>
@@ -188,7 +188,6 @@
                 mat-icon-button
                 type="button"
                 title="Horizontal rule"
-                [disabled]="isLocked()"
                 (click)="insertRule()"
               >
                 <mat-icon>horizontal_rule</mat-icon>
@@ -198,12 +197,12 @@
               #bodyInput
               class="md-canvas"
               [(ngModel)]="doc.content"
-              [disabled]="isLocked()"
               placeholder="Write the document here. Paste a Google Drive file link to embed a preview on the paper."
             ></textarea>
           </div>
           <p class="md-editor-note">
-            The paper on the right is the signed preview. Drive links become preview frames.
+            Paste an https image URL, or use Markdown ![alt](https://...).
+            Google Drive links become preview frames. Diagrams (Mermaid) are not rendered.
           </p>
         </section>
       }
@@ -213,11 +212,12 @@
       <app-docsign-document
         [title]="doc.title"
         [docDate]="doc.doc_date || null"
-        [docDatetime]="doc.doc_datetime || null"
+        [documentNo]="paperDocumentNo()"
         [versionNo]="doc.current_version_no"
         [lifecycle]="paperLifecycle()"
         [content]="doc.content"
         [signers]="paperSigners()"
+        [printMode]="printing()"
       />
     </div>
   }

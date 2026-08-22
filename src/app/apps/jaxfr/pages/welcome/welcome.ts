@@ -38,7 +38,7 @@ const CATEGORY_IMAGES: Record<string, string> = {
   Filelink: '/icons/3d/filelink.png',
   'Tyweb Control': '/icons/3d/web.png',
   Chat: '/icons/3d/chat.png',
-  'Doc Sign': '/icons/3d/article.png',
+  'Doc Sign': '/icons/3d/docsign.png',
   Settings: '/icons/3d/settings.png',
   User: '/icons/3d/user.png',
   Development: '/icons/3d/development.png',
@@ -58,7 +58,7 @@ const TILE_TONES: Record<string, string> = {
   Filelink: 'teal',
   'Tyweb Control': 'teal',
   Chat: 'purple',
-  'Doc Sign': 'gold',
+  'Doc Sign': 'blue',
   Settings: 'slate',
   User: 'orange',
   Development: 'red',
@@ -104,6 +104,10 @@ const CATEGORY_LINKS: Record<string, FeatureHubLink[]> = {
   Fit: [
     { title: 'Sessions', icon: 'fitness_center', route: '/fit/list' },
     { title: 'Thread', icon: 'forum', route: '/fit/thread' },
+  ],
+  'Doc Sign': [
+    { title: 'Sign list', icon: 'list', route: '/docsign/list' },
+    { title: 'Signature', icon: 'draw', route: '/docsign/signature' },
   ],
 };
 
