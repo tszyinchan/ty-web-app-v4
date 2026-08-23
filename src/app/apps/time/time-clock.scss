@@ -6,6 +6,53 @@
   height: 100dvh;
 }
 
+.aero-chrome {
+  gap: 10px;
+}
+
+.chrome-start {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.view-toggle {
+  display: flex;
+  flex-shrink: 0;
+  overflow: hidden;
+  border: 1px solid #6a8aaa;
+  border-radius: 3px;
+  box-shadow: inset 0 1px 0 #fff, 0 1px 1px rgba(0, 0, 0, 0.12);
+}
+
+.view-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  background: linear-gradient(180deg, #f7fbff 0%, #d5e6f4 48%, #b7cfe4 100%);
+  color: #3a4a5a;
+}
+
+.view-btn + .view-btn {
+  border-left: 1px solid #6a8aaa;
+}
+
+.view-btn.active {
+  background: linear-gradient(180deg, #7ec4f5 0%, #2f7dcc 48%, #1b5fa8 100%);
+  color: #fff;
+}
+
+.view-btn mat-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}
+
 .tz-select {
   width: min(56vw, 320px);
   max-width: 100%;
@@ -37,6 +84,64 @@
   text-shadow: 0 0 8px #fff, 0 1px 0 #fff;
 }
 
+.analog-face {
+  width: min(78vw, 68vh);
+  height: min(78vw, 68vh);
+  filter: drop-shadow(0 2px 6px rgba(0, 40, 80, 0.16));
+}
+
+.analog-disk {
+  stroke: #6a8aaa;
+  stroke-width: 2;
+}
+
+.analog-ring {
+  fill: none;
+  stroke: #c5d5e4;
+  stroke-width: 0.8;
+}
+
+.analog-tick {
+  stroke: #8aa0b4;
+  stroke-width: 1;
+}
+
+.analog-tick.hour-mark {
+  stroke: #3a4a5a;
+  stroke-width: 2.2;
+}
+
+.analog-num {
+  fill: #1a1a1a;
+  font: 600 11px "Segoe UI", Tahoma, sans-serif;
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+.hand-hour {
+  stroke: #1a1a1a;
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+
+.hand-minute {
+  stroke: #2a3a4a;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+}
+
+.hand-second {
+  stroke: #1b5fa8;
+  stroke-width: 1.3;
+  stroke-linecap: round;
+}
+
+.hand-hub {
+  fill: #1b5fa8;
+  stroke: #fff;
+  stroke-width: 1.2;
+}
+
 .clock-date {
   margin-top: 0.4em;
   font-size: min(3.6vw, 4.5vh);
@@ -46,4 +151,3 @@
   font-variant-numeric: tabular-nums;
   text-shadow: 0 1px 0 #fff;
 }
-

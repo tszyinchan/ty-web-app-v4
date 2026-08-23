@@ -1,17 +1,23 @@
 import { Component, OnDestroy, computed, inject, signal } from '@angular/core';
 import { Title } from '@angular/platform-browser';
+import { MatIconModule } from '@angular/material/icon';
 import {
+  ANALOG_HOUR_NUMBERS,
+  ANALOG_MINUTE_MARKS,
+  ClockFace,
   PINNED_TIME_ZONES,
   formatClock,
   listTimeZones,
+  persistClockFace,
   persistTimeZone,
+  resolveInitialClockFace,
   resolveInitialTimeZone,
 } from './time.util';
 
 @Component({
   selector: 'app-time-clock',
   standalone: true,
-  imports: [],
+  imports: [MatIconModule],
   templateUrl: './time-clock.html',
   styleUrl: './time-clock.scss',
 })
@@ -20,9 +26,12 @@ export class TimeClock implements OnDestroy {
 
   readonly pinnedZones = PINNED_TIME_ZONES;
   readonly allZones = listTimeZones();
+  readonly minuteMarks = ANALOG_MINUTE_MARKS;
+  readonly hourNumbers = ANALOG_HOUR_NUMBERS;
   readonly selectedZone = signal(
     resolveInitialTimeZone(this.allZones.map((zone) => zone.id)),
   );
+  readonly face = signal<ClockFace>(resolveInitialClockFace());
   readonly now = signal(new Date());
   readonly clock = computed(() => formatClock(this.now(), this.selectedZone()));
 
@@ -42,6 +51,11 @@ export class TimeClock implements OnDestroy {
     this.selectedZone.set(zone);
     persistTimeZone(zone);
     this.syncTitle();
+  }
+
+  setFace(face: ClockFace): void {
+    this.face.set(face);
+    persistClockFace(face);
   }
 
   private tick(): void {

@@ -1,0 +1,29 @@
+---
+description: After each code change, ask push-now vs keep accumulating; bump version only when committing
+alwaysApply: true
+---
+
+# Commit now or keep going
+
+After you finish a code change (or one tightly related batch), **stop and ask** before the next unrelated item. Do not silently stack more work and more version numbers.
+
+Ask in Traditional Chinese, in this shape:
+
+1. **What landed** — one short sentence.
+2. **Suggested bump** — `major` / `minor` / `patch` and the resulting `VerX.X.X-…` message. Do **not** edit `src/app/app.constants.ts` until they choose to commit.
+3. **Choice** — `現在 commit + push`，還是 `先留著，等後面改完再一起`。
+
+## If they say push now
+
+- Bump `APP_CONFIG` once, commit with `VerX.X.X-<description>`, then push immediately (see `.cursorrules` §9).
+- Do not wait to accumulate another batch.
+
+## If they say keep it
+
+- Leave the working tree dirty. Do **not** bump version again on the next change.
+- When they later ask to commit, propose **one** bump for everything still uncommitted.
+
+## Do not
+
+- Commit or push unless they asked (or just answered this prompt with push).
+- Invent intermediate versions (4.74.3 then 4.74.4 then 4.74.5) in one uncommitted session — that is what this rule prevents.

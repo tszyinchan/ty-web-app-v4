@@ -1,28 +1,126 @@
 <div class="aero-stage">
   <div class="aero-frame">
     <header class="aero-chrome">
-      <span class="aero-chrome-title">Time</span>
+      <div class="chrome-start">
+        <span class="aero-chrome-title">Time</span>
+        <div class="view-toggle" role="group" aria-label="Clock face">
+          <button
+            type="button"
+            class="view-btn"
+            [class.active]="face() === 'digital'"
+            [attr.aria-pressed]="face() === 'digital'"
+            aria-label="Digital"
+            (click)="setFace('digital')"
+          >
+            <mat-icon>timer</mat-icon>
+          </button>
+          <button
+            type="button"
+            class="view-btn"
+            [class.active]="face() === 'analog'"
+            [attr.aria-pressed]="face() === 'analog'"
+            aria-label="Analog"
+            (click)="setFace('analog')"
+          >
+            <mat-icon>schedule</mat-icon>
+          </button>
+        </div>
+      </div>
       <select
         class="aero-input tz-select"
         [value]="selectedZone()"
         (change)="onZoneChange($event)"
       >
-          <optgroup label="Pinned">
-            @for (zone of pinnedZones; track zone.id) {
-              <option [value]="zone.id">{{ zone.label }}</option>
-            }
-          </optgroup>
-          <optgroup label="All">
-            @for (zone of allZones; track zone.id) {
-              <option [value]="zone.id">{{ zone.label }}</option>
-            }
-          </optgroup>
+        <optgroup label="Pinned">
+          @for (zone of pinnedZones; track zone.id) {
+            <option [value]="zone.id">{{ zone.label }}</option>
+          }
+        </optgroup>
+        <optgroup label="All">
+          @for (zone of allZones; track zone.id) {
+            <option [value]="zone.id">{{ zone.label }}</option>
+          }
+        </optgroup>
       </select>
     </header>
 
     <main class="aero-body">
       <div class="clock">
-        <div class="clock-time">{{ clock().time }}</div>
+        @if (face() === 'digital') {
+          <div class="clock-time">{{ clock().time }}</div>
+        } @else {
+          <svg class="analog-face" viewBox="0 0 200 200" aria-hidden="true">
+            <defs>
+              <linearGradient id="analogFace" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#ffffff" />
+                <stop offset="48%" stop-color="#f7fbff" />
+                <stop offset="100%" stop-color="#d5e6f4" />
+              </linearGradient>
+              <linearGradient id="analogGlass" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#ffffff" stop-opacity="0.55" />
+                <stop offset="42%" stop-color="#ffffff" stop-opacity="0" />
+              </linearGradient>
+            </defs>
+            <circle
+              class="analog-disk"
+              cx="100"
+              cy="100"
+              r="96"
+              fill="url(#analogFace)"
+            />
+            <circle class="analog-ring" cx="100" cy="100" r="88" />
+            <ellipse
+              cx="74"
+              cy="64"
+              rx="44"
+              ry="24"
+              fill="url(#analogGlass)"
+            />
+            @for (mark of minuteMarks; track mark) {
+              <line
+                class="analog-tick"
+                [class.hour-mark]="mark % 5 === 0"
+                x1="100"
+                [attr.y1]="mark % 5 === 0 ? 16 : 12"
+                x2="100"
+                y2="8"
+                [attr.transform]="'rotate(' + mark * 6 + ' 100 100)'"
+              />
+            }
+            @for (num of hourNumbers; track num.hour) {
+              <text class="analog-num" [attr.x]="num.x" [attr.y]="num.y">
+                {{ num.hour }}
+              </text>
+            }
+            <g transform="translate(100 100)">
+              <line
+                class="hand-hour"
+                x1="0"
+                y1="12"
+                x2="0"
+                y2="-46"
+                [attr.transform]="'rotate(' + clock().hourDeg + ')'"
+              />
+              <line
+                class="hand-minute"
+                x1="0"
+                y1="14"
+                x2="0"
+                y2="-68"
+                [attr.transform]="'rotate(' + clock().minuteDeg + ')'"
+              />
+              <line
+                class="hand-second"
+                x1="0"
+                y1="18"
+                x2="0"
+                y2="-76"
+                [attr.transform]="'rotate(' + clock().secondDeg + ')'"
+              />
+              <circle class="hand-hub" r="4" />
+            </g>
+          </svg>
+        }
         <div class="clock-date">{{ clock().date }}</div>
       </div>
     </main>
