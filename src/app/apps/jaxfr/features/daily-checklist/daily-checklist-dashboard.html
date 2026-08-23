@@ -1,0 +1,91 @@
+<div class="dcl-dashboard">
+  <div class="range-bar">
+    <mat-button-toggle-group
+      [value]="range()"
+      (change)="onRangeChange($event)"
+      class="full-width-toggle"
+    >
+      <mat-button-toggle value="week">This week</mat-button-toggle>
+      <mat-button-toggle value="last30">Last 30 days</mat-button-toggle>
+      <mat-button-toggle value="all">All time</mat-button-toggle>
+    </mat-button-toggle-group>
+  </div>
+
+  @if (service.loading() && service.historyItems().length === 0) {
+    <div class="empty-placeholder">
+      <mat-spinner diameter="28"></mat-spinner>
+    </div>
+  } @else {
+    <section class="dash-section">
+      <h3 class="section-title">Summary</h3>
+      <div class="summary-grid">
+        <div class="summary-cell">
+          <span class="summary-value">{{ dashboard().completedCount }}</span>
+          <span class="summary-label">Completed</span>
+        </div>
+        <div class="summary-cell">
+          <span class="summary-value">{{ dashboard().incompleteCount }}</span>
+          <span class="summary-label">Incomplete</span>
+        </div>
+        <div class="summary-cell">
+          <span class="summary-value">{{ dashboard().dateCount }}</span>
+          <span class="summary-label">Checklist dates</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="dash-section">
+      <h3 class="section-title">Completion by date</h3>
+      @for (row of dashboard().byDate; track row.checklist_date) {
+        <div class="stat-row">
+          <div class="stat-main">
+            <span class="stat-title">{{ row.checklist_date }}</span>
+            <span class="stat-sub">
+              {{ row.completedCount }} / {{ row.totalCount }}
+            </span>
+          </div>
+          <span class="stat-meta">{{ row.percent }}%</span>
+        </div>
+      } @empty {
+        <p class="empty-copy">No checklist dates in this range.</p>
+      }
+    </section>
+
+    <section class="dash-section">
+      <h3 class="section-title">Most completed items</h3>
+      @for (row of dashboard().topCompleted; track row.item_text) {
+        <div class="stat-row">
+          <div class="stat-main">
+            <span class="stat-title">{{ row.item_text }}</span>
+            <span class="stat-sub">
+              Latest {{ row.latestCompletedAt | date: "yyyy-MM-dd HH:mm" }}
+            </span>
+          </div>
+          <span class="stat-meta">{{ row.completedCount }}</span>
+        </div>
+      } @empty {
+        <p class="empty-copy">No completed items in this range.</p>
+      }
+    </section>
+
+    <section class="dash-section">
+      <h3 class="section-title">Recently completed</h3>
+      @for (
+        row of dashboard().recentlyCompleted;
+        track row.completed_at + row.item_text
+      ) {
+        <div class="stat-row">
+          <div class="stat-main">
+            <span class="stat-title">{{ row.item_text }}</span>
+            <span class="stat-sub">{{ row.checklist_date }}</span>
+          </div>
+          <span class="stat-meta">
+            {{ row.completed_at | date: "yyyy-MM-dd HH:mm" }}
+          </span>
+        </div>
+      } @empty {
+        <p class="empty-copy">Nothing completed in this range yet.</p>
+      }
+    </section>
+  }
+</div>

@@ -1,0 +1,85 @@
+.dcl-standard {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 16px 16px 32px;
+  font-family: "Segoe UI", Tahoma, sans-serif;
+}
+
+.intro,
+.empty-copy {
+  margin: 0 0 16px;
+  font-size: 13px;
+  color: #6a7a88;
+  line-height: 1.5;
+}
+
+.add-block {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.grow {
+  flex: 1 1 180px;
+  min-width: 0;
+}
+
+.empty-placeholder {
+  padding: 32px 8px;
+  display: flex;
+  justify-content: center;
+}
+
+.item-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.item-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid #d4e0ea;
+}
+
+.item-body,
+.edit-block {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.item-text {
+  padding-top: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a1a1a;
+  word-break: break-word;
+}
+
+.item-remarks {
+  font-size: 12px;
+  color: #6a7a88;
+  word-break: break-word;
+}
+
+.row-actions {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 600px) {
+  .dcl-standard {
+    padding: 12px 12px 24px;
+  }
+
+  .item-row {
+    flex-direction: column;
+  }
+}

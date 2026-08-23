@@ -2,3 +2,4 @@ Fluent Emoji 3D icons from https://github.com/microsoft/fluentui-emoji
 License: MIT (Microsoft)
 Downloaded 3D PNG renders for Jaxfr Welcome launcher only.
 Doc Sign uses Fountain pen (assets/Fountain pen/3D).
+Daily Checklist uses Clipboard (assets/Clipboard/3D).

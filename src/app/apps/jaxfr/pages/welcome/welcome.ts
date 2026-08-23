@@ -35,6 +35,7 @@ const CATEGORY_IMAGES: Record<string, string> = {
   Work: '/icons/3d/work.png',
   Article: '/icons/3d/article.png',
   Fit: '/icons/3d/fit.png',
+  'Daily Checklist': '/icons/3d/checklist.png',
   Filelink: '/icons/3d/filelink.png',
   'Tyweb Control': '/icons/3d/web.png',
   Chat: '/icons/3d/chat.png',
@@ -55,6 +56,7 @@ const TILE_TONES: Record<string, string> = {
   Work: 'blue',
   Article: 'gold',
   Fit: 'green',
+  'Daily Checklist': 'green',
   Filelink: 'teal',
   'Tyweb Control': 'teal',
   Chat: 'purple',
@@ -104,6 +106,11 @@ const CATEGORY_LINKS: Record<string, FeatureHubLink[]> = {
   Fit: [
     { title: 'Sessions', icon: 'fitness_center', route: '/fit/list' },
     { title: 'Thread', icon: 'forum', route: '/fit/thread' },
+  ],
+  'Daily Checklist': [
+    { title: 'Today', icon: 'checklist', route: '/daily-checklist' },
+    { title: 'Dashboard', icon: 'insights', route: '/daily-checklist/dashboard' },
+    { title: 'Standard', icon: 'playlist_add_check', route: '/daily-checklist/standard' },
   ],
   'Doc Sign': [
     { title: 'Sign list', icon: 'list', route: '/docsign/list' },

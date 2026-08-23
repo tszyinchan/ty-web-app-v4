@@ -1,0 +1,128 @@
+<div class="dcl-standard">
+  <p class="intro">
+    These items are used only when you choose
+    <strong>Use standard checklist</strong>
+    on an empty date. Changes apply to future dates only — existing daily
+    checklists are never updated.
+  </p>
+
+  <div class="add-block">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="grow">
+      <mat-label>New standard item</mat-label>
+      <input
+        matInput
+        [(ngModel)]="newText"
+        name="new_template_text"
+        (keydown.enter)="onAdd()"
+      />
+    </mat-form-field>
+    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="grow">
+      <mat-label>Remarks (optional)</mat-label>
+      <input matInput [(ngModel)]="newRemarks" name="new_template_remarks" />
+    </mat-form-field>
+    <button
+      mat-flat-button
+      color="primary"
+      type="button"
+      [disabled]="service.busy() || !newText.trim()"
+      (click)="onAdd()"
+    >
+      Add
+    </button>
+  </div>
+
+  @if (service.templateLoading() && service.templateItems().length === 0) {
+    <div class="empty-placeholder">
+      <mat-spinner diameter="28"></mat-spinner>
+    </div>
+  } @else if (service.templateItems().length === 0) {
+    <p class="empty-copy">
+      Your Standard Checklist is empty. Add the items you usually repeat.
+    </p>
+  } @else {
+    <div class="item-list">
+      @for (
+        item of service.templateItems();
+        track item.tb_tyapp_dcl_tpl_itm_id;
+        let i = $index
+      ) {
+        <div class="item-row">
+          @if (editingId() === item.tb_tyapp_dcl_tpl_itm_id) {
+            <div class="edit-block">
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-label>Item</mat-label>
+                <input matInput [(ngModel)]="editText" name="edit_template_text" />
+              </mat-form-field>
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-label>Remarks</mat-label>
+                <input
+                  matInput
+                  [(ngModel)]="editRemarks"
+                  name="edit_template_remarks"
+                />
+              </mat-form-field>
+              <div class="row-actions">
+                <button
+                  mat-button
+                  type="button"
+                  [disabled]="service.busy()"
+                  (click)="saveEdit()"
+                >
+                  Save
+                </button>
+                <button mat-button type="button" (click)="cancelEdit()">
+                  Cancel
+                </button>
+              </div>
+            </div>
+          } @else {
+            <div class="item-body">
+              <span class="item-text">{{ item.item_text }}</span>
+              @if (item.remarks) {
+                <span class="item-remarks">{{ item.remarks }}</span>
+              }
+            </div>
+            <div class="row-actions">
+              <button
+                mat-icon-button
+                type="button"
+                matTooltip="Move up"
+                [disabled]="service.busy() || !canMoveUp(i)"
+                (click)="move(item, -1)"
+              >
+                <mat-icon>keyboard_arrow_up</mat-icon>
+              </button>
+              <button
+                mat-icon-button
+                type="button"
+                matTooltip="Move down"
+                [disabled]="service.busy() || !canMoveDown(i)"
+                (click)="move(item, 1)"
+              >
+                <mat-icon>keyboard_arrow_down</mat-icon>
+              </button>
+              <button
+                mat-icon-button
+                type="button"
+                matTooltip="Edit"
+                [disabled]="service.busy()"
+                (click)="startEdit(item)"
+              >
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button
+                mat-icon-button
+                type="button"
+                matTooltip="Delete"
+                [disabled]="service.busy()"
+                (click)="onDelete(item)"
+              >
+                <mat-icon>delete_outline</mat-icon>
+              </button>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+</div>

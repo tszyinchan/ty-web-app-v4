@@ -158,6 +158,15 @@ const JAXFR_ROUTES: Routes = [
           ),
       },
       {
+        path: 'daily-checklist',
+        canActivate: [featureAccessGuard],
+        data: { featureName: 'Daily Checklist' },
+        loadChildren: () =>
+          import('./apps/jaxfr/features/daily-checklist/daily-checklist.routes').then(
+            (m) => m.DAILY_CHECKLIST_ROUTES,
+          ),
+      },
+      {
         path: 'filelink',
         canActivate: [featureAccessGuard],
         data: { featureName: 'Filelink' },

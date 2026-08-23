@@ -1,0 +1,202 @@
+<div class="dcl-page">
+  <div class="date-bar">
+    <button
+      mat-icon-button
+      type="button"
+      matTooltip="Previous date"
+      (click)="goPrev()"
+      [disabled]="service.loading() || service.busy()"
+    >
+      <mat-icon>chevron_left</mat-icon>
+    </button>
+
+    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="date-field">
+      <mat-label>Date</mat-label>
+      <input
+        matInput
+        [matDatepicker]="picker"
+        [ngModel]="pickerDate()"
+        (ngModelChange)="onPickerChange($event)"
+        name="checklist_date"
+      />
+      <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+      <mat-datepicker #picker></mat-datepicker>
+    </mat-form-field>
+
+    <button
+      mat-icon-button
+      type="button"
+      matTooltip="Next date"
+      (click)="goNext()"
+      [disabled]="service.loading() || service.busy()"
+    >
+      <mat-icon>chevron_right</mat-icon>
+    </button>
+
+    <button
+      mat-stroked-button
+      type="button"
+      (click)="goToday()"
+      [disabled]="isToday() || service.loading() || service.busy()"
+    >
+      Today
+    </button>
+  </div>
+
+  <div class="progress-row">
+    <span class="progress-label">{{ selectedDate() }}</span>
+    @if (totalCount() > 0) {
+      <span class="progress-count">
+        {{ completedCount() }} / {{ totalCount() }}
+        ({{ progressPercent() }}%)
+      </span>
+    } @else {
+      <span class="progress-count">No items</span>
+    }
+  </div>
+
+  @if (service.loading() && totalCount() === 0) {
+    <div class="empty-placeholder">
+      <mat-spinner diameter="28"></mat-spinner>
+    </div>
+  } @else if (isEmpty()) {
+    <div class="empty-box">
+      <p class="empty-title">No checklist for this date yet.</p>
+      <p class="empty-copy">
+        Start from your Standard Checklist, copy yesterday, or add one item.
+      </p>
+      <div class="empty-actions">
+        <button
+          mat-flat-button
+          color="primary"
+          type="button"
+          [disabled]="service.busy()"
+          (click)="onUseStandard()"
+        >
+          Use standard checklist
+        </button>
+        <button
+          mat-stroked-button
+          type="button"
+          [disabled]="service.busy()"
+          (click)="onCopyYesterday()"
+        >
+          Copy yesterday's list
+        </button>
+        <button mat-stroked-button type="button" (click)="focusAdd()">
+          Add item
+        </button>
+      </div>
+      @if (showStandardHint()) {
+        <p class="standard-hint">
+          Your Standard Checklist is empty.
+          <button mat-button type="button" (click)="openStandard()">
+            Open Standard Checklist
+          </button>
+        </p>
+      }
+    </div>
+  } @else {
+    <p class="batch-hint">
+      This date already has items, so Use standard checklist and Copy yesterday
+      are unavailable.
+    </p>
+
+    <div class="item-list">
+      @for (item of displayItems(); track item.tb_tyapp_dcl_itm_id) {
+        <div class="item-row" [class.completed]="isCompleted(item)">
+          @if (editingId() === item.tb_tyapp_dcl_itm_id) {
+            <div class="edit-block">
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="grow">
+                <mat-label>Item</mat-label>
+                <input matInput [(ngModel)]="editText" name="edit_text" />
+              </mat-form-field>
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="grow">
+                <mat-label>Remarks</mat-label>
+                <input matInput [(ngModel)]="editRemarks" name="edit_remarks" />
+              </mat-form-field>
+              <div class="edit-actions">
+                <button
+                  mat-button
+                  type="button"
+                  (click)="saveEdit()"
+                  [disabled]="service.busy()"
+                >
+                  Save
+                </button>
+                <button mat-button type="button" (click)="cancelEdit()">
+                  Cancel
+                </button>
+              </div>
+            </div>
+          } @else {
+            <mat-checkbox
+              [checked]="isCompleted(item)"
+              [disabled]="service.busy()"
+              (change)="onToggle(item)"
+            ></mat-checkbox>
+            <div class="item-body">
+              <span class="item-text">{{ item.item_text }}</span>
+              @if (item.remarks) {
+                <span class="item-remarks">{{ item.remarks }}</span>
+              }
+            </div>
+            <div class="item-actions">
+              <button
+                mat-icon-button
+                type="button"
+                matTooltip="Edit"
+                (click)="startEdit(item)"
+                [disabled]="service.busy()"
+              >
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button
+                mat-icon-button
+                type="button"
+                matTooltip="Delete"
+                (click)="onDelete(item)"
+                [disabled]="service.busy()"
+              >
+                <mat-icon>delete_outline</mat-icon>
+              </button>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  <div class="add-row">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="grow">
+      <mat-label>Add item</mat-label>
+      <input
+        #addInput
+        matInput
+        [ngModel]="newItemText()"
+        (ngModelChange)="newItemText.set($event)"
+        [matAutocomplete]="itemAuto"
+        name="new_item_text"
+        placeholder="Type a new item"
+        (keydown.enter)="onAddItem($event)"
+      />
+      <mat-autocomplete
+        #itemAuto="matAutocomplete"
+        (optionSelected)="onSuggestionSelected($event)"
+      >
+        @for (opt of filteredSuggestions(); track opt.item_text) {
+          <mat-option [value]="opt.item_text">{{ opt.item_text }}</mat-option>
+        }
+      </mat-autocomplete>
+    </mat-form-field>
+    <button
+      mat-flat-button
+      color="primary"
+      type="button"
+      [disabled]="service.busy() || !newItemText().trim()"
+      (click)="onAddItem()"
+    >
+      Add
+    </button>
+  </div>
+</div>
