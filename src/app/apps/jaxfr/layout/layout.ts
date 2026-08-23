@@ -13,6 +13,9 @@ import { AppToolbar } from '../../../core/components/app-toolbar/app-toolbar';
   imports: [AppToolbar, RouterOutlet],
   templateUrl: './layout.html',
   styleUrl: './layout.scss',
+  host: {
+    '[class.print-route]': 'isPrintRoute()',
+  },
 })
 export class Layout {
   private readonly router = inject(Router);
@@ -31,6 +34,15 @@ export class Layout {
     { initialValue: this.isNotWelcome(this.router.url) },
   );
 
+  readonly isPrintRoute = toSignal(
+    this.router.events.pipe(
+      filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+      map((event) => this.isDocsignPrint(event.urlAfterRedirects)),
+      startWith(this.isDocsignPrint(this.router.url)),
+    ),
+    { initialValue: this.isDocsignPrint(this.router.url) },
+  );
+
   readonly showToolbar = toSignal(
     this.router.events.pipe(
       filter((event): event is NavigationEnd => event instanceof NavigationEnd),
@@ -45,8 +57,12 @@ export class Layout {
     return path !== '/' && path !== '/welcome';
   }
 
+  private isDocsignPrint(url: string): boolean {
+    return url.split('?')[0].includes('/docsign/print/');
+  }
+
   private shouldShowToolbar(url: string): boolean {
     const path = url.split('?')[0];
-    return this.isNotWelcome(path) && !path.includes('/docsign/print/');
+    return this.isNotWelcome(path) && !this.isDocsignPrint(path);
   }
 }

@@ -47,10 +47,11 @@ import {
   MarkdownEditResult,
   bodyContent,
   currentVersion,
-  documentNo,
   docsignLifecycle,
   insertAtCursor,
+  normalizeSignerTitles,
   prefixSelectedLines,
+  sameSignerSet,
   signaturesForVersion,
   wrapMarkdownSelection,
 } from './docsign.util';
@@ -102,7 +103,6 @@ export class DocsignEdit implements OnInit, OnDestroy, DoCheck {
   isSaveDisabled = signal(true);
   userSearch = signal('');
   workspacePane = signal<'form' | 'paper'>('form');
-  printing = signal(false);
 
   syncStatus = computed<'loading' | 'up-to-date' | 'unsaved' | 'none'>(() => {
     if (this.docsignService.loading()) return 'loading';
@@ -120,10 +120,11 @@ export class DocsignEdit implements OnInit, OnDestroy, DoCheck {
   isLocked = computed(() => !!this.item()?.locked_at);
   isSent = computed(() => !!this.item()?.sent_at);
 
-  otherSignerIds = computed(() => {
+  canReorderSigners = computed(() => {
+    const me = this.authService.userProfile()?.user_id;
     const item = this.item();
-    if (!item) return [];
-    return item.signer_user_ids.filter((id) => id !== item.created_by);
+    if (!me || !item || item.locked_at) return false;
+    return item.signer_user_ids.includes(me);
   });
 
   filteredUsers = computed(() => {
@@ -158,16 +159,13 @@ export class DocsignEdit implements OnInit, OnDestroy, DoCheck {
         signedMark: sig?.signed_mark ?? null,
         signedAt: sig?.signed_at ?? null,
         signedSvg: sig?.signed_svg ?? null,
+        role: item.signer_titles[id] || null,
       };
     });
   });
 
   paperLifecycle = computed(() =>
     docsignLifecycle(this.item()?.sent_at, this.item()?.locked_at),
-  );
-
-  paperDocumentNo = computed(() =>
-    documentNo(this.loaded()?.tb_tyapp_dsgn_seq_no),
   );
 
   hasSignedCurrent = computed(() => {
@@ -187,7 +185,9 @@ export class DocsignEdit implements OnInit, OnDestroy, DoCheck {
       data.doc_date !== original.doc_date ||
       data.remarks !== original.remarks ||
       JSON.stringify(data.signer_user_ids) !==
-        JSON.stringify(original.signer_user_ids)
+        JSON.stringify(original.signer_user_ids) ||
+      JSON.stringify(data.signer_titles) !==
+        JSON.stringify(original.signer_titles)
     );
   });
 
@@ -223,16 +223,6 @@ export class DocsignEdit implements OnInit, OnDestroy, DoCheck {
     void this.releaseClaim();
   }
 
-  @HostListener('window:beforeprint')
-  onBeforePrint() {
-    this.printing.set(true);
-  }
-
-  @HostListener('window:afterprint')
-  onAfterPrint() {
-    this.printing.set(false);
-  }
-
   ngDoCheck() {
     const current = this.item();
     const original = this.originalDataStr();
@@ -256,6 +246,21 @@ export class DocsignEdit implements OnInit, OnDestroy, DoCheck {
 
   onPaneChange(event: MatButtonToggleChange) {
     this.workspacePane.set(event.value === 'paper' ? 'paper' : 'form');
+  }
+
+  signerTitle(userId: string): string {
+    return this.item()?.signer_titles[userId] ?? '';
+  }
+
+  setSignerTitle(userId: string, title: string) {
+    const curr = this.item();
+    if (!curr || this.isFormLocked() || (!this.isOwner() && this.isSent())) {
+      return;
+    }
+    this.item.set({
+      ...curr,
+      signer_titles: { ...curr.signer_titles, [userId]: title },
+    });
   }
 
   displayUserName(id: string): string {
@@ -292,6 +297,7 @@ export class DocsignEdit implements OnInit, OnDestroy, DoCheck {
         content: '',
         created_by: me,
         signer_user_ids: me ? [me] : [],
+        signer_titles: {},
         sent_at: null,
         current_version_no: 0,
         locked_at: null,
@@ -321,6 +327,7 @@ export class DocsignEdit implements OnInit, OnDestroy, DoCheck {
     this.item.set({
       ...curr,
       signer_user_ids: [...curr.signer_user_ids, userId],
+      signer_titles: { ...curr.signer_titles, [userId]: '' },
     });
   }
 
@@ -330,10 +337,42 @@ export class DocsignEdit implements OnInit, OnDestroy, DoCheck {
       return;
     }
     if (userId === curr.created_by) return;
+    const titles = { ...curr.signer_titles };
+    delete titles[userId];
     this.item.set({
       ...curr,
       signer_user_ids: curr.signer_user_ids.filter((id) => id !== userId),
+      signer_titles: titles,
     });
+  }
+
+  async moveSigner(userId: string, delta: number) {
+    const curr = this.item();
+    if (!curr || !this.canReorderSigners()) return;
+    const ids = [...curr.signer_user_ids];
+    const from = ids.indexOf(userId);
+    const to = from + delta;
+    if (from < 0 || to < 0 || to >= ids.length) return;
+    const swap = ids[from];
+    ids[from] = ids[to];
+    ids[to] = swap;
+    this.item.set({ ...curr, signer_user_ids: ids });
+
+    const docId = curr.tb_tyapp_dsgn_id ?? this.currentId;
+    const loaded = this.loaded();
+    if (!docId || !loaded || !sameSignerSet(ids, loaded.signer_user_ids)) {
+      return;
+    }
+
+    const saved = await this.docsignService.reorderSigners(docId, ids);
+    if (!saved) return;
+    this.loaded.set(saved);
+    const latest = this.item();
+    if (!latest) return;
+    this.item.set({ ...latest, signer_user_ids: [...saved.signer_user_ids] });
+    const original = JSON.parse(this.originalDataStr()) as DocsignEditVm;
+    original.signer_user_ids = [...saved.signer_user_ids];
+    this.originalDataStr.set(JSON.stringify(original));
   }
 
   async onSave() {
@@ -356,6 +395,10 @@ export class DocsignEdit implements OnInit, OnDestroy, DoCheck {
         remarks: data.remarks,
         content: data.content,
         signerUserIds: data.signer_user_ids,
+        signerTitles: normalizeSignerTitles(
+          data.signer_user_ids,
+          data.signer_titles,
+        ),
       });
       if (saved) {
         this.currentId = saved.tb_tyapp_dsgn_id;
@@ -378,6 +421,10 @@ export class DocsignEdit implements OnInit, OnDestroy, DoCheck {
       docDate: this.optionalDate(data.doc_date),
       remarks: data.remarks,
       signerUserIds: data.signer_user_ids,
+      signerTitles: normalizeSignerTitles(
+        data.signer_user_ids,
+        data.signer_titles,
+      ),
     });
     if (saved) {
       this.applyLoaded(saved);
@@ -462,8 +509,15 @@ export class DocsignEdit implements OnInit, OnDestroy, DoCheck {
     this.router.navigate(['/docsign/compare', this.currentId]);
   }
 
-  onPrint() {
-    window.print();
+  async onPrint() {
+    if (!this.currentId || !this.isLocked()) return;
+    const log = await this.docsignService.logPrint(this.currentId);
+    if (!log) return;
+    await this.router.navigate([
+      '/docsign/print',
+      this.currentId,
+      log.tb_tyapp_dsgn_prn_id,
+    ]);
   }
 
   ngOnDestroy() {
@@ -540,6 +594,7 @@ export class DocsignEdit implements OnInit, OnDestroy, DoCheck {
       content: bodyContent(doc),
       created_by: doc.created_by,
       signer_user_ids: [...doc.signer_user_ids],
+      signer_titles: { ...(doc.signer_titles ?? {}) },
       sent_at: doc.sent_at ?? null,
       current_version_no: doc.current_version_no,
       locked_at: doc.locked_at ?? null,

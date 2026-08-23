@@ -2,6 +2,15 @@ import { RecordStatus } from '../../../../core/models/status.enum';
 
 export type DocsignLifecycle = 'draft' | 'pending' | 'locked';
 
+export type DocsignSignerTitles = Record<string, string>;
+
+export interface DocsignPrintLog {
+  tb_tyapp_dsgn_prn_id: string;
+  document_id: string;
+  printed_by: string;
+  printed_at: string;
+}
+
 export enum DocsignSignatureKind {
   Name = 'name',
   Draw = 'draw',
@@ -16,6 +25,7 @@ export interface DocsignDocument {
   draft_content: string;
   created_by: string;
   signer_user_ids: string[];
+  signer_titles?: DocsignSignerTitles;
   sent_at?: string | null;
   current_version_no: number;
   locked_at?: string | null;
@@ -74,6 +84,7 @@ export interface DocsignEditVm {
   content: string;
   created_by: string;
   signer_user_ids: string[];
+  signer_titles: DocsignSignerTitles;
   sent_at: string | null;
   current_version_no: number;
   locked_at: string | null;

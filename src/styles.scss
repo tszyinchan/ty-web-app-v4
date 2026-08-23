@@ -211,8 +211,28 @@ body {
 
 @media print {
   html,
-  body {
+  body,
+  html.mat-app-background,
+  body.mat-app-background,
+  app-root,
+  app-layout {
     height: auto;
     overflow: visible;
+    background: #fff;
+    background-color: #fff;
+    background-image: none;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  @page {
+    margin: 16mm 12mm 16mm;
+    background: #fff;
+
+    @bottom-center {
+      content: "Page " counter(page);
+      font-size: 9pt;
+      color: #5a6a78;
+    }
   }
 }

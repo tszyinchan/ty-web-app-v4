@@ -4,6 +4,7 @@ import { SupabaseService } from '../../../../core/services/supabase.service';
 import {
   DocsignDocument,
   DocsignDocumentDetail,
+  DocsignPrintLog,
   DocsignSignature,
   DocsignSignatureKind,
   DocsignUserSignature,
@@ -108,6 +109,7 @@ export class DocsignService {
     remarks: string;
     content: string;
     signerUserIds: string[];
+    signerTitles: Record<string, string>;
   }): Promise<DocsignDocumentDetail | null> {
     this.loading.set(true);
     try {
@@ -118,6 +120,7 @@ export class DocsignService {
         p_remarks: payload.remarks,
         p_draft_content: payload.content,
         p_signer_user_ids: payload.signerUserIds,
+        p_signer_titles: payload.signerTitles,
       });
       if (error) throw error;
 
@@ -144,6 +147,7 @@ export class DocsignService {
     docDate: string | null;
     remarks: string;
     signerUserIds: string[];
+    signerTitles: Record<string, string>;
   }): Promise<DocsignDocumentDetail | null> {
     this.loading.set(true);
     try {
@@ -155,6 +159,7 @@ export class DocsignService {
           p_doc_date: payload.docDate,
           p_remarks: payload.remarks,
           p_signer_user_ids: payload.signerUserIds,
+          p_signer_titles: payload.signerTitles,
         },
       );
       if (error) throw error;
@@ -275,6 +280,57 @@ export class DocsignService {
     }
   }
 
+  async reorderSigners(
+    id: string,
+    signerUserIds: string[],
+  ): Promise<DocsignDocumentDetail | null> {
+    try {
+      const { data, error } = await this.supabase.rpc(
+        'tyapp_docsign_reorder_signers',
+        {
+          p_id: id,
+          p_signer_user_ids: signerUserIds,
+        },
+      );
+      if (error) throw error;
+      return this.zone.run(() => {
+        const mapped = this.mergeLease(data as DocsignDocument);
+        return mapped;
+      });
+    } catch (error: unknown) {
+      this.notification.handleError('Reorder Signers Failed', error);
+      return null;
+    }
+  }
+
+  async logPrint(id: string): Promise<DocsignPrintLog | null> {
+    try {
+      const { data, error } = await this.supabase.rpc('tyapp_docsign_log_print', {
+        p_id: id,
+      });
+      if (error) throw error;
+      return data as DocsignPrintLog;
+    } catch (error: unknown) {
+      this.notification.handleError('Start Print Failed', error);
+      return null;
+    }
+  }
+
+  async fetchPrintLog(id: string): Promise<DocsignPrintLog | null> {
+    try {
+      const { data, error } = await this.supabase
+        .from('tyapp_docsign_print_log')
+        .select('*')
+        .eq('tb_tyapp_dsgn_prn_id', id)
+        .single();
+      if (error) throw error;
+      return data as DocsignPrintLog;
+    } catch (error: unknown) {
+      this.notification.handleError('Load Print Record Failed', error);
+      return null;
+    }
+  }
+
   async releaseEdit(id: string): Promise<void> {
     try {
       await this.supabase.rpc('tyapp_docsign_release_edit', { p_id: id });
@@ -329,17 +385,11 @@ export class DocsignService {
     const existing = this.documents().find(
       (item) => item.tb_tyapp_dsgn_id === row.tb_tyapp_dsgn_id,
     );
-    const mapped: DocsignDocumentDetail = existing
-      ? {
-          ...existing,
-          editing_by: row.editing_by,
-          editing_heartbeat: row.editing_heartbeat,
-        }
-      : {
-          ...row,
-          versions: [],
-          signatures: [],
-        };
+    const mapped: DocsignDocumentDetail = {
+      ...row,
+      versions: existing?.versions ?? [],
+      signatures: existing?.signatures ?? [],
+    };
     this.upsertLocal(mapped);
     return mapped;
   }
@@ -370,6 +420,7 @@ export class DocsignService {
       draft_content: row.draft_content,
       created_by: row.created_by,
       signer_user_ids: row.signer_user_ids,
+      signer_titles: row.signer_titles ?? {},
       sent_at: row.sent_at,
       current_version_no: row.current_version_no,
       locked_at: row.locked_at,

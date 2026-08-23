@@ -28,7 +28,7 @@ export const DOCSIGN_ROUTES: Routes = [
         component: DocsignCompare,
       },
       {
-        path: 'print/:id',
+        path: 'print/:id/:printLogId',
         component: DocsignPrint,
       },
     ],

@@ -4,38 +4,29 @@
 
 .docsign-paper {
   position: relative;
-  max-width: 100%;
+  max-width: 800px;
   margin: 0 auto;
   padding: 40px;
   background: #fff;
   color: #1a1a1a;
-  box-shadow: 0 8px 32px rgba(32, 48, 64, 0.18);
+  box-shadow: 0 8px 28px rgba(32, 48, 64, 0.1);
+  border-radius: 3px;
   box-sizing: border-box;
   overflow: visible;
 }
 
 .docsign-paper.print-mode {
   box-shadow: none;
-  padding: 40px;
-}
-
-.paper-watermark {
-  position: absolute;
-  top: 28%;
-  left: 50%;
-  width: min(280px, 46%);
-  height: min(280px, 46%);
-  transform: translate(-50%, -30%);
-  background: url("/icons/3d/docsign.png") center / contain no-repeat;
-  opacity: 0.08;
-  pointer-events: none;
+  border-radius: 0;
+  max-width: none;
+  padding: 0;
 }
 
 .paper-masthead {
   position: relative;
-  border-bottom: 2px solid #1d4f7a;
-  padding-bottom: 16px;
-  margin-bottom: 24px;
+  border-bottom: 0;
+  padding-bottom: 0;
+  margin-bottom: 36px;
 }
 
 .paper-brand {
@@ -54,10 +45,10 @@
 .paper-kicker {
   margin: 0;
   font-size: 12px;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #1d4f7a;
-  font-weight: 700;
+  color: #8a97a3;
+  font-weight: 500;
 }
 
 .paper-brand-sub {
@@ -67,24 +58,44 @@
 }
 
 .paper-title {
-  margin: 0 0 8px;
-  font-size: 26px;
-  font-weight: 650;
+  margin: 20px 0 28px;
+  font-size: 34px;
+  font-weight: 700;
   line-height: 1.25;
+  color: #1c1c1c;
 }
 
-.paper-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
+.paper-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.meta-label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #9aa7b2;
+}
+
+.meta-value {
+  display: block;
+  font-size: 14px;
+  color: #3a4550;
+}
+
+.meta-id {
   font-size: 12px;
-  color: #5a6a78;
+  overflow-wrap: anywhere;
 }
 
 .paper-body {
   position: relative;
-  font-size: 15px;
-  line-height: 1.65;
+  max-width: 40em;
+  font-size: 16px;
+  line-height: 1.7;
 }
 
 .docsign-paper .md-body {
@@ -108,8 +119,6 @@
 
 .docsign-paper .md-body h1 {
   font-size: 1.28em;
-  padding-bottom: 0.2em;
-  border-bottom: 1px solid #e5edf3;
 }
 
 .docsign-paper .md-body h2 {
@@ -178,8 +187,8 @@
 .docsign-paper .md-body blockquote {
   margin: 12px 0;
   padding: 8px 14px;
-  border-left: 4px solid #2b7cb5;
-  background: #f4f8fb;
+  border-left: 3px solid #c5d0d8;
+  background: #f7f9fb;
   color: #3a4a5a;
 }
 
@@ -255,61 +264,37 @@
 
 .paper-signatures {
   position: relative;
-  margin-top: 40px;
-  padding-top: 16px;
-  border-top: 2px solid #1d4f7a;
+  margin-top: 56px;
+  padding-top: 20px;
+  border-top: 1px solid #d9e1e7;
 }
 
 .paper-signatures h2 {
   margin: 0 0 16px;
-  font-size: 14px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #1d4f7a;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  color: #5a6a78;
+  font-weight: 600;
 }
 
-.sig-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
+.sig-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 32px 24px;
 }
 
-.sig-slot {
-  position: relative;
-  box-sizing: border-box;
-  flex: 0 1 168px;
-  width: 168px;
-  max-width: 100%;
-  min-height: 88px;
-  padding: 16px;
-  border: 1px dashed #c5d0d8;
-  overflow: visible;
+.sig-col {
+  min-width: 0;
   break-inside: avoid;
   page-break-inside: avoid;
 }
 
-.sig-slot.signed {
-  border: 1px solid #b7c9d6;
-  background: #f8fbfd;
-}
-
-.sig-seal {
-  position: absolute;
-  right: 8px;
-  top: 8px;
-  width: 44px;
-  height: 44px;
-  opacity: 0.5;
-  pointer-events: none;
-}
-
-.sig-badge {
-  margin: 0 0 8px;
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: #1d4f7a;
-  font-weight: 700;
+.paper-disclaimer {
+  margin: 48px 0 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #8a97a3;
 }
 
 .sig-svg {
@@ -338,15 +323,22 @@
 }
 
 .sig-name,
+.sig-role,
 .sig-time {
   margin: 0;
   font-size: 12px;
   color: #5a6a78;
 }
 
-.sig-slot.signed .sig-name {
-  color: #1a1a1a;
+.sig-name {
+  margin-top: 8px;
+  font-size: 13px;
   font-weight: 600;
+  color: #22272b;
+}
+
+.sig-role {
+  font-style: italic;
 }
 
 @media print {
@@ -360,12 +352,13 @@
     height: auto;
     overflow: visible;
     margin: 0;
-    padding: 12mm;
+    padding: 0;
+    background: #fff;
   }
 
   .paper-masthead,
   .paper-signatures,
-  .sig-slot,
+  .sig-col,
   .drive-link,
   .docsign-paper .md-body table,
   .docsign-paper .md-body pre,
@@ -385,12 +378,14 @@
     page-break-after: avoid;
   }
 
-  .paper-watermark {
-    opacity: 0.06;
-  }
-
   .drive-frame {
     display: none;
+  }
+
+  .paper-disclaimer,
+  .sig-col {
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
 }
 
@@ -400,7 +395,12 @@
   }
 
   .paper-title {
-    font-size: 22px;
+    font-size: 26px;
+  }
+
+  .paper-meta-grid,
+  .sig-columns {
+    grid-template-columns: 1fr;
   }
 
   .drive-frame {

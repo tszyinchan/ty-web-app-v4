@@ -1,6 +1,7 @@
-<article class="docsign-paper" [class.print-mode]="printMode()">
-  <div class="paper-watermark" aria-hidden="true"></div>
-
+<article
+  class="docsign-paper"
+  [class.print-mode]="printMode()"
+>
   <header class="paper-masthead">
     <div class="paper-brand">
       <img class="paper-brand-icon" [src]="brandIcon" alt="" />
@@ -10,21 +11,28 @@
       </div>
     </div>
     <h1 class="paper-title">{{ title() || 'Untitled document' }}</h1>
-    <div class="paper-meta">
-      @if (documentNo()) {
-        <span>{{ documentNo() }}</span>
-      }
-      @if (docDate()) {
-        <span>Date {{ docDate() }}</span>
-      }
-      @if (versionNo() > 0) {
-        <span>Version {{ versionNo() }}</span>
-      } @else {
-        <span>Draft</span>
-      }
-      @if (!printMode()) {
-        <span>{{ lifecycleText() }}</span>
-      }
+    <div class="paper-meta-grid">
+      <div>
+        <span class="meta-label">Document ID</span>
+        <span class="meta-value meta-id">{{ documentId() || '—' }}</span>
+      </div>
+      <div>
+        <span class="meta-label">Date</span>
+        <span class="meta-value">{{ docDate() || '—' }}</span>
+      </div>
+      <div>
+        <span class="meta-label">Version</span>
+        <span class="meta-value">
+          @if (versionNo() > 0) {
+            {{ versionNo() }}
+            @if (lifecycle() === 'locked') {
+              (Locked)
+            }
+          } @else {
+            Draft
+          }
+        </span>
+      </div>
     </div>
   </header>
 
@@ -47,30 +55,38 @@
 
   <footer class="paper-signatures">
     <h2>Signatures</h2>
-    <div class="sig-grid">
+    <div class="sig-columns">
       @for (slot of signerViews(); track slot.userId) {
-        <div class="sig-slot" [class.signed]="!!slot.signedAt">
+        <div class="sig-col" [class.signed]="!!slot.signedAt">
           @if (slot.signedAt) {
-            <img class="sig-seal" [src]="brandIcon" alt="" />
-            <p class="sig-badge">Signed</p>
             @if (slot.svgHtml) {
               <div class="sig-svg" [innerHTML]="slot.svgHtml"></div>
             } @else {
               <p class="sig-mark">{{ slot.signedMark || slot.signedName || slot.name }}</p>
             }
             <p class="sig-name">{{ slot.signedName || slot.name }}</p>
+            @if (slot.role) {
+              <p class="sig-role">{{ slot.role }}</p>
+            }
             <p class="sig-time">
               {{ slot.signedAt | date: 'yyyy-MM-dd HH:mm:ss z' }}
             </p>
-          } @else if (!printMode()) {
+          } @else {
             <p class="sig-pending-line"></p>
             <p class="sig-name">{{ slot.name }}</p>
-            <p class="sig-time">Pending</p>
-          } @else {
-            <p class="sig-name">{{ slot.name }}</p>
+            @if (slot.role) {
+              <p class="sig-role">{{ slot.role }}</p>
+            }
+            @if (!printMode()) {
+              <p class="sig-time">Pending signature</p>
+            }
           }
         </div>
       }
     </div>
   </footer>
+
+  <p class="paper-disclaimer">
+    This document is a personal or internal record. It is not intended for formal legal execution.
+  </p>
 </article>

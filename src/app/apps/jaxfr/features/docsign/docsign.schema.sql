@@ -1,13 +1,38 @@
 -- Jaxfr Doc Sign schema, RLS, and RPCs.
--- Paste this entire file into the Supabase SQL editor (safe to re-run).
+-- Paste this entire file into the Supabase SQL editor.
 -- Requires tyapp_user_ids_share_a_group() from user-group.schema.sql.
+--
+-- This run DROPS document tables and recreates them (dummy records only).
+-- tyapp_user_signature (your saved signature profile) is kept.
 --
 -- Draft (sent_at IS NULL): only created_by can read/write. Content lives on
 -- draft_content and is overwritten on save. Sign & send snapshots it as
 -- version 1 and signs the submitter. After send, versions are immutable; a
 -- content edit on Sign & send inserts a new version and signs only the
 -- submitter. Lock when every signer_user_ids row has a signature on the
--- current version.
+-- current version. Optional signer_titles is a { user_id: role } map.
+-- signer_user_ids order is the paper display order (any signer can reorder
+-- until the document is locked). tyapp_docsign_print_log records each print
+-- (printed_by + printed_at); the row uuid is the print id on the paper.
+
+-- ---------------------------------------------------------------------------
+-- Reset document tables
+-- ---------------------------------------------------------------------------
+
+DROP TABLE IF EXISTS public.tyapp_docsign_print_log CASCADE;
+DROP TABLE IF EXISTS public.tyapp_docsign_signature CASCADE;
+DROP TABLE IF EXISTS public.tyapp_docsign_version CASCADE;
+DROP TABLE IF EXISTS public.tyapp_docsign CASCADE;
+
+DROP FUNCTION IF EXISTS public.tyapp_docsign_save_draft(uuid, text, date, timestamptz, text, text, uuid[]);
+DROP FUNCTION IF EXISTS public.tyapp_docsign_save_draft(uuid, text, date, text, text, uuid[]);
+DROP FUNCTION IF EXISTS public.tyapp_docsign_save_draft(uuid, text, date, text, text, uuid[], jsonb);
+DROP FUNCTION IF EXISTS public.tyapp_docsign_save_header(uuid, text, date, timestamptz, text, uuid[]);
+DROP FUNCTION IF EXISTS public.tyapp_docsign_save_header(uuid, text, date, text, uuid[]);
+DROP FUNCTION IF EXISTS public.tyapp_docsign_save_header(uuid, text, date, text, uuid[], jsonb);
+DROP FUNCTION IF EXISTS public.tyapp_docsign_send(uuid);
+DROP FUNCTION IF EXISTS public.tyapp_docsign_save_version(uuid, text);
+DROP FUNCTION IF EXISTS public.tyapp_docsign_sign(uuid);
 
 -- ---------------------------------------------------------------------------
 -- Tables
@@ -44,6 +69,7 @@ CREATE TABLE IF NOT EXISTS public.tyapp_docsign (
   draft_content text NOT NULL DEFAULT '',
   created_by uuid NOT NULL REFERENCES public.tyapp_user (user_id),
   signer_user_ids uuid[] NOT NULL,
+  signer_titles jsonb NOT NULL DEFAULT '{}'::jsonb,
   sent_at timestamptz,
   current_version_no integer NOT NULL DEFAULT 0,
   locked_at timestamptz,
@@ -74,21 +100,6 @@ CREATE INDEX IF NOT EXISTS tyapp_docsign_signers_idx
 
 CREATE INDEX IF NOT EXISTS tyapp_docsign_doc_date_idx
   ON public.tyapp_docsign (doc_date DESC NULLS LAST, created_at DESC);
-
-DROP FUNCTION IF EXISTS public.tyapp_docsign_save_draft(uuid, text, date, timestamptz, text, text, uuid[]);
-DROP FUNCTION IF EXISTS public.tyapp_docsign_save_header(uuid, text, date, timestamptz, text, uuid[]);
-DROP FUNCTION IF EXISTS public.tyapp_docsign_send(uuid);
-DROP FUNCTION IF EXISTS public.tyapp_docsign_save_version(uuid, text);
-DROP FUNCTION IF EXISTS public.tyapp_docsign_sign(uuid, text);
-
-ALTER TABLE public.tyapp_docsign
-  ADD COLUMN IF NOT EXISTS editing_by uuid REFERENCES public.tyapp_user (user_id);
-
-ALTER TABLE public.tyapp_docsign
-  ADD COLUMN IF NOT EXISTS editing_heartbeat timestamptz;
-
-ALTER TABLE public.tyapp_docsign
-  DROP COLUMN IF EXISTS doc_datetime;
 
 CREATE TABLE IF NOT EXISTS public.tyapp_docsign_version (
   tb_tyapp_dsgn_ver_id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -126,14 +137,15 @@ CREATE INDEX IF NOT EXISTS tyapp_docsign_signature_document_idx
 CREATE INDEX IF NOT EXISTS tyapp_docsign_signature_version_idx
   ON public.tyapp_docsign_signature (version_id);
 
-ALTER TABLE public.tyapp_docsign_signature
-  ADD COLUMN IF NOT EXISTS signed_svg text;
+CREATE TABLE IF NOT EXISTS public.tyapp_docsign_print_log (
+  tb_tyapp_dsgn_prn_id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  document_id uuid NOT NULL REFERENCES public.tyapp_docsign (tb_tyapp_dsgn_id),
+  printed_by uuid NOT NULL REFERENCES public.tyapp_user (user_id),
+  printed_at timestamptz NOT NULL DEFAULT now()
+);
 
-ALTER TABLE public.tyapp_docsign_signature
-  ADD COLUMN IF NOT EXISTS signed_mark text;
-
-ALTER TABLE public.tyapp_docsign_signature
-  ADD COLUMN IF NOT EXISTS signature_id uuid REFERENCES public.tyapp_user_signature (tb_tyapp_usig_id);
+CREATE INDEX IF NOT EXISTS tyapp_docsign_print_log_document_idx
+  ON public.tyapp_docsign_print_log (document_id, printed_at DESC);
 
 -- ---------------------------------------------------------------------------
 -- Triggers
@@ -219,12 +231,16 @@ AS $$
 DECLARE
   v_ids uuid[];
 BEGIN
-  SELECT COALESCE(array_agg(DISTINCT x.id), ARRAY[p_created_by])
+  SELECT COALESCE(array_agg(t.id ORDER BY t.ord), ARRAY[p_created_by])
   INTO v_ids
-  FROM unnest(COALESCE(p_signer_user_ids, '{}')) AS x(id)
-  INNER JOIN public.tyapp_user u
-    ON u.user_id = x.id
-   AND u.deleted_at IS NULL;
+  FROM (
+    SELECT x.id, min(x.ord) AS ord
+    FROM unnest(COALESCE(p_signer_user_ids, '{}')) WITH ORDINALITY AS x(id, ord)
+    INNER JOIN public.tyapp_user u
+      ON u.user_id = x.id
+     AND u.deleted_at IS NULL
+    GROUP BY x.id
+  ) t;
 
   IF NOT (p_created_by = ANY (v_ids)) THEN
     v_ids := array_append(v_ids, p_created_by);
@@ -232,6 +248,28 @@ BEGIN
 
   RETURN v_ids;
 END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.tyapp_docsign_normalize_titles(
+  p_ids uuid[],
+  p_titles jsonb
+)
+RETURNS jsonb
+LANGUAGE sql
+STABLE
+SET search_path = public
+AS $$
+  SELECT COALESCE(
+    jsonb_object_agg(x.k, to_jsonb(x.v)),
+    '{}'::jsonb
+  )
+  FROM (
+    SELECT
+      sid::text AS k,
+      nullif(trim(COALESCE(p_titles ->> sid::text, '')), '') AS v
+    FROM unnest(p_ids) AS sid
+  ) x
+  WHERE x.v IS NOT NULL;
 $$;
 
 CREATE OR REPLACE FUNCTION public.tyapp_docsign_lock_if_complete(p_id uuid)
@@ -375,7 +413,8 @@ CREATE OR REPLACE FUNCTION public.tyapp_docsign_save_draft(
   p_doc_date date,
   p_remarks text,
   p_draft_content text,
-  p_signer_user_ids uuid[]
+  p_signer_user_ids uuid[],
+  p_signer_titles jsonb
 )
 RETURNS public.tyapp_docsign
 LANGUAGE plpgsql
@@ -386,6 +425,7 @@ DECLARE
   v_uid uuid := auth.uid();
   v_title text := trim(p_title);
   v_ids uuid[];
+  v_titles jsonb;
   v_row public.tyapp_docsign;
 BEGIN
   IF v_uid IS NULL THEN
@@ -397,6 +437,7 @@ BEGIN
   END IF;
 
   v_ids := public.tyapp_docsign_normalize_signers(v_uid, p_signer_user_ids);
+  v_titles := public.tyapp_docsign_normalize_titles(v_ids, p_signer_titles);
 
   IF NOT public.tyapp_user_ids_share_a_group(v_ids) THEN
     RAISE EXCEPTION 'Everyone on the signer list must belong to the same user group';
@@ -410,6 +451,7 @@ BEGIN
       draft_content,
       created_by,
       signer_user_ids,
+      signer_titles,
       status
     )
     VALUES (
@@ -419,6 +461,7 @@ BEGIN
       COALESCE(p_draft_content, ''),
       v_uid,
       v_ids,
+      v_titles,
       1
     )
     RETURNING * INTO v_row;
@@ -449,7 +492,8 @@ BEGIN
     doc_date = p_doc_date,
     remarks = nullif(trim(p_remarks), ''),
     draft_content = COALESCE(p_draft_content, ''),
-    signer_user_ids = v_ids
+    signer_user_ids = v_ids,
+    signer_titles = v_titles
   WHERE tb_tyapp_dsgn_id = p_id
   RETURNING * INTO v_row;
 
@@ -462,7 +506,8 @@ CREATE OR REPLACE FUNCTION public.tyapp_docsign_save_header(
   p_title text,
   p_doc_date date,
   p_remarks text,
-  p_signer_user_ids uuid[]
+  p_signer_user_ids uuid[],
+  p_signer_titles jsonb
 )
 RETURNS public.tyapp_docsign
 LANGUAGE plpgsql
@@ -473,6 +518,7 @@ DECLARE
   v_uid uuid := auth.uid();
   v_title text := trim(p_title);
   v_ids uuid[];
+  v_titles jsonb;
   v_row public.tyapp_docsign;
 BEGIN
   IF v_uid IS NULL THEN
@@ -502,6 +548,7 @@ BEGIN
   END IF;
 
   v_ids := public.tyapp_docsign_normalize_signers(v_row.created_by, p_signer_user_ids);
+  v_titles := public.tyapp_docsign_normalize_titles(v_ids, p_signer_titles);
 
   IF NOT public.tyapp_user_ids_share_a_group(v_ids) THEN
     RAISE EXCEPTION 'Everyone on the signer list must belong to the same user group';
@@ -512,7 +559,8 @@ BEGIN
     title = v_title,
     doc_date = p_doc_date,
     remarks = nullif(trim(p_remarks), ''),
-    signer_user_ids = v_ids
+    signer_user_ids = v_ids,
+    signer_titles = v_titles
   WHERE tb_tyapp_dsgn_id = p_id
   RETURNING * INTO v_row;
 
@@ -844,6 +892,105 @@ BEGIN
 END;
 $$;
 
+CREATE OR REPLACE FUNCTION public.tyapp_docsign_reorder_signers(
+  p_id uuid,
+  p_signer_user_ids uuid[]
+)
+RETURNS public.tyapp_docsign
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_row public.tyapp_docsign;
+  v_ids uuid[];
+BEGIN
+  IF v_uid IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  SELECT * INTO v_row
+  FROM public.tyapp_docsign
+  WHERE tb_tyapp_dsgn_id = p_id
+    AND deleted_at IS NULL
+  FOR UPDATE;
+
+  IF v_row.tb_tyapp_dsgn_id IS NULL THEN
+    RAISE EXCEPTION 'Document not found';
+  END IF;
+
+  IF v_row.locked_at IS NOT NULL THEN
+    RAISE EXCEPTION 'This document is locked';
+  END IF;
+
+  IF NOT (v_uid = ANY (v_row.signer_user_ids)) THEN
+    RAISE EXCEPTION 'You are not a signer on this document';
+  END IF;
+
+  v_ids := public.tyapp_docsign_normalize_signers(v_row.created_by, p_signer_user_ids);
+
+  IF (
+    SELECT array_agg(id ORDER BY id)
+    FROM unnest(v_ids) AS id
+  ) IS DISTINCT FROM (
+    SELECT array_agg(id ORDER BY id)
+    FROM unnest(v_row.signer_user_ids) AS id
+  ) THEN
+    RAISE EXCEPTION 'Signer list must stay the same; only the order can change';
+  END IF;
+
+  UPDATE public.tyapp_docsign
+  SET signer_user_ids = v_ids
+  WHERE tb_tyapp_dsgn_id = p_id
+  RETURNING * INTO v_row;
+
+  RETURN v_row;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.tyapp_docsign_log_print(p_id uuid)
+RETURNS public.tyapp_docsign_print_log
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_row public.tyapp_docsign_print_log;
+BEGIN
+  IF v_uid IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  IF NOT public.tyapp_docsign_can_read(p_id) THEN
+    RAISE EXCEPTION 'Document not found';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1
+    FROM public.tyapp_docsign
+    WHERE tb_tyapp_dsgn_id = p_id
+      AND deleted_at IS NULL
+      AND locked_at IS NOT NULL
+  ) THEN
+    RAISE EXCEPTION 'Only locked documents can be printed';
+  END IF;
+
+  INSERT INTO public.tyapp_docsign_print_log (
+    document_id,
+    printed_by
+  )
+  VALUES (
+    p_id,
+    v_uid
+  )
+  RETURNING * INTO v_row;
+
+  RETURN v_row;
+END;
+$$;
+
 -- ---------------------------------------------------------------------------
 -- Grants + RLS
 -- ---------------------------------------------------------------------------
@@ -852,20 +999,23 @@ ALTER TABLE public.tyapp_docsign ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tyapp_docsign_version ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tyapp_docsign_signature ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tyapp_user_signature ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.tyapp_docsign_print_log ENABLE ROW LEVEL SECURITY;
 
 REVOKE ALL ON public.tyapp_docsign FROM PUBLIC, anon;
 REVOKE ALL ON public.tyapp_docsign_version FROM PUBLIC, anon;
 REVOKE ALL ON public.tyapp_docsign_signature FROM PUBLIC, anon;
 REVOKE ALL ON public.tyapp_user_signature FROM PUBLIC, anon;
+REVOKE ALL ON public.tyapp_docsign_print_log FROM PUBLIC, anon;
 
 GRANT SELECT ON public.tyapp_docsign TO authenticated;
 GRANT SELECT ON public.tyapp_docsign_version TO authenticated;
 GRANT SELECT ON public.tyapp_docsign_signature TO authenticated;
 GRANT SELECT ON public.tyapp_user_signature TO authenticated;
+GRANT SELECT ON public.tyapp_docsign_print_log TO authenticated;
 
 GRANT EXECUTE ON FUNCTION public.tyapp_docsign_can_read(uuid) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.tyapp_docsign_save_draft(uuid, text, date, text, text, uuid[]) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.tyapp_docsign_save_header(uuid, text, date, text, uuid[]) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.tyapp_docsign_save_draft(uuid, text, date, text, text, uuid[], jsonb) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.tyapp_docsign_save_header(uuid, text, date, text, uuid[], jsonb) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.tyapp_docsign_sign_and_send(uuid, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.tyapp_docsign_save_user_signature(text, text, text, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.tyapp_docsign_current_user_signature() TO authenticated;
@@ -873,6 +1023,8 @@ GRANT EXECUTE ON FUNCTION public.tyapp_docsign_claim_edit(uuid) TO authenticated
 GRANT EXECUTE ON FUNCTION public.tyapp_docsign_heartbeat_edit(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.tyapp_docsign_release_edit(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.tyapp_docsign_soft_delete_single_record(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.tyapp_docsign_reorder_signers(uuid, uuid[]) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.tyapp_docsign_log_print(uuid) TO authenticated;
 
 DROP POLICY IF EXISTS tyapp_docsign_select ON public.tyapp_docsign;
 CREATE POLICY tyapp_docsign_select
@@ -901,5 +1053,12 @@ CREATE POLICY tyapp_user_signature_select
   FOR SELECT
   TO authenticated
   USING (user_id = auth.uid());
+
+DROP POLICY IF EXISTS tyapp_docsign_print_log_select ON public.tyapp_docsign_print_log;
+CREATE POLICY tyapp_docsign_print_log_select
+  ON public.tyapp_docsign_print_log
+  FOR SELECT
+  TO authenticated
+  USING (public.tyapp_docsign_can_read(document_id));
 
 NOTIFY pgrst, 'reload schema';

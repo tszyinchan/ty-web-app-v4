@@ -45,9 +45,19 @@
   background: transparent;
 }
 
+:host.print-route,
+:host.print-route .layout-shell,
+:host.print-route .main-scroll-view,
+:host.print-route .main-scroll-view .page-container {
+  background: #fff;
+  background-image: none;
+}
+
 @media print {
   :host {
     height: auto;
+    background: #fff;
+    background-image: none;
   }
 
   app-toolbar {
@@ -61,5 +71,6 @@
     max-height: none;
     overflow: visible;
     background: #fff;
+    background-image: none;
   }
 }

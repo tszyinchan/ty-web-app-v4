@@ -8,15 +8,12 @@ import {
   DOCSIGN_DRIVE_PREVIEW,
   DOCSIGN_DRIVE_VIEW,
 } from './docsign.constants';
-import {
-  lifecycleLabel,
-  sanitizeSignatureSvg,
-  splitDocsignContent,
-} from './docsign.util';
+import { sanitizeSignatureSvg, splitDocsignContent } from './docsign.util';
 
 export interface DocsignSignerSlot {
   userId: string;
   name: string;
+  role?: string | null;
   signedName: string | null;
   signedMark?: string | null;
   signedAt: string | null;
@@ -48,9 +45,7 @@ export class DocsignDocumentView {
   content = input<string>('');
   signers = input<DocsignSignerSlot[]>([]);
   printMode = input(false);
-  documentNo = input<string>('');
-
-  lifecycleText = computed(() => lifecycleLabel(this.lifecycle()));
+  documentId = input<string>('');
 
   signerViews = computed(() =>
     this.signers().map((slot) => ({

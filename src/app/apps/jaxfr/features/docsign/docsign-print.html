@@ -1,19 +1,50 @@
 <div class="print-page">
   <div class="print-actions">
-    <a routerLink="/docsign/list">Back to list</a>
+    <button type="button" class="gloss-btn" (click)="backToEdit()">Back</button>
     <button type="button" class="gloss-btn primary" (click)="onPrint()">Print</button>
   </div>
 
   @if (loaded(); as doc) {
-    <app-docsign-document
-      [title]="doc.title"
-      [docDate]="doc.doc_date || null"
-      [documentNo]="documentNoLabel()"
-      [versionNo]="doc.current_version_no"
-      [lifecycle]="lifecycle()"
-      [content]="content()"
-      [signers]="paperSigners()"
-      [printMode]="true"
-    />
+    @if (printLog(); as log) {
+      <table class="print-sheet">
+        <thead>
+          <tr>
+            <th>
+              <div class="print-running">
+                <span class="print-running-title">{{ doc.title }}</span>
+                <span>Print ID: {{ log.tb_tyapp_dsgn_prn_id }}</span>
+                <span>{{ log.printed_at | date: 'yyyy-MM-dd HH:mm:ss z' }}</span>
+              </div>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              <app-docsign-document
+                [title]="doc.title"
+                [docDate]="doc.doc_date || null"
+                [documentId]="doc.tb_tyapp_dsgn_id"
+                [versionNo]="doc.current_version_no"
+                [lifecycle]="lifecycle()"
+                [content]="content()"
+                [signers]="paperSigners()"
+                [printMode]="true"
+              />
+            </td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr>
+            <td>
+              <div class="print-running print-running-foot">
+                <span>Print ID: {{ log.tb_tyapp_dsgn_prn_id }}</span>
+                <span>{{ log.printed_at | date: 'yyyy-MM-dd HH:mm:ss z' }}</span>
+              </div>
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    }
   }
 </div>

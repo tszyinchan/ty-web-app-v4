@@ -7,6 +7,7 @@ import {
   DocsignDocumentDetail,
   DocsignLifecycle,
   DocsignSignature,
+  DocsignSignerTitles,
   DocsignVersion,
 } from './docsign.model';
 
@@ -195,6 +196,31 @@ export function lifecycleLabel(status: DocsignLifecycle): string {
   if (status === 'draft') return 'Draft';
   if (status === 'pending') return 'Awaiting signatures';
   return 'Locked';
+}
+
+export function readerStatusLabel(status: DocsignLifecycle): string {
+  if (status === 'draft') return 'Draft';
+  if (status === 'pending') return 'In progress';
+  return 'Completed';
+}
+
+export function normalizeSignerTitles(
+  ids: string[],
+  titles: DocsignSignerTitles | null | undefined,
+): DocsignSignerTitles {
+  const next: DocsignSignerTitles = {};
+  for (const id of ids) {
+    const title = (titles?.[id] ?? '').trim();
+    if (title) next[id] = title;
+  }
+  return next;
+}
+
+export function sameSignerSet(left: string[], right: string[]): boolean {
+  if (left.length !== right.length) return false;
+  const a = [...left].sort();
+  const b = [...right].sort();
+  return a.every((id, index) => id === b[index]);
 }
 
 export interface MarkdownEditResult {

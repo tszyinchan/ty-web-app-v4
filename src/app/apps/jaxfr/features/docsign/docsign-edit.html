@@ -57,24 +57,66 @@
 
       <section class="form-group">
         <h3 class="group-header">Signers</h3>
-        <p class="group-note">You are always a signer. Everyone must belong to the same user group.</p>
-        <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
-          <mat-label>Other signers</mat-label>
-          <mat-chip-grid #userGrid aria-label="Signers">
-            <mat-chip-row>{{ displayUserName(doc.created_by) }} (owner)</mat-chip-row>
-            @for (uid of otherSignerIds(); track uid) {
-              <mat-chip-row
-                [removable]="isOwner() && !isFormLocked()"
-                (removed)="removeSigner(uid)"
-              >
-                {{ displayUserName(uid) }}
-                @if (isOwner() && !isFormLocked()) {
-                  <button matChipRemove>
+        <p class="group-note">
+          You are always a signer. Optionally give each person a role on this document.
+          Any signer can set the display order. Everyone must belong to the same user group.
+        </p>
+        <div class="signer-list">
+          @for (uid of doc.signer_user_ids; track uid; let first = $first; let last = $last) {
+            <div class="signer-row">
+              <div class="signer-who">
+                @if (canReorderSigners()) {
+                  <div class="signer-order">
+                    <button
+                      mat-icon-button
+                      type="button"
+                      [disabled]="first"
+                      (click)="moveSigner(uid, -1)"
+                      aria-label="Move signer up"
+                    >
+                      <mat-icon>arrow_upward</mat-icon>
+                    </button>
+                    <button
+                      mat-icon-button
+                      type="button"
+                      [disabled]="last"
+                      (click)="moveSigner(uid, 1)"
+                      aria-label="Move signer down"
+                    >
+                      <mat-icon>arrow_downward</mat-icon>
+                    </button>
+                  </div>
+                }
+                <span class="signer-name">{{ displayUserName(uid) }}</span>
+                @if (uid === doc.created_by) {
+                  <span class="signer-tag">owner</span>
+                }
+                @if (isOwner() && !isFormLocked() && uid !== doc.created_by) {
+                  <button
+                    mat-icon-button
+                    type="button"
+                    (click)="removeSigner(uid)"
+                    aria-label="Remove signer"
+                  >
                     <mat-icon>cancel</mat-icon>
                   </button>
                 }
-              </mat-chip-row>
-            }
+              </div>
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-label>Role on this document</mat-label>
+                <input
+                  matInput
+                  [ngModel]="signerTitle(uid)"
+                  (ngModelChange)="setSignerTitle(uid, $event)"
+                  [disabled]="isFormLocked() || (!isOwner() && isSent())"
+                />
+              </mat-form-field>
+            </div>
+          }
+        </div>
+        <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
+          <mat-label>Other signers</mat-label>
+          <mat-chip-grid #userGrid aria-label="Signers">
             <input
               placeholder="Add a signer..."
               #userInput
@@ -212,12 +254,11 @@
       <app-docsign-document
         [title]="doc.title"
         [docDate]="doc.doc_date || null"
-        [documentNo]="paperDocumentNo()"
+        [documentId]="doc.tb_tyapp_dsgn_id ?? ''"
         [versionNo]="doc.current_version_no"
         [lifecycle]="paperLifecycle()"
         [content]="doc.content"
         [signers]="paperSigners()"
-        [printMode]="printing()"
       />
     </div>
   }

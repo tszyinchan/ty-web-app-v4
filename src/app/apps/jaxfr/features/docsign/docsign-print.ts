@@ -1,9 +1,5 @@
-import {
-  Component,
-  OnInit,
-  computed,
-  inject,
-} from '@angular/core';
+import { DatePipe } from '@angular/common';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { DisplayNamePipe } from '../../../../core/pipes/display-name.pipe';
 import { UserService } from '../user/user.service';
@@ -11,11 +7,11 @@ import {
   DocsignDocumentView,
   DocsignSignerSlot,
 } from './docsign-document';
+import { DocsignDocumentDetail, DocsignPrintLog } from './docsign.model';
 import { DocsignService } from './docsign.service';
 import {
   bodyContent,
   currentVersion,
-  documentNo,
   docsignLifecycle,
   signaturesForVersion,
 } from './docsign.util';
@@ -23,7 +19,7 @@ import {
 @Component({
   selector: 'app-docsign-print',
   standalone: true,
-  imports: [RouterModule, DocsignDocumentView],
+  imports: [DatePipe, RouterModule, DocsignDocumentView],
   providers: [DisplayNamePipe],
   templateUrl: './docsign-print.html',
   styleUrl: './docsign-print.scss',
@@ -36,13 +32,11 @@ export class DocsignPrint implements OnInit {
   public docsignService = inject(DocsignService);
   public userService = inject(UserService);
 
-  private id = this.route.snapshot.paramMap.get('id');
+  private documentId = this.route.snapshot.paramMap.get('id');
+  private printLogId = this.route.snapshot.paramMap.get('printLogId');
 
-  loaded = computed(() =>
-    this.docsignService
-      .documents()
-      .find((doc) => doc.tb_tyapp_dsgn_id === this.id),
-  );
+  loaded = signal<DocsignDocumentDetail | null>(null);
+  printLog = signal<DocsignPrintLog | null>(null);
 
   paperSigners = computed<DocsignSignerSlot[]>(() => {
     const loaded = this.loaded();
@@ -62,6 +56,7 @@ export class DocsignPrint implements OnInit {
         signedMark: sig?.signed_mark ?? null,
         signedAt: sig?.signed_at ?? null,
         signedSvg: sig?.signed_svg ?? null,
+        role: loaded.signer_titles?.[userId] || null,
       };
     });
   });
@@ -71,34 +66,44 @@ export class DocsignPrint implements OnInit {
     return loaded ? bodyContent(loaded) : '';
   });
 
-  documentNoLabel = computed(() =>
-    documentNo(this.loaded()?.tb_tyapp_dsgn_seq_no),
-  );
-
   lifecycle = computed(() =>
     docsignLifecycle(this.loaded()?.sent_at, this.loaded()?.locked_at),
   );
 
   async ngOnInit() {
-    await Promise.all([
-      this.docsignService.fetchAllDocuments(),
-      this.userService.fetchAllUsers(),
-    ]);
-    const id = this.id;
-    if (!id) {
+    const id = this.documentId;
+    const printLogId = this.printLogId;
+    if (!id || !printLogId) {
       this.router.navigate(['/docsign/list']);
       return;
     }
-    const doc =
-      this.loaded() ?? (await this.docsignService.fetchDocumentById(id));
-    if (!doc?.locked_at) {
+
+    await this.userService.fetchAllUsers();
+    const [doc, log] = await Promise.all([
+      this.docsignService.fetchDocumentById(id),
+      this.docsignService.fetchPrintLog(printLogId),
+    ]);
+
+    if (!doc?.locked_at || !log || log.document_id !== id) {
       this.router.navigate(['/docsign/edit', id]);
       return;
     }
-    setTimeout(() => window.print(), 50);
+
+    this.loaded.set(doc);
+    this.printLog.set(log);
+    setTimeout(() => window.print(), 200);
   }
 
   onPrint() {
     window.print();
+  }
+
+  backToEdit() {
+    const id = this.documentId;
+    if (id) {
+      this.router.navigate(['/docsign/edit', id]);
+      return;
+    }
+    this.router.navigate(['/docsign/list']);
   }
 }
