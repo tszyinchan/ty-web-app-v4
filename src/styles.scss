@@ -226,13 +226,7 @@ body {
   }
 
   @page {
-    margin: 16mm 12mm 16mm;
+    margin: 18mm 12mm 16mm;
     background: #fff;
-
-    @bottom-center {
-      content: "Page " counter(page);
-      font-size: 9pt;
-      color: #5a6a78;
-    }
   }
 }

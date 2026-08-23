@@ -30,7 +30,7 @@
             matInput
             [(ngModel)]="doc.title"
             required
-            [disabled]="isFormLocked() || (!isOwner() && isSent())"
+            [disabled]="!canEditDocument()"
           />
         </mat-form-field>
 
@@ -41,15 +41,15 @@
               matInput
               type="date"
               [(ngModel)]="doc.doc_date"
-              [disabled]="isFormLocked() || (!isOwner() && isSent())"
+              [disabled]="!canEditDocument()"
             />
           </mat-form-field>
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>Remarks (not signed)</mat-label>
+            <mat-label>Remarks</mat-label>
             <input
               matInput
               [(ngModel)]="doc.remarks"
-              [disabled]="isFormLocked() || (!isOwner() && isSent())"
+              [disabled]="!canEditDocument()"
             />
           </mat-form-field>
         </div>
@@ -59,7 +59,7 @@
         <h3 class="group-header">Signers</h3>
         <p class="group-note">
           You are always a signer. Optionally give each person a role on this document.
-          Any signer can set the display order. Everyone must belong to the same user group.
+          Anyone who has not signed the current version can edit it. Everyone must belong to the same user group.
         </p>
         <div class="signer-list">
           @for (uid of doc.signer_user_ids; track uid; let first = $first; let last = $last) {
@@ -91,7 +91,7 @@
                 @if (uid === doc.created_by) {
                   <span class="signer-tag">owner</span>
                 }
-                @if (isOwner() && !isFormLocked() && uid !== doc.created_by) {
+                @if (canEditDocument() && uid !== doc.created_by && uid !== authService.userProfile()?.user_id) {
                   <button
                     mat-icon-button
                     type="button"
@@ -108,37 +108,38 @@
                   matInput
                   [ngModel]="signerTitle(uid)"
                   (ngModelChange)="setSignerTitle(uid, $event)"
-                  [disabled]="isFormLocked() || (!isOwner() && isSent())"
+                  [disabled]="!canEditDocument()"
                 />
               </mat-form-field>
             </div>
           }
         </div>
-        <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
-          <mat-label>Other signers</mat-label>
-          <mat-chip-grid #userGrid aria-label="Signers">
-            <input
-              placeholder="Add a signer..."
-              #userInput
-              [matChipInputFor]="userGrid"
-              [matAutocomplete]="userAuto"
-              [disabled]="!isOwner() || isFormLocked()"
-              (input)="userSearch.set(userInput.value)"
-              (focus)="userSearch.set('')"
-            />
-          </mat-chip-grid>
-          <mat-autocomplete
-            #userAuto="matAutocomplete"
-            (optionSelected)="addSigner($event); userInput.value = ''"
-          >
-            @for (opt of filteredUsers(); track opt.value) {
-              <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
-            }
-          </mat-autocomplete>
-        </mat-form-field>
+        @if (showAddSigner()) {
+          <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
+            <mat-label>Other signers</mat-label>
+            <mat-chip-grid #userGrid aria-label="Signers">
+              <input
+                placeholder="Add a signer..."
+                #userInput
+                [matChipInputFor]="userGrid"
+                [matAutocomplete]="userAuto"
+                (input)="userSearch.set(userInput.value)"
+                (focus)="userSearch.set('')"
+              />
+            </mat-chip-grid>
+            <mat-autocomplete
+              #userAuto="matAutocomplete"
+              (optionSelected)="addSigner($event); userInput.value = ''"
+            >
+              @for (opt of filteredUsers(); track opt.value) {
+                <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
+              }
+            </mat-autocomplete>
+          </mat-form-field>
+        }
       </section>
 
-      @if (!isFormLocked()) {
+      @if (canEditDocument()) {
         <section class="form-group">
           <h3 class="group-header">Body</h3>
           <div class="md-editor">

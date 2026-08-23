@@ -10,10 +10,13 @@
         <thead>
           <tr>
             <th>
-              <div class="print-running">
-                <span class="print-running-title">{{ doc.title }}</span>
-                <span>Print ID: {{ log.tb_tyapp_dsgn_prn_id }}</span>
-                <span>{{ log.printed_at | date: 'yyyy-MM-dd HH:mm:ss z' }}</span>
+              <div class="print-running print-running-head">
+                <span class="print-brand">
+                  <img class="print-brand-icon" [src]="brandIcon" alt="" />
+                  <span>{{ appName }} Doc Sign</span>
+                </span>
+                <span class="print-running-title">Title: {{ doc.title }}</span>
+                <span>Created by: {{ creatorName() }}</span>
               </div>
             </th>
           </tr>
@@ -38,6 +41,7 @@
           <tr>
             <td>
               <div class="print-running print-running-foot">
+                <span>Doc ID: {{ doc.tb_tyapp_dsgn_id }}</span>
                 <span>Print ID: {{ log.tb_tyapp_dsgn_prn_id }}</span>
                 <span>{{ log.printed_at | date: 'yyyy-MM-dd HH:mm:ss z' }}</span>
               </div>

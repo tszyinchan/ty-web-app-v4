@@ -107,6 +107,7 @@ const CATEGORY_LINKS: Record<string, FeatureHubLink[]> = {
   ],
   'Doc Sign': [
     { title: 'Sign list', icon: 'list', route: '/docsign/list' },
+    { title: 'Print log', icon: 'print', route: '/docsign/prints' },
     { title: 'Signature', icon: 'draw', route: '/docsign/signature' },
   ],
 };

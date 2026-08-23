@@ -1,0 +1,55 @@
+<div class="standard-list-view">
+  <div class="list-search-container">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="list-search-input">
+      <mat-icon matPrefix>search</mat-icon>
+      <mat-label>Search by document, printer, or id...</mat-label>
+      <input matInput [(ngModel)]="searchQuery" (ngModelChange)="onSearchChange()">
+      @if (searchQuery()) {
+        <button mat-icon-button matSuffix (click)="searchQuery.set(''); onSearchChange()">
+          <mat-icon>close</mat-icon>
+        </button>
+      }
+    </mat-form-field>
+  </div>
+
+  <div class="list-container">
+    @for (item of pagedListVM(); track item.tb_tyapp_dsgn_prn_id) {
+      <a class="item-link" [routerLink]="['/docsign/edit', item.document_id]">
+        <div class="item-content">
+          <div class="item-info-group">
+            <span class="main-text">{{ item.title }}</span>
+            <span class="sub-text">
+              {{ item.printerName }}
+              · {{ item.printed_at | date: 'yyyy-MM-dd HH:mm:ss z' }}
+            </span>
+            <span class="sub-text print-ids">
+              Print ID {{ item.tb_tyapp_dsgn_prn_id }}
+            </span>
+          </div>
+          <div class="item-status-group">
+            <mat-icon class="chevron">chevron_right</mat-icon>
+          </div>
+        </div>
+      </a>
+    } @empty {
+      @if (!docsignService.loading()) {
+        <div class="empty-placeholder">
+          No print records found.
+        </div>
+      }
+    }
+  </div>
+
+  <footer class="list-footer paginated">
+    <div class="divider"></div>
+    <mat-paginator
+      [length]="filteredListVM().length"
+      [pageSize]="pageSize()"
+      [pageIndex]="pageIndex()"
+      [pageSizeOptions]="[10, 25, 50, 100]"
+      (page)="onPageChange($event)"
+      aria-label="Select page of print records"
+    >
+    </mat-paginator>
+  </footer>
+</div>

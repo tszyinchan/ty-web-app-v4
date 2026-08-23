@@ -49,30 +49,37 @@
 
 .diff-body {
   margin: 0;
-  padding: 0;
+  padding: 4px 0;
   font-family: Consolas, 'Courier New', monospace;
   font-size: 12px;
   line-height: 1.5;
-  white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
 
 .diff-line {
-  display: block;
   padding: 0 10px;
   min-height: 1.5em;
+  white-space: pre-wrap;
 
   &.is-added {
-    background: #e6ffec;
+    background: #f3fff6;
   }
 
   &.is-removed {
-    background: #ffebe9;
+    background: #fff5f5;
   }
 
   &.is-empty {
     background: #f6f8fa;
   }
+}
+
+.part-added {
+  background: #abf2bc;
+}
+
+.part-removed {
+  background: #ffcecb;
 }
 
 @media (max-width: 800px) {

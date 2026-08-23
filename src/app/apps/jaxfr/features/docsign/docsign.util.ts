@@ -1,8 +1,9 @@
 import DOMPurify, { type Config } from 'dompurify';
-import { diffLines } from 'diff';
+import { diffChars, diffLines } from 'diff';
 import { marked } from 'marked';
 import {
   DiffLineVm,
+  DiffPartVm,
   DocsignContentBlock,
   DocsignDocumentDetail,
   DocsignLifecycle,
@@ -158,6 +159,41 @@ export function bodyContent(doc: DocsignDocumentDetail): string {
   return currentVersion(doc)?.content ?? '';
 }
 
+function splitChangeLines(value: string): string[] {
+  const lines = value.split('\n');
+  if (lines.length > 0 && lines[lines.length - 1] === '') {
+    lines.pop();
+  }
+  return lines;
+}
+
+function wholeLineParts(kind: 'added' | 'removed' | 'unchanged', text: string): DiffPartVm[] {
+  return [{ kind, text }];
+}
+
+function charDiffParts(
+  oldLine: string,
+  newLine: string,
+): { left: DiffPartVm[]; right: DiffPartVm[] } {
+  const left: DiffPartVm[] = [];
+  const right: DiffPartVm[] = [];
+  for (const part of diffChars(oldLine, newLine)) {
+    if (part.added) {
+      right.push({ kind: 'added', text: part.value });
+    } else if (part.removed) {
+      left.push({ kind: 'removed', text: part.value });
+    } else {
+      left.push({ kind: 'unchanged', text: part.value });
+      right.push({ kind: 'unchanged', text: part.value });
+    }
+  }
+  return { left, right };
+}
+
+function emptyDiffLine(): DiffLineVm {
+  return { kind: 'empty', text: '', parts: [] };
+}
+
 export function splitDiffSides(
   oldText: string,
   newText: string,
@@ -165,28 +201,78 @@ export function splitDiffSides(
   const changes = diffLines(oldText, newText);
   const left: DiffLineVm[] = [];
   const right: DiffLineVm[] = [];
+  let index = 0;
 
-  for (const part of changes) {
-    const lines = part.value.split('\n');
-    if (lines.length > 0 && lines[lines.length - 1] === '') {
-      lines.pop();
+  while (index < changes.length) {
+    const part = changes[index];
+    const next = changes[index + 1];
+    const removedThenAdded = !!part.removed && !!next?.added;
+    const addedThenRemoved = !!part.added && !!next?.removed;
+
+    if (removedThenAdded || addedThenRemoved) {
+      const removedPart = part.removed ? part : next;
+      const addedPart = part.added ? part : next;
+      const oldLines = splitChangeLines(removedPart.value);
+      const newLines = splitChangeLines(addedPart.value);
+      const pairCount = Math.max(oldLines.length, newLines.length);
+      for (let row = 0; row < pairCount; row += 1) {
+        const oldLine = oldLines[row];
+        const newLine = newLines[row];
+        if (oldLine !== undefined && newLine !== undefined) {
+          const parts = charDiffParts(oldLine, newLine);
+          left.push({ kind: 'removed', text: oldLine, parts: parts.left });
+          right.push({ kind: 'added', text: newLine, parts: parts.right });
+        } else if (oldLine !== undefined) {
+          left.push({
+            kind: 'removed',
+            text: oldLine,
+            parts: wholeLineParts('removed', oldLine),
+          });
+          right.push(emptyDiffLine());
+        } else if (newLine !== undefined) {
+          left.push(emptyDiffLine());
+          right.push({
+            kind: 'added',
+            text: newLine,
+            parts: wholeLineParts('added', newLine),
+          });
+        }
+      }
+      index += 2;
+      continue;
     }
+
+    const lines = splitChangeLines(part.value);
     if (part.added) {
       for (const line of lines) {
-        left.push({ kind: 'empty', text: '' });
-        right.push({ kind: 'added', text: line });
+        left.push(emptyDiffLine());
+        right.push({
+          kind: 'added',
+          text: line,
+          parts: wholeLineParts('added', line),
+        });
       }
     } else if (part.removed) {
       for (const line of lines) {
-        left.push({ kind: 'removed', text: line });
-        right.push({ kind: 'empty', text: '' });
+        left.push({
+          kind: 'removed',
+          text: line,
+          parts: wholeLineParts('removed', line),
+        });
+        right.push(emptyDiffLine());
       }
     } else {
       for (const line of lines) {
-        left.push({ kind: 'unchanged', text: line });
-        right.push({ kind: 'unchanged', text: line });
+        const row: DiffLineVm = {
+          kind: 'unchanged',
+          text: line,
+          parts: wholeLineParts('unchanged', line),
+        };
+        left.push(row);
+        right.push({ ...row, parts: [...row.parts] });
       }
     }
+    index += 1;
   }
 
   return { left, right };
@@ -221,6 +307,58 @@ export function sameSignerSet(left: string[], right: string[]): boolean {
   const a = [...left].sort();
   const b = [...right].sort();
   return a.every((id, index) => id === b[index]);
+}
+
+export function cssQuotedString(value: string): string {
+  return `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
+}
+
+export function compactStampDate(value: string | null | undefined): string {
+  if (!value) return '';
+  const day = value.slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return '';
+  return day.replaceAll('-', '');
+}
+
+export function compactStampDateTime(iso: string | null | undefined): {
+  date: string;
+  time: string;
+} | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return {
+    date: `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`,
+    time: `${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`,
+  };
+}
+
+function printNameSegment(value: string): string {
+  return value
+    .replace(/[\x00-\x1f<>:"/\\|?*]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+export function buildDocsignPrintPageName(input: {
+  printedAt: string;
+  docDate?: string | null;
+  title: string;
+  creatorName: string;
+  appName: string;
+}): string {
+  const printed = compactStampDateTime(input.printedAt);
+  const printDate = printed?.date || '00000000';
+  const printTime = printed?.time || '000000';
+  const docDate = compactStampDate(input.docDate);
+  const title = printNameSegment(input.title) || 'Untitled';
+  const creator = printNameSegment(input.creatorName) || 'Unknown';
+  const brand = printNameSegment(`${input.appName} Doc Sign`);
+  const parts = [printDate, brand, printTime];
+  if (docDate) parts.push(docDate);
+  parts.push(title, creator);
+  return parts.join('_');
 }
 
 export interface MarkdownEditResult {

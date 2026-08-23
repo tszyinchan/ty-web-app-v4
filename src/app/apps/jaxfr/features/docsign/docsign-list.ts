@@ -130,6 +130,14 @@ export class DocsignList implements OnInit, OnDestroy {
     this.headerService.setConfig({
       actions: [
         {
+          label: 'Print log',
+          icon: 'print',
+          type: 'secondary',
+          disabled: isLoading,
+          onClick: () =>
+            this.router.navigate(['../prints'], { relativeTo: this.route }),
+        },
+        {
           label: 'My signature',
           icon: 'draw',
           type: 'secondary',

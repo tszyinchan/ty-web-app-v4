@@ -22,6 +22,10 @@
   padding: 0;
 }
 
+.docsign-paper.print-mode .paper-body {
+  max-width: none;
+}
+
 .paper-masthead {
   position: relative;
   border-bottom: 0;
@@ -67,8 +71,8 @@
 
 .paper-meta-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
+  grid-template-columns: minmax(18em, 2.4fr) minmax(7em, 0.8fr) minmax(7em, 0.9fr);
+  gap: 16px 20px;
 }
 
 .meta-label {
@@ -87,7 +91,8 @@
 }
 
 .meta-id {
-  font-size: 12px;
+  font-size: 13px;
+  letter-spacing: 0;
   overflow-wrap: anywhere;
 }
 
@@ -265,8 +270,7 @@
 .paper-signatures {
   position: relative;
   margin-top: 56px;
-  padding-top: 20px;
-  border-top: 1px solid #d9e1e7;
+  padding-top: 0;
 }
 
 .paper-signatures h2 {
@@ -356,6 +360,10 @@
     background: #fff;
   }
 
+  .paper-body {
+    max-width: none;
+  }
+
   .paper-masthead,
   .paper-signatures,
   .sig-col,
@@ -386,6 +394,58 @@
   .sig-col {
     break-inside: avoid;
     page-break-inside: avoid;
+  }
+
+  .paper-kicker,
+  .paper-brand-sub {
+    font-size: 8pt;
+  }
+
+  .paper-brand-icon {
+    width: 22pt;
+    height: 22pt;
+  }
+
+  .paper-title {
+    margin: 12pt 0 14pt;
+    font-size: 18pt;
+  }
+
+  .meta-label {
+    font-size: 7.5pt;
+  }
+
+  .meta-value,
+  .meta-id {
+    font-size: 10pt;
+  }
+
+  .paper-body {
+    max-width: none;
+    font-size: 11pt;
+    line-height: 1.45;
+  }
+
+  .docsign-paper .md-body table,
+  .docsign-paper .md-body pre,
+  .docsign-paper .md-body pre code,
+  .docsign-paper .md-body code {
+    font-size: 10pt;
+  }
+
+  .paper-signatures h2,
+  .sig-name {
+    font-size: 10pt;
+  }
+
+  .sig-mark {
+    font-size: 16pt;
+  }
+
+  .sig-time,
+  .sig-role,
+  .paper-disclaimer {
+    font-size: 8pt;
   }
 }
 

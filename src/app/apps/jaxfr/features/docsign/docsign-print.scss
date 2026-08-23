@@ -1,7 +1,7 @@
 .print-page {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 16px 16px 48px;
+  max-width: none;
+  margin: 0;
+  padding: 16px 24px 48px;
   overflow: visible;
   background: #fff;
 }
@@ -31,31 +31,62 @@
 
 .print-sheet thead,
 .print-sheet tfoot {
-  display: none;
+  display: table-header-group;
+}
+
+.print-sheet tfoot {
+  display: table-footer-group;
 }
 
 .print-running {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
+  font-family: Roboto, "Helvetica Neue", sans-serif;
   font-size: 10px;
   line-height: 1.4;
   color: #5a6a78;
 }
 
+.print-brand {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.print-brand-icon {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+}
+
 .print-running-title {
   min-width: 0;
-  max-width: 42%;
+  flex: 1 1 auto;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   font-weight: 600;
   color: #1c1c1c;
+  text-align: center;
 }
 
 .print-running-foot {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1.3fr) minmax(0, 1fr);
+  gap: 8px 12px;
+  align-items: start;
   padding-top: 6px;
+}
+
+.print-running-foot span {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 @media print {
@@ -85,15 +116,23 @@
     display: table-footer-group;
   }
 
-  .print-running {
-    padding-bottom: 8px;
-    margin-bottom: 10px;
+  .print-running-head {
+    display: none;
+  }
+
+  .print-sheet thead th {
+    padding: 0 0 6pt;
     border-bottom: 1px solid #d9e1e7;
   }
 
+  .print-running {
+    font-family: Roboto, "Helvetica Neue", sans-serif;
+    font-size: 8pt;
+  }
+
   .print-running-foot {
-    margin: 10px 0 0;
-    padding-top: 8px;
+    margin: 8pt 0 0;
+    padding-top: 6pt;
     border-top: 1px solid #d9e1e7;
     border-bottom: 0;
   }

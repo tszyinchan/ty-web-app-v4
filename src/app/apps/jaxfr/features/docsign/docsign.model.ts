@@ -97,7 +97,13 @@ export type DocsignContentBlock =
 
 export type DiffLineKind = 'added' | 'removed' | 'unchanged' | 'empty';
 
+export interface DiffPartVm {
+  kind: 'added' | 'removed' | 'unchanged';
+  text: string;
+}
+
 export interface DiffLineVm {
   kind: DiffLineKind;
   text: string;
+  parts: DiffPartVm[];
 }

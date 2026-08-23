@@ -156,4 +156,173 @@ CREATE POLICY tyapp_docsign_print_log_select
   TO authenticated
   USING (public.tyapp_docsign_can_read(document_id));
 
+DROP FUNCTION IF EXISTS public.tyapp_docsign_sign_and_send(uuid, text);
+DROP FUNCTION IF EXISTS public.tyapp_docsign_sign_and_send(uuid, text, text, date, text, uuid[], jsonb);
+
+CREATE OR REPLACE FUNCTION public.tyapp_docsign_sign_and_send(
+  p_id uuid,
+  p_title text,
+  p_doc_date date,
+  p_remarks text,
+  p_content text,
+  p_signer_user_ids uuid[],
+  p_signer_titles jsonb
+)
+RETURNS public.tyapp_docsign
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_row public.tyapp_docsign;
+  v_ver_id uuid;
+  v_current text;
+  v_next integer;
+  v_title text := trim(p_title);
+  v_remarks text := nullif(trim(p_remarks), '');
+  v_content text := COALESCE(p_content, '');
+  v_ids uuid[];
+  v_titles jsonb;
+  v_changed boolean := false;
+  v_already_signed boolean := false;
+BEGIN
+  IF v_uid IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  IF v_title IS NULL OR length(v_title) = 0 THEN
+    RAISE EXCEPTION 'Title is required';
+  END IF;
+
+  SELECT * INTO v_row
+  FROM public.tyapp_docsign
+  WHERE tb_tyapp_dsgn_id = p_id
+    AND deleted_at IS NULL
+  FOR UPDATE;
+
+  IF v_row.tb_tyapp_dsgn_id IS NULL THEN
+    RAISE EXCEPTION 'Document not found';
+  END IF;
+
+  IF v_row.locked_at IS NOT NULL THEN
+    RAISE EXCEPTION 'This document is locked';
+  END IF;
+
+  v_ids := public.tyapp_docsign_normalize_signers(v_row.created_by, p_signer_user_ids);
+  v_titles := public.tyapp_docsign_normalize_titles(v_ids, p_signer_titles);
+
+  IF NOT (v_uid = ANY (v_ids)) THEN
+    RAISE EXCEPTION 'You are not a signer on this document';
+  END IF;
+
+  IF NOT public.tyapp_user_ids_share_a_group(v_ids) THEN
+    RAISE EXCEPTION 'Everyone on the signer list must belong to the same user group';
+  END IF;
+
+  IF v_row.sent_at IS NULL THEN
+    IF v_row.created_by <> v_uid THEN
+      RAISE EXCEPTION 'Only the owner can send this document';
+    END IF;
+
+    UPDATE public.tyapp_docsign
+    SET
+      title = v_title,
+      doc_date = p_doc_date,
+      remarks = v_remarks,
+      draft_content = v_content,
+      signer_user_ids = v_ids,
+      signer_titles = v_titles,
+      sent_at = now(),
+      current_version_no = 1
+    WHERE tb_tyapp_dsgn_id = p_id;
+
+    INSERT INTO public.tyapp_docsign_version (
+      document_id,
+      version_no,
+      content,
+      created_by
+    )
+    VALUES (
+      p_id,
+      1,
+      v_content,
+      v_uid
+    )
+    RETURNING tb_tyapp_dsgn_ver_id INTO v_ver_id;
+
+    PERFORM public.tyapp_docsign_insert_my_signature(p_id, v_ver_id);
+    RETURN public.tyapp_docsign_lock_if_complete(p_id);
+  END IF;
+
+  IF NOT (v_uid = ANY (v_row.signer_user_ids)) THEN
+    RAISE EXCEPTION 'You are not a signer on this document';
+  END IF;
+
+  SELECT tb_tyapp_dsgn_ver_id, content
+  INTO v_ver_id, v_current
+  FROM public.tyapp_docsign_version
+  WHERE document_id = p_id
+    AND version_no = v_row.current_version_no;
+
+  IF v_ver_id IS NULL THEN
+    RAISE EXCEPTION 'Current version not found';
+  END IF;
+
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.tyapp_docsign_signature
+    WHERE version_id = v_ver_id
+      AND user_id = v_uid
+  )
+  INTO v_already_signed;
+
+  IF v_already_signed THEN
+    RAISE EXCEPTION 'You already signed this version';
+  END IF;
+
+  v_changed :=
+    v_row.title IS DISTINCT FROM v_title
+    OR v_row.doc_date IS DISTINCT FROM p_doc_date
+    OR v_row.remarks IS DISTINCT FROM v_remarks
+    OR v_row.signer_user_ids IS DISTINCT FROM v_ids
+    OR v_row.signer_titles IS DISTINCT FROM v_titles
+    OR v_current IS DISTINCT FROM v_content;
+
+  IF v_changed THEN
+    v_next := v_row.current_version_no + 1;
+
+    UPDATE public.tyapp_docsign
+    SET
+      title = v_title,
+      doc_date = p_doc_date,
+      remarks = v_remarks,
+      signer_user_ids = v_ids,
+      signer_titles = v_titles,
+      current_version_no = v_next,
+      locked_at = NULL
+    WHERE tb_tyapp_dsgn_id = p_id;
+
+    INSERT INTO public.tyapp_docsign_version (
+      document_id,
+      version_no,
+      content,
+      created_by
+    )
+    VALUES (
+      p_id,
+      v_next,
+      v_content,
+      v_uid
+    )
+    RETURNING tb_tyapp_dsgn_ver_id INTO v_ver_id;
+  END IF;
+
+  PERFORM public.tyapp_docsign_insert_my_signature(p_id, v_ver_id);
+  RETURN public.tyapp_docsign_lock_if_complete(p_id);
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.tyapp_docsign_sign_and_send(uuid, text, text, date, text, uuid[], jsonb) TO authenticated;
+
 NOTIFY pgrst, 'reload schema';

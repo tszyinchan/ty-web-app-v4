@@ -179,17 +179,27 @@ export class DocsignService {
     }
   }
 
-  async signAndSend(
-    id: string,
-    content: string,
-  ): Promise<DocsignDocumentDetail | null> {
+  async signAndSend(payload: {
+    id: string;
+    title: string;
+    docDate: string | null;
+    remarks: string;
+    content: string;
+    signerUserIds: string[];
+    signerTitles: Record<string, string>;
+  }): Promise<DocsignDocumentDetail | null> {
     this.loading.set(true);
     try {
       const { data, error } = await this.supabase.rpc(
         'tyapp_docsign_sign_and_send',
         {
-          p_id: id,
-          p_content: content,
+          p_id: payload.id,
+          p_title: payload.title,
+          p_doc_date: payload.docDate,
+          p_remarks: payload.remarks,
+          p_content: payload.content,
+          p_signer_user_ids: payload.signerUserIds,
+          p_signer_titles: payload.signerTitles,
         },
       );
       if (error) throw error;
@@ -313,6 +323,20 @@ export class DocsignService {
     } catch (error: unknown) {
       this.notification.handleError('Start Print Failed', error);
       return null;
+    }
+  }
+
+  async fetchPrintLogs(): Promise<DocsignPrintLog[]> {
+    try {
+      const { data, error } = await this.supabase
+        .from('tyapp_docsign_print_log')
+        .select('*')
+        .order('printed_at', { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as DocsignPrintLog[];
+    } catch (error: unknown) {
+      this.notification.handleError('Load Print Log Failed', error);
+      return [];
     }
   }
 

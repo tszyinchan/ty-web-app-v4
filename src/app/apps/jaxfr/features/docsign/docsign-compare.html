@@ -31,29 +31,51 @@
     <div class="diff-board">
       <section class="diff-pane">
         <h2>v{{ leftNo() }}</h2>
-        <pre class="diff-body">
+        <div class="diff-body">
           @for (line of diffSides().left; track trackLine($index, line)) {
-            <span
+            <div
               class="diff-line"
               [class.is-added]="line.kind === 'added'"
               [class.is-removed]="line.kind === 'removed'"
               [class.is-empty]="line.kind === 'empty'"
-            >{{ line.text }}</span>
+            >
+              @if (line.parts.length === 0) {
+                <span>&nbsp;</span>
+              } @else {
+                @for (part of line.parts; track $index) {
+                  <span
+                    [class.part-added]="part.kind === 'added'"
+                    [class.part-removed]="part.kind === 'removed'"
+                  >{{ part.text }}</span>
+                }
+              }
+            </div>
           }
-        </pre>
+        </div>
       </section>
       <section class="diff-pane">
         <h2>v{{ rightNo() }}</h2>
-        <pre class="diff-body">
+        <div class="diff-body">
           @for (line of diffSides().right; track trackLine($index, line)) {
-            <span
+            <div
               class="diff-line"
               [class.is-added]="line.kind === 'added'"
               [class.is-removed]="line.kind === 'removed'"
               [class.is-empty]="line.kind === 'empty'"
-            >{{ line.text }}</span>
+            >
+              @if (line.parts.length === 0) {
+                <span>&nbsp;</span>
+              } @else {
+                @for (part of line.parts; track $index) {
+                  <span
+                    [class.part-added]="part.kind === 'added'"
+                    [class.part-removed]="part.kind === 'removed'"
+                  >{{ part.text }}</span>
+                }
+              }
+            </div>
           }
-        </pre>
+        </div>
       </section>
     </div>
   } @else if (!docsignService.loading()) {
