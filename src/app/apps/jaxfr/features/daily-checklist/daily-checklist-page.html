@@ -85,18 +85,31 @@
     <div class="empty-placeholder">
       <mat-spinner diameter="28"></mat-spinner>
     </div>
-  } @else if (isEmpty()) {
-    <div class="empty-box">
-      <p class="empty-title">Nothing on this date yet.</p>
-      <p class="empty-copy">
-        Type a name below, or use Copy yesterday's list / Apply standard pack
-        in the toolbar.
-      </p>
-    </div>
   } @else {
-    <div class="item-list">
+    @if (isEmpty()) {
+      <div class="empty-box">
+        <p class="empty-title">Nothing on this date yet.</p>
+        <p class="empty-copy">
+          Type a name in the row below, or use Copy yesterday / Apply standard
+          in the toolbar.
+        </p>
+      </div>
+    }
+
+    <div
+      class="item-list"
+      cdkDropList
+      [cdkDropListData]="displayItems()"
+      [cdkDropListDisabled]="!canReorder()"
+      (cdkDropListDropped)="onReorder($event)"
+    >
       @for (item of displayItems(); track item.tb_tyapp_dcl_day_id) {
-        <div class="item-card" [ngClass]="itemCardClasses(item)">
+        <div
+          class="item-card"
+          cdkDrag
+          [cdkDragDisabled]="!canReorder()"
+          [ngClass]="itemCardClasses(item)"
+        >
           @if (editingDayId() === item.tb_tyapp_dcl_day_id) {
             <div class="edit-sheet">
               <mat-form-field appearance="outline" subscriptSizing="dynamic">
@@ -162,6 +175,16 @@
           } @else {
             <button
               type="button"
+              class="item-drag-handle"
+              cdkDragHandle
+              matTooltip="Reorder"
+              [disabled]="!canReorder()"
+              [attr.aria-label]="'Reorder ' + item.catalog.item_text"
+            >
+              <mat-icon>drag_indicator</mat-icon>
+            </button>
+            <button
+              type="button"
               class="check-btn"
               [ngClass]="checkBtnClasses(item)"
               [disabled]="service.busy()"
@@ -198,77 +221,44 @@
         </div>
       }
     </div>
-  }
 
-  <div class="add-panel">
-    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="grow">
-      <mat-label>Add item</mat-label>
-      <input
-        matInput
-        [ngModel]="newItemText()"
-        (ngModelChange)="newItemText.set($event)"
-        [matAutocomplete]="itemAuto"
-        name="new_item_text"
-        placeholder="Type a name"
-        (keydown.enter)="onAddItem($event)"
-      />
-      <mat-autocomplete
-        #itemAuto="matAutocomplete"
-        [displayWith]="displayCatalogName"
-        (optionSelected)="onSuggestionSelected($event)"
-      >
-        @for (opt of filteredSuggestions(); track opt.tb_tyapp_dcl_itm_id) {
-          <mat-option [value]="opt.tb_tyapp_dcl_itm_id">
-            {{ suggestionLabel(opt) }}
-          </mat-option>
-        }
-      </mat-autocomplete>
-    </mat-form-field>
-
-    @if (showNewItemExtras()) {
-      <div class="new-extras">
-        <div class="emoji-pick-row">
-          <button
-            type="button"
-            class="emoji-trigger"
-            (click)="openEmojiPicker('new')"
-          >
-            {{ newEmoji() || 'Add emoji' }}
-          </button>
-          @if (newEmoji()) {
-            <button mat-button type="button" (click)="clearNewEmoji()">
-              Clear
-            </button>
-          }
-        </div>
-        <div class="colour-row">
-          @for (preset of colourPresets; track preset.key) {
-            <button
-              type="button"
-              class="colour-chip"
-              [ngClass]="colourChipClasses(preset.key, newColour() === preset.key)"
-              [attr.aria-label]="preset.label"
-              (click)="selectColour(preset.key)"
-            ></button>
-          }
-        </div>
-        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="grow">
-          <mat-label>Remarks</mat-label>
-          <input matInput [(ngModel)]="newRemarks" name="new_item_remarks" />
-        </mat-form-field>
-        <button
-          mat-flat-button
-          color="primary"
-          type="button"
-          [disabled]="service.busy() || !newItemText().trim()"
-          (click)="onAddItem()"
+    <div class="add-row" #addRow>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="grow">
+        <mat-label>Add item</mat-label>
+        <input
+          matInput
+          [ngModel]="newItemText()"
+          (ngModelChange)="newItemText.set($event)"
+          [matAutocomplete]="itemAuto"
+          name="new_item_text"
+          placeholder="Type a name"
+          (focus)="onAddInputFocus()"
+          (keydown.enter)="onAddItem($event)"
+        />
+        <mat-autocomplete
+          #itemAuto="matAutocomplete"
+          [displayWith]="displayCatalogName"
+          (optionSelected)="onSuggestionSelected($event)"
         >
-          Add
-        </button>
-      </div>
-    }
-  </div>
+          @for (opt of filteredSuggestions(); track opt.tb_tyapp_dcl_itm_id) {
+            <mat-option [value]="opt.tb_tyapp_dcl_itm_id">
+              {{ suggestionLabel(opt) }}
+            </mat-option>
+          }
+        </mat-autocomplete>
+      </mat-form-field>
+    </div>
+  }
 </div>
+
+@if (addSheetOpen()) {
+  <app-daily-checklist-add-sheet
+    [initialName]="newItemText()"
+    [busy]="service.busy()"
+    (confirmed)="onSheetConfirm($event)"
+    (cancelled)="closeAddSheet()"
+  />
+}
 
 @if (emojiPickerTarget()) {
   <div class="emoji-picker-backdrop" (click)="closeEmojiPicker()"></div>

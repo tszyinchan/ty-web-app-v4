@@ -1,0 +1,105 @@
+@use "../../../../styles/aero" as aero;
+
+.colour-purple { --dcl-fill: #5b3a8c; }
+.colour-blue { --dcl-fill: #1b5fa8; }
+.colour-teal { --dcl-fill: #1a7a72; }
+.colour-green { --dcl-fill: #217346; }
+.colour-gold { --dcl-fill: #b07a12; }
+.colour-orange { --dcl-fill: #c05612; }
+.colour-red { --dcl-fill: #a31f1f; }
+.colour-slate { --dcl-fill: #4a5a6a; }
+
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 22;
+  background: rgba(20, 36, 52, 0.28);
+}
+
+.sheet {
+  position: fixed;
+  z-index: 23;
+  left: 50%;
+  top: 12vh;
+  transform: translateX(-50%);
+  width: min(420px, calc(100vw - 24px));
+  max-height: min(520px, calc(100dvh - 24px));
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border-radius: 12px;
+  @include aero.gloss-surface;
+}
+
+.sheet-title {
+  margin: 0;
+  font: 700 16px "Segoe UI", Tahoma, sans-serif;
+  color: #1a1a1a;
+}
+
+.grow {
+  width: 100%;
+}
+
+.emoji-pick-row,
+.colour-row,
+.sheet-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.emoji-trigger {
+  min-height: 40px;
+  padding: 8px 14px;
+  @include aero.gloss-surface;
+  border-radius: 12px;
+  cursor: pointer;
+  font: 15px "Segoe UI", Tahoma, sans-serif;
+}
+
+.colour-chip {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  cursor: pointer;
+  background: var(--dcl-fill);
+
+  &.selected {
+    box-shadow: 0 0 0 2px #fff, 0 0 0 4px #1b5fa8;
+  }
+}
+
+.emoji-picker-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 24;
+  background: rgba(20, 36, 52, 0.28);
+}
+
+.emoji-picker-panel {
+  position: fixed;
+  z-index: 25;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 18%);
+}
+
+emoji-picker {
+  display: block;
+  width: min(352px, calc(100vw - 24px));
+  height: min(400px, calc(100dvh - 48px));
+  --background: #f7fbff;
+  --border-color: #c5d5e4;
+  --input-border-color: #c5d5e4;
+  --input-font-color: #1a1a1a;
+  --outline-color: #3c7fb1;
+  --indicator-color: #3c7fb1;
+}

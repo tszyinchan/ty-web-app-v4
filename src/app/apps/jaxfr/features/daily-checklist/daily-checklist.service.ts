@@ -576,6 +576,40 @@ export class DailyChecklistService {
     }
   }
 
+  async reorderDayItems(date: string, orderedIds: string[]): Promise<boolean> {
+    if (orderedIds.length === 0) return true;
+
+    this.weekItems.update((list) =>
+      list.map((row) => {
+        const index = orderedIds.indexOf(row.tb_tyapp_dcl_day_id);
+        return index >= 0 ? { ...row, sort_order: index } : row;
+      }),
+    );
+
+    try {
+      const results = await Promise.all(
+        orderedIds.map((id, index) =>
+          this.supabase
+            .from('tyapp_daily_checklist_day_item')
+            .update({ sort_order: index })
+            .eq('tb_tyapp_dcl_day_id', id)
+            .is('deleted_at', null),
+        ),
+      );
+      const failed = results.find((row) => row.error);
+      if (failed?.error) throw failed.error;
+      return true;
+    } catch (error: unknown) {
+      this.notification.handleError('Reorder Items Failed', error);
+      if (this.weekStart && this.weekEnd) {
+        await this.fetchItemsForRange(this.weekStart, this.weekEnd, date, {
+          force: true,
+        });
+      }
+      return false;
+    }
+  }
+
   private mergeInsertedDayRows(rows: DailyChecklistDayRow[]) {
     if (rows.length === 0) return;
     this.weekItems.update((list) => {

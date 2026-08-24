@@ -171,9 +171,6 @@ export function sortDayRowsForDisplay(
   items: DailyChecklistDayRow[],
 ): DailyChecklistDayRow[] {
   return [...items].sort((a, b) => {
-    const aDone = isDayItemCompleted(a);
-    const bDone = isDayItemCompleted(b);
-    if (aDone !== bDone) return aDone ? 1 : -1;
     if (a.sort_order !== b.sort_order) return a.sort_order - b.sort_order;
     return a.tb_tyapp_dcl_day_seq_no - b.tb_tyapp_dcl_day_seq_no;
   });

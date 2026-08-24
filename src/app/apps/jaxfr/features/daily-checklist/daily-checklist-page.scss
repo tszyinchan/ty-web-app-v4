@@ -242,6 +242,14 @@ mat-progress-bar.dcl-progress {
   gap: 12px;
 }
 
+.item-list.cdk-drop-list-dragging .item-card:not(.cdk-drag-placeholder) {
+  transition: transform 160ms ease;
+}
+
+.item-card.cdk-drag-placeholder {
+  opacity: 0.4;
+}
+
 .item-card {
   display: flex;
   align-items: center;
@@ -286,6 +294,35 @@ mat-progress-bar.dcl-progress {
     .item-remarks {
       color: rgba(255, 255, 255, 0.86);
     }
+
+    .item-drag-handle {
+      color: #fff;
+    }
+  }
+}
+
+.item-drag-handle {
+  flex-shrink: 0;
+  width: 28px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #6a7a88;
+  cursor: grab;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.45;
+  }
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
   }
 }
 
@@ -355,17 +392,15 @@ mat-progress-bar.dcl-progress {
   cursor: pointer;
 }
 
-.edit-sheet,
-.new-extras,
-.add-panel {
+.edit-sheet {
   display: flex;
   flex-direction: column;
   gap: 10px;
   width: 100%;
 }
 
-.add-panel {
-  margin-top: 16px;
+.add-row {
+  margin-top: 12px;
 }
 
 .edit-actions,

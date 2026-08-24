@@ -12,6 +12,13 @@ import {
   viewChild,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import {
+  CdkDrag,
+  CdkDragDrop,
+  CdkDragHandle,
+  CdkDropList,
+  moveItemInArray,
+} from '@angular/cdk/drag-drop';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
   MatAutocompleteModule,
@@ -35,6 +42,7 @@ import {
   DailyChecklistItem,
   DclColourPresetKey,
 } from './daily-checklist.model';
+import { DailyChecklistAddSheet } from './daily-checklist-add-sheet';
 import { DailyChecklistService } from './daily-checklist.service';
 import {
   STRIP_EXTEND_WEEKS,
@@ -57,7 +65,7 @@ import {
   weekPageIndex,
 } from './daily-checklist.util';
 
-type EmojiPickerTarget = 'new' | 'edit';
+type EmojiPickerTarget = 'edit';
 
 @Component({
   selector: 'app-daily-checklist-page',
@@ -65,6 +73,10 @@ type EmojiPickerTarget = 'new' | 'edit';
   imports: [
     CommonModule,
     FormsModule,
+    CdkDropList,
+    CdkDrag,
+    CdkDragHandle,
+    DailyChecklistAddSheet,
     MatAutocompleteModule,
     MatButtonModule,
     MatFormFieldModule,
@@ -87,6 +99,7 @@ export class DailyChecklistPage implements OnInit, AfterViewInit, OnDestroy {
   private querySub?: Subscription;
   private readonly weekScroller =
     viewChild<ElementRef<HTMLElement>>('weekScroller');
+  private readonly addRow = viewChild<ElementRef<HTMLElement>>('addRow');
   private ignoreWeekScroll = false;
   private weekScrollTimer: ReturnType<typeof setTimeout> | null = null;
   private stripExtending = false;
@@ -97,12 +110,11 @@ export class DailyChecklistPage implements OnInit, AfterViewInit, OnDestroy {
   stripWeekCount = signal(initialStripWeekCount());
   private visiblePage = signal(STRIP_WEEKS_BEFORE);
   newItemText = signal('');
-  newEmoji = signal<string | null>(null);
-  newColour = signal<DclColourPresetKey>('slate');
-  newRemarks = '';
   showStandardHint = signal(false);
   emojiPickerTarget = signal<EmojiPickerTarget | null>(null);
   editingDayId = signal<string | null>(null);
+  addSheetOpen = signal(false);
+  reordering = signal(false);
   editText = '';
   editEmoji: string | null = null;
   editColour: DclColourPresetKey = 'slate';
@@ -158,13 +170,6 @@ export class DailyChecklistPage implements OnInit, AfterViewInit, OnDestroy {
       this.service.catalogItems(),
       this.newItemText(),
     ).filter((item) => !onDate.has(item.tb_tyapp_dcl_itm_id));
-  });
-
-  readonly showNewItemExtras = computed(() => {
-    const text = this.newItemText().trim();
-    if (!text) return false;
-    if (findCatalogByName(this.service.catalogItems(), text)) return false;
-    return this.filteredSuggestions().length === 0;
   });
 
   ngOnInit() {
@@ -510,11 +515,41 @@ export class DailyChecklistPage implements OnInit, AfterViewInit, OnDestroy {
     await this.service.deleteDayItem(item.tb_tyapp_dcl_day_id);
   }
 
+  canReorder(): boolean {
+    return (
+      !this.service.busy() &&
+      !this.reordering() &&
+      this.editingDayId() === null
+    );
+  }
+
+  async onReorder(event: CdkDragDrop<DailyChecklistDayRow[]>) {
+    if (event.previousIndex === event.currentIndex || !this.canReorder()) {
+      return;
+    }
+    const ordered = [...this.displayItems()];
+    moveItemInArray(ordered, event.previousIndex, event.currentIndex);
+    this.reordering.set(true);
+    await this.service.reorderDayItems(
+      this.selectedDate(),
+      ordered.map((item) => item.tb_tyapp_dcl_day_id),
+    );
+    this.reordering.set(false);
+  }
+
+  onAddInputFocus() {
+    this.addRow()?.nativeElement.scrollIntoView({
+      block: 'center',
+      behavior: 'smooth',
+    });
+  }
+
   async onSuggestionSelected(event: MatAutocompleteSelectedEvent) {
     const itemId = String(event.option.value ?? '');
     if (!itemId) return;
     this.resetAddPanel();
     await this.service.addExistingItemToDate(this.selectedDate(), itemId);
+    this.scrollAddRowIntoView();
   }
 
   suggestionLabel(item: DailyChecklistItem): string {
@@ -533,31 +568,53 @@ export class DailyChecklistPage implements OnInit, AfterViewInit, OnDestroy {
         this.selectedDate(),
         existing.tb_tyapp_dcl_itm_id,
       );
-      if (ok) this.resetAddPanel();
+      if (ok) {
+        this.resetAddPanel();
+        this.scrollAddRowIntoView();
+      }
       return;
     }
 
-    if (!this.showNewItemExtras()) return;
+    this.addSheetOpen.set(true);
+  }
 
+  async onSheetConfirm(event: {
+    itemText: string;
+    emoji: string | null;
+    colourPresetKey: DclColourPresetKey;
+    remarks: string | null;
+  }) {
     const ok = await this.service.createCatalogAndAddToDate(this.selectedDate(), {
-      itemText: text,
-      emoji: this.newEmoji(),
-      colourPresetKey: this.newColour(),
-      remarks: this.newRemarks,
+      itemText: event.itemText,
+      emoji: event.emoji,
+      colourPresetKey: event.colourPresetKey,
+      remarks: event.remarks,
     });
-    if (ok) this.resetAddPanel();
+    if (ok) {
+      this.resetAddPanel();
+      this.scrollAddRowIntoView();
+    }
+  }
+
+  closeAddSheet() {
+    this.addSheetOpen.set(false);
   }
 
   resetAddPanel() {
     this.newItemText.set('');
-    this.newEmoji.set(null);
-    this.newColour.set('slate');
-    this.newRemarks = '';
-    if (this.emojiPickerTarget() === 'new') this.emojiPickerTarget.set(null);
+    this.addSheetOpen.set(false);
+    if (this.emojiPickerTarget() === 'edit') this.emojiPickerTarget.set(null);
   }
 
-  selectColour(key: DclColourPresetKey) {
-    this.newColour.set(key);
+  private scrollAddRowIntoView() {
+    queueMicrotask(() => {
+      requestAnimationFrame(() => {
+        this.addRow()?.nativeElement.scrollIntoView({
+          block: 'end',
+          behavior: 'smooth',
+        });
+      });
+    });
   }
 
   selectEditColour(key: DclColourPresetKey) {
@@ -576,14 +633,8 @@ export class DailyChecklistPage implements OnInit, AfterViewInit, OnDestroy {
     const unicode = (event as CustomEvent<{ unicode?: string }>).detail?.unicode;
     const emoji = unicode?.trim() ?? '';
     if (!emoji) return;
-    const target = this.emojiPickerTarget();
-    if (target === 'new') this.newEmoji.set(emoji);
-    if (target === 'edit') this.editEmoji = emoji;
+    if (this.emojiPickerTarget() === 'edit') this.editEmoji = emoji;
     this.closeEmojiPicker();
-  }
-
-  clearNewEmoji() {
-    this.newEmoji.set(null);
   }
 
   clearEditEmoji() {
