@@ -1,12 +1,11 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { AuthService } from '../../../../core/services/auth.service';
-import { HeaderService } from '../../../../core/services/header.service';
 import { PushService } from '../../../../core/services/push.service';
 import { DisplayNamePipe } from '../../../../core/pipes/display-name.pipe';
 import { TyappPushSubscription } from '../../../../core/models/push-subscription.model';
@@ -27,9 +26,8 @@ import { formatDeviceLabel } from './notification-settings.util';
   templateUrl: './notification-settings.html',
   styleUrl: './notification-settings.scss',
 })
-export class NotificationSettings implements OnInit, OnDestroy {
+export class NotificationSettings implements OnInit {
   private auth = inject(AuthService);
-  private headerService = inject(HeaderService);
   private displayNamePipe = inject(DisplayNamePipe);
 
   readonly pushService = inject(PushService);
@@ -55,20 +53,12 @@ export class NotificationSettings implements OnInit, OnDestroy {
     return 'Not enabled on this device';
   });
 
-  constructor() {
-    this.headerService.setConfig({ title: 'Notification Settings' });
-  }
-
   ngOnInit() {
     this.pushService.refreshStatus();
     if (this.isAdmin()) {
       void this.userService.fetchAllUsers();
       void this.loadAdminSubscriptions();
     }
-  }
-
-  ngOnDestroy() {
-    this.headerService.clear();
   }
 
   async onEnable() {

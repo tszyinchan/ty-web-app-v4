@@ -1,10 +1,11 @@
-import { Component, inject } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { filter, map, startWith } from 'rxjs/operators';
 
 import { AppSettingsService } from '../../../core/services/app-settings.service';
 import { PushService } from '../../../core/services/push.service';
+import { ThemeService } from '../../../core/services/theme.service';
 import { AppToolbar } from '../../../core/components/app-toolbar/app-toolbar';
 
 @Component({
@@ -19,11 +20,16 @@ import { AppToolbar } from '../../../core/components/app-toolbar/app-toolbar';
 })
 export class Layout {
   private readonly router = inject(Router);
+  private readonly theme = inject(ThemeService);
 
   constructor() {
     inject(PushService);
     inject(AppSettingsService);
   }
+
+  readonly toolbarAppearance = computed(() =>
+    this.theme.visualTheme() === 'aero' ? 'aero' : 'default',
+  );
 
   readonly showHomeButton = toSignal(
     this.router.events.pipe(

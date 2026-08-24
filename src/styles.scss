@@ -1,4 +1,5 @@
 @use "@angular/material" as mat;
+@use "app/styles/tokens";
 @use "app/styles/shared-list";
 @use "app/styles/shared-form";
 @use "app/styles/aero-controls";
@@ -31,11 +32,10 @@ body {
 }
 
 body {
-  color-scheme: light;
-  background-color: var(--mat-sys-surface);
-  color: var(--mat-sys-on-surface);
+  background-color: var(--app-page-bg);
+  color: var(--app-text-primary);
   font: var(--mat-sys-body-medium);
-  font-family: Roboto, "Helvetica Neue", sans-serif;
+  font-family: var(--app-font);
 
   h1,
   h2,
@@ -48,16 +48,16 @@ body {
 }
 
 .mat-mdc-snack-bar-container.error-snackbar {
-  --mdc-snackbar-container-color: #fef2f2;
-  --mdc-snackbar-supporting-text-color: #991b1b;
-  border: 1px solid #fee2e2;
+  --mdc-snackbar-container-color: var(--mat-sys-error-container);
+  --mdc-snackbar-supporting-text-color: var(--mat-sys-on-error-container);
+  border: 1px solid var(--mat-sys-error);
 }
 
 .mat-mdc-snack-bar-container {
-  --mdc-snackbar-container-color: #ffffff;
-  --mdc-snackbar-supporting-text-color: #333333;
-  border: 1px solid #f0f0f0;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  --mdc-snackbar-container-color: var(--mat-sys-inverse-surface);
+  --mdc-snackbar-supporting-text-color: var(--mat-sys-inverse-on-surface);
+  border: 1px solid var(--app-border-subtle);
+  box-shadow: var(--app-overlay-shadow);
 }
 
 .page-toolbar-wrapper {

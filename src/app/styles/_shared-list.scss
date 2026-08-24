@@ -3,7 +3,7 @@
   display: flex;
   flex-direction: column;
   min-height: 100%;
-  font-family: "Segoe UI", Tahoma, sans-serif;
+  font-family: var(--app-font);
 }
 
 .list-container {
@@ -14,12 +14,12 @@
     text-decoration: none;
     color: inherit;
     padding: 12px 16px;
-    border-bottom: 1px solid #d4e0ea;
+    border-bottom: 1px solid var(--app-border-subtle);
     transition: background 0.15s ease, border-color 0.15s ease;
 
     &:hover {
-      background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), #d6ebfa);
-      border-bottom-color: #9cc4e4;
+      background: var(--app-tile-hover-bg);
+      border-bottom-color: var(--app-tile-hover-border);
     }
 
     .item-content {
@@ -38,17 +38,17 @@
   .main-text {
     font-size: 15px;
     font-weight: 600;
-    color: #1a1a1a;
+    color: var(--app-text-primary);
   }
 
   .main-text-accent {
-    color: #0066cc;
+    color: var(--app-link);
     margin-left: 8px;
   }
 
   .sub-text {
     font-size: 11px;
-    color: #6a7a88;
+    color: var(--app-text-muted);
   }
 }
 
@@ -59,22 +59,22 @@
 
   .status-tag {
     font-size: 13px;
-    color: #3a4a5a;
+    color: var(--app-text-secondary);
 
     &.inactive {
-      color: #a31f1f;
+      color: var(--app-danger);
     }
 
     &.day-off {
-      background: linear-gradient(180deg, #f4f8fc, #dce8f2);
-      color: #3a4a5a;
-      border-radius: 3px;
+      background: var(--app-surface-raised);
+      color: var(--app-text-secondary);
+      border-radius: var(--app-radius);
       padding: 1px 8px;
     }
   }
 
   .chevron {
-    color: #8aa0b4;
+    color: var(--app-text-muted);
     font-size: 20px;
     width: 20px;
     height: 20px;
@@ -90,11 +90,11 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  font: 600 15px "Segoe UI", Tahoma, sans-serif;
-  color: #217346;
+  font: 600 15px var(--app-font);
+  color: var(--app-text-accent);
   margin: 24px 16px 12px;
   padding: 0 0 8px;
-  border-bottom: 1px solid #c5d5e4;
+  border-bottom: 1px solid var(--app-border-subtle);
 
   .week-header-label {
     display: flex;
@@ -105,17 +105,17 @@
       font-size: 20px;
       width: 20px;
       height: 20px;
-      color: #217346;
+      color: var(--app-text-accent);
     }
   }
 
   .week-header-count {
     font-size: 13px;
     font-weight: 700;
-    color: #1b5fa8;
-    background: linear-gradient(180deg, #f4f8fc, #dce8f2);
+    color: var(--app-accent);
+    background: var(--app-surface-raised);
     padding: 4px 8px;
-    border-radius: 3px;
+    border-radius: var(--app-radius);
   }
 }
 
@@ -129,7 +129,7 @@
   .divider {
     width: 32px;
     height: 2px;
-    background-color: #c5d5e4;
+    background-color: var(--app-border-subtle);
     border-radius: 1px;
   }
 
@@ -137,18 +137,18 @@
     font-size: 11px;
     font-weight: 500;
     letter-spacing: 1px;
-    color: #6a7a88;
+    color: var(--app-text-muted);
   }
 
   &.paginated {
     padding: 0;
     display: block;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.55), #eaf4fc);
+    background: var(--app-surface);
   }
 }
 
 .empty-placeholder {
   padding: 64px 24px;
   text-align: center;
-  color: #6a7a88;
+  color: var(--app-text-muted);
 }

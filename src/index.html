@@ -15,6 +15,32 @@
   <link rel="apple-touch-icon" href="favicon.svg">
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <script>
+    (function () {
+      try {
+        var theme = 'aero';
+        var mode = window.matchMedia('(prefers-color-scheme: dark)').matches
+          ? 'dark'
+          : 'light';
+        var uid = localStorage.getItem('jaxfr.user-preference.v1.active-user');
+        if (uid) {
+          var raw = localStorage.getItem('jaxfr.user-preference.v1.' + uid);
+          if (raw) {
+            var parsed = JSON.parse(raw);
+            if (parsed.visual_theme === 'material' || parsed.visual_theme === 'aero') {
+              theme = parsed.visual_theme;
+            }
+            if (parsed.color_mode === 'light' || parsed.color_mode === 'dark') {
+              mode = parsed.color_mode;
+            }
+          }
+        }
+        document.documentElement.classList.add('theme-' + theme, 'mode-' + mode);
+      } catch (e) {
+        document.documentElement.classList.add('theme-aero', 'mode-light');
+      }
+    })();
+  </script>
 </head>
 <body>
   <app-root></app-root>

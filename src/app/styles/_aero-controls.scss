@@ -1,92 +1,94 @@
 @use "./aero" as aero;
 
-app-layout,
-app-portal-layout {
-  button.mat-mdc-unelevated-button:not(.action-btn) {
-    min-height: 32px;
-    @include aero.gloss-primary-surface;
-    font-family: "Segoe UI", Tahoma, sans-serif;
-    --mdc-filled-button-container-color: transparent;
-    --mdc-filled-button-label-text-color: #fff;
-    --mdc-filled-button-icon-color: #fff;
-    --mdc-filled-button-disabled-container-color: transparent;
+html.theme-aero {
+  app-layout,
+  app-portal-layout {
+    button.mat-mdc-unelevated-button:not(.action-btn) {
+      min-height: 32px;
+      @include aero.gloss-primary-surface;
+      font-family: var(--app-font);
+      --mdc-filled-button-container-color: transparent;
+      --mdc-filled-button-label-text-color: var(--app-accent-contrast);
+      --mdc-filled-button-icon-color: var(--app-accent-contrast);
+      --mdc-filled-button-disabled-container-color: transparent;
+    }
+
+    button.mat-mdc-unelevated-button:not(.action-btn):hover:not(:disabled) {
+      @include aero.gloss-primary-surface-hover;
+    }
+
+    button.mat-mdc-unelevated-button:not(.action-btn):disabled {
+      @include aero.gloss-disabled-surface;
+      --mdc-filled-button-label-text-color: var(--app-button-disabled-text);
+      --mdc-filled-button-icon-color: var(--app-button-disabled-text);
+      --mdc-filled-button-disabled-label-text-color: var(--app-button-disabled-text);
+      --mdc-filled-button-disabled-icon-color: var(--app-button-disabled-text);
+    }
+
+    button.mat-mdc-outlined-button:disabled {
+      @include aero.gloss-disabled-surface;
+      --mdc-outlined-button-label-text-color: var(--app-button-disabled-text);
+      --mdc-outlined-button-disabled-label-text-color: var(--app-button-disabled-text);
+    }
+
+    button.mat-mdc-outlined-button {
+      min-height: 32px;
+      @include aero.gloss-surface;
+      font-family: var(--app-font);
+      --mdc-outlined-button-outline-color: transparent;
+      --mdc-outlined-button-label-text-color: var(--app-text-primary);
+      --mdc-outlined-button-hover-label-text-color: var(--app-text-primary);
+    }
+
+    button.mat-mdc-outlined-button:hover:not(:disabled) {
+      @include aero.gloss-surface-hover;
+    }
+
+    button.shortcut-btn.mat-mdc-button,
+    button.shortcut-btn.mat-mdc-outlined-button {
+      min-height: 26px;
+      height: 26px;
+      padding: 0 10px;
+      @include aero.gloss-surface;
+      font: 13px var(--app-font);
+      --mdc-text-button-label-text-color: var(--app-text-primary);
+      --mdc-outlined-button-outline-color: transparent;
+      --mdc-outlined-button-label-text-color: var(--app-text-primary);
+    }
+
+    button.shortcut-btn.mat-mdc-button:hover:not(:disabled),
+    button.shortcut-btn.mat-mdc-outlined-button:hover:not(:disabled) {
+      @include aero.gloss-surface-hover;
+    }
+
+    button.shortcut-btn.mat-mdc-button:disabled,
+    button.shortcut-btn.mat-mdc-outlined-button:disabled {
+      @include aero.gloss-disabled-surface;
+      --mdc-text-button-label-text-color: var(--app-button-disabled-text);
+      --mdc-outlined-button-label-text-color: var(--app-button-disabled-text);
+    }
+
+    .mat-mdc-paginator {
+      background: transparent;
+      font-family: var(--app-font);
+      --mat-paginator-container-background-color: transparent;
+      --mat-paginator-container-text-color: var(--app-text-secondary);
+      --mat-paginator-enabled-icon-color: var(--app-accent);
+      --mat-paginator-disabled-icon-color: var(--app-text-muted);
+      border-top: 1px solid var(--app-border-subtle);
+    }
   }
 
-  button.mat-mdc-unelevated-button:not(.action-btn):hover:not(:disabled) {
-    @include aero.gloss-primary-surface-hover;
+  div.mat-mdc-menu-panel,
+  div.mat-mdc-select-panel {
+    border: 1px solid var(--app-overlay-border);
+    border-radius: var(--app-radius);
+    background: var(--app-overlay-bg);
+    box-shadow: var(--app-overlay-shadow);
   }
 
-  button.mat-mdc-unelevated-button:not(.action-btn):disabled {
-    @include aero.gloss-disabled-surface;
-    --mdc-filled-button-label-text-color: #8a8f94;
-    --mdc-filled-button-icon-color: #8a8f94;
-    --mdc-filled-button-disabled-label-text-color: #8a8f94;
-    --mdc-filled-button-disabled-icon-color: #8a8f94;
+  button.mat-mdc-menu-item:hover,
+  button.mat-mdc-menu-item.mat-mdc-menu-item-highlighted {
+    background: var(--app-tile-hover-bg);
   }
-
-  button.mat-mdc-outlined-button:disabled {
-    @include aero.gloss-disabled-surface;
-    --mdc-outlined-button-label-text-color: #8a8f94;
-    --mdc-outlined-button-disabled-label-text-color: #8a8f94;
-  }
-
-  button.mat-mdc-outlined-button {
-    min-height: 32px;
-    @include aero.gloss-surface;
-    font-family: "Segoe UI", Tahoma, sans-serif;
-    --mdc-outlined-button-outline-color: transparent;
-    --mdc-outlined-button-label-text-color: #1a1a1a;
-    --mdc-outlined-button-hover-label-text-color: #1a1a1a;
-  }
-
-  button.mat-mdc-outlined-button:hover:not(:disabled) {
-    @include aero.gloss-surface-hover;
-  }
-
-  button.shortcut-btn.mat-mdc-button,
-  button.shortcut-btn.mat-mdc-outlined-button {
-    min-height: 26px;
-    height: 26px;
-    padding: 0 10px;
-    @include aero.gloss-surface;
-    font: 13px "Segoe UI", Tahoma, sans-serif;
-    --mdc-text-button-label-text-color: #1a1a1a;
-    --mdc-outlined-button-outline-color: transparent;
-    --mdc-outlined-button-label-text-color: #1a1a1a;
-  }
-
-  button.shortcut-btn.mat-mdc-button:hover:not(:disabled),
-  button.shortcut-btn.mat-mdc-outlined-button:hover:not(:disabled) {
-    @include aero.gloss-surface-hover;
-  }
-
-  button.shortcut-btn.mat-mdc-button:disabled,
-  button.shortcut-btn.mat-mdc-outlined-button:disabled {
-    @include aero.gloss-disabled-surface;
-    --mdc-text-button-label-text-color: #8a8f94;
-    --mdc-outlined-button-label-text-color: #8a8f94;
-  }
-
-  .mat-mdc-paginator {
-    background: transparent;
-    font-family: "Segoe UI", Tahoma, sans-serif;
-    --mat-paginator-container-background-color: transparent;
-    --mat-paginator-container-text-color: #3a4a5a;
-    --mat-paginator-enabled-icon-color: #1b5fa8;
-    --mat-paginator-disabled-icon-color: #8aa0b4;
-    border-top: 1px solid #c5d5e4;
-  }
-}
-
-div.mat-mdc-menu-panel,
-div.mat-mdc-select-panel {
-  border: 1px solid #9cc4e4;
-  border-radius: 3px;
-  background: linear-gradient(180deg, #f7fbff 0%, #eaf4fc 100%);
-  box-shadow: 0 2px 8px rgba(0, 40, 80, 0.16);
-}
-
-button.mat-mdc-menu-item:hover,
-button.mat-mdc-menu-item.mat-mdc-menu-item-highlighted {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), #d6ebfa);
 }

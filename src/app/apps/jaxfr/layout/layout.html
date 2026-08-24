@@ -1,7 +1,7 @@
 <div class="layout-shell">
   @if (showToolbar()) {
     <app-toolbar
-      appearance="aero"
+      [appearance]="toolbarAppearance()"
       [showHomeButton]="showHomeButton()"
     ></app-toolbar>
   }

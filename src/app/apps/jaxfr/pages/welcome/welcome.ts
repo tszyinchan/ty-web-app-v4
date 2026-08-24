@@ -5,12 +5,15 @@ import { RouterModule } from '@angular/router';
 import { APP_CONFIG } from '../../../../app.constants';
 import { TyappApp } from '../../../../core/models/app.model';
 import { RecordStatus } from '../../../../core/models/status.enum';
+import { resolveWelcomeLauncherMode } from '../../../../core/models/user-preference.model';
 import { DisplayNamePipe } from '../../../../core/pipes/display-name.pipe';
 import { AccessService } from '../../../../core/services/access.service';
 import { AppRegistryService } from '../../../../core/services/app-registry.service';
 import { AuthService } from '../../../../core/services/auth.service';
 import { HeaderService } from '../../../../core/services/header.service';
 import { PresenceService } from '../../../../core/services/presence.service';
+import { ViewportService } from '../../../../core/services/viewport.service';
+import { UserPreferenceService } from '../../features/settings/user-preference.service';
 import { FeatureHubLink, FEATURE_HUBS } from '../feature-hub/feature-hub.config';
 import { AppFeature } from '../../features/development/app-feature/app-feature.model';
 import { AppFeatureService } from '../../features/development/app-feature/app-feature.service';
@@ -79,17 +82,10 @@ const FALLBACK_TILES: { name: string; icon: string; route: string }[] = [
   { name: 'Filelink', icon: 'link', route: '/filelink/list' },
   { name: 'Tyweb Control', icon: 'web', route: '/tyweb' },
   { name: 'Chat', icon: 'chat', route: '/chat' },
-  { name: 'Settings', icon: 'settings', route: '/settings/notifications' },
+  { name: 'Settings', icon: 'settings', route: '/settings' },
   { name: 'User', icon: 'people_outline', route: '/users' },
   { name: 'Development', icon: 'code', route: '/development' },
 ];
-
-const WELCOME_VIEW_KEY = 'jaxfr-welcome-view';
-
-type WelcomeViewMode = 'list' | 'icons';
-
-const readWelcomeView = (): WelcomeViewMode =>
-  localStorage.getItem(WELCOME_VIEW_KEY) === 'icons' ? 'icons' : 'list';
 
 const LAST_ORDER = Number.MAX_SAFE_INTEGER;
 
@@ -126,6 +122,9 @@ const CATEGORY_LINKS: Record<string, FeatureHubLink[]> = {
   imports: [RouterModule, MatIconModule, DisplayNamePipe],
   templateUrl: './welcome.html',
   styleUrl: './welcome.scss',
+  host: {
+    '[class.launcher-narrow]': 'isNarrow()',
+  },
 })
 export class Welcome implements OnInit, OnDestroy {
   private readonly auth = inject(AuthService);
@@ -134,9 +133,18 @@ export class Welcome implements OnInit, OnDestroy {
   private readonly apps = inject(AppRegistryService);
   private readonly header = inject(HeaderService);
   private readonly presence = inject(PresenceService);
+  private readonly prefs = inject(UserPreferenceService);
+  private readonly viewport = inject(ViewportService);
 
   readonly versionDate = APP_CONFIG.versionDate;
   readonly userProfile = this.auth.userProfile;
+  readonly isNarrow = this.viewport.isNarrow;
+  readonly launcherMode = computed(() =>
+    resolveWelcomeLauncherMode(
+      this.prefs.welcomeLauncherMode(),
+      this.viewport.isNarrow(),
+    ),
+  );
 
   readonly appVersion = computed(() => {
     const { major, minor, patch } = APP_CONFIG.version;
@@ -144,7 +152,6 @@ export class Welcome implements OnInit, OnDestroy {
   });
 
   readonly showArchive = this.auth.isSuperAdmin;
-  readonly viewMode = signal<WelcomeViewMode>(readWelcomeView());
   readonly featuresOpen = signal(true);
   readonly archiveOpen = signal(true);
 
@@ -240,11 +247,6 @@ export class Welcome implements OnInit, OnDestroy {
   private linksFor(name: string): FeatureHubLink[] {
     if (name === 'User' && !this.auth.isSuperAdmin()) return [];
     return CATEGORY_LINKS[name] ?? [];
-  }
-
-  setViewMode(mode: WelcomeViewMode) {
-    this.viewMode.set(mode);
-    localStorage.setItem(WELCOME_VIEW_KEY, mode);
   }
 
   toggleFeatures() {

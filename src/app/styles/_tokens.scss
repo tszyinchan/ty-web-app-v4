@@ -1,0 +1,174 @@
+// Semantic UI tokens. Color values live on html.theme-* / html.mode-*.
+// Default (no class yet) matches Aero Light so first paint stays readable.
+
+html {
+  --app-font: "Segoe UI", Tahoma, sans-serif;
+  --app-radius: 3px;
+  --app-page-bg: #eaf4fc;
+  --app-stage-bg:
+    radial-gradient(ellipse 70% 50% at 20% 0%, #7eb8e8 0%, transparent 55%),
+    radial-gradient(ellipse 60% 40% at 90% 10%, #3d7eb3 0%, transparent 50%),
+    linear-gradient(165deg, #4a8ab8 0%, #2d6a90 40%, #3d6a48 100%);
+  --app-surface: linear-gradient(180deg, #eaf4fc 0%, #ffffff 42%);
+  --app-surface-raised: linear-gradient(180deg, rgba(255, 255, 255, 0.95), #eaf4fc);
+  --app-text-primary: #1a1a1a;
+  --app-text-secondary: #555555;
+  --app-text-muted: #6a7a88;
+  --app-text-accent: #217346;
+  --app-border-subtle: #c5d5e4;
+  --app-accent: #1b5fa8;
+  --app-accent-contrast: #ffffff;
+  --app-link: #0066cc;
+  --app-danger: #a31f1f;
+  --app-panel-shadow: inset 0 1px 0 #fff, 0 1px 2px rgba(0, 40, 80, 0.08);
+  --app-chrome-bg:
+    linear-gradient(
+      115deg,
+      rgba(255, 255, 255, 0.38) 0%,
+      rgba(255, 255, 255, 0.08) 36%,
+      rgba(255, 255, 255, 0.22) 48%,
+      rgba(255, 255, 255, 0.05) 100%
+    ),
+    linear-gradient(180deg, rgba(210, 232, 252, 0.45), rgba(140, 180, 220, 0.2));
+  --app-chrome-blur: blur(18px) saturate(1.3);
+  --app-chrome-border: rgba(255, 255, 255, 0.35);
+  --app-chrome-title-shadow: 0 0 8px #fff, 0 1px 0 #fff;
+  --app-tile-hover-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.9), #d6ebfa);
+  --app-tile-hover-border: #9cc4e4;
+  --app-input-bg: #ffffff;
+  --app-input-border: #8fb0cc;
+  --app-input-shadow: inset 1px 1px 2px rgba(0, 40, 80, 0.12);
+  --app-button-bg: linear-gradient(180deg, #f7fbff 0%, #d5e6f4 48%, #b7cfe4 100%);
+  --app-button-bg-hover: linear-gradient(180deg, #fff 0%, #e3f2fc 50%, #c5e0f4 100%);
+  --app-button-border: #6a8aaa;
+  --app-button-shadow: inset 0 1px 0 #fff, 0 1px 1px rgba(0, 0, 0, 0.12);
+  --app-button-primary-bg: linear-gradient(180deg, #7ec4f5 0%, #2f7dcc 48%, #1b5fa8 100%);
+  --app-button-primary-bg-hover: linear-gradient(180deg, #9ad2fa 0%, #3b8fe0 48%, #226bb8 100%);
+  --app-button-primary-border: #2b5c8a;
+  --app-button-primary-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    0 1px 1px rgba(0, 0, 0, 0.12);
+  --app-button-disabled-bg: linear-gradient(180deg, #f4f5f6 0%, #e4e6e8 48%, #d0d3d6 100%);
+  --app-button-disabled-border: #b4bac0;
+  --app-button-disabled-text: #8a8f94;
+  --app-overlay-bg: linear-gradient(180deg, #f7fbff 0%, #eaf4fc 100%);
+  --app-overlay-border: #9cc4e4;
+  --app-overlay-shadow: 0 2px 8px rgba(0, 40, 80, 0.16);
+  --app-icon-filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.28));
+  --app-heading-rule: linear-gradient(90deg, #c5c5c5, #e8e8e8);
+}
+
+html.theme-aero.mode-dark {
+  --app-page-bg: #152230;
+  --app-stage-bg:
+    radial-gradient(ellipse 70% 50% at 20% 0%, #1a4a72 0%, transparent 55%),
+    radial-gradient(ellipse 60% 40% at 90% 10%, #0d2a40 0%, transparent 50%),
+    linear-gradient(165deg, #163a58 0%, #0e2438 40%, #1a3a32 100%);
+  --app-surface: linear-gradient(180deg, #1a2e40 0%, #152230 42%);
+  --app-surface-raised: linear-gradient(
+    180deg,
+    rgba(36, 58, 78, 0.92),
+    rgba(22, 38, 52, 0.88)
+  );
+  --app-text-primary: #e8eef4;
+  --app-text-secondary: #b3c2d1;
+  --app-text-muted: #8aa0b4;
+  --app-text-accent: #7dce9a;
+  --app-border-subtle: rgba(160, 196, 224, 0.28);
+  --app-accent: #7eb8f0;
+  --app-accent-contrast: #0b1c2c;
+  --app-link: #8ec4f7;
+  --app-danger: #f0a0a0;
+  --app-panel-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 8px 24px rgba(0, 0, 0, 0.28);
+  --app-chrome-bg:
+    linear-gradient(
+      115deg,
+      rgba(255, 255, 255, 0.12) 0%,
+      rgba(255, 255, 255, 0.03) 36%,
+      rgba(255, 255, 255, 0.08) 48%,
+      rgba(255, 255, 255, 0.02) 100%
+    ),
+    linear-gradient(180deg, rgba(30, 55, 80, 0.72), rgba(16, 32, 48, 0.55));
+  --app-chrome-border: rgba(255, 255, 255, 0.12);
+  --app-chrome-title-shadow: 0 1px 0 rgba(0, 0, 0, 0.45);
+  --app-tile-hover-bg: linear-gradient(
+    180deg,
+    rgba(70, 110, 150, 0.35),
+    rgba(30, 55, 80, 0.5)
+  );
+  --app-tile-hover-border: rgba(160, 196, 224, 0.4);
+  --app-input-bg: rgba(12, 24, 36, 0.72);
+  --app-input-border: rgba(160, 196, 224, 0.35);
+  --app-input-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.35);
+  --app-button-bg: linear-gradient(180deg, #3a5874 0%, #2a4258 48%, #1e3246 100%);
+  --app-button-bg-hover: linear-gradient(180deg, #4a6c8c 0%, #34506a 50%, #263c54 100%);
+  --app-button-border: #6a8aaa;
+  --app-button-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 1px 1px rgba(0, 0, 0, 0.28);
+  --app-button-primary-bg: linear-gradient(180deg, #5aa8e0 0%, #2f7dcc 48%, #1b5fa8 100%);
+  --app-button-primary-bg-hover: linear-gradient(180deg, #7ec4f5 0%, #3b8fe0 48%, #226bb8 100%);
+  --app-button-disabled-bg: linear-gradient(180deg, #2a3440 0%, #222a33 48%, #1b222a 100%);
+  --app-button-disabled-border: #4a5560;
+  --app-button-disabled-text: #7a858f;
+  --app-overlay-bg: linear-gradient(180deg, #243a4e 0%, #1a2e40 100%);
+  --app-overlay-border: rgba(160, 196, 224, 0.35);
+  --app-overlay-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  --app-icon-filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.5));
+  --app-heading-rule: linear-gradient(90deg, rgba(160, 196, 224, 0.35), transparent);
+}
+
+html.theme-material {
+  --app-font: Roboto, "Helvetica Neue", sans-serif;
+  --app-radius: 12px;
+  --app-page-bg: var(--mat-sys-surface);
+  --app-stage-bg: var(--mat-sys-surface);
+  --app-surface: var(--mat-sys-surface);
+  --app-surface-raised: var(--mat-sys-surface-container);
+  --app-text-primary: var(--mat-sys-on-surface);
+  --app-text-secondary: var(--mat-sys-on-surface-variant);
+  --app-text-muted: var(--mat-sys-outline);
+  --app-text-accent: var(--mat-sys-primary);
+  --app-border-subtle: var(--mat-sys-outline-variant);
+  --app-accent: var(--mat-sys-primary);
+  --app-accent-contrast: var(--mat-sys-on-primary);
+  --app-link: var(--mat-sys-primary);
+  --app-danger: var(--mat-sys-error);
+  --app-panel-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  --app-chrome-bg: var(--mat-sys-surface-container);
+  --app-chrome-blur: none;
+  --app-chrome-border: var(--mat-sys-outline-variant);
+  --app-chrome-title-shadow: none;
+  --app-tile-hover-bg: var(--mat-sys-surface-container-high);
+  --app-tile-hover-border: var(--mat-sys-outline-variant);
+  --app-input-bg: var(--mat-sys-surface-container-lowest);
+  --app-input-border: var(--mat-sys-outline);
+  --app-input-shadow: none;
+  --app-button-bg: var(--mat-sys-surface-container-high);
+  --app-button-bg-hover: var(--mat-sys-surface-container-highest);
+  --app-button-border: var(--mat-sys-outline-variant);
+  --app-button-shadow: none;
+  --app-button-primary-bg: var(--mat-sys-primary);
+  --app-button-primary-bg-hover: var(--mat-sys-primary);
+  --app-button-primary-border: var(--mat-sys-primary);
+  --app-button-primary-shadow: none;
+  --app-button-disabled-bg: var(--mat-sys-surface-container);
+  --app-button-disabled-border: var(--mat-sys-outline-variant);
+  --app-button-disabled-text: var(--mat-sys-outline);
+  --app-overlay-bg: var(--mat-sys-surface-container);
+  --app-overlay-border: var(--mat-sys-outline-variant);
+  --app-overlay-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  --app-icon-filter: none;
+  --app-heading-rule: var(--mat-sys-outline-variant);
+}
+
+html.theme-material.mode-dark {
+  --app-panel-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --app-overlay-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+}
+
+html.mode-light {
+  color-scheme: light;
+}
+
+html.mode-dark {
+  color-scheme: dark;
+}

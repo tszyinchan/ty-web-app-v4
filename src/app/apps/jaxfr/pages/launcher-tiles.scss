@@ -12,15 +12,15 @@
   gap: 8px;
   padding: 12px 6px 8px;
   border: 1px solid transparent;
-  border-radius: 3px;
+  border-radius: var(--app-radius);
   position: relative;
-  font-family: "Segoe UI", Tahoma, sans-serif;
+  font-family: var(--app-font);
 }
 
 .launcher-tile:hover,
 .launcher-tile:focus-within {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), #d6ebfa);
-  border-color: #9cc4e4;
+  background: var(--app-tile-hover-bg);
+  border-color: var(--app-tile-hover-border);
 }
 
 .launcher-icon {
@@ -36,15 +36,15 @@
     width: 48px;
     height: 48px;
     object-fit: contain;
-    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.28));
+    filter: var(--app-icon-filter);
   }
 
   mat-icon {
     font-size: 28px;
     width: 28px;
     height: 28px;
-    color: #1d6fbf;
-    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
+    color: var(--app-accent);
+    filter: var(--app-icon-filter);
   }
 }
 
@@ -52,7 +52,7 @@
   font-size: 12px;
   font-weight: 600;
   line-height: 1.25;
-  color: #1a1a1a;
+  color: var(--app-text-primary);
   text-align: center;
   text-decoration: none;
   max-width: 100%;
@@ -72,7 +72,7 @@
   text-decoration: underline;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 768px) {
   .launcher-grid {
     grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
     gap: 12px 8px;

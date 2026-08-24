@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { SupabaseService } from './supabase.service';
 import { NotificationService } from './notification.service';
 import { TyappUser, USER_ROLES } from '../models/user.model';
+import { clearActiveUserPreferenceCache } from '../utils/user-preference-cache.util';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -34,6 +35,7 @@ export class AuthService {
         ) {
           await this.fetchProfile(session.user.id);
         } else if (event === 'SIGNED_OUT') {
+          clearActiveUserPreferenceCache();
           this._userProfile.set(null);
           if (!window.location.pathname.includes('/login')) {
             window.location.href = '/login';
@@ -71,6 +73,7 @@ export class AuthService {
   }
 
   async logout() {
+    clearActiveUserPreferenceCache();
     await this.supabase.auth.signOut();
   }
 

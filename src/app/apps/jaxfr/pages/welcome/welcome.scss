@@ -27,53 +27,17 @@
 .welcome-meta {
   margin: 4px 0 0;
   font-size: 13px;
-  color: #555;
+  color: var(--app-text-secondary);
 }
 
 .welcome-meta-block .welcome-meta:first-child {
   margin-top: 0;
 }
 
-.view-toggle {
-  display: flex;
-  flex-shrink: 0;
-  overflow: hidden;
-  border: 1px solid #6a8aaa;
-  border-radius: 3px;
-  box-shadow: inset 0 1px 0 #fff, 0 1px 1px rgba(0, 0, 0, 0.12);
-}
-
-.view-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 26px;
-  padding: 0;
-  border: 0;
-  background: linear-gradient(180deg, #f7fbff 0%, #d5e6f4 48%, #b7cfe4 100%);
-  color: #3a4a5a;
-}
-
-.view-btn + .view-btn {
-  border-left: 1px solid #6a8aaa;
-}
-
-.view-btn.active {
-  background: linear-gradient(180deg, #7ec4f5 0%, #2f7dcc 48%, #1b5fa8 100%);
-  color: #fff;
-}
-
-.view-btn mat-icon {
-  font-size: 18px;
-  width: 18px;
-  height: 18px;
-}
-
 .welcome-wait {
   margin: 24px 0;
   font-size: 13px;
-  color: #555;
+  color: var(--app-text-secondary);
 }
 
 .cp-grid {
@@ -90,7 +54,7 @@
   position: relative;
   padding: 8px 10px;
   border: 1px solid transparent;
-  border-radius: 3px;
+  border-radius: var(--app-radius);
 }
 
 .cp-item.solo {
@@ -98,8 +62,8 @@
 }
 
 .cp-item:hover {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), #d6ebfa);
-  border-color: #9cc4e4;
+  background: var(--app-tile-hover-bg);
+  border-color: var(--app-tile-hover-border);
 }
 
 .cp-icon {
@@ -115,15 +79,15 @@
     width: 48px;
     height: 48px;
     object-fit: contain;
-    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.28));
+    filter: var(--app-icon-filter);
   }
 
   mat-icon {
     font-size: 28px;
     width: 28px;
     height: 28px;
-    color: #1d6fbf;
-    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
+    color: var(--app-accent);
+    filter: var(--app-icon-filter);
   }
 }
 
@@ -142,7 +106,7 @@
 .cp-title {
   font-size: 15px;
   font-weight: 600;
-  color: #217346;
+  color: var(--app-text-accent);
   text-decoration: none;
 }
 
@@ -168,7 +132,7 @@
 
 .cp-link {
   font-size: 12px;
-  color: #0066cc;
+  color: var(--app-link);
   text-decoration: none;
 }
 
@@ -178,7 +142,7 @@
 
 .cp-sep {
   font-size: 12px;
-  color: #8aa0b4;
+  color: var(--app-text-muted);
 }
 
 .explorer-group + .explorer-group {
@@ -193,8 +157,8 @@
   padding: 0 10px 8px;
   border: 0;
   background: transparent;
-  font: 600 13px "Segoe UI", Tahoma, sans-serif;
-  color: #5a5a5a;
+  font: 600 13px var(--app-font);
+  color: var(--app-text-secondary);
   text-align: left;
 }
 
@@ -203,7 +167,7 @@
   height: 0;
   border-left: 5px solid transparent;
   border-right: 5px solid transparent;
-  border-top: 6px solid #6a6a6a;
+  border-top: 6px solid var(--app-text-muted);
   flex-shrink: 0;
   transition: transform 0.2s ease;
 }
@@ -230,33 +194,33 @@
 .explorer-rule {
   flex: 1;
   height: 1px;
-  background: linear-gradient(90deg, #c5c5c5, #e8e8e8);
+  background: var(--app-heading-rule);
 }
 
-.cp-grid.icon-view {
+.welcome-launcher.launcher-mode-compact .cp-grid {
   grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
   column-gap: 8px;
   row-gap: 16px;
 }
 
-.cp-grid.icon-view .cp-item {
+.welcome-launcher.launcher-mode-compact .cp-item {
   flex-direction: column;
   align-items: center;
   gap: 8px;
   padding: 12px 6px 8px;
 }
 
-.cp-grid.icon-view .cp-text {
+.welcome-launcher.launcher-mode-compact .cp-text {
   align-items: center;
   padding-top: 0;
   width: 100%;
 }
 
-.cp-grid.icon-view .cp-title {
+.welcome-launcher.launcher-mode-compact .cp-title {
   font-size: 12px;
   font-weight: 600;
   line-height: 1.25;
-  color: #1a1a1a;
+  color: var(--app-text-primary);
   text-align: center;
   display: -webkit-box;
   -webkit-box-orient: vertical;
@@ -264,7 +228,7 @@
   overflow: hidden;
 }
 
-@media (max-width: 600px) {
+:host.launcher-narrow {
   .aero-chrome {
     padding: 8px 12px;
   }
@@ -277,13 +241,13 @@
     margin-bottom: 16px;
   }
 
-  .cp-grid {
+  .welcome-launcher.launcher-mode-detailed .cp-grid {
     grid-template-columns: 1fr;
     column-gap: 16px;
     row-gap: 16px;
   }
 
-  .cp-grid.icon-view {
+  .welcome-launcher.launcher-mode-compact .cp-grid {
     grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
     column-gap: 8px;
     row-gap: 12px;
@@ -291,12 +255,17 @@
 
   .cp-item {
     gap: 12px;
-    padding: 6px 8px;
+    padding: 10px 8px;
+    min-height: 44px;
   }
 
-  .cp-grid.icon-view .cp-item {
+  .welcome-launcher.launcher-mode-compact .cp-item {
     gap: 8px;
     padding: 10px 4px 6px;
+  }
+
+  .cp-links {
+    row-gap: 6px;
   }
 
   .explorer-group + .explorer-group {
@@ -307,4 +276,3 @@
     padding: 0 8px 8px;
   }
 }
-
