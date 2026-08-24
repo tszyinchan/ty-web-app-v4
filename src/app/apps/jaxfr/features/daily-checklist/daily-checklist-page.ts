@@ -100,6 +100,8 @@ export class DailyChecklistPage implements OnInit, AfterViewInit, OnDestroy {
   private readonly weekScroller =
     viewChild<ElementRef<HTMLElement>>('weekScroller');
   private readonly addRow = viewChild<ElementRef<HTMLElement>>('addRow');
+  private readonly addItemInput =
+    viewChild<ElementRef<HTMLInputElement>>('addItemInput');
   private ignoreWeekScroll = false;
   private weekScrollTimer: ReturnType<typeof setTimeout> | null = null;
   private stripExtending = false;
@@ -544,10 +546,15 @@ export class DailyChecklistPage implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  async onSuggestionSelected(event: MatAutocompleteSelectedEvent) {
+  async onSuggestionSelected(
+    event: MatAutocompleteSelectedEvent,
+    input: HTMLInputElement,
+  ) {
     const itemId = String(event.option.value ?? '');
     if (!itemId) return;
-    this.resetAddPanel();
+    // MatAutocomplete writes displayWith() into the native input after this
+    // event, which would put the chosen name back into the box.
+    this.resetAddPanel(input);
     await this.service.addExistingItemToDate(this.selectedDate(), itemId);
     this.scrollAddRowIntoView();
   }
@@ -569,7 +576,7 @@ export class DailyChecklistPage implements OnInit, AfterViewInit, OnDestroy {
         existing.tb_tyapp_dcl_itm_id,
       );
       if (ok) {
-        this.resetAddPanel();
+        this.resetAddPanel(this.addItemInput()?.nativeElement);
         this.scrollAddRowIntoView();
       }
       return;
@@ -591,7 +598,7 @@ export class DailyChecklistPage implements OnInit, AfterViewInit, OnDestroy {
       remarks: event.remarks,
     });
     if (ok) {
-      this.resetAddPanel();
+      this.resetAddPanel(this.addItemInput()?.nativeElement);
       this.scrollAddRowIntoView();
     }
   }
@@ -600,10 +607,16 @@ export class DailyChecklistPage implements OnInit, AfterViewInit, OnDestroy {
     this.addSheetOpen.set(false);
   }
 
-  resetAddPanel() {
+  resetAddPanel(input?: HTMLInputElement) {
     this.newItemText.set('');
     this.addSheetOpen.set(false);
     if (this.emojiPickerTarget() === 'edit') this.emojiPickerTarget.set(null);
+    const native = input ?? this.addItemInput()?.nativeElement;
+    if (native) native.value = '';
+    queueMicrotask(() => {
+      this.newItemText.set('');
+      if (native) native.value = '';
+    });
   }
 
   private scrollAddRowIntoView() {

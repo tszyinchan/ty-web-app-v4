@@ -2,11 +2,13 @@ import { CommonModule } from '@angular/common';
 import {
   Component,
   CUSTOM_ELEMENTS_SCHEMA,
+  ElementRef,
   OnDestroy,
   OnInit,
   computed,
   inject,
   signal,
+  viewChild,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import 'emoji-picker-element';
@@ -56,6 +58,8 @@ import {
 export class DailyChecklistStandard implements OnInit, OnDestroy {
   readonly service = inject(DailyChecklistService);
   private headerService = inject(HeaderService);
+  private readonly addItemInput =
+    viewChild<ElementRef<HTMLInputElement>>('addItemInput');
 
   readonly colourPresets = DCL_COLOUR_PRESETS;
   colourClass = colourClass;
@@ -136,10 +140,13 @@ export class DailyChecklistStandard implements OnInit, OnDestroy {
     return `${emoji}${item.item_text}`;
   }
 
-  async onSuggestionSelected(event: MatAutocompleteSelectedEvent) {
+  async onSuggestionSelected(
+    event: MatAutocompleteSelectedEvent,
+    input: HTMLInputElement,
+  ) {
     const itemId = String(event.option.value ?? '');
     if (!itemId) return;
-    this.resetAddPanel();
+    this.resetAddPanel(input);
     await this.service.addStandardItem(itemId);
   }
 
@@ -164,11 +171,17 @@ export class DailyChecklistStandard implements OnInit, OnDestroy {
     if (ok) this.resetAddPanel();
   }
 
-  resetAddPanel() {
+  resetAddPanel(input?: HTMLInputElement) {
     this.newItemText.set('');
     this.newEmoji.set(null);
     this.newColour.set('slate');
     if (this.emojiPickerTarget() === 'new') this.emojiPickerTarget.set(null);
+    const native = input ?? this.addItemInput()?.nativeElement;
+    if (native) native.value = '';
+    queueMicrotask(() => {
+      this.newItemText.set('');
+      if (native) native.value = '';
+    });
   }
 
   selectColour(key: DclColourPresetKey) {

@@ -9,6 +9,7 @@
     <mat-form-field appearance="outline" subscriptSizing="dynamic" class="grow">
       <mat-label>Add to Standard</mat-label>
       <input
+        #addItemInput
         matInput
         [ngModel]="newItemText()"
         (ngModelChange)="newItemText.set($event)"
@@ -20,7 +21,7 @@
       <mat-autocomplete
         #itemAuto="matAutocomplete"
         [displayWith]="displayCatalogName"
-        (optionSelected)="onSuggestionSelected($event)"
+        (optionSelected)="onSuggestionSelected($event, addItemInput)"
       >
         @for (opt of filteredSuggestions(); track opt.tb_tyapp_dcl_itm_id) {
           <mat-option [value]="opt.tb_tyapp_dcl_itm_id">
