@@ -35,8 +35,8 @@
 
 .sheet-title {
   margin: 0;
-  font: 700 16px "Segoe UI", Tahoma, sans-serif;
-  color: #1a1a1a;
+  font: 700 16px var(--app-font);
+  color: var(--app-text-primary);
 }
 
 .grow {
@@ -58,7 +58,7 @@
   @include aero.gloss-surface;
   border-radius: 12px;
   cursor: pointer;
-  font: 15px "Segoe UI", Tahoma, sans-serif;
+  font: 15px var(--app-font);
 }
 
 .colour-chip {
@@ -71,7 +71,7 @@
   background: var(--dcl-fill);
 
   &.selected {
-    box-shadow: 0 0 0 2px #fff, 0 0 0 4px #1b5fa8;
+    box-shadow: 0 0 0 2px var(--app-accent-contrast), 0 0 0 4px var(--app-accent);
   }
 }
 
@@ -89,17 +89,17 @@
   top: 50%;
   transform: translate(-50%, -50%);
   border-radius: 12px;
-  box-shadow: 0 8px 24px rgb(0 0 0 / 18%);
+  box-shadow: var(--app-overlay-shadow);
 }
 
 emoji-picker {
   display: block;
   width: min(352px, calc(100vw - 24px));
   height: min(400px, calc(100dvh - 48px));
-  --background: #f7fbff;
-  --border-color: #c5d5e4;
-  --input-border-color: #c5d5e4;
-  --input-font-color: #1a1a1a;
-  --outline-color: #3c7fb1;
-  --indicator-color: #3c7fb1;
+  --background: var(--app-overlay-bg);
+  --border-color: var(--app-border-subtle);
+  --input-border-color: var(--app-input-border);
+  --input-font-color: var(--app-text-primary);
+  --outline-color: var(--app-accent);
+  --indicator-color: var(--app-accent);
 }

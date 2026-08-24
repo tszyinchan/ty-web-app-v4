@@ -85,10 +85,25 @@ html.theme-aero {
     border-radius: var(--app-radius);
     background: var(--app-overlay-bg);
     box-shadow: var(--app-overlay-shadow);
+    color: var(--app-text-primary);
+  }
+
+  button.mat-mdc-menu-item {
+    color: var(--app-text-primary);
   }
 
   button.mat-mdc-menu-item:hover,
   button.mat-mdc-menu-item.mat-mdc-menu-item-highlighted {
     background: var(--app-tile-hover-bg);
+  }
+}
+
+html.theme-material {
+  div.mat-mdc-menu-panel,
+  div.mat-mdc-select-panel {
+    background: var(--app-overlay-bg);
+    color: var(--app-text-primary);
+    border: 1px solid var(--app-overlay-border);
+    box-shadow: var(--app-overlay-shadow);
   }
 }

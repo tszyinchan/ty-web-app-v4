@@ -6,13 +6,13 @@
 
 mat-card.feed-card.highlight-card {
   box-shadow:
-    inset 0 1px 0 #fff,
-    0 0 0 3px #3c7fb1;
+    var(--app-panel-shadow),
+    0 0 0 3px var(--app-accent);
   transition: box-shadow 0.5s ease-in-out;
 }
 
 .original-link {
-  color: #0066cc;
+  color: var(--app-link);
   text-decoration: none;
   font-weight: 500;
 

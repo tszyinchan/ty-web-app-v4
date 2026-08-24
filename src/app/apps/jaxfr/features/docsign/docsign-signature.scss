@@ -1,15 +1,16 @@
 .group-note {
   margin: 0 0 12px;
   font-size: 13px;
-  color: #6a7a88;
+  color: var(--app-text-muted);
 }
 
 .sig-preview,
 .sig-history li {
   margin: 0 0 16px;
   padding: 12px;
-  border: 1px solid #c5d5e4;
+  border: 1px solid var(--app-border-subtle);
   background: #fff;
+  color: #1a1a1a;
 }
 
 .sig-history {
@@ -32,7 +33,7 @@
 .sig-meta {
   margin: 0;
   font-size: 12px;
-  color: #6a7a88;
+  color: var(--app-text-muted);
 }
 
 .sig-svg svg {
@@ -52,7 +53,7 @@
   width: 100%;
   max-width: 240px;
   height: 96px;
-  border: 1px solid #c5d5e4;
+  border: 1px solid var(--app-border-subtle);
   background: #fff;
   touch-action: none;
 }

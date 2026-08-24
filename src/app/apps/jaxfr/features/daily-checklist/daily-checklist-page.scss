@@ -84,7 +84,7 @@
   max-width: 720px;
   margin: 0 auto;
   padding: 12px 12px 32px;
-  font-family: "Segoe UI", Tahoma, sans-serif;
+  font-family: var(--app-font);
 }
 
 .week-strip {
@@ -145,17 +145,17 @@
   }
 
   &.today {
-    border-color: #1b5fa8;
-    box-shadow: inset 0 1px 0 #fff, 0 0 0 1px rgba(27, 95, 168, 0.28);
+    border-color: var(--app-accent);
+    box-shadow: var(--app-panel-shadow), 0 0 0 1px color-mix(in srgb, var(--app-accent) 28%, transparent);
   }
 
   &.selected {
     @include aero.gloss-primary-surface;
     border-radius: 16px;
-    color: #fff;
+    color: var(--app-accent-contrast);
 
     .day-dot {
-      background: #fff;
+      background: var(--app-accent-contrast);
     }
   }
 }
@@ -179,11 +179,11 @@
   background: transparent;
 
   &.on {
-    background: #8aa0b4;
+    background: var(--app-text-muted);
   }
 
   &.done {
-    background: #217346;
+    background: var(--app-text-accent);
   }
 }
 
@@ -196,16 +196,16 @@
 }
 
 .progress-label {
-  font: 600 15px "Segoe UI", Tahoma, sans-serif;
-  color: #1a1a1a;
+  font: 600 15px var(--app-font);
+  color: var(--app-text-primary);
 }
 
 mat-progress-bar.dcl-progress {
   height: 8px;
   border-radius: 999px;
   overflow: hidden;
-  --mdc-linear-progress-active-indicator-color: #1b5fa8;
-  --mdc-linear-progress-track-color: rgba(27, 95, 168, 0.14);
+  --mdc-linear-progress-active-indicator-color: var(--app-accent);
+  --mdc-linear-progress-track-color: color-mix(in srgb, var(--app-accent) 14%, transparent);
 }
 
 .progress-count,
@@ -214,7 +214,7 @@ mat-progress-bar.dcl-progress {
   margin: 6px 0 0;
   font-size: 12px;
   font-weight: 600;
-  color: #6a7a88;
+  color: var(--app-text-muted);
 }
 
 .standard-hint,
@@ -233,7 +233,7 @@ mat-progress-bar.dcl-progress {
 .empty-title {
   margin: 0 0 8px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--app-text-primary);
 }
 
 .item-list {
@@ -264,7 +264,7 @@ mat-progress-bar.dcl-progress {
     var(--dcl-idle-bottom) 100%
   );
   box-shadow: inset 0 1px 0 #fff, 0 1px 1px rgba(0, 0, 0, 0.08);
-  color: #1a1a1a;
+  color: #1a1a1a; // idle cards stay pastel; keep dark ink regardless of theme
 
   &.editing {
     flex-direction: column;
@@ -422,7 +422,7 @@ mat-progress-bar.dcl-progress {
   @include aero.gloss-surface;
   border-radius: 12px;
   cursor: pointer;
-  font: 15px "Segoe UI", Tahoma, sans-serif;
+  font: 15px var(--app-font);
 }
 
 .colour-chip {
@@ -435,7 +435,7 @@ mat-progress-bar.dcl-progress {
   background: var(--dcl-fill);
 
   &.selected {
-    box-shadow: 0 0 0 2px #fff, 0 0 0 4px #1b5fa8;
+    box-shadow: 0 0 0 2px var(--app-accent-contrast), 0 0 0 4px var(--app-accent);
   }
 }
 
@@ -453,19 +453,19 @@ mat-progress-bar.dcl-progress {
   top: 50%;
   transform: translate(-50%, -50%);
   border-radius: 12px;
-  box-shadow: 0 8px 24px rgb(0 0 0 / 18%);
+  box-shadow: var(--app-overlay-shadow);
 }
 
 emoji-picker {
   display: block;
   width: min(352px, calc(100vw - 24px));
   height: min(400px, calc(100dvh - 48px));
-  --background: #f7fbff;
-  --border-color: #c5d5e4;
-  --input-border-color: #c5d5e4;
-  --input-font-color: #1a1a1a;
-  --outline-color: #3c7fb1;
-  --indicator-color: #3c7fb1;
+  --background: var(--app-overlay-bg);
+  --border-color: var(--app-border-subtle);
+  --input-border-color: var(--app-input-border);
+  --input-font-color: var(--app-text-primary);
+  --outline-color: var(--app-accent);
+  --indicator-color: var(--app-accent);
 }
 
 @media (max-width: 600px) {

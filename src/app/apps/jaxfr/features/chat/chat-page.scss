@@ -8,7 +8,7 @@
   height: 100%;
   overflow: hidden;
   background: transparent;
-  font-family: "Segoe UI", Tahoma, sans-serif;
+  font-family: var(--app-font);
 }
 
 .room-pane {
@@ -16,8 +16,8 @@
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  border-right: 1px solid #c5d5e4;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.55), #eaf4fc);
+  border-right: 1px solid var(--app-border-subtle);
+  background: var(--app-surface);
 }
 
 .room-search {
@@ -25,10 +25,10 @@
   align-items: center;
   gap: 8px;
   padding: 12px;
-  border-bottom: 1px solid #c5d5e4;
+  border-bottom: 1px solid var(--app-border-subtle);
 
   mat-icon {
-    color: #6a7a88;
+    color: var(--app-text-muted);
   }
 
   input {
@@ -36,7 +36,7 @@
     border: 0;
     outline: none;
     background: transparent;
-    color: #1a1a1a;
+    color: var(--app-text-primary);
     font: inherit;
   }
 }
@@ -53,15 +53,15 @@
   padding: 12px 16px;
   text-decoration: none;
   color: inherit;
-  border-bottom: 1px solid #d4e0ea;
+  border-bottom: 1px solid var(--app-border-subtle);
 
   &:hover {
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), #d6ebfa);
+    background: var(--app-tile-hover-bg);
   }
 
   &.active {
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), #d6ebfa);
-    box-shadow: inset 3px 0 0 #1b5fa8;
+    background: var(--app-tile-hover-bg);
+    box-shadow: inset 3px 0 0 var(--app-accent);
   }
 }
 
@@ -83,7 +83,7 @@
 
 .room-item-desc {
   font-size: 12px;
-  color: #6a7a88;
+  color: var(--app-text-muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -95,8 +95,8 @@
   height: 18px;
   padding: 0 5px;
   border-radius: 9px;
-  background: #1b5fa8;
-  color: #fff;
+  background: var(--app-accent);
+  color: var(--app-accent-contrast);
   font-size: 11px;
   font-weight: 600;
   line-height: 18px;
@@ -110,7 +110,7 @@
   align-items: center;
   gap: 6px 10px;
   font-size: 12px;
-  color: #6a7a88;
+  color: var(--app-text-muted);
 }
 
 .presence-member {
@@ -125,19 +125,19 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #c5d5e4;
+  background: var(--app-border-subtle);
 }
 
 .presence-dot.online {
-  background: #188038;
+  background: var(--app-text-accent);
 }
 
 .thread-desc {
   margin: 0;
   padding: 8px 12px;
-  border-bottom: 1px solid #c5d5e4;
+  border-bottom: 1px solid var(--app-border-subtle);
   font-size: 12px;
-  color: #6a7a88;
+  color: var(--app-text-muted);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
@@ -147,9 +147,9 @@
   align-items: center;
   gap: 4px 8px;
   padding: 4px 8px 4px 12px;
-  border-bottom: 1px solid #c5d5e4;
+  border-bottom: 1px solid var(--app-border-subtle);
   font-size: 12px;
-  color: #6a7a88;
+  color: var(--app-text-muted);
 }
 
 .thread-presence:not(.compact).can-toggle {
@@ -178,12 +178,12 @@
   border: 0;
   border-radius: 12px;
   background: transparent;
-  color: #6a7a88;
+  color: var(--app-text-muted);
   cursor: pointer;
 }
 
 .presence-toggle:hover {
-  background: #d6ebfa;
+  background: var(--app-tile-hover-bg);
 }
 
 .presence-toggle mat-icon {
@@ -203,7 +203,7 @@
 .empty-placeholder {
   margin: auto;
   text-align: center;
-  color: #6a7a88;
+  color: var(--app-text-muted);
   padding: 24px;
 
   mat-icon {
@@ -251,10 +251,10 @@
   display: flex;
   align-items: center;
   padding: 2px 4px;
-  border: 1px solid #9cc4e4;
+  border: 1px solid var(--app-overlay-border);
   border-radius: 20px;
-  background: linear-gradient(180deg, #f7fbff, #eaf4fc);
-  box-shadow: 0 2px 8px rgb(0 0 0 / 12%);
+  background: var(--app-overlay-bg);
+  box-shadow: var(--app-overlay-shadow);
   opacity: 0;
   visibility: hidden;
   transform: translateY(6px);
@@ -319,7 +319,7 @@
   width: 1px;
   height: 18px;
   margin: 0 4px;
-  background: #c5d5e4;
+  background: var(--app-border-subtle);
 }
 
 .toolbar-btn {
@@ -332,17 +332,17 @@
   border: 0;
   border-radius: 50%;
   background: transparent;
-  color: #6a7a88;
+  color: var(--app-text-muted);
   cursor: pointer;
 }
 
 .toolbar-btn:hover {
-  background: #d6ebfa;
+  background: var(--app-tile-hover-bg);
 }
 
 .toolbar-btn.active {
-  color: #1b5fa8;
-  background: #d6ebfa;
+  color: var(--app-accent);
+  background: var(--app-tile-hover-bg);
 }
 
 .toolbar-btn.toolbar-emoji {
@@ -375,22 +375,23 @@
   max-width: 100%;
   padding: 8px 12px;
   border-radius: 12px;
-  border: 1px solid #c5d5e4;
-  background: linear-gradient(180deg, #ffffff, #eaf4fc);
+  border: 1px solid var(--app-border-subtle);
+  background: var(--app-surface-raised);
   overflow-wrap: anywhere;
   word-break: break-word;
+  color: var(--app-text-primary);
 }
 
 .bubble-row.mine .bubble {
-  border-color: #9cc4e4;
-  background: linear-gradient(180deg, #d6ebfa, #b7d6f0);
+  border-color: var(--app-tile-hover-border);
+  background: var(--app-tile-hover-bg);
 }
 
 .author {
   display: block;
   font-size: 12px;
   font-weight: 500;
-  color: #1b5fa8;
+  color: var(--app-accent);
   margin-bottom: 4px;
 }
 
@@ -402,26 +403,26 @@
   color: inherit;
   cursor: pointer;
   border: 0;
-  border-left: 3px solid #1b5fa8;
+  border-left: 3px solid var(--app-accent);
   padding: 4px 8px;
   margin-bottom: 6px;
-  background: rgba(255, 255, 255, 0.55);
+  background: var(--app-page-bg);
   border-radius: 0 6px 6px 0;
 }
 
 .quote-preview:hover {
-  background: rgba(255, 255, 255, 0.8);
+  background: var(--app-tile-hover-bg);
 }
 
 .bubble-row.msg-highlight .bubble {
-  outline: 2px solid #3c7fb1;
+  outline: 2px solid var(--app-accent);
   outline-offset: 2px;
   animation: msg-highlight-pulse 1.6s ease;
 }
 
 @keyframes msg-highlight-pulse {
   0% {
-    outline-color: #3c7fb1;
+    outline-color: var(--app-accent);
   }
   100% {
     outline-color: transparent;
@@ -437,19 +438,19 @@
 .quote-text {
   display: block;
   font-size: 12px;
-  color: #6a7a88;
+  color: var(--app-text-muted);
 }
 
 .deleted-text {
   margin: 0;
   font-style: italic;
-  color: #6a7a88;
+  color: var(--app-text-muted);
 }
 
 .bubble-meta {
   margin-top: 4px;
   font-size: 11px;
-  color: #8aa0b4;
+  color: var(--app-text-muted);
 }
 
 .reaction-row {
@@ -460,16 +461,17 @@
 }
 
 .reaction-chip {
-  border: 1px solid #c5d5e4;
-  background: #fff;
+  border: 1px solid var(--app-border-subtle);
+  background: var(--app-input-bg);
+  color: var(--app-text-primary);
   border-radius: 12px;
   padding: 0 6px;
   font-size: 12px;
   cursor: pointer;
 
   &.mine {
-    border-color: #3c7fb1;
-    background: #d6ebfa;
+    border-color: var(--app-accent);
+    background: var(--app-tile-hover-bg);
   }
 }
 
@@ -490,8 +492,8 @@
   font-size: 9px;
   font-weight: 600;
   letter-spacing: -0.02em;
-  background: #d6ebfa;
-  color: #1a1a1a;
+  background: var(--app-tile-hover-bg);
+  color: var(--app-text-primary);
   animation: reader-chip-drop 280ms ease-out;
 }
 
@@ -534,29 +536,29 @@
   max-height: calc(100dvh - 24px);
   overflow: auto;
   border-radius: 12px;
-  box-shadow: 0 8px 24px rgb(0 0 0 / 18%);
+  box-shadow: var(--app-overlay-shadow);
 }
 
 emoji-picker {
   display: block;
   width: min(352px, calc(100vw - 24px));
   height: min(400px, calc(100dvh - 48px));
-  --background: #f7fbff;
-  --border-color: #c5d5e4;
-  --input-border-color: #c5d5e4;
-  --input-font-color: #1a1a1a;
-  --input-placeholder-color: #6a7a88;
-  --outline-color: #3c7fb1;
-  --indicator-color: #3c7fb1;
-  --category-font-color: #6a7a88;
-  --button-hover-background: #d6ebfa;
-  --button-active-background: #d6ebfa;
+  --background: var(--app-overlay-bg);
+  --border-color: var(--app-border-subtle);
+  --input-border-color: var(--app-input-border);
+  --input-font-color: var(--app-text-primary);
+  --input-placeholder-color: var(--app-text-muted);
+  --outline-color: var(--app-accent);
+  --indicator-color: var(--app-accent);
+  --category-font-color: var(--app-text-muted);
+  --button-hover-background: var(--app-tile-hover-bg);
+  --button-active-background: var(--app-tile-hover-bg);
 }
 
 .composer {
-  border-top: 1px solid #c5d5e4;
+  border-top: 1px solid var(--app-border-subtle);
   padding: 8px 12px 12px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.7), #eaf4fc);
+  background: var(--app-surface);
 }
 
 .composer-banner {
@@ -601,11 +603,29 @@ quill-editor {
   max-height: 200px;
   overflow-y: auto;
   font-size: 14px;
+  color: var(--app-text-primary);
+  background: var(--app-input-bg);
 }
 
 :host ::ng-deep .ql-toolbar.ql-snow,
 :host ::ng-deep .ql-container.ql-snow {
-  border-color: #c5d5e4;
+  border-color: var(--app-border-subtle);
+}
+
+:host ::ng-deep .ql-toolbar.ql-snow {
+  background: var(--app-surface-raised);
+}
+
+:host ::ng-deep .ql-snow .ql-stroke {
+  stroke: var(--app-text-secondary);
+}
+
+:host ::ng-deep .ql-snow .ql-fill {
+  fill: var(--app-text-secondary);
+}
+
+:host ::ng-deep .ql-snow .ql-picker {
+  color: var(--app-text-secondary);
 }
 
 @media (max-width: 800px) {

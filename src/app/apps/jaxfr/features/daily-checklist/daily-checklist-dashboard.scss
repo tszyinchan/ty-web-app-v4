@@ -2,7 +2,7 @@
   max-width: 720px;
   margin: 0 auto;
   padding: 16px 16px 32px;
-  font-family: "Segoe UI", Tahoma, sans-serif;
+  font-family: var(--app-font);
 }
 
 .range-bar {
@@ -29,8 +29,8 @@
 
 .section-title {
   margin: 0 0 12px;
-  font: 600 15px "Segoe UI", Tahoma, sans-serif;
-  color: #217346;
+  font: 600 15px var(--app-font);
+  color: var(--app-text-accent);
 }
 
 .summary-grid {
@@ -44,20 +44,20 @@
   flex-direction: column;
   gap: 4px;
   padding: 12px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), #eaf4fc);
-  border: 1px solid #c5d5e4;
-  border-radius: 3px;
+  background: var(--app-surface-raised);
+  border: 1px solid var(--app-border-subtle);
+  border-radius: var(--app-radius);
 }
 
 .summary-value {
   font-size: 22px;
   font-weight: 700;
-  color: #1b5fa8;
+  color: var(--app-accent);
 }
 
 .summary-label {
   font-size: 12px;
-  color: #6a7a88;
+  color: var(--app-text-muted);
 }
 
 .stat-row {
@@ -66,7 +66,7 @@
   align-items: flex-start;
   gap: 12px;
   padding: 10px 0;
-  border-bottom: 1px solid #d4e0ea;
+  border-bottom: 1px solid var(--app-border-subtle);
 }
 
 .stat-main {
@@ -79,14 +79,14 @@
 .stat-title {
   font-size: 14px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--app-text-primary);
   word-break: break-word;
 }
 
 .stat-sub,
 .empty-copy {
   font-size: 12px;
-  color: #6a7a88;
+  color: var(--app-text-muted);
 }
 
 .empty-copy {
@@ -97,7 +97,7 @@
   flex-shrink: 0;
   font-size: 13px;
   font-weight: 700;
-  color: #1b5fa8;
+  color: var(--app-accent);
 }
 
 @media (max-width: 600px) {

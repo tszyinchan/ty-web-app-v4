@@ -1,8 +1,8 @@
 .shift-details-section {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), #eaf4fc);
+  background: var(--app-surface-raised);
   padding: 16px;
-  border-radius: 3px;
-  border: 1px solid #c5d5e4;
+  border-radius: var(--app-radius);
+  border: 1px solid var(--app-border-subtle);
 }
 
 .shift-details-header {

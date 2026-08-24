@@ -3,8 +3,8 @@
 
 .cal-custom-header {
   display: flex;
-  border-bottom: 1px solid #c5d5e4;
-  font-family: "Segoe UI", Tahoma, sans-serif;
+  border-bottom: 1px solid var(--app-border-subtle);
+  font-family: var(--app-font);
 
   .cal-header-cell {
     flex: 1;
@@ -12,7 +12,7 @@
     padding: 6px 0;
     font-size: 13px;
     font-weight: 600;
-    color: #6a7a88;
+    color: var(--app-text-muted);
   }
 }
 
@@ -31,14 +31,15 @@
       font-weight: 500;
       display: inline-block;
       padding: 2px;
-      border-radius: 3px;
+      border-radius: var(--app-radius);
+      color: var(--app-text-primary);
 
       &.is-out-of-month {
         opacity: 0.4;
       }
 
       &.is-today {
-        color: #1b5fa8;
+        color: var(--app-accent);
         font-weight: 700;
       }
     }
@@ -79,26 +80,26 @@
   .cal-month-view .cal-cell-row {
     display: flex;
     flex: 1;
-    border-color: #c5d5e4;
+    border-color: var(--app-border-subtle);
   }
 
   .cal-month-view .cal-day-cell {
-    border-color: #c5d5e4;
+    border-color: var(--app-border-subtle);
     display: flex;
     flex-direction: column;
   }
 
   .cal-month-view .cal-day-cell:not(.cal-in-month) {
-    background-color: #eaf4fc;
+    background-color: var(--app-page-bg);
   }
 
   .event-badge {
     font-size: 10px;
     line-height: 1.2;
-    background: linear-gradient(180deg, #f4f8fc, #d6ebfa);
-    color: #1a1a1a;
+    background: var(--app-surface-raised);
+    color: var(--app-text-primary);
     padding: 2px;
-    border-radius: 3px;
+    border-radius: var(--app-radius);
     text-align: center;
 
     white-space: normal;

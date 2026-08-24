@@ -8,11 +8,11 @@
   display: flex;
   flex-direction: column;
   gap: 24px;
-  font-family: "Segoe UI", Tahoma, sans-serif;
+  font-family: var(--app-font);
 }
 
 mat-card.feed-card {
-  box-shadow: inset 0 1px 0 #fff, 0 1px 2px rgba(0, 40, 80, 0.08);
+  box-shadow: var(--app-panel-shadow);
   @include aero.panel-surface;
 }
 
@@ -32,12 +32,12 @@ mat-card-content.custom-content {
   font-weight: 700;
   line-height: 1.4;
   margin: 0 0 8px 0;
-  color: #1a1a1a;
+  color: var(--app-text-primary);
 }
 
 .article-meta {
   font-size: 14px;
-  color: #6a7a88;
+  color: var(--app-text-muted);
   margin-bottom: 4px;
 }
 
@@ -46,7 +46,7 @@ mat-card-content.custom-content {
   word-break: break-word;
   line-height: 1.6;
   font-size: 15px;
-  color: #1a1a1a;
+  color: var(--app-text-primary);
 }
 
 .feed-card-header-row {
@@ -66,13 +66,13 @@ mat-card-content.custom-content {
 }
 
 button.feed-card-action {
-  color: #6a7a88;
+  color: var(--app-text-muted);
 }
 
 .feed-empty-placeholder {
   text-align: center;
   padding: 40px;
-  color: #6a7a88;
+  color: var(--app-text-muted);
 }
 
 .feed-loading {

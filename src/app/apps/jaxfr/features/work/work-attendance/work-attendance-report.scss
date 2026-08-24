@@ -2,7 +2,7 @@
 
 .toggle-header {
   padding: 16px 16px 8px;
-  background: #eaf4fc;
+  background: var(--app-page-bg);
   position: sticky;
   top: 0;
   z-index: 20;
@@ -36,12 +36,12 @@
 
       .emp-name {
         font-weight: 600;
-        color: #1a1a1a;
+        color: var(--app-text-primary);
         font-size: 14px;
       }
       .emp-sub {
         font-size: 12px;
-        color: #6a7a88;
+        color: var(--app-text-muted);
       }
     }
 
