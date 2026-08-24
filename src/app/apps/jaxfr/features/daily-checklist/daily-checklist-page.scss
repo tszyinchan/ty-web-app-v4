@@ -263,7 +263,8 @@ mat-progress-bar.dcl-progress {
     align-items: stretch;
   }
 
-  &.completed {
+  // Edit mode keeps the idle glass so labels and text buttons stay readable.
+  &.completed:not(.editing) {
     border-color: var(--dcl-done-border);
     background: linear-gradient(
       180deg,
