@@ -3,22 +3,41 @@ import {
   DailyChecklistDashboardRange,
   DailyChecklistDashboardVm,
   DailyChecklistDateStat,
+  DailyChecklistDayRow,
   DailyChecklistItem,
   DailyChecklistRecentItem,
-  DailyChecklistSuggestion,
   DailyChecklistTopItem,
+  DailyChecklistWeekDay,
+  DCL_COLOUR_PRESETS,
+  DclColourPresetKey,
 } from './daily-checklist.model';
 
 export const DATE_QUERY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 export const DASHBOARD_TOP_LIMIT = 10;
+const WEEKDAY_LABELS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 
-export function isDailyItemCompleted(item: DailyChecklistItem): boolean {
+export function isDayItemCompleted(item: { completed_at: string | null }): boolean {
   return item.completed_at != null;
 }
 
 export function completionPercent(completed: number, total: number): number {
   if (total <= 0) return 0;
   return Math.round((completed / total) * 100);
+}
+
+export function colourPreset(key: string | null | undefined) {
+  return (
+    DCL_COLOUR_PRESETS.find((row) => row.key === key) ??
+    DCL_COLOUR_PRESETS[DCL_COLOUR_PRESETS.length - 1]
+  );
+}
+
+export function isColourPresetKey(value: string): value is DclColourPresetKey {
+  return DCL_COLOUR_PRESETS.some((row) => row.key === value);
+}
+
+export function colourClass(key: string | null | undefined): string {
+  return `colour-${isColourPresetKey(key ?? '') ? key : 'slate'}`;
 }
 
 export function normalizeChecklistDateParam(
@@ -39,15 +58,88 @@ export function shiftChecklistDate(dateStr: string, days: number): string {
   return formatDate(parsed);
 }
 
-export function sortDailyItemsForDisplay(
-  items: DailyChecklistItem[],
-): DailyChecklistItem[] {
+export function getSundayWeekStripRange(dateStr: string): {
+  startDate: string;
+  endDate: string;
+} {
+  const week = getSundayWeekRange(dateStr);
+  return {
+    startDate: shiftChecklistDate(week.startDate, -7),
+    endDate: shiftChecklistDate(week.endDate, 7),
+  };
+}
+
+export function getSundayWeekRange(dateStr: string): {
+  startDate: string;
+  endDate: string;
+} {
+  const d = parseLocalDate(dateStr) ?? new Date();
+  const sunday = new Date(d);
+  sunday.setDate(d.getDate() - d.getDay());
+  const saturday = new Date(sunday);
+  saturday.setDate(sunday.getDate() + 6);
+  return {
+    startDate: formatDate(sunday),
+    endDate: formatDate(saturday),
+  };
+}
+
+export function buildWeekDays(
+  selectedDate: string,
+  weekItems: DailyChecklistDayRow[],
+  weeksBefore = 0,
+  weeksAfter = 0,
+): DailyChecklistWeekDay[] {
+  const today = formatDate(new Date());
+  const { startDate } = getSundayWeekRange(selectedDate);
+  const start = parseLocalDate(startDate) ?? new Date();
+  start.setDate(start.getDate() - weeksBefore * 7);
+  const counts = new Map<string, { total: number; completed: number }>();
+
+  for (const item of weekItems) {
+    const row = counts.get(item.checklist_date) ?? { total: 0, completed: 0 };
+    row.total += 1;
+    if (isDayItemCompleted(item)) row.completed += 1;
+    counts.set(item.checklist_date, row);
+  }
+
+  const totalDays = 7 * (weeksBefore + 1 + weeksAfter);
+  return Array.from({ length: totalDays }, (_, index) => {
+    const day = new Date(start);
+    day.setDate(start.getDate() + index);
+    const date = formatDate(day);
+    const tally = counts.get(date) ?? { total: 0, completed: 0 };
+    return {
+      date,
+      weekday: WEEKDAY_LABELS[index % 7],
+      dayNum: day.getDate(),
+      isToday: date === today,
+      isSelected: date === selectedDate,
+      totalCount: tally.total,
+      completedCount: tally.completed,
+    };
+  });
+}
+
+export function groupWeekDays(
+  days: DailyChecklistWeekDay[],
+): DailyChecklistWeekDay[][] {
+  const pages: DailyChecklistWeekDay[][] = [];
+  for (let i = 0; i < days.length; i += 7) {
+    pages.push(days.slice(i, i + 7));
+  }
+  return pages;
+}
+
+export function sortDayRowsForDisplay(
+  items: DailyChecklistDayRow[],
+): DailyChecklistDayRow[] {
   return [...items].sort((a, b) => {
-    const aDone = isDailyItemCompleted(a);
-    const bDone = isDailyItemCompleted(b);
+    const aDone = isDayItemCompleted(a);
+    const bDone = isDayItemCompleted(b);
     if (aDone !== bDone) return aDone ? 1 : -1;
     if (a.sort_order !== b.sort_order) return a.sort_order - b.sort_order;
-    return a.tb_tyapp_dcl_itm_seq_no - b.tb_tyapp_dcl_itm_seq_no;
+    return a.tb_tyapp_dcl_day_seq_no - b.tb_tyapp_dcl_day_seq_no;
   });
 }
 
@@ -56,50 +148,33 @@ export function nextSortOrder(items: { sort_order: number }[]): number {
   return Math.max(...items.map((item) => item.sort_order)) + 1;
 }
 
-export function buildItemSuggestions(
-  items: Array<
-    Pick<DailyChecklistItem, 'item_text' | 'completed_at' | 'checklist_date'>
-  >,
-): DailyChecklistSuggestion[] {
-  const byKey = new Map<string, DailyChecklistSuggestion>();
-
-  for (const item of items) {
-    const text = item.item_text.trim();
-    if (!text) continue;
-
-    const lastUsedAt = item.completed_at ?? item.checklist_date;
-    const key = text.toLowerCase();
-    const existing = byKey.get(key);
-    if (!existing || lastUsedAt > existing.lastUsedAt) {
-      byKey.set(key, { item_text: existing?.item_text ?? text, lastUsedAt });
-    }
-  }
-
-  return Array.from(byKey.values()).sort((a, b) =>
-    b.lastUsedAt.localeCompare(a.lastUsedAt),
+export function filterCatalogSuggestions(
+  catalog: DailyChecklistItem[],
+  query: string,
+): DailyChecklistItem[] {
+  const q = query.trim().toLowerCase();
+  const sorted = [...catalog].sort((a, b) =>
+    a.item_text.localeCompare(b.item_text),
   );
+  if (!q) return sorted.slice(0, 12);
+
+  const prefix: DailyChecklistItem[] = [];
+  const rest: DailyChecklistItem[] = [];
+  for (const item of sorted) {
+    const text = item.item_text.toLowerCase();
+    if (text.startsWith(q)) prefix.push(item);
+    else if (text.includes(q)) rest.push(item);
+  }
+  return [...prefix, ...rest].slice(0, 12);
 }
 
-export function filterItemSuggestions(
-  suggestions: DailyChecklistSuggestion[],
-  query: string,
-): DailyChecklistSuggestion[] {
-  const q = query.trim().toLowerCase();
-  if (!q) return suggestions.slice(0, 12);
-
-  const prefix: DailyChecklistSuggestion[] = [];
-  const rest: DailyChecklistSuggestion[] = [];
-
-  for (const suggestion of suggestions) {
-    const text = suggestion.item_text.toLowerCase();
-    if (text.startsWith(q)) {
-      prefix.push(suggestion);
-    } else if (text.includes(q)) {
-      rest.push(suggestion);
-    }
-  }
-
-  return [...prefix, ...rest].slice(0, 12);
+export function findCatalogByName(
+  catalog: DailyChecklistItem[],
+  name: string,
+): DailyChecklistItem | undefined {
+  const key = name.trim().toLowerCase();
+  if (!key) return undefined;
+  return catalog.find((item) => item.item_text.trim().toLowerCase() === key);
 }
 
 function rangeBounds(
@@ -131,7 +206,7 @@ function inRange(
 }
 
 export function buildDashboardVm(
-  items: DailyChecklistItem[],
+  items: DailyChecklistDayRow[],
   range: DailyChecklistDashboardRange,
   today: string,
 ): DailyChecklistDashboardVm {
@@ -147,12 +222,9 @@ export function buildDashboardVm(
   const recentlyCompleted: DailyChecklistRecentItem[] = [];
 
   for (const item of scoped) {
-    const completed = isDailyItemCompleted(item);
-    if (completed) {
-      completedCount += 1;
-    } else {
-      incompleteCount += 1;
-    }
+    const completed = isDayItemCompleted(item);
+    if (completed) completedCount += 1;
+    else incompleteCount += 1;
 
     const dateStat = dates.get(item.checklist_date) ?? {
       checklist_date: item.checklist_date,
@@ -165,11 +237,12 @@ export function buildDashboardVm(
     dates.set(item.checklist_date, dateStat);
 
     if (completed && item.completed_at) {
-      const key = item.item_text.trim().toLowerCase();
-      const current = topMap.get(key);
+      const current = topMap.get(item.item_id);
       if (!current) {
-        topMap.set(key, {
-          item_text: item.item_text.trim(),
+        topMap.set(item.item_id, {
+          item_id: item.item_id,
+          item_text: item.catalog.item_text,
+          emoji: item.catalog.emoji,
           completedCount: 1,
           latestCompletedAt: item.completed_at,
         });
@@ -181,7 +254,9 @@ export function buildDashboardVm(
       }
 
       recentlyCompleted.push({
-        item_text: item.item_text,
+        item_id: item.item_id,
+        item_text: item.catalog.item_text,
+        emoji: item.catalog.emoji,
         checklist_date: item.checklist_date,
         completed_at: item.completed_at,
       });

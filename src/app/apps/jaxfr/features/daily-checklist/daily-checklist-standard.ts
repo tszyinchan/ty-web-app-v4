@@ -1,6 +1,19 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
+import {
+  Component,
+  CUSTOM_ELEMENTS_SCHEMA,
+  OnDestroy,
+  OnInit,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import 'emoji-picker-element';
+import {
+  MatAutocompleteModule,
+  MatAutocompleteSelectedEvent,
+} from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
@@ -9,8 +22,18 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { HeaderService } from '../../../../core/services/header.service';
-import { DailyChecklistTemplateItem } from './daily-checklist.model';
+import {
+  DCL_COLOUR_PRESETS,
+  DailyChecklistItem,
+  DailyChecklistStandardRow,
+  DclColourPresetKey,
+} from './daily-checklist.model';
 import { DailyChecklistService } from './daily-checklist.service';
+import {
+  colourClass,
+  filterCatalogSuggestions,
+  findCatalogByName,
+} from './daily-checklist.util';
 
 @Component({
   selector: 'app-daily-checklist-standard',
@@ -18,6 +41,7 @@ import { DailyChecklistService } from './daily-checklist.service';
   imports: [
     CommonModule,
     FormsModule,
+    MatAutocompleteModule,
     MatButtonModule,
     MatFormFieldModule,
     MatIconModule,
@@ -27,20 +51,49 @@ import { DailyChecklistService } from './daily-checklist.service';
   ],
   templateUrl: './daily-checklist-standard.html',
   styleUrl: './daily-checklist-standard.scss',
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
 })
 export class DailyChecklistStandard implements OnInit, OnDestroy {
   readonly service = inject(DailyChecklistService);
   private headerService = inject(HeaderService);
 
-  newText = '';
-  newRemarks = '';
+  readonly colourPresets = DCL_COLOUR_PRESETS;
+  colourClass = colourClass;
+  emojiPickerTarget = signal<'new' | 'edit' | null>(null);
+  colourChipClasses(key: DclColourPresetKey, selected: boolean): string[] {
+    const classes = [colourClass(key)];
+    if (selected) classes.push('selected');
+    return classes;
+  }
+
+  newItemText = signal('');
+  newEmoji = signal<string | null>(null);
+  newColour = signal<DclColourPresetKey>('slate');
   editingId = signal<string | null>(null);
   editText = '';
-  editRemarks = '';
+  editEmoji: string | null = null;
+  editColour: DclColourPresetKey = 'slate';
+
+  readonly showNewItemExtras = computed(() => {
+    const text = this.newItemText().trim();
+    if (!text) return false;
+    if (findCatalogByName(this.service.catalogItems(), text)) return false;
+    return this.filteredSuggestions().length === 0;
+  });
+
+  readonly filteredSuggestions = computed(() => {
+    const inPack = new Set(
+      this.service.standardItems().map((row) => row.item_id),
+    );
+    return filterCatalogSuggestions(
+      this.service.catalogItems(),
+      this.newItemText(),
+    ).filter((item) => !inPack.has(item.tb_tyapp_dcl_itm_id));
+  });
 
   ngOnInit() {
     const isBusy = computed(
-      () => this.service.templateLoading() || this.service.busy(),
+      () => this.service.standardLoading() || this.service.busy(),
     );
 
     this.headerService.setConfig({
@@ -52,61 +105,146 @@ export class DailyChecklistStandard implements OnInit, OnDestroy {
           icon: 'refresh',
           type: 'secondary',
           disabled: isBusy,
-          onClick: () => void this.service.fetchTemplateItems(true),
+          onClick: () => void this.onRefresh(),
         },
       ],
     });
 
-    void this.service.fetchTemplateItems();
+    void this.service.fetchCatalogItems();
+    void this.service.fetchStandardItems();
   }
 
   ngOnDestroy() {
     this.headerService.clear();
   }
 
-  async onAdd() {
-    const text = this.newText.trim();
-    if (!text) return;
-    const ok = await this.service.addTemplateItem(text, this.newRemarks);
-    if (ok) {
-      this.newText = '';
-      this.newRemarks = '';
-    }
+  async onRefresh() {
+    await this.service.fetchCatalogItems(true);
+    await this.service.fetchStandardItems(true);
   }
 
-  startEdit(item: DailyChecklistTemplateItem) {
-    this.editingId.set(item.tb_tyapp_dcl_tpl_itm_id);
-    this.editText = item.item_text;
-    this.editRemarks = item.remarks ?? '';
+  displayCatalogName = (id: string): string => {
+    if (!id) return '';
+    return (
+      this.service.catalogItems().find((row) => row.tb_tyapp_dcl_itm_id === id)
+        ?.item_text ?? id
+    );
+  };
+
+  suggestionLabel(item: DailyChecklistItem): string {
+    const emoji = item.emoji ? `${item.emoji} ` : '';
+    return `${emoji}${item.item_text}`;
+  }
+
+  async onSuggestionSelected(event: MatAutocompleteSelectedEvent) {
+    const itemId = String(event.option.value ?? '');
+    if (!itemId) return;
+    this.resetAddPanel();
+    await this.service.addStandardItem(itemId);
+  }
+
+  async onAdd() {
+    const text = this.newItemText().trim();
+    if (!text || this.service.busy()) return;
+
+    const existing = findCatalogByName(this.service.catalogItems(), text);
+    if (existing) {
+      const ok = await this.service.addStandardItem(existing.tb_tyapp_dcl_itm_id);
+      if (ok) this.resetAddPanel();
+      return;
+    }
+
+    if (!this.showNewItemExtras()) return;
+
+    const ok = await this.service.createCatalogAndAddToStandard({
+      itemText: text,
+      emoji: this.newEmoji(),
+      colourPresetKey: this.newColour(),
+    });
+    if (ok) this.resetAddPanel();
+  }
+
+  resetAddPanel() {
+    this.newItemText.set('');
+    this.newEmoji.set(null);
+    this.newColour.set('slate');
+    if (this.emojiPickerTarget() === 'new') this.emojiPickerTarget.set(null);
+  }
+
+  selectColour(key: DclColourPresetKey) {
+    this.newColour.set(key);
+  }
+
+  openEmojiPicker(target: 'new' | 'edit') {
+    this.emojiPickerTarget.set(target);
+  }
+
+  closeEmojiPicker() {
+    this.emojiPickerTarget.set(null);
+  }
+
+  onPickerEmoji(event: Event) {
+    const unicode = (event as CustomEvent<{ unicode?: string }>).detail?.unicode;
+    const emoji = unicode?.trim() ?? '';
+    if (!emoji) return;
+    const target = this.emojiPickerTarget();
+    if (target === 'new') this.newEmoji.set(emoji);
+    if (target === 'edit') this.editEmoji = emoji;
+    this.closeEmojiPicker();
+  }
+
+  clearNewEmoji() {
+    this.newEmoji.set(null);
+  }
+
+  clearEditEmoji() {
+    this.editEmoji = null;
+  }
+
+  startEdit(item: DailyChecklistStandardRow) {
+    this.editingId.set(item.item_id);
+    this.editText = item.catalog.item_text;
+    this.editEmoji = item.catalog.emoji;
+    this.editColour = item.catalog.colour_preset_key;
   }
 
   cancelEdit() {
     this.editingId.set(null);
     this.editText = '';
-    this.editRemarks = '';
+    this.editEmoji = null;
+    this.editColour = 'slate';
+    if (this.emojiPickerTarget() === 'edit') this.emojiPickerTarget.set(null);
+  }
+
+  selectEditColour(key: DclColourPresetKey) {
+    this.editColour = key;
   }
 
   async saveEdit() {
     const id = this.editingId();
     if (!id) return;
-    const ok = await this.service.updateTemplateItem(
-      id,
-      this.editText,
-      this.editRemarks,
-    );
+    const ok = await this.service.updateCatalogItem(id, {
+      itemText: this.editText,
+      emoji: this.editEmoji,
+      colourPresetKey: this.editColour,
+    });
     if (ok) this.cancelEdit();
   }
 
-  async onDelete(item: DailyChecklistTemplateItem) {
-    if (!confirm(`Delete "${item.item_text}" from the Standard Checklist?`)) {
+  async onDelete(item: DailyChecklistStandardRow) {
+    if (
+      !confirm(
+        `Remove "${item.catalog.item_text}" from the Standard Checklist?`,
+      )
+    ) {
       return;
     }
-    if (this.editingId() === item.tb_tyapp_dcl_tpl_itm_id) this.cancelEdit();
-    await this.service.deleteTemplateItem(item.tb_tyapp_dcl_tpl_itm_id);
+    if (this.editingId() === item.item_id) this.cancelEdit();
+    await this.service.deleteStandardItem(item.tb_tyapp_dcl_std_id);
   }
 
-  async move(item: DailyChecklistTemplateItem, direction: -1 | 1) {
-    await this.service.moveTemplateItem(item.tb_tyapp_dcl_tpl_itm_id, direction);
+  async move(item: DailyChecklistStandardRow, direction: -1 | 1) {
+    await this.service.moveStandardItem(item.tb_tyapp_dcl_std_id, direction);
   }
 
   canMoveUp(index: number): boolean {
@@ -114,6 +252,6 @@ export class DailyChecklistStandard implements OnInit, OnDestroy {
   }
 
   canMoveDown(index: number): boolean {
-    return index < this.service.templateItems().length - 1;
+    return index < this.service.standardItems().length - 1;
   }
 }

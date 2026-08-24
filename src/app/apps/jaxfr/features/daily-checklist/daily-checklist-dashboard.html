@@ -53,10 +53,15 @@
 
     <section class="dash-section">
       <h3 class="section-title">Most completed items</h3>
-      @for (row of dashboard().topCompleted; track row.item_text) {
+      @for (row of dashboard().topCompleted; track row.item_id) {
         <div class="stat-row">
           <div class="stat-main">
-            <span class="stat-title">{{ row.item_text }}</span>
+            <span class="stat-title">
+              @if (row.emoji) {
+                <span>{{ row.emoji }}</span>
+              }
+              {{ row.item_text }}
+            </span>
             <span class="stat-sub">
               Latest {{ row.latestCompletedAt | date: "yyyy-MM-dd HH:mm" }}
             </span>
@@ -72,11 +77,16 @@
       <h3 class="section-title">Recently completed</h3>
       @for (
         row of dashboard().recentlyCompleted;
-        track row.completed_at + row.item_text
+        track row.completed_at + row.item_id
       ) {
         <div class="stat-row">
           <div class="stat-main">
-            <span class="stat-title">{{ row.item_text }}</span>
+            <span class="stat-title">
+              @if (row.emoji) {
+                <span>{{ row.emoji }}</span>
+              }
+              {{ row.item_text }}
+            </span>
             <span class="stat-sub">{{ row.checklist_date }}</span>
           </div>
           <span class="stat-meta">
