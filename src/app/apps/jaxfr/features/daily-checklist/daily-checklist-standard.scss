@@ -1,4 +1,5 @@
-.dcl-standard {
+.dcl-standard,
+.dcl-items {
   max-width: 720px;
   margin: 0 auto;
   padding: 16px 16px 32px;
@@ -81,6 +82,15 @@
   display: flex;
   flex-shrink: 0;
   flex-wrap: wrap;
+  align-items: center;
+}
+
+.usage-copy {
+  margin: 0 8px 0 0;
+  font-size: 12px;
+  font-weight: 400;
+  color: #6a7a88;
+  white-space: nowrap;
 }
 
 .colour-row,
@@ -172,7 +182,8 @@ emoji-picker {
 }
 
 @media (max-width: 600px) {
-  .dcl-standard {
+  .dcl-standard,
+  .dcl-items {
     padding: 12px 12px 24px;
   }
 

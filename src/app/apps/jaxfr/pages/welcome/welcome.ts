@@ -111,6 +111,7 @@ const CATEGORY_LINKS: Record<string, FeatureHubLink[]> = {
     { title: 'Today', icon: 'checklist', route: '/daily-checklist' },
     { title: 'Dashboard', icon: 'insights', route: '/daily-checklist/dashboard' },
     { title: 'Standard', icon: 'playlist_add_check', route: '/daily-checklist/standard' },
+    { title: 'Items', icon: 'category', route: '/daily-checklist/items' },
   ],
   'Doc Sign': [
     { title: 'Sign list', icon: 'list', route: '/docsign/list' },

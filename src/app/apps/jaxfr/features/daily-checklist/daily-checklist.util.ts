@@ -14,7 +14,7 @@ import {
 
 export const DATE_QUERY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 export const DASHBOARD_TOP_LIMIT = 10;
-const WEEKDAY_LABELS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+const WEEKDAY_LABELS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
 
 export function isDayItemCompleted(item: { completed_at: string | null }): boolean {
   return item.completed_at != null;
@@ -58,40 +58,76 @@ export function shiftChecklistDate(dateStr: string, days: number): string {
   return formatDate(parsed);
 }
 
-export function getSundayWeekStripRange(dateStr: string): {
+export function getChecklistWeekRange(dateStr: string): {
   startDate: string;
   endDate: string;
 } {
-  const week = getSundayWeekRange(dateStr);
+  const week =
+    getWeekRange(dateStr) ?? getWeekRange(formatDate(new Date()));
+  if (!week) {
+    const today = formatDate(new Date());
+    return { startDate: today, endDate: today };
+  }
+  return { startDate: week.startDate, endDate: week.endDate };
+}
+
+export function getChecklistWeekStripRange(dateStr: string): {
+  startDate: string;
+  endDate: string;
+} {
+  const week = getChecklistWeekRange(dateStr);
   return {
     startDate: shiftChecklistDate(week.startDate, -7),
     endDate: shiftChecklistDate(week.endDate, 7),
   };
 }
 
-export function getSundayWeekRange(dateStr: string): {
-  startDate: string;
-  endDate: string;
-} {
-  const d = parseLocalDate(dateStr) ?? new Date();
-  const sunday = new Date(d);
-  sunday.setDate(d.getDate() - d.getDay());
-  const saturday = new Date(sunday);
-  saturday.setDate(sunday.getDate() + 6);
-  return {
-    startDate: formatDate(sunday),
-    endDate: formatDate(saturday),
-  };
+export const STRIP_WEEKS_BEFORE = 1;
+export const STRIP_WEEKS_AFTER = 1;
+export const STRIP_EXTEND_WEEKS = 2;
+
+export function initialStripWeekCount(): number {
+  return STRIP_WEEKS_BEFORE + 1 + STRIP_WEEKS_AFTER;
+}
+
+export function initialStripStart(dateStr: string): string {
+  const week = getChecklistWeekRange(dateStr);
+  return shiftChecklistDate(week.startDate, -7 * STRIP_WEEKS_BEFORE);
+}
+
+export function stripRangeEnd(startMonday: string, weekCount: number): string {
+  return shiftChecklistDate(startMonday, weekCount * 7 - 1);
+}
+
+export function isDateInStrip(
+  dateStr: string,
+  startMonday: string,
+  weekCount: number,
+): boolean {
+  return dateStr >= startMonday && dateStr <= stripRangeEnd(startMonday, weekCount);
+}
+
+export function weekPageIndex(startMonday: string, dateStr: string): number {
+  const start = parseLocalDate(getChecklistWeekRange(startMonday).startDate);
+  const target = parseLocalDate(getChecklistWeekRange(dateStr).startDate);
+  if (!start || !target) return 0;
+  return Math.round((target.getTime() - start.getTime()) / 86400000 / 7);
+}
+
+export function isDateInChecklistWeek(dateStr: string, weekAnchor: string): boolean {
+  const week = getChecklistWeekRange(weekAnchor);
+  return dateStr >= week.startDate && dateStr <= week.endDate;
 }
 
 export function buildWeekDays(
-  selectedDate: string,
+  anchorDate: string,
   weekItems: DailyChecklistDayRow[],
   weeksBefore = 0,
   weeksAfter = 0,
+  selectedDate = anchorDate,
 ): DailyChecklistWeekDay[] {
   const today = formatDate(new Date());
-  const { startDate } = getSundayWeekRange(selectedDate);
+  const { startDate } = getChecklistWeekRange(anchorDate);
   const start = parseLocalDate(startDate) ?? new Date();
   start.setDate(start.getDate() - weeksBefore * 7);
   const counts = new Map<string, { total: number; completed: number }>();

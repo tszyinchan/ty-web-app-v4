@@ -13,7 +13,6 @@ import {
 } from './daily-checklist.model';
 import {
   findCatalogByName,
-  getSundayWeekStripRange,
   isColourPresetKey,
   nextSortOrder,
 } from './daily-checklist.util';
@@ -29,6 +28,8 @@ export class DailyChecklistService {
   weekItems = signal<DailyChecklistDayRow[]>([]);
   standardItems = signal<DailyChecklistStandardRow[]>([]);
   historyItems = signal<DailyChecklistDayRow[]>([]);
+  catalogDayCounts = signal<ReadonlyMap<string, number>>(new Map());
+  catalogDayCountsReady = signal(false);
 
   loading = signal(false);
   catalogLoading = signal(false);
@@ -37,10 +38,12 @@ export class DailyChecklistService {
 
   private weekStart = '';
   private weekEnd = '';
+  private keptDate = '';
   private weekFetchedRange = '';
   private catalogFetched = false;
   private standardFetched = false;
   private historyFetched = false;
+  private catalogDayCountsFetched = false;
 
   private currentUserId(): string | null {
     return this.authService.userProfile()?.user_id ?? null;
@@ -112,37 +115,101 @@ export class DailyChecklistService {
     }
   }
 
-  async fetchItemsForWeek(selectedDate: string, force = false) {
+  async fetchCatalogDayCounts(force = false) {
+    const userId = this.currentUserId();
+    if (!userId) return;
+    if (!force && this.catalogDayCountsFetched) return;
+
+    try {
+      const { data, error } = await this.supabase
+        .from('tyapp_daily_checklist_day_item')
+        .select('item_id')
+        .eq('user_id', userId)
+        .is('deleted_at', null);
+
+      if (error) throw error;
+
+      const counts = new Map<string, number>();
+      for (const row of data || []) {
+        const id = (row as { item_id: string }).item_id;
+        if (!id) continue;
+        counts.set(id, (counts.get(id) ?? 0) + 1);
+      }
+
+      this.zone.run(() => {
+        this.catalogDayCounts.set(counts);
+        this.catalogDayCountsFetched = true;
+        this.catalogDayCountsReady.set(true);
+      });
+    } catch (error: unknown) {
+      this.notification.handleError('Fetch Item Usage Failed', error);
+    }
+  }
+
+  async fetchItemsForRange(
+    startDate: string,
+    endDate: string,
+    selectedDate: string,
+    options?: { force?: boolean; merge?: boolean },
+  ) {
     const userId = this.currentUserId();
     if (!userId) return;
 
-    const { startDate, endDate } = getSundayWeekStripRange(selectedDate);
-    const rangeKey = `${startDate}:${endDate}`;
-    this.weekStart = startDate;
-    this.weekEnd = endDate;
+    const force = options?.force ?? false;
+    const merge = options?.merge ?? false;
+    const rangeKey = `${startDate}:${endDate}:${selectedDate}`;
+    this.keptDate = selectedDate;
 
-    if (!force && this.weekFetchedRange === rangeKey) return;
-
-    if (
-      this.weekItems().some(
-        (item) =>
-          item.checklist_date < startDate || item.checklist_date > endDate,
-      )
-    ) {
-      this.weekItems.set([]);
+    if (merge) {
+      if (
+        !force &&
+        this.weekStart &&
+        this.weekEnd &&
+        startDate >= this.weekStart &&
+        endDate <= this.weekEnd
+      ) {
+        return;
+      }
+    } else if (!force && this.weekFetchedRange === rangeKey) {
+      return;
     }
 
-    this.loading.set(true);
+    if (!merge) {
+      this.weekStart = startDate;
+      this.weekEnd = endDate;
+      this.weekItems.update((list) =>
+        list.filter((item) => this.isLoadedDate(item.checklist_date)),
+      );
+    }
+
+    const keepList = this.weekItems().some(
+      (item) => item.checklist_date === selectedDate,
+    );
+    if (!keepList && !merge) this.loading.set(true);
+
     try {
       await this.fetchCatalogItems();
 
-      const { data, error } = await this.supabase
+      const selectedOutside =
+        !merge && (selectedDate < startDate || selectedDate > endDate);
+
+      let query = this.supabase
         .from('tyapp_daily_checklist_day_item')
         .select('*')
         .eq('user_id', userId)
-        .gte('checklist_date', startDate)
-        .lte('checklist_date', endDate)
-        .is('deleted_at', null)
+        .is('deleted_at', null);
+
+      if (selectedOutside) {
+        query = query.or(
+          `and(checklist_date.gte.${startDate},checklist_date.lte.${endDate}),checklist_date.eq.${selectedDate}`,
+        );
+      } else {
+        query = query
+          .gte('checklist_date', startDate)
+          .lte('checklist_date', endDate);
+      }
+
+      const { data, error } = await query
         .order('sort_order', { ascending: true })
         .order('tb_tyapp_dcl_day_seq_no', { ascending: true });
 
@@ -154,15 +221,39 @@ export class DailyChecklistService {
         .filter((row): row is DailyChecklistDayRow => row !== null);
 
       this.zone.run(() => {
-        this.weekItems.set(rows);
-        this.weekFetchedRange = rangeKey;
+        if (merge) {
+          this.weekStart = this.weekStart
+            ? startDate < this.weekStart
+              ? startDate
+              : this.weekStart
+            : startDate;
+          this.weekEnd = this.weekEnd
+            ? endDate > this.weekEnd
+              ? endDate
+              : this.weekEnd
+            : endDate;
+          this.weekItems.update((list) => {
+            const existing = new Set(
+              list.map((item) => item.tb_tyapp_dcl_day_id),
+            );
+            const added = rows.filter(
+              (row) => !existing.has(row.tb_tyapp_dcl_day_id),
+            );
+            return added.length === 0 ? list : [...list, ...added];
+          });
+        } else {
+          this.weekItems.set(rows);
+          this.weekFetchedRange = rangeKey;
+        }
         this.loading.set(false);
       });
     } catch (error: unknown) {
       this.notification.handleError('Fetch Daily Checklist Failed', error);
       this.zone.run(() => {
-        this.weekItems.set([]);
-        this.weekFetchedRange = '';
+        if (!merge) {
+          this.weekItems.set([]);
+          this.weekFetchedRange = '';
+        }
         this.loading.set(false);
       });
     }
@@ -243,11 +334,26 @@ export class DailyChecklistService {
     return this.weekItems().filter((item) => item.checklist_date === date);
   }
 
+  catalogDayCount(itemId: string): number {
+    return this.catalogDayCounts().get(itemId) ?? 0;
+  }
+
+  canDeleteCatalogItem(itemId: string): boolean {
+    return (
+      this.catalogDayCountsReady() && this.catalogDayCount(itemId) === 0
+    );
+  }
+
+  private isLoadedDate(date: string): boolean {
+    if (date >= this.weekStart && date <= this.weekEnd) return true;
+    return date === this.keptDate;
+  }
+
   private mergeWeekRow(saved: DailyChecklistDayItem) {
     const catalog = this.catalogItems();
     const row = this.withCatalog(saved, catalog);
     if (!row) return;
-    if (row.checklist_date < this.weekStart || row.checklist_date > this.weekEnd) {
+    if (!this.isLoadedDate(row.checklist_date)) {
       return;
     }
     this.weekItems.update((list) => {
@@ -477,8 +583,7 @@ export class DailyChecklistService {
       const added = rows.filter(
         (row) =>
           !existing.has(row.tb_tyapp_dcl_day_id) &&
-          row.checklist_date >= this.weekStart &&
-          row.checklist_date <= this.weekEnd,
+          this.isLoadedDate(row.checklist_date),
       );
       return added.length === 0 ? list : [...list, ...added];
     });
@@ -689,12 +794,121 @@ export class DailyChecklistService {
             row.item_id === id ? { ...row, catalog } : row,
           ),
         );
+        this.historyItems.update((list) =>
+          list.map((row) =>
+            row.item_id === id ? { ...row, catalog } : row,
+          ),
+        );
         this.busy.set(false);
         this.notification.showSuccess('Item updated');
       });
       return true;
     } catch (error: unknown) {
       this.notification.handleError('Update Item Failed', error);
+      this.zone.run(() => this.busy.set(false));
+      return false;
+    }
+  }
+
+  async createCatalogItem(input: {
+    itemText: string;
+    emoji: string | null;
+    colourPresetKey: DclColourPresetKey;
+  }): Promise<boolean> {
+    const userId = this.currentUserId();
+    if (!userId) return false;
+
+    const text = input.itemText.trim();
+    if (!text) {
+      this.notification.handleError(
+        'Add Item Failed',
+        'Item text cannot be blank.',
+      );
+      return false;
+    }
+
+    if (findCatalogByName(this.catalogItems(), text)) {
+      this.notification.handleError(
+        'Add Item Failed',
+        'An item with that name already exists.',
+      );
+      return false;
+    }
+
+    this.busy.set(true);
+    try {
+      const { data, error } = await this.supabase
+        .from('tyapp_daily_checklist_item')
+        .insert({
+          user_id: userId,
+          item_text: text,
+          emoji: input.emoji?.trim() || null,
+          colour_preset_key: input.colourPresetKey,
+          status: RecordStatus.Active,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      const catalog = this.asCatalog(data);
+      if (!catalog) throw new Error('Created item was missing');
+
+      this.zone.run(() => {
+        this.catalogItems.update((list) =>
+          [...list, catalog].sort((a, b) =>
+            a.item_text.localeCompare(b.item_text),
+          ),
+        );
+        this.busy.set(false);
+        this.notification.showSuccess('Item added');
+      });
+      return true;
+    } catch (error: unknown) {
+      this.notification.handleError('Add Item Failed', error);
+      this.zone.run(() => this.busy.set(false));
+      return false;
+    }
+  }
+
+  async deleteCatalogItem(id: string): Promise<boolean> {
+    if (!this.canDeleteCatalogItem(id)) {
+      this.notification.handleError(
+        'Delete Item Failed',
+        'This item is still on at least one date. Remove those day entries first.',
+      );
+      return false;
+    }
+
+    this.busy.set(true);
+    try {
+      const { error } = await this.supabase.rpc(
+        'tyapp_daily_checklist_item_soft_delete_single_record',
+        { record_id: id },
+      );
+      if (error) throw error;
+
+      this.zone.run(() => {
+        this.catalogItems.update((list) =>
+          list.filter((item) => item.tb_tyapp_dcl_itm_id !== id),
+        );
+        this.standardItems.update((list) =>
+          list.filter((row) => row.item_id !== id),
+        );
+        this.weekItems.update((list) =>
+          list.filter((row) => row.item_id !== id),
+        );
+        this.historyItems.update((list) =>
+          list.filter((row) => row.item_id !== id),
+        );
+        const nextCounts = new Map(this.catalogDayCounts());
+        nextCounts.delete(id);
+        this.catalogDayCounts.set(nextCounts);
+        this.busy.set(false);
+        this.notification.showSuccess('Item deleted');
+      });
+      return true;
+    } catch (error: unknown) {
+      this.notification.handleError('Delete Item Failed', error);
       this.zone.run(() => this.busy.set(false));
       return false;
     }

@@ -24,7 +24,7 @@ export class DailyChecklistDashboard implements OnInit, OnDestroy {
   readonly service = inject(DailyChecklistService);
   private headerService = inject(HeaderService);
 
-  readonly range = signal<DailyChecklistDashboardRange>('week');
+  readonly range = signal<DailyChecklistDashboardRange>('all');
 
   readonly dashboard = computed(() =>
     buildDashboardVm(

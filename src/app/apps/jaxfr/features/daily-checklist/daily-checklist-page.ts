@@ -37,16 +37,24 @@ import {
 } from './daily-checklist.model';
 import { DailyChecklistService } from './daily-checklist.service';
 import {
+  STRIP_EXTEND_WEEKS,
+  STRIP_WEEKS_BEFORE,
   buildWeekDays,
   colourClass,
   completionPercent,
   filterCatalogSuggestions,
   findCatalogByName,
   groupWeekDays,
+  initialStripStart,
+  initialStripWeekCount,
+  isDateInChecklistWeek,
+  isDateInStrip,
   isDayItemCompleted,
   normalizeChecklistDateParam,
   shiftChecklistDate,
   sortDayRowsForDisplay,
+  stripRangeEnd,
+  weekPageIndex,
 } from './daily-checklist.util';
 
 type EmojiPickerTarget = 'new' | 'edit';
@@ -81,8 +89,13 @@ export class DailyChecklistPage implements OnInit, AfterViewInit, OnDestroy {
     viewChild<ElementRef<HTMLElement>>('weekScroller');
   private ignoreWeekScroll = false;
   private weekScrollTimer: ReturnType<typeof setTimeout> | null = null;
+  private stripExtending = false;
+  private stripHasFetched = false;
 
   selectedDate = signal(formatDate(new Date()));
+  stripStartDate = signal(initialStripStart(formatDate(new Date())));
+  stripWeekCount = signal(initialStripWeekCount());
+  private visiblePage = signal(STRIP_WEEKS_BEFORE);
   newItemText = signal('');
   newEmoji = signal<string | null>(null);
   newColour = signal<DclColourPresetKey>('slate');
@@ -100,7 +113,13 @@ export class DailyChecklistPage implements OnInit, AfterViewInit, OnDestroy {
 
   readonly weekPages = computed(() =>
     groupWeekDays(
-      buildWeekDays(this.selectedDate(), this.service.weekItems(), 1, 1),
+      buildWeekDays(
+        this.stripStartDate(),
+        this.service.weekItems(),
+        0,
+        this.stripWeekCount() - 1,
+        this.selectedDate(),
+      ),
     ),
   );
 
@@ -122,7 +141,14 @@ export class DailyChecklistPage implements OnInit, AfterViewInit, OnDestroy {
     () => !this.service.loading() && this.totalCount() === 0,
   );
 
-  readonly isToday = computed(() => this.selectedDate() === this.today);
+  readonly isOnTodayView = computed(() => {
+    if (this.selectedDate() !== this.today) return false;
+    const visibleMonday = shiftChecklistDate(
+      this.stripStartDate(),
+      this.visiblePage() * 7,
+    );
+    return isDateInChecklistWeek(this.today, visibleMonday);
+  });
 
   readonly filteredSuggestions = computed(() => {
     const onDate = new Set(
@@ -150,44 +176,50 @@ export class DailyChecklistPage implements OnInit, AfterViewInit, OnDestroy {
       title: 'Daily Checklist',
       actions: [
         {
+          label: 'Refresh',
+          icon: 'refresh',
+          type: 'secondary',
+          disabled: isBusy,
+          onClick: () => this.onRefresh(),
+        },
+        {
           label: 'Jump to today',
           icon: 'today',
           type: 'secondary',
-          disabled: computed(() => this.isToday() || isBusy()),
+          disabled: computed(() => this.isOnTodayView() || isBusy()),
           onClick: () => this.goToday(),
         },
         {
-          label: "Copy yesterday's list",
+          label: 'Copy yesterday',
           icon: 'history',
           type: 'secondary',
           disabled: isBusy,
           onClick: () => void this.onCopyYesterday(),
         },
         {
-          label: 'Apply standard pack',
+          label: 'Apply standard',
           icon: 'playlist_add_check',
           type: 'secondary',
           disabled: isBusy,
           onClick: () => void this.onUseStandard(),
         },
         {
-          label: 'Dashboard',
-          icon: 'insights',
-          type: 'secondary',
-          onClick: () => this.router.navigate(['/daily-checklist/dashboard']),
-        },
-        {
-          label: 'Edit standard pack',
+          label: 'Manage standard template',
           icon: 'tune',
           type: 'secondary',
           onClick: () => this.router.navigate(['/daily-checklist/standard']),
         },
         {
-          label: 'Refresh',
-          icon: 'refresh',
+          label: 'Manage items',
+          icon: 'category',
           type: 'secondary',
-          disabled: isBusy,
-          onClick: () => this.onRefresh(),
+          onClick: () => this.router.navigate(['/daily-checklist/items']),
+        },
+        {
+          label: 'Dashboard',
+          icon: 'insights',
+          type: 'secondary',
+          onClick: () => this.router.navigate(['/daily-checklist/dashboard']),
         },
       ],
     });
@@ -202,8 +234,17 @@ export class DailyChecklistPage implements OnInit, AfterViewInit, OnDestroy {
       this.showStandardHint.set(false);
       this.cancelEdit();
       this.resetAddPanel();
-      void this.service.fetchItemsForWeek(normalized);
-      this.scheduleSnapToMiddle();
+      if (
+        this.stripHasFetched &&
+        isDateInStrip(
+          normalized,
+          this.stripStartDate(),
+          this.stripWeekCount(),
+        )
+      ) {
+        return;
+      }
+      this.resetStripAround(normalized);
     });
 
     void this.service.fetchCatalogItems();
@@ -211,7 +252,7 @@ export class DailyChecklistPage implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit() {
-    this.scheduleSnapToMiddle();
+    this.scheduleScrollToPage(this.visiblePage());
   }
 
   ngOnDestroy() {
@@ -262,52 +303,161 @@ export class DailyChecklistPage implements OnInit, AfterViewInit, OnDestroy {
   }
 
   goPrevWeek() {
-    this.goToDate(shiftChecklistDate(this.selectedDate(), -7));
+    this.scrollStripByPage(-1);
   }
 
   goNextWeek() {
-    this.goToDate(shiftChecklistDate(this.selectedDate(), 7));
+    this.scrollStripByPage(1);
   }
 
   goToday() {
-    this.goToDate(this.today);
+    const inStrip = isDateInStrip(
+      this.today,
+      this.stripStartDate(),
+      this.stripWeekCount(),
+    );
+    if (!inStrip) {
+      if (this.selectedDate() !== this.today) this.goToDate(this.today);
+      else this.resetStripAround(this.today);
+      return;
+    }
+    if (this.selectedDate() !== this.today) this.goToDate(this.today);
+    this.scrollToDate(this.today);
   }
 
   onWeekScroll() {
     if (this.ignoreWeekScroll) return;
-    if (this.weekScrollTimer) clearTimeout(this.weekScrollTimer);
-    this.weekScrollTimer = setTimeout(() => this.settleWeekScroll(), 90);
-  }
-
-  private settleWeekScroll() {
     const el = this.weekScroller()?.nativeElement;
     if (!el || el.clientWidth === 0) return;
     const page = Math.round(el.scrollLeft / el.clientWidth);
-    if (page === 1) return;
-    this.goToDate(shiftChecklistDate(this.selectedDate(), (page - 1) * 7));
+    if (this.visiblePage() !== page) this.visiblePage.set(page);
+    if (page <= 0) void this.extendStrip(-1);
+    if (page >= this.stripWeekCount() - 1) void this.extendStrip(1);
   }
 
-  private scheduleSnapToMiddle() {
-    queueMicrotask(() => {
-      requestAnimationFrame(() => this.snapToMiddle());
+  private scrollStripByPage(direction: -1 | 1) {
+    const el = this.weekScroller()?.nativeElement;
+    if (!el || el.clientWidth === 0) return;
+    const page = Math.round(el.scrollLeft / el.clientWidth);
+    const last = this.stripWeekCount() - 1;
+    const nextPage = page + direction;
+    if (nextPage >= 0 && nextPage <= last) {
+      this.scrollToPage(nextPage, 'smooth');
+      return;
+    }
+    void this.extendStrip(direction).then(() => {
+      const scroller = this.weekScroller()?.nativeElement;
+      if (!scroller || scroller.clientWidth === 0) return;
+      const pageAfter = Math.round(scroller.scrollLeft / scroller.clientWidth);
+      this.scrollToPage(pageAfter + direction, 'smooth');
     });
   }
 
-  private snapToMiddle() {
+  private resetStripAround(date: string) {
+    const start = initialStripStart(date);
+    const count = initialStripWeekCount();
+    this.stripStartDate.set(start);
+    this.stripWeekCount.set(count);
+    this.visiblePage.set(STRIP_WEEKS_BEFORE);
+    this.stripHasFetched = true;
+    void this.service.fetchItemsForRange(
+      start,
+      stripRangeEnd(start, count),
+      date,
+      { force: true },
+    );
+    this.scheduleScrollToPage(STRIP_WEEKS_BEFORE);
+  }
+
+  private async extendStrip(direction: -1 | 1): Promise<void> {
+    if (this.stripExtending) return;
+    this.stripExtending = true;
+    const add = STRIP_EXTEND_WEEKS;
+    try {
+      if (direction < 0) {
+        const newStart = shiftChecklistDate(this.stripStartDate(), -7 * add);
+        const newEnd = shiftChecklistDate(newStart, 7 * add - 1);
+        await this.service.fetchItemsForRange(
+          newStart,
+          newEnd,
+          this.selectedDate(),
+          { merge: true },
+        );
+        this.ignoreWeekScroll = true;
+        this.stripStartDate.set(newStart);
+        this.stripWeekCount.update((count) => count + add);
+        await new Promise<void>((resolve) => {
+          this.afterStripRender(() => {
+            const el = this.weekScroller()?.nativeElement;
+            if (el && el.clientWidth > 0) {
+              el.scrollLeft += el.clientWidth * add;
+              this.visiblePage.set(
+                Math.round(el.scrollLeft / el.clientWidth),
+              );
+            }
+            this.ignoreWeekScroll = false;
+            resolve();
+          });
+        });
+      } else {
+        const addStart = shiftChecklistDate(
+          this.stripStartDate(),
+          7 * this.stripWeekCount(),
+        );
+        const addEnd = shiftChecklistDate(addStart, 7 * add - 1);
+        await this.service.fetchItemsForRange(
+          addStart,
+          addEnd,
+          this.selectedDate(),
+          { merge: true },
+        );
+        this.stripWeekCount.update((count) => count + add);
+      }
+    } finally {
+      this.stripExtending = false;
+    }
+  }
+
+  private scrollToDate(dateStr: string) {
+    const page = weekPageIndex(this.stripStartDate(), dateStr);
+    this.scrollToPage(page, 'smooth');
+  }
+
+  private scheduleScrollToPage(page: number) {
+    queueMicrotask(() => {
+      requestAnimationFrame(() => this.scrollToPage(page, 'auto'));
+    });
+  }
+
+  private scrollToPage(page: number, behavior: ScrollBehavior) {
     const el = this.weekScroller()?.nativeElement;
     if (!el || el.clientWidth === 0) return;
     this.ignoreWeekScroll = true;
-    el.scrollTo({ left: el.clientWidth, behavior: 'auto' });
+    this.visiblePage.set(page);
+    el.scrollTo({ left: page * el.clientWidth, behavior });
     if (this.weekScrollTimer) clearTimeout(this.weekScrollTimer);
     this.weekScrollTimer = setTimeout(() => {
       this.ignoreWeekScroll = false;
-    }, 160);
+    }, behavior === 'smooth' ? 400 : 160);
+  }
+
+  private afterStripRender(fn: () => void) {
+    queueMicrotask(() => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(fn);
+      });
+    });
   }
 
   async onRefresh() {
     await this.service.fetchCatalogItems(true);
     await Promise.all([
-      this.service.fetchItemsForWeek(this.selectedDate(), true),
+      this.service.fetchItemsForRange(
+        this.stripStartDate(),
+        stripRangeEnd(this.stripStartDate(), this.stripWeekCount()),
+        this.selectedDate(),
+        { force: true },
+      ),
       this.service.fetchStandardItems(true),
     ]);
   }

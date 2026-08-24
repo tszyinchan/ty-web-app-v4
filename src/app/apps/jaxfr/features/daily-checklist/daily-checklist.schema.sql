@@ -2,6 +2,10 @@
 -- Paste this entire file into the Supabase SQL Editor and run top to bottom.
 -- Safe to re-run: drops v1 tables/RPCs and recreates the three current tables.
 -- Existing Daily Checklist rows are deleted. The App Feature registry row is kept.
+--
+-- Already-created databases: do NOT re-run this whole file. To add the catalog
+-- delete guard, run only CREATE OR REPLACE for
+-- tyapp_daily_checklist_item_soft_delete_single_record (see that function below).
 
 -- ---------------------------------------------------------------------------
 -- Reset (v1 names + current names)
@@ -295,6 +299,22 @@ BEGIN
   IF v_found IS NULL THEN
     RAISE EXCEPTION 'Checklist item not found or inaccessible';
   END IF;
+
+  IF EXISTS (
+    SELECT 1
+    FROM public.tyapp_daily_checklist_day_item d
+    WHERE d.item_id = record_id
+      AND d.user_id = v_uid
+      AND d.deleted_at IS NULL
+  ) THEN
+    RAISE EXCEPTION 'Cannot delete this item while it is still on a date.';
+  END IF;
+
+  UPDATE public.tyapp_daily_checklist_standard_item
+  SET deleted_at = now()
+  WHERE item_id = record_id
+    AND user_id = v_uid
+    AND deleted_at IS NULL;
 
   UPDATE public.tyapp_daily_checklist_item
   SET deleted_at = now()
