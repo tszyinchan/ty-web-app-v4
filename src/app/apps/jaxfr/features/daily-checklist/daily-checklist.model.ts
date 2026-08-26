@@ -44,6 +44,16 @@ export const DCL_EMOJI_PRESETS = [
   '🔑',
 ] as const;
 
+export const DCL_MOOD_KEYS = [
+  'green',
+  'gold',
+  'red',
+  'blue',
+  'purple',
+] as const;
+
+export type DclMoodKey = (typeof DCL_MOOD_KEYS)[number];
+
 export const DCL_SELECTED_DAY_BG = '#4a1f6b';
 
 export interface DailyChecklistItem {
@@ -80,6 +90,30 @@ export interface DailyChecklistStandardItem {
   user_id: string;
   item_id: string;
   sort_order: number;
+  status: RecordStatus;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
+export interface DailyChecklistDayLog {
+  tb_tyapp_dcl_dly_id: string;
+  tb_tyapp_dcl_dly_seq_no: number;
+  user_id: string;
+  checklist_date: string;
+  mood_key: DclMoodKey | null;
+  title: string | null;
+  status: RecordStatus;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
+export interface DailyChecklistShareGrant {
+  tb_tyapp_dcl_shr_id: string;
+  tb_tyapp_dcl_shr_seq_no: number;
+  owner_user_id: string;
+  viewer_user_id: string;
   status: RecordStatus;
   created_at: string;
   updated_at: string;

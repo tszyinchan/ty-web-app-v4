@@ -114,6 +114,8 @@ const CATEGORY_LINKS: Record<string, FeatureHubLink[]> = {
   ],
   'Daily Checklist': [
     { title: 'Today', icon: 'checklist', route: '/daily-checklist' },
+    { title: 'Shared', icon: 'groups', route: '/daily-checklist/shared' },
+    { title: 'Who can view', icon: 'group_add', route: '/daily-checklist/share' },
     { title: 'Dashboard', icon: 'insights', route: '/daily-checklist/dashboard' },
     { title: 'Standard', icon: 'playlist_add_check', route: '/daily-checklist/standard' },
     { title: 'Items', icon: 'category', route: '/daily-checklist/items' },

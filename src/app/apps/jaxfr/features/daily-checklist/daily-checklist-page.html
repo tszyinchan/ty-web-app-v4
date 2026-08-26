@@ -54,24 +54,6 @@
     </button>
   </div>
 
-  <div class="progress-block">
-    <div class="progress-head">
-      <span class="progress-label">Progress</span>
-    </div>
-    <mat-progress-bar
-      class="dcl-progress"
-      mode="determinate"
-      [value]="progressPercent()"
-    ></mat-progress-bar>
-    <span class="progress-count">
-      @if (totalCount() > 0) {
-        {{ completedCount() }} / {{ totalCount() }}
-      } @else {
-        No items
-      }
-    </span>
-  </div>
-
   @if (showStandardHint()) {
     <p class="standard-hint">
       Your Standard Checklist is empty.
@@ -80,6 +62,44 @@
       </button>
     </p>
   }
+
+  <div class="doodle-page">
+    <div class="doodle-date">
+      <span class="doodle-date-num">{{ doodleDate().dayNum }}</span>
+      <span class="doodle-date-wk">{{ doodleDate().weekday }}</span>
+      <span class="progress-count">
+        @if (totalCount() > 0) {
+          {{ completedCount() }} / {{ totalCount() }}
+        }
+      </span>
+    </div>
+
+    <div class="mood-row">
+      @for (mood of moodKeys; track mood) {
+        <button
+          type="button"
+          class="mood-btn"
+          [disabled]="service.busy()"
+          [attr.aria-label]="'Mood ' + mood"
+          (click)="onSelectMood(mood)"
+        >
+          <app-dcl-face [mood]="mood" [selected]="dayMood() === mood" />
+        </button>
+      }
+    </div>
+
+    <div class="doodle-title-wrap">
+      <input
+        class="doodle-title"
+        name="day_title"
+        maxlength="80"
+        placeholder="How was your day?"
+        [ngModel]="dayTitle()"
+        (ngModelChange)="dayTitle.set($event)"
+        (blur)="onTitleBlur()"
+        [disabled]="service.busy()"
+      />
+    </div>
 
   @if (service.loading() && totalCount() === 0) {
     <div class="empty-placeholder">
@@ -250,6 +270,7 @@
       </mat-form-field>
     </div>
   }
+  </div>
 </div>
 
 @if (addSheetOpen()) {

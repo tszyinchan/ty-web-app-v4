@@ -5,15 +5,19 @@ import { NotificationService } from '../../../../core/services/notification.serv
 import { SupabaseService } from '../../../../core/services/supabase.service';
 import {
   DailyChecklistDayItem,
+  DailyChecklistDayLog,
   DailyChecklistDayRow,
   DailyChecklistItem,
+  DailyChecklistShareGrant,
   DailyChecklistStandardItem,
   DailyChecklistStandardRow,
   DclColourPresetKey,
+  DclMoodKey,
 } from './daily-checklist.model';
 import {
   findCatalogByName,
   isColourPresetKey,
+  isMoodKey,
   nextSortOrder,
 } from './daily-checklist.util';
 
@@ -26,15 +30,23 @@ export class DailyChecklistService {
 
   catalogItems = signal<DailyChecklistItem[]>([]);
   weekItems = signal<DailyChecklistDayRow[]>([]);
+  myDayLogs = signal<DailyChecklistDayLog[]>([]);
   standardItems = signal<DailyChecklistStandardRow[]>([]);
   historyItems = signal<DailyChecklistDayRow[]>([]);
   catalogDayCounts = signal<ReadonlyMap<string, number>>(new Map());
   catalogDayCountsReady = signal(false);
+  outgoingGrants = signal<DailyChecklistShareGrant[]>([]);
+  incomingGrants = signal<DailyChecklistShareGrant[]>([]);
+  sharedCatalog = signal<DailyChecklistItem[]>([]);
+  sharedDayLogs = signal<DailyChecklistDayLog[]>([]);
+  sharedDayItems = signal<DailyChecklistDayRow[]>([]);
 
   loading = signal(false);
   catalogLoading = signal(false);
   standardLoading = signal(false);
   busy = signal(false);
+  shareLoading = signal(false);
+  sharedLoading = signal(false);
 
   private weekStart = '';
   private weekEnd = '';
@@ -44,6 +56,7 @@ export class DailyChecklistService {
   private standardFetched = false;
   private historyFetched = false;
   private catalogDayCountsFetched = false;
+  private shareGrantsFetched = false;
 
   private currentUserId(): string | null {
     return this.authService.userProfile()?.user_id ?? null;
@@ -62,6 +75,28 @@ export class DailyChecklistService {
   private asDayItems(data: unknown): DailyChecklistDayItem[] {
     if (data == null) return [];
     return (Array.isArray(data) ? data : [data]) as DailyChecklistDayItem[];
+  }
+
+  private asDayLog(row: unknown): DailyChecklistDayLog | null {
+    const log = row as DailyChecklistDayLog;
+    if (!log?.tb_tyapp_dcl_dly_id) return null;
+    const mood = log.mood_key;
+    return {
+      ...log,
+      mood_key: isMoodKey(mood) ? mood : null,
+    };
+  }
+
+  private asDayLogs(data: unknown): DailyChecklistDayLog[] {
+    if (data == null) return [];
+    return (Array.isArray(data) ? data : [data])
+      .map((row) => this.asDayLog(row))
+      .filter((row): row is DailyChecklistDayLog => row !== null);
+  }
+
+  private asShareGrants(data: unknown): DailyChecklistShareGrant[] {
+    if (data == null) return [];
+    return (Array.isArray(data) ? data : [data]) as DailyChecklistShareGrant[];
   }
 
   private withCatalog(
@@ -180,6 +215,9 @@ export class DailyChecklistService {
       this.weekItems.update((list) =>
         list.filter((item) => this.isLoadedDate(item.checklist_date)),
       );
+      this.myDayLogs.update((list) =>
+        list.filter((item) => this.isLoadedDate(item.checklist_date)),
+      );
     }
 
     const keepList = this.weekItems().some(
@@ -215,10 +253,30 @@ export class DailyChecklistService {
 
       if (error) throw error;
 
+      let logQuery = this.supabase
+        .from('tyapp_daily_checklist_day')
+        .select('*')
+        .eq('user_id', userId)
+        .is('deleted_at', null);
+
+      if (selectedOutside) {
+        logQuery = logQuery.or(
+          `and(checklist_date.gte.${startDate},checklist_date.lte.${endDate}),checklist_date.eq.${selectedDate}`,
+        );
+      } else {
+        logQuery = logQuery
+          .gte('checklist_date', startDate)
+          .lte('checklist_date', endDate);
+      }
+
+      const { data: logData, error: logError } = await logQuery;
+      if (logError) throw logError;
+
       const catalog = this.catalogItems();
       const rows = this.asDayItems(data)
         .map((day) => this.withCatalog(day, catalog))
         .filter((row): row is DailyChecklistDayRow => row !== null);
+      const logs = this.asDayLogs(logData);
 
       this.zone.run(() => {
         if (merge) {
@@ -241,8 +299,18 @@ export class DailyChecklistService {
             );
             return added.length === 0 ? list : [...list, ...added];
           });
+          this.myDayLogs.update((list) => {
+            const existing = new Set(
+              list.map((item) => item.tb_tyapp_dcl_dly_id),
+            );
+            const added = logs.filter(
+              (row) => !existing.has(row.tb_tyapp_dcl_dly_id),
+            );
+            return added.length === 0 ? list : [...list, ...added];
+          });
         } else {
           this.weekItems.set(rows);
+          this.myDayLogs.set(logs);
           this.weekFetchedRange = rangeKey;
         }
         this.loading.set(false);
@@ -252,6 +320,7 @@ export class DailyChecklistService {
       this.zone.run(() => {
         if (!merge) {
           this.weekItems.set([]);
+          this.myDayLogs.set([]);
           this.weekFetchedRange = '';
         }
         this.loading.set(false);
@@ -332,6 +401,39 @@ export class DailyChecklistService {
 
   itemsForDate(date: string): DailyChecklistDayRow[] {
     return this.weekItems().filter((item) => item.checklist_date === date);
+  }
+
+  dayLogForDate(date: string): DailyChecklistDayLog | null {
+    return (
+      this.myDayLogs().find((row) => row.checklist_date === date) ?? null
+    );
+  }
+
+  sharedOwnerIds(): string[] {
+    const me = this.currentUserId();
+    if (!me) return [];
+    const owners = this.incomingGrants().map((row) => row.owner_user_id);
+    return [me, ...owners.filter((id, index) => owners.indexOf(id) === index)];
+  }
+
+  private mergeDayLog(saved: DailyChecklistDayLog) {
+    const row = this.asDayLog(saved);
+    if (!row) return;
+    if (!this.isLoadedDate(row.checklist_date)) {
+      this.myDayLogs.update((list) => {
+        const without = list.filter(
+          (item) => item.tb_tyapp_dcl_dly_id !== row.tb_tyapp_dcl_dly_id,
+        );
+        return [...without, row];
+      });
+      return;
+    }
+    this.myDayLogs.update((list) => {
+      const without = list.filter(
+        (item) => item.tb_tyapp_dcl_dly_id !== row.tb_tyapp_dcl_dly_id,
+      );
+      return [...without, row];
+    });
   }
 
   catalogDayCount(itemId: string): number {
@@ -1015,4 +1117,219 @@ export class DailyChecklistService {
       return false;
     }
   }
+
+  async upsertDayLog(
+    checklistDate: string,
+    input: { moodKey: DclMoodKey | null; title: string | null },
+  ): Promise<boolean> {
+    const userId = this.currentUserId();
+    if (!userId) return false;
+
+    const title = input.title?.trim() || null;
+    const existing = this.dayLogForDate(checklistDate);
+    this.busy.set(true);
+    try {
+      if (existing) {
+        const { data, error } = await this.supabase
+          .from('tyapp_daily_checklist_day')
+          .update({ mood_key: input.moodKey, title })
+          .eq('tb_tyapp_dcl_dly_id', existing.tb_tyapp_dcl_dly_id)
+          .is('deleted_at', null)
+          .select()
+          .single();
+        if (error) throw error;
+        this.zone.run(() => {
+          this.mergeDayLog(data as DailyChecklistDayLog);
+          this.busy.set(false);
+          this.notification.showSuccess('Day updated');
+        });
+        return true;
+      }
+
+      const { data, error } = await this.supabase
+        .from('tyapp_daily_checklist_day')
+        .insert({
+          user_id: userId,
+          checklist_date: checklistDate,
+          mood_key: input.moodKey,
+          title,
+          status: RecordStatus.Active,
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      this.zone.run(() => {
+        this.mergeDayLog(data as DailyChecklistDayLog);
+        this.busy.set(false);
+        this.notification.showSuccess('Day updated');
+      });
+      return true;
+    } catch (error: unknown) {
+      this.notification.handleError('Save Day Failed', error);
+      this.zone.run(() => this.busy.set(false));
+      return false;
+    }
+  }
+
+  async fetchShareGrants(force = false) {
+    const userId = this.currentUserId();
+    if (!userId) return;
+    if (this.shareGrantsFetched && !force) return;
+
+    this.shareLoading.set(true);
+    try {
+      const { data: outgoing, error: outError } = await this.supabase
+        .from('tyapp_daily_checklist_share')
+        .select('*')
+        .eq('owner_user_id', userId)
+        .is('deleted_at', null)
+        .order('tb_tyapp_dcl_shr_seq_no', { ascending: true });
+      if (outError) throw outError;
+
+      const { data: incoming, error: inError } = await this.supabase
+        .from('tyapp_daily_checklist_share')
+        .select('*')
+        .eq('viewer_user_id', userId)
+        .is('deleted_at', null)
+        .order('tb_tyapp_dcl_shr_seq_no', { ascending: true });
+      if (inError) throw inError;
+
+      this.zone.run(() => {
+        this.outgoingGrants.set(this.asShareGrants(outgoing));
+        this.incomingGrants.set(this.asShareGrants(incoming));
+        this.shareGrantsFetched = true;
+        this.shareLoading.set(false);
+      });
+    } catch (error: unknown) {
+      this.notification.handleError('Fetch Share List Failed', error);
+      this.zone.run(() => this.shareLoading.set(false));
+    }
+  }
+
+  async addShareGrant(viewerUserId: string): Promise<boolean> {
+    const userId = this.currentUserId();
+    if (!userId) return false;
+    if (viewerUserId === userId) return false;
+    if (this.outgoingGrants().some((row) => row.viewer_user_id === viewerUserId)) {
+      return true;
+    }
+
+    this.busy.set(true);
+    try {
+      const { data, error } = await this.supabase
+        .from('tyapp_daily_checklist_share')
+        .insert({
+          owner_user_id: userId,
+          viewer_user_id: viewerUserId,
+          status: RecordStatus.Active,
+        })
+        .select()
+        .single();
+      if (error) throw error;
+
+      this.zone.run(() => {
+        this.outgoingGrants.update((list) => [
+          ...list,
+          data as DailyChecklistShareGrant,
+        ]);
+        this.busy.set(false);
+        this.notification.showSuccess('Viewer added');
+      });
+      return true;
+    } catch (error: unknown) {
+      this.notification.handleError('Add Viewer Failed', error);
+      this.zone.run(() => this.busy.set(false));
+      return false;
+    }
+  }
+
+  async removeShareGrant(grantId: string): Promise<boolean> {
+    this.busy.set(true);
+    try {
+      const { error } = await this.supabase.rpc(
+        'tyapp_daily_checklist_share_soft_delete_single_record',
+        { record_id: grantId },
+      );
+      if (error) throw error;
+
+      this.zone.run(() => {
+        this.outgoingGrants.update((list) =>
+          list.filter((row) => row.tb_tyapp_dcl_shr_id !== grantId),
+        );
+        this.busy.set(false);
+        this.notification.showSuccess('Viewer removed');
+      });
+      return true;
+    } catch (error: unknown) {
+      this.notification.handleError('Remove Viewer Failed', error);
+      this.zone.run(() => this.busy.set(false));
+      return false;
+    }
+  }
+
+  async fetchSharedRange(startDate: string, endDate: string, force = false) {
+    const userId = this.currentUserId();
+    if (!userId) return;
+
+    this.sharedLoading.set(true);
+    try {
+      await this.fetchShareGrants(force);
+      const ownerIds = this.sharedOwnerIds();
+      if (ownerIds.length === 0) {
+        this.zone.run(() => {
+          this.sharedCatalog.set([]);
+          this.sharedDayLogs.set([]);
+          this.sharedDayItems.set([]);
+          this.sharedLoading.set(false);
+        });
+        return;
+      }
+
+      const { data: catalogData, error: catalogError } = await this.supabase
+        .from('tyapp_daily_checklist_item')
+        .select('*')
+        .in('user_id', ownerIds)
+        .is('deleted_at', null);
+      if (catalogError) throw catalogError;
+
+      const catalog = (catalogData || [])
+        .map((row) => this.asCatalog(row))
+        .filter((row): row is DailyChecklistItem => row !== null);
+
+      const { data: logData, error: logError } = await this.supabase
+        .from('tyapp_daily_checklist_day')
+        .select('*')
+        .in('user_id', ownerIds)
+        .is('deleted_at', null)
+        .gte('checklist_date', startDate)
+        .lte('checklist_date', endDate);
+      if (logError) throw logError;
+
+      const { data: itemData, error: itemError } = await this.supabase
+        .from('tyapp_daily_checklist_day_item')
+        .select('*')
+        .in('user_id', ownerIds)
+        .is('deleted_at', null)
+        .gte('checklist_date', startDate)
+        .lte('checklist_date', endDate)
+        .order('sort_order', { ascending: true })
+        .order('tb_tyapp_dcl_day_seq_no', { ascending: true });
+      if (itemError) throw itemError;
+
+      const rows = this.asDayItems(itemData)
+        .map((day) => this.withCatalog(day, catalog))
+        .filter((row): row is DailyChecklistDayRow => row !== null);
+
+      this.zone.run(() => {
+        this.sharedCatalog.set(catalog);
+        this.sharedDayLogs.set(this.asDayLogs(logData));
+        this.sharedDayItems.set(rows);
+        this.sharedLoading.set(false);
+      });
+    } catch (error: unknown) {
+      this.notification.handleError('Fetch Shared Checklist Failed', error);
+      this.zone.run(() => this.sharedLoading.set(false));
+    }
+  }
 }
+

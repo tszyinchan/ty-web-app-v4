@@ -1,0 +1,114 @@
+@use "./doodle";
+
+:host {
+  display: inline-flex;
+  line-height: 0;
+  @include doodle.paper-tokens;
+}
+
+:host-context(html.mode-dark) {
+  @include doodle.paper-tokens-dark;
+}
+
+.dcl-face {
+  display: inline-block;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid var(--dcl-ink);
+  background: var(--dcl-mood, #c8c8c8);
+  position: relative;
+  flex-shrink: 0;
+  box-sizing: border-box;
+
+  &::before {
+    content: "";
+    position: absolute;
+    top: 11px;
+    left: 9px;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--dcl-ink);
+    box-shadow: 12px 0 0 var(--dcl-ink);
+  }
+
+  &::after {
+    content: "";
+    position: absolute;
+    left: 11px;
+    top: 21px;
+    width: 12px;
+    height: 5px;
+    border-bottom: 2px solid var(--dcl-ink);
+    border-radius: 0 0 10px 10px;
+  }
+
+  &.size-lg {
+    width: 88px;
+    height: 88px;
+    border-width: 3px;
+
+    &::before {
+      top: 28px;
+      left: 22px;
+      width: 8px;
+      height: 8px;
+      box-shadow: 30px 0 0 var(--dcl-ink);
+    }
+
+    &::after {
+      left: 28px;
+      top: 52px;
+      width: 30px;
+      height: 12px;
+      border-bottom-width: 3px;
+    }
+  }
+
+  &.mood-green {
+    --dcl-mood: #7bc47f;
+  }
+  &.mood-gold {
+    --dcl-mood: #f0c94a;
+  }
+  &.mood-red {
+    --dcl-mood: #e25b4c;
+
+    &::after {
+      top: 18px;
+      border-bottom: 0;
+      border-top: 2px solid var(--dcl-ink);
+      border-radius: 10px 10px 0 0;
+    }
+
+    &.size-lg::after {
+      top: 48px;
+      border-top-width: 3px;
+    }
+  }
+  &.mood-blue {
+    --dcl-mood: #5b8fd4;
+  }
+  &.mood-purple {
+    --dcl-mood: #8b6bb8;
+
+    &::after {
+      height: 0;
+      border-radius: 0;
+    }
+  }
+  &.mood-slate {
+    --dcl-mood: transparent;
+
+    &::before,
+    &::after {
+      display: none;
+    }
+  }
+
+  &.selected {
+    outline: 2px solid var(--dcl-ink);
+    outline-offset: 2px;
+  }
+}

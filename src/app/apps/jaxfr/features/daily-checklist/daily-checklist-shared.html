@@ -1,0 +1,75 @@
+<div class="dcl-shared">
+  @if (service.sharedLoading() && calendarEvents().length === 0 && feedPeople().length === 0) {
+    <div class="empty-placeholder">
+      <mat-spinner diameter="28"></mat-spinner>
+    </div>
+  } @else if (selectedDate()) {
+    <div class="feed">
+      @for (person of feedPeople(); track person.userId) {
+        <article class="doodle-page person-card">
+          <div class="person-head">
+            <span class="person-name">{{ person.name }}</span>
+            @if (person.isSelf) {
+              <button type="button" class="text-link" (click)="openToday()">
+                Edit on Today
+              </button>
+            }
+          </div>
+          <div class="doodle-date">
+            <span class="doodle-date-num">{{ doodleDate().dayNum }}</span>
+            <span class="doodle-date-wk">{{ doodleDate().weekday }}</span>
+          </div>
+          <div class="mood-block">
+            <app-dcl-face [mood]="person.log?.mood_key ?? null" size="lg" />
+          </div>
+          @if (person.log?.title) {
+            <p class="doodle-title">{{ person.log?.title }}</p>
+          }
+          <ul class="item-list">
+            @for (item of person.items; track item.tb_tyapp_dcl_day_id) {
+              <li class="item-row" [class.completed]="isCompleted(item)">
+                @if (item.catalog.emoji) {
+                  <span class="item-emoji">{{ item.catalog.emoji }}</span>
+                }
+                <span class="item-text">{{ item.catalog.item_text }}</span>
+              </li>
+            }
+          </ul>
+        </article>
+      } @empty {
+        <p class="empty-copy">Nobody shared a log on this date.</p>
+      }
+    </div>
+  } @else {
+    <div class="calendar-body">
+      <mwl-calendar-month-view
+        [viewDate]="viewDate()"
+        [events]="calendarEvents()"
+        [cellTemplate]="customCellTemplate"
+        [headerTemplate]="customHeaderTemplate"
+        (dayClicked)="onDayClicked($event.day.date)"
+      ></mwl-calendar-month-view>
+
+      <ng-template #customHeaderTemplate let-days="days">
+        <div class="cal-custom-header">
+          @for (day of days; track day.day) {
+            <div class="cal-header-cell">{{ day.date | date: "EEE" }}</div>
+          }
+        </div>
+      </ng-template>
+
+      <ng-template #customCellTemplate let-day="day">
+        <div class="cal-custom-cell" [class.is-out]="!day.inMonth">
+          <span class="cell-date" [class.is-today]="day.isToday">
+            {{ day.date | date: "d" }}
+          </span>
+          <div class="face-stack">
+            @for (event of day.events; track event.title) {
+              <app-dcl-face [mood]="eventMood(event)" />
+            }
+          </div>
+        </div>
+      </ng-template>
+    </div>
+  }
+</div>

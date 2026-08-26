@@ -9,7 +9,9 @@ import {
   DailyChecklistTopItem,
   DailyChecklistWeekDay,
   DCL_COLOUR_PRESETS,
+  DCL_MOOD_KEYS,
   DclColourPresetKey,
+  DclMoodKey,
 } from './daily-checklist.model';
 
 export const DATE_QUERY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
@@ -40,6 +42,14 @@ export function colourClass(key: string | null | undefined): string {
   return `colour-${isColourPresetKey(key ?? '') ? key : 'slate'}`;
 }
 
+export function isMoodKey(value: string | null | undefined): value is DclMoodKey {
+  return DCL_MOOD_KEYS.some((key) => key === value);
+}
+
+export function moodClass(key: string | null | undefined): string {
+  return `mood-${isMoodKey(key) ? key : 'slate'}`;
+}
+
 export function normalizeChecklistDateParam(
   value: string | null | undefined,
 ): string {
@@ -56,6 +66,20 @@ export function shiftChecklistDate(dateStr: string, days: number): string {
   const parsed = parseLocalDate(dateStr) ?? new Date();
   parsed.setDate(parsed.getDate() + days);
   return formatDate(parsed);
+}
+
+export function doodleDateParts(dateStr: string): {
+  dayNum: string;
+  weekday: string;
+} {
+  const parsed = parseLocalDate(dateStr);
+  if (!parsed) return { dayNum: '', weekday: '' };
+  const sundayFirst = parsed.getDay();
+  const mondayFirst = (sundayFirst + 6) % 7;
+  return {
+    dayNum: String(parsed.getDate()),
+    weekday: WEEKDAY_LABELS[mondayFirst],
+  };
 }
 
 export function getChecklistWeekRange(dateStr: string): {

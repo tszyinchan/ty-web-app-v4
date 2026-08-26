@@ -7,8 +7,10 @@ import {
   OnDestroy,
   OnInit,
   computed,
+  effect,
   inject,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -28,7 +30,6 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
-import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { Subscription } from 'rxjs';
@@ -38,18 +39,21 @@ import { HeaderService } from '../../../../core/services/header.service';
 import { formatDate } from '../../../../core/utils/date-time.util';
 import {
   DCL_COLOUR_PRESETS,
+  DCL_MOOD_KEYS,
   DailyChecklistDayRow,
   DailyChecklistItem,
   DclColourPresetKey,
+  DclMoodKey,
 } from './daily-checklist.model';
 import { DailyChecklistAddSheet } from './daily-checklist-add-sheet';
+import { DailyChecklistFace } from './daily-checklist-face';
 import { DailyChecklistService } from './daily-checklist.service';
 import {
   STRIP_EXTEND_WEEKS,
   STRIP_WEEKS_BEFORE,
   buildWeekDays,
   colourClass,
-  completionPercent,
+  doodleDateParts,
   filterCatalogSuggestions,
   findCatalogByName,
   groupWeekDays,
@@ -77,12 +81,12 @@ type EmojiPickerTarget = 'edit';
     CdkDrag,
     CdkDragHandle,
     DailyChecklistAddSheet,
+    DailyChecklistFace,
     MatAutocompleteModule,
     MatButtonModule,
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
-    MatProgressBarModule,
     MatProgressSpinnerModule,
     MatTooltipModule,
   ],
@@ -117,12 +121,15 @@ export class DailyChecklistPage implements OnInit, AfterViewInit, OnDestroy {
   editingDayId = signal<string | null>(null);
   addSheetOpen = signal(false);
   reordering = signal(false);
+  dayMood = signal<DclMoodKey | null>(null);
+  dayTitle = signal('');
   editText = '';
   editEmoji: string | null = null;
   editColour: DclColourPresetKey = 'slate';
   editRemarks = '';
 
   readonly colourPresets = DCL_COLOUR_PRESETS;
+  readonly moodKeys = DCL_MOOD_KEYS;
   readonly today = formatDate(new Date());
 
   readonly weekPages = computed(() =>
@@ -137,6 +144,8 @@ export class DailyChecklistPage implements OnInit, AfterViewInit, OnDestroy {
     ),
   );
 
+  readonly doodleDate = computed(() => doodleDateParts(this.selectedDate()));
+
   readonly displayItems = computed(() =>
     sortDayRowsForDisplay(this.service.itemsForDate(this.selectedDate())),
   );
@@ -147,12 +156,12 @@ export class DailyChecklistPage implements OnInit, AfterViewInit, OnDestroy {
 
   readonly totalCount = computed(() => this.displayItems().length);
 
-  readonly progressPercent = computed(() =>
-    completionPercent(this.completedCount(), this.totalCount()),
-  );
-
   readonly isEmpty = computed(
-    () => !this.service.loading() && this.totalCount() === 0,
+    () =>
+      !this.service.loading() &&
+      this.totalCount() === 0 &&
+      this.dayMood() === null &&
+      this.dayTitle().trim() === '',
   );
 
   readonly isOnTodayView = computed(() => {
@@ -173,6 +182,17 @@ export class DailyChecklistPage implements OnInit, AfterViewInit, OnDestroy {
       this.newItemText(),
     ).filter((item) => !onDate.has(item.tb_tyapp_dcl_itm_id));
   });
+
+  constructor() {
+    effect(() => {
+      const date = this.selectedDate();
+      const log = this.service.dayLogForDate(date);
+      untracked(() => {
+        this.dayMood.set(log?.mood_key ?? null);
+        this.dayTitle.set(log?.title ?? '');
+      });
+    });
+  }
 
   ngOnInit() {
     const isBusy = computed(
@@ -221,6 +241,18 @@ export class DailyChecklistPage implements OnInit, AfterViewInit, OnDestroy {
           icon: 'category',
           type: 'secondary',
           onClick: () => this.router.navigate(['/daily-checklist/items']),
+        },
+        {
+          label: 'Who can view',
+          icon: 'group_add',
+          type: 'secondary',
+          onClick: () => this.router.navigate(['/daily-checklist/share']),
+        },
+        {
+          label: 'Shared',
+          icon: 'groups',
+          type: 'secondary',
+          onClick: () => this.router.navigate(['/daily-checklist/shared']),
         },
         {
           label: 'Dashboard',
@@ -544,6 +576,27 @@ export class DailyChecklistPage implements OnInit, AfterViewInit, OnDestroy {
       block: 'center',
       behavior: 'smooth',
     });
+  }
+
+  async onSelectMood(mood: DclMoodKey) {
+    const next = this.dayMood() === mood ? null : mood;
+    this.dayMood.set(next);
+    await this.saveDayLog();
+  }
+
+  async onTitleBlur() {
+    await this.saveDayLog();
+  }
+
+  private async saveDayLog() {
+    const date = this.selectedDate();
+    const log = this.service.dayLogForDate(date);
+    const mood = this.dayMood();
+    const title = this.dayTitle().trim() || null;
+    if ((log?.mood_key ?? null) === mood && (log?.title ?? null) === title) {
+      return;
+    }
+    await this.service.upsertDayLog(date, { moodKey: mood, title });
   }
 
   async onSuggestionSelected(
