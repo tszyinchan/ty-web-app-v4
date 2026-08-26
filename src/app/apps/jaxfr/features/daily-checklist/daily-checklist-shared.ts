@@ -28,6 +28,7 @@ import { DailyChecklistFace } from './daily-checklist-face';
 import { DailyChecklistService } from './daily-checklist.service';
 import {
   DATE_QUERY_PATTERN,
+  colourClass,
   doodleDateParts,
   isDayItemCompleted,
   normalizeChecklistDateParam,
@@ -172,6 +173,8 @@ export class DailyChecklistShared implements OnInit, OnDestroy {
   isCompleted(item: DailyChecklistDayRow): boolean {
     return isDayItemCompleted(item);
   }
+
+  colourClass = colourClass;
 
   displayUserName(id: string): string {
     if (id === this.authService.userProfile()?.user_id) return 'You';

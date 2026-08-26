@@ -1,6 +1,8 @@
 @use "../../../../styles/shared-calendar";
 @use "./doodle";
 
+@include doodle.colour-classes;
+
 .dcl-shared {
   max-width: 860px;
   margin: 0 auto;
@@ -60,6 +62,7 @@
   display: flex;
   align-items: baseline;
   gap: 8px;
+  @include doodle.hand-letter;
 }
 
 .doodle-date-num {
@@ -81,8 +84,10 @@
 
 .doodle-title {
   @include doodle.title-brush;
+  display: block;
   margin: 0 0 12px;
   font-size: 22px;
+  text-align: center;
 }
 
 .item-list {
@@ -92,18 +97,22 @@
 }
 
 .item-row {
-  padding: 6px 0;
-  border-bottom: 1px dashed var(--dcl-line);
+  padding: 8px 10px;
+  margin-bottom: 4px;
+  border-radius: 4px;
+  background: var(--dcl-tint, transparent);
   font-weight: 700;
+  color: var(--dcl-ink);
 
   &.completed {
-    text-decoration: line-through;
-    opacity: 0.62;
+    background: var(--dcl-fill);
+    color: #fff;
   }
 }
 
 .item-emoji {
   margin-right: 6px;
+  @include doodle.emoji;
 }
 
 .calendar-body {

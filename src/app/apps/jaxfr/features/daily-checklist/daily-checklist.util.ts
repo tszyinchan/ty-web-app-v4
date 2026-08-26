@@ -10,6 +10,7 @@ import {
   DailyChecklistWeekDay,
   DCL_COLOUR_PRESETS,
   DCL_MOOD_KEYS,
+  DCL_MOODS,
   DclColourPresetKey,
   DclMoodKey,
 } from './daily-checklist.model';
@@ -46,8 +47,9 @@ export function isMoodKey(value: string | null | undefined): value is DclMoodKey
   return DCL_MOOD_KEYS.some((key) => key === value);
 }
 
-export function moodClass(key: string | null | undefined): string {
-  return `mood-${isMoodKey(key) ? key : 'slate'}`;
+export function moodEmoji(key: string | null | undefined): string | null {
+  if (!isMoodKey(key)) return null;
+  return DCL_MOODS.find((mood) => mood.key === key)?.emoji ?? null;
 }
 
 export function normalizeChecklistDateParam(

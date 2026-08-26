@@ -54,6 +54,19 @@ export const DCL_MOOD_KEYS = [
 
 export type DclMoodKey = (typeof DCL_MOOD_KEYS)[number];
 
+/** Display order. Keys stay the DB CHECK values in `DCL_MOOD_KEYS`. */
+export const DCL_MOODS: readonly {
+  key: DclMoodKey;
+  emoji: string;
+  label: string;
+}[] = [
+  { key: 'green', emoji: '😄', label: 'Happy' },
+  { key: 'gold', emoji: '😌', label: 'Calm' },
+  { key: 'purple', emoji: '😐', label: 'Meh' },
+  { key: 'blue', emoji: '😢', label: 'Sad' },
+  { key: 'red', emoji: '😠', label: 'Angry' },
+];
+
 export const DCL_SELECTED_DAY_BG = '#4a1f6b';
 
 export interface DailyChecklistItem {

@@ -39,7 +39,7 @@ import { HeaderService } from '../../../../core/services/header.service';
 import { formatDate } from '../../../../core/utils/date-time.util';
 import {
   DCL_COLOUR_PRESETS,
-  DCL_MOOD_KEYS,
+  DCL_MOODS,
   DailyChecklistDayRow,
   DailyChecklistItem,
   DclColourPresetKey,
@@ -129,7 +129,7 @@ export class DailyChecklistPage implements OnInit, AfterViewInit, OnDestroy {
   editRemarks = '';
 
   readonly colourPresets = DCL_COLOUR_PRESETS;
-  readonly moodKeys = DCL_MOOD_KEYS;
+  readonly moods = DCL_MOODS;
   readonly today = formatDate(new Date());
 
   readonly weekPages = computed(() =>
@@ -229,36 +229,6 @@ export class DailyChecklistPage implements OnInit, AfterViewInit, OnDestroy {
           type: 'secondary',
           disabled: isBusy,
           onClick: () => void this.onUseStandard(),
-        },
-        {
-          label: 'Manage standard template',
-          icon: 'tune',
-          type: 'secondary',
-          onClick: () => this.router.navigate(['/daily-checklist/standard']),
-        },
-        {
-          label: 'Manage items',
-          icon: 'category',
-          type: 'secondary',
-          onClick: () => this.router.navigate(['/daily-checklist/items']),
-        },
-        {
-          label: 'Who can view',
-          icon: 'group_add',
-          type: 'secondary',
-          onClick: () => this.router.navigate(['/daily-checklist/share']),
-        },
-        {
-          label: 'Shared',
-          icon: 'groups',
-          type: 'secondary',
-          onClick: () => this.router.navigate(['/daily-checklist/shared']),
-        },
-        {
-          label: 'Dashboard',
-          icon: 'insights',
-          type: 'secondary',
-          onClick: () => this.router.navigate(['/daily-checklist/dashboard']),
         },
       ],
     });

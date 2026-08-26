@@ -74,16 +74,22 @@
       </span>
     </div>
 
+    <div class="mood-hero">
+      <app-dcl-face [mood]="dayMood()" size="lg" />
+    </div>
+
     <div class="mood-row">
-      @for (mood of moodKeys; track mood) {
+      @for (mood of moods; track mood.key) {
         <button
           type="button"
           class="mood-btn"
+          [class.picked]="dayMood() === mood.key"
           [disabled]="service.busy()"
-          [attr.aria-label]="'Mood ' + mood"
-          (click)="onSelectMood(mood)"
+          [attr.aria-label]="mood.label"
+          (click)="onSelectMood(mood.key)"
         >
-          <app-dcl-face [mood]="mood" [selected]="dayMood() === mood" />
+          <app-dcl-face [mood]="mood.key" [selected]="dayMood() === mood.key" />
+          <span class="mood-label">{{ mood.label }}</span>
         </button>
       }
     </div>

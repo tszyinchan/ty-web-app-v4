@@ -1,37 +1,90 @@
 @mixin paper-tokens {
   --dcl-paper: #f3efe6;
-  --dcl-grid: rgba(40, 48, 56, 0.09);
   --dcl-ink: #2a2a2a;
   --dcl-brush: rgba(150, 205, 240, 0.55);
   --dcl-line: rgba(42, 42, 42, 0.18);
+  --dcl-paper-shadow: 0 8px 18px rgba(40, 50, 60, 0.08);
 }
 
 @mixin paper-tokens-dark {
-  --dcl-paper: #1b1d21;
-  --dcl-grid: rgba(255, 255, 255, 0.07);
-  --dcl-ink: #ece6dc;
-  --dcl-brush: rgba(70, 120, 170, 0.42);
-  --dcl-line: rgba(236, 230, 220, 0.16);
+  --dcl-paper: #2c261c;
+  --dcl-ink: #f3ead8;
+  --dcl-brush: rgba(90, 150, 200, 0.5);
+  --dcl-line: rgba(243, 234, 216, 0.18);
+  --dcl-paper-shadow:
+    inset 0 1px 0 rgba(255, 236, 214, 0.08),
+    0 10px 24px rgba(0, 0, 0, 0.38);
 }
 
 @mixin paper {
   @include paper-tokens;
   background-color: var(--dcl-paper);
-  background-image:
-    linear-gradient(var(--dcl-grid) 1px, transparent 1px),
-    linear-gradient(90deg, var(--dcl-grid) 1px, transparent 1px);
-  background-size: 22px 22px;
   color: var(--dcl-ink);
-  font-family: "Segoe Print", "Bradley Hand", "Comic Sans MS", cursive, var(--app-font);
+  font-family: var(--app-font);
   border: 1px solid var(--dcl-line);
-  box-shadow: 0 8px 18px rgba(40, 50, 60, 0.08);
+  box-shadow: var(--dcl-paper-shadow);
+}
+
+@mixin hand-letter {
+  font-family: "Segoe Print", "Bradley Hand", cursive, var(--app-font);
+}
+
+@mixin emoji {
+  font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
+  font-weight: 400;
+  font-style: normal;
+  line-height: 1;
 }
 
 @mixin title-brush {
+  @include hand-letter;
   display: inline-block;
   padding: 0 8px 2px;
   background: var(--dcl-brush);
   border-radius: 2px;
   font-weight: 700;
   line-height: 1.3;
+}
+
+@mixin colour-classes {
+  .colour-purple {
+    --dcl-fill: #5b3a8c;
+    --dcl-idle-border: #b8a4cc;
+    --dcl-tint: rgba(91, 58, 140, 0.12);
+  }
+  .colour-blue {
+    --dcl-fill: #1b5fa8;
+    --dcl-idle-border: #8fb0cc;
+    --dcl-tint: rgba(27, 95, 168, 0.12);
+  }
+  .colour-teal {
+    --dcl-fill: #1a7a72;
+    --dcl-idle-border: #8bbbb4;
+    --dcl-tint: rgba(26, 122, 114, 0.12);
+  }
+  .colour-green {
+    --dcl-fill: #217346;
+    --dcl-idle-border: #8fb89a;
+    --dcl-tint: rgba(33, 115, 70, 0.12);
+  }
+  .colour-gold {
+    --dcl-fill: #b07a12;
+    --dcl-idle-border: #c9b27a;
+    --dcl-tint: rgba(176, 122, 18, 0.12);
+  }
+  .colour-orange {
+    --dcl-fill: #c05612;
+    --dcl-idle-border: #d0a07a;
+    --dcl-tint: rgba(192, 86, 18, 0.12);
+  }
+  .colour-red {
+    --dcl-fill: #a31f1f;
+    --dcl-idle-border: #c99a9a;
+    --dcl-tint: rgba(163, 31, 31, 0.12);
+  }
+  .colour-slate {
+    --dcl-fill: #4a5a6a;
+    --dcl-idle-border: #9aabba;
+    --dcl-tint: rgba(74, 90, 106, 0.12);
+  }
 }

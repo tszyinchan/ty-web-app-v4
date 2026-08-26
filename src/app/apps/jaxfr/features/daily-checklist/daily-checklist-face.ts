@@ -1,26 +1,33 @@
-import { NgClass } from '@angular/common';
-import { Component, input } from '@angular/core';
+import { Component, computed, input } from '@angular/core';
 import { DclMoodKey } from './daily-checklist.model';
-import { moodClass } from './daily-checklist.util';
+import { moodEmoji } from './daily-checklist.util';
 
 @Component({
   selector: 'app-dcl-face',
   standalone: true,
-  imports: [NgClass],
-  template: `<span
-    class="dcl-face"
-    [ngClass]="faceClass()"
-    [class.size-lg]="size() === 'lg'"
-    [class.selected]="selected()"
-  ></span>`,
+  template: `
+    @if (glyph(); as emoji) {
+      <span
+        class="dcl-glyph"
+        [class.size-sm]="size() === 'sm'"
+        [class.size-lg]="size() === 'lg'"
+        [class.selected]="selected()"
+        >{{ emoji }}</span
+      >
+    } @else {
+      <span
+        class="dcl-empty"
+        [class.size-sm]="size() === 'sm'"
+        [class.size-lg]="size() === 'lg'"
+      ></span>
+    }
+  `,
   styleUrl: './daily-checklist-face.scss',
 })
 export class DailyChecklistFace {
   readonly mood = input<DclMoodKey | null>(null);
-  readonly size = input<'sm' | 'lg'>('sm');
+  readonly size = input<'sm' | 'md' | 'lg'>('md');
   readonly selected = input(false);
 
-  faceClass() {
-    return moodClass(this.mood());
-  }
+  readonly glyph = computed(() => moodEmoji(this.mood()));
 }

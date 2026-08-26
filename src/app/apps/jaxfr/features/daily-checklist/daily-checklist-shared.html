@@ -27,7 +27,11 @@
           }
           <ul class="item-list">
             @for (item of person.items; track item.tb_tyapp_dcl_day_id) {
-              <li class="item-row" [class.completed]="isCompleted(item)">
+              <li
+                class="item-row"
+                [ngClass]="colourClass(item.catalog.colour_preset_key)"
+                [class.completed]="isCompleted(item)"
+              >
                 @if (item.catalog.emoji) {
                   <span class="item-emoji">{{ item.catalog.emoji }}</span>
                 }
@@ -65,7 +69,7 @@
           </span>
           <div class="face-stack">
             @for (event of day.events; track event.title) {
-              <app-dcl-face [mood]="eventMood(event)" />
+              <app-dcl-face [mood]="eventMood(event)" size="sm" />
             }
           </div>
         </div>
