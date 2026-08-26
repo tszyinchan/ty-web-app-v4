@@ -21,7 +21,14 @@ export type YyemsEatenOther =
 
 export type YyemsLocationTz = 'HK' | 'TO';
 
-export type YyemsInOrOut = 'in' | 'out' | 'free';
+export const YYEMS_IN_OR_OUT = {
+  In: 'in',
+  Out: 'out',
+  Free: 'free',
+} as const;
+
+export type YyemsInOrOut =
+  (typeof YYEMS_IN_OR_OUT)[keyof typeof YYEMS_IN_OR_OUT];
 
 /** Home / Eat meal slots. 1/3/5 are the three meals; the rest are extras. */
 export const YYEMS_MEAL = {
@@ -111,6 +118,13 @@ export interface YyemsVendor {
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
+}
+
+export interface YyemsVendorEmbed extends YyemsVendor {
+  category: Pick<
+    YyemsVendorCategory,
+    'display_name' | 'level1' | 'level2' | 'level3'
+  > | null;
 }
 
 export interface YyemsFinancialAccount {
@@ -316,7 +330,7 @@ export interface YyemsBuyEmbed extends YyemsBuy {
 }
 
 export interface YyemsBillEmbed extends YyemsBill {
-  vendor: YyemsVendor | null;
+  vendor: YyemsVendorEmbed | null;
   wallet: YyemsWallet | null;
 }
 

@@ -1,15 +1,56 @@
-<div class="standard-list-view">
+<div class="standard-list-view yyems-bill-list">
   <div class="list-search-container">
     <mat-form-field appearance="outline" subscriptSizing="dynamic" class="list-search-input">
       <mat-icon matPrefix>search</mat-icon>
-      <mat-label>Search remark or description…</mat-label>
-      <input matInput [(ngModel)]="searchQuery" (ngModelChange)="onSearchChange()" />
+      <mat-label>Search vendor, remark, wallet…</mat-label>
+      <input matInput [(ngModel)]="searchQuery" />
       @if (searchQuery()) {
-        <button mat-icon-button matSuffix (click)="searchQuery.set(''); onSearchChange()">
+        <button mat-icon-button matSuffix (click)="searchQuery.set('')">
           <mat-icon>close</mat-icon>
         </button>
       }
     </mat-form-field>
+  </div>
+
+  <div class="ledger-chrome">
+    <div class="month-bar">
+      <button mat-icon-button type="button" (click)="shiftMonth(-1)" aria-label="Previous month">
+        <mat-icon>chevron_left</mat-icon>
+      </button>
+      <span class="month-label">{{ monthLabel() }}</span>
+      <button mat-icon-button type="button" (click)="shiftMonth(1)" aria-label="Next month">
+        <mat-icon>chevron_right</mat-icon>
+      </button>
+    </div>
+
+    <div class="month-summary">
+      <div class="sum-col">
+        <span class="sum-label">In</span>
+        @for (part of ledger().monthIn; track part.currency) {
+          <span class="sum-in">{{ formatAmount(part.currency, part.amount) }}</span>
+        } @empty {
+          <span class="sum-in">0.00</span>
+        }
+      </div>
+      <div class="sum-col">
+        <span class="sum-label">Out</span>
+        @for (part of ledger().monthOut; track part.currency) {
+          <span class="sum-out">{{ formatAmount(part.currency, part.amount) }}</span>
+        } @empty {
+          <span class="sum-out">0.00</span>
+        }
+      </div>
+      <div class="sum-col">
+        <span class="sum-label">Total</span>
+        @for (part of ledger().monthNet; track part.currency) {
+          <span class="sum-net" [class.negative]="part.amount < 0">
+            {{ formatAmount(part.currency, part.amount) }}
+          </span>
+        } @empty {
+          <span class="sum-net">0.00</span>
+        }
+      </div>
+    </div>
   </div>
 
   <div class="list-container">
@@ -19,33 +60,60 @@
         <span>Loading bills…</span>
       </div>
     } @else {
-      @for (row of rows(); track row.bill.tb_tyapp_yym_id) {
-        <a class="item-link" [routerLink]="['../edit', row.bill.tb_tyapp_yym_id]">
-          <div class="item-content">
-            <div class="item-info-group">
-              <span class="main-text">{{ row.vendorName }}</span>
-              <span class="sub-text"
-                >{{ row.when }} · {{ row.bill.currency }}
-                {{ row.bill.amount }} · {{ row.owner }} · {{ row.walletName }}</span
-              >
+      @for (day of ledger().days; track day.dateKey) {
+        <section class="day-group">
+          <div class="day-header">
+            <div class="day-stamp">
+              <span class="day-num">{{ day.day }}</span>
+              <span class="day-weekday">{{ day.weekday }}</span>
             </div>
-            <mat-icon class="chevron">chevron_right</mat-icon>
+            <div class="day-totals">
+              <span class="sum-in">{{ day.inLabel }}</span>
+              <span class="sum-out">{{ day.outLabel }}</span>
+            </div>
           </div>
-        </a>
+          @for (row of day.rows; track row.bill.tb_tyapp_yym_id) {
+            <a class="item-link bill-link" [routerLink]="['../edit', row.bill.tb_tyapp_yym_id]">
+              <div class="bill-row">
+                <div class="bill-cat">
+                  <span>{{ row.categoryTop }}</span>
+                  @if (row.categoryBottom) {
+                    <span>{{ row.categoryBottom }}</span>
+                  }
+                </div>
+                <div class="bill-main">
+                  <span class="bill-title">{{ row.title }}</span>
+                  <span class="bill-sub">{{ row.subtitle }}</span>
+                </div>
+                <span
+                  class="bill-amt"
+                  [class.amt-in]="row.amountClass === YYEMS_IN_OR_OUT.In"
+                  [class.amt-out]="row.amountClass === YYEMS_IN_OR_OUT.Out"
+                  [class.amt-free]="row.amountClass === YYEMS_IN_OR_OUT.Free"
+                >
+                  {{ row.amountLabel }}
+                </span>
+              </div>
+            </a>
+          }
+        </section>
       } @empty {
-        <div class="empty-placeholder">No bills found.</div>
+        <div class="empty-placeholder">No bills this month.</div>
       }
     }
   </div>
 
-  <footer class="list-footer paginated">
-    <div class="divider"></div>
-    <mat-paginator
-      [length]="yyems.billTotal()"
-      [pageSize]="pageSize()"
-      [pageIndex]="pageIndex()"
-      [pageSizeOptions]="[25, 50, 100]"
-      (page)="onPageChange($event)"
-    />
-  </footer>
+  @if (!yyems.billsLoading()) {
+    <footer class="list-footer">
+      <div class="divider"></div>
+      <span class="count-text">
+        @if (searchQuery()) {
+          {{ visibleCount() }} of
+          {{ yyems.bills().length }} this month
+        } @else {
+          {{ yyems.bills().length }} this month
+        }
+      </span>
+    </footer>
+  }
 </div>

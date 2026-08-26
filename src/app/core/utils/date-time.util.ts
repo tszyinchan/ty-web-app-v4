@@ -16,6 +16,16 @@ export function formatDate(d: Date): string {
     .split('T')[0];
 }
 
+/** Inclusive start / exclusive end of a local calendar month, as ISO timestamptz. */
+export function localMonthUtcRange(
+  year: number,
+  monthIndex: number,
+): { from: string; to: string } {
+  const from = new Date(year, monthIndex, 1, 0, 0, 0, 0);
+  const to = new Date(year, monthIndex + 1, 1, 0, 0, 0, 0);
+  return { from: from.toISOString(), to: to.toISOString() };
+}
+
 /** Value for `<input type="datetime-local">` in the user's local timezone. */
 export function toDateTimeLocalValue(
   iso: string | null | undefined,

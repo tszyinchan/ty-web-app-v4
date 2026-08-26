@@ -12,15 +12,15 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
-import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 
 import { HeaderService } from '../../../../core/services/header.service';
 import { UserService } from '../user/user.service';
-import { toDateTimeLocalValue } from '../../../../core/utils/date-time.util';
+import { localMonthUtcRange } from '../../../../core/utils/date-time.util';
+import { YYEMS_IN_OR_OUT } from './yyems.model';
 import { YyemsService } from './yyems.service';
-import { ownershipLabel } from './yyems.util';
+import { buildBillLedger, formatYyemsAmount } from './yyems.util';
 
 @Component({
   selector: 'app-yyems-bill-list',
@@ -33,10 +33,10 @@ import { ownershipLabel } from './yyems.util';
     MatIconModule,
     MatFormFieldModule,
     MatInputModule,
-    MatPaginatorModule,
     MatProgressSpinnerModule,
   ],
   templateUrl: './yyems-bill-list.html',
+  styleUrl: './yyems-bill-list.scss',
 })
 export class YyemsBillList implements OnInit, OnDestroy {
   readonly yyems = inject(YyemsService);
@@ -45,21 +45,29 @@ export class YyemsBillList implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private users = inject(UserService);
 
+  readonly formatAmount = formatYyemsAmount;
+  readonly YYEMS_IN_OR_OUT = YYEMS_IN_OR_OUT;
   searchQuery = signal('');
-  pageSize = signal(50);
-  pageIndex = signal(0);
-  private searchTimer: ReturnType<typeof setTimeout> | null = null;
 
-  rows = computed(() => {
-    const users = this.users.users();
-    return this.yyems.bills().map((bill) => ({
-      bill,
-      vendorName: bill.vendor?.name || '—',
-      walletName: bill.wallet?.name || '—',
-      when: toDateTimeLocalValue(bill.occurred_at).replace('T', ' '),
-      owner: ownershipLabel(bill.ownership_user_id, users),
-    }));
+  monthLabel = computed(() => {
+    const { year, month } = this.yyems.billListCursor();
+    return new Date(year, month, 1).toLocaleString('en-US', {
+      month: 'short',
+      year: 'numeric',
+    });
   });
+
+  ledger = computed(() =>
+    buildBillLedger(
+      this.yyems.bills(),
+      this.users.users(),
+      this.searchQuery(),
+    ),
+  );
+
+  visibleCount = computed(() =>
+    this.ledger().days.reduce((n, day) => n + day.rows.length, 0),
+  );
 
   ngOnInit() {
     const isLoading = computed(
@@ -90,28 +98,23 @@ export class YyemsBillList implements OnInit, OnDestroy {
     void this.reload();
   }
 
-  onSearchChange() {
-    this.pageIndex.set(0);
-    if (this.searchTimer) clearTimeout(this.searchTimer);
-    this.searchTimer = setTimeout(() => void this.reload(), 300);
-  }
-
-  onPageChange(event: PageEvent) {
-    this.pageIndex.set(event.pageIndex);
-    this.pageSize.set(event.pageSize);
+  shiftMonth(delta: number) {
+    const { year, month } = this.yyems.billListCursor();
+    const next = new Date(year, month + delta, 1);
+    this.yyems.billListCursor.set({
+      year: next.getFullYear(),
+      month: next.getMonth(),
+    });
     void this.reload();
   }
 
   private reload() {
-    return this.yyems.fetchBills(
-      this.pageIndex(),
-      this.pageSize(),
-      this.searchQuery(),
-    );
+    const { year, month } = this.yyems.billListCursor();
+    const range = localMonthUtcRange(year, month);
+    return this.yyems.fetchBills(range.from, range.to);
   }
 
   ngOnDestroy() {
-    if (this.searchTimer) clearTimeout(this.searchTimer);
     this.header.clear();
   }
 }

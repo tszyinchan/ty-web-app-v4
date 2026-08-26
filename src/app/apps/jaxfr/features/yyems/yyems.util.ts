@@ -1,14 +1,19 @@
 import { TyappUser } from '../../../../core/models/user.model';
+import { toDateTimeLocalValue } from '../../../../core/utils/date-time.util';
 import {
   YYEMS_EATEN_OTHER,
+  YYEMS_IN_OR_OUT,
   YYEMS_MEAL,
   YYEMS_OWNERSHIP_SHARED,
+  YyemsBillEmbed,
   YyemsEat,
   YyemsEatAmount,
   YyemsEatenOther,
   YyemsFridgeRow,
+  YyemsInOrOut,
   YyemsItem,
   YyemsMeal,
+  YyemsVendorEmbed,
 } from './yyems.model';
 
 export function itemLabel(item: YyemsItem | null | undefined): string {
@@ -117,4 +122,203 @@ export function eatenByKey(
   if (eaten_by_other) return eaten_by_other;
   if (eaten_by_user_id) return eaten_by_user_id;
   return YYEMS_EATEN_OTHER.Shared;
+}
+
+const WEEKDAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
+
+export interface YyemsMoneyPart {
+  currency: string;
+  amount: number;
+}
+
+export interface YyemsBillLedgerRow {
+  bill: YyemsBillEmbed;
+  categoryTop: string;
+  categoryBottom: string;
+  title: string;
+  subtitle: string;
+  amountClass: YyemsInOrOut;
+  amountLabel: string;
+}
+
+export interface YyemsBillDayGroup {
+  dateKey: string;
+  day: number;
+  weekday: string;
+  inLabel: string;
+  outLabel: string;
+  rows: YyemsBillLedgerRow[];
+}
+
+export interface YyemsBillLedger {
+  days: YyemsBillDayGroup[];
+  monthIn: YyemsMoneyPart[];
+  monthOut: YyemsMoneyPart[];
+  monthNet: YyemsMoneyPart[];
+}
+
+export function formatYyemsAmount(currency: string, amount: number): string {
+  const n = Number(amount);
+  const abs = Math.abs(n).toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  const signed = n < 0 ? `-${abs}` : abs;
+  return `${currency} ${signed}`;
+}
+
+export function compactMoneyLabel(parts: readonly YyemsMoneyPart[]): string {
+  if (parts.length === 0) return '0.00';
+  return parts.map((p) => formatYyemsAmount(p.currency, p.amount)).join(' · ');
+}
+
+function vendorCategoryLines(vendor: YyemsVendorEmbed | null): {
+  top: string;
+  bottom: string;
+} {
+  const raw = vendor?.category as
+    | YyemsVendorEmbed['category']
+    | YyemsVendorEmbed['category'][]
+    | null;
+  const cat = Array.isArray(raw) ? (raw[0] ?? null) : raw;
+  if (cat) {
+    const top = cat.level1 || cat.display_name || vendor?.name || '—';
+    const bottom = cat.level2 || cat.level3 || vendor?.name_short || '';
+    return { top, bottom: bottom === top ? '' : bottom };
+  }
+  return {
+    top: vendor?.name || '—',
+    bottom: vendor?.name_short || '',
+  };
+}
+
+function addMoney(
+  map: Record<string, number>,
+  currency: string,
+  amount: number,
+): void {
+  map[currency] = (map[currency] ?? 0) + Number(amount);
+}
+
+function moneyParts(map: Record<string, number>): YyemsMoneyPart[] {
+  return Object.keys(map)
+    .sort()
+    .map((currency) => ({ currency, amount: map[currency] }));
+}
+
+function netParts(
+  inMap: Record<string, number>,
+  outMap: Record<string, number>,
+): YyemsMoneyPart[] {
+  const keys = new Set([...Object.keys(inMap), ...Object.keys(outMap)]);
+  return [...keys]
+    .sort()
+    .map((currency) => ({
+      currency,
+      amount: (inMap[currency] ?? 0) - (outMap[currency] ?? 0),
+    }));
+}
+
+function billHaystack(bill: YyemsBillEmbed, owner: string): string {
+  const cat = bill.vendor?.category;
+  return [
+    bill.vendor?.name,
+    bill.vendor?.name_short,
+    cat?.display_name,
+    cat?.level1,
+    cat?.level2,
+    cat?.level3,
+    bill.wallet?.name,
+    bill.remark,
+    bill.description,
+    bill.currency,
+    owner,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+}
+
+export function buildBillLedger(
+  bills: readonly YyemsBillEmbed[],
+  users: readonly TyappUser[],
+  search: string,
+): YyemsBillLedger {
+  const monthIn: Record<string, number> = {};
+  const monthOut: Record<string, number> = {};
+  for (const bill of bills) {
+    if (bill.in_or_out === YYEMS_IN_OR_OUT.In) {
+      addMoney(monthIn, bill.currency, bill.amount);
+    } else if (bill.in_or_out === YYEMS_IN_OR_OUT.Out) {
+      addMoney(monthOut, bill.currency, bill.amount);
+    }
+  }
+
+  const needle = search.trim().toLowerCase();
+  const visible = needle
+    ? bills.filter((bill) =>
+        billHaystack(
+          bill,
+          ownershipLabel(bill.ownership_user_id, users),
+        ).includes(needle),
+      )
+    : bills;
+
+  const byDay = new Map<string, YyemsBillLedgerRow[]>();
+  for (const bill of visible) {
+    const local = toDateTimeLocalValue(bill.occurred_at);
+    const dateKey = local.slice(0, 10);
+    if (!dateKey) continue;
+    const cat = vendorCategoryLines(bill.vendor);
+    const owner = ownershipLabel(bill.ownership_user_id, users);
+    const wallet = bill.wallet?.name || '—';
+    const row: YyemsBillLedgerRow = {
+      bill,
+      categoryTop: cat.top,
+      categoryBottom: cat.bottom,
+      title: bill.remark?.trim() || bill.vendor?.name || '—',
+      subtitle: `${owner} · ${wallet}`,
+      amountClass: bill.in_or_out,
+      amountLabel: formatYyemsAmount(bill.currency, bill.amount),
+    };
+    const list = byDay.get(dateKey);
+    if (list) list.push(row);
+    else byDay.set(dateKey, [row]);
+  }
+
+  const days = [...byDay.keys()]
+    .sort((a, b) => (a < b ? 1 : a > b ? -1 : 0))
+    .map((dateKey) => {
+      const rows = byDay.get(dateKey) ?? [];
+      const dayIn: Record<string, number> = {};
+      const dayOut: Record<string, number> = {};
+      for (const row of rows) {
+        if (row.bill.in_or_out === YYEMS_IN_OR_OUT.In) {
+          addMoney(dayIn, row.bill.currency, row.bill.amount);
+        } else if (row.bill.in_or_out === YYEMS_IN_OR_OUT.Out) {
+          addMoney(dayOut, row.bill.currency, row.bill.amount);
+        }
+      }
+      const parsed = dateKey.split('-');
+      const localDate = new Date(
+        Number(parsed[0]),
+        Number(parsed[1]) - 1,
+        Number(parsed[2]),
+      );
+      return {
+        dateKey,
+        day: localDate.getDate(),
+        weekday: WEEKDAY_SHORT[localDate.getDay()] ?? '',
+        inLabel: compactMoneyLabel(moneyParts(dayIn)),
+        outLabel: compactMoneyLabel(moneyParts(dayOut)),
+        rows,
+      };
+    });
+
+  return {
+    days,
+    monthIn: moneyParts(monthIn),
+    monthOut: moneyParts(monthOut),
+    monthNet: netParts(monthIn, monthOut),
+  };
 }

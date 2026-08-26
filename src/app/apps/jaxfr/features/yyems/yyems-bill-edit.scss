@@ -1,5 +1,126 @@
-.mb-16 {
-  margin-bottom: 16px;
+.ledger-edit.split-workspace {
+  padding: 16px;
+  max-width: 720px;
+}
+
+.kind-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.kind-toggle button {
+  font: var(--app-weight-emphasis) 14px var(--app-font);
+  color: var(--app-text-secondary);
+  background: var(--app-input-bg);
+  border: 1px solid var(--app-input-border);
+  border-radius: var(--app-radius);
+  padding: 10px 8px;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--app-tile-hover-bg);
+  }
+
+  &.active.kind-in {
+    color: var(--app-link);
+    border-color: var(--app-link);
+  }
+
+  &.active.kind-out {
+    color: var(--app-danger);
+    border-color: var(--app-danger);
+  }
+
+  &.active.kind-free {
+    color: var(--app-text-muted);
+    border-color: var(--app-text-muted);
+  }
+}
+
+.ledger-row,
+.ledger-note {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  min-height: 48px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--app-border-subtle);
+}
+
+.ledger-note {
+  align-items: start;
+  padding-top: 12px;
+}
+
+.ledger-label {
+  font-size: 13px;
+  color: var(--app-text-muted);
+}
+
+.ledger-control {
+  width: 100%;
+  min-width: 0;
+  font: 14px var(--app-font);
+  color: var(--app-text-primary);
+  background: transparent;
+  border: 0;
+  text-align: right;
+  padding: 6px 0;
+}
+
+select.ledger-control {
+  cursor: pointer;
+}
+
+.ledger-textarea {
+  text-align: left;
+  resize: vertical;
+  min-height: 4.5rem;
+  line-height: 1.4;
+}
+
+.ledger-date {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.ledger-tz {
+  width: 4.5rem;
+}
+
+.ledger-amount-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.ledger-amount-line {
+  display: grid;
+  grid-template-columns: 4.5rem minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+}
+
+.ledger-wallet-cur {
+  font-size: 12px;
+  color: var(--app-text-muted);
+  text-align: right;
+}
+
+.ledger-number {
+  font-variant-numeric: tabular-nums;
+}
+
+.ledger-fx {
+  font-size: 11px;
+  color: var(--app-text-muted);
+  text-align: right;
 }
 
 .home-empty {

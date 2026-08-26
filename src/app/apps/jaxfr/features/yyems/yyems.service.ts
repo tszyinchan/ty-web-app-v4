@@ -28,7 +28,7 @@ const BUY_EMBED =
   '*, price:tyapp_yyems_price(*, item:tyapp_yyems_item(*), vendor:tyapp_yyems_vendor(*))';
 
 const BILL_EMBED =
-  '*, vendor:tyapp_yyems_vendor(*), wallet:tyapp_yyems_wallet(*)';
+  '*, vendor:tyapp_yyems_vendor(*, category:tyapp_yyems_vendor_category!category_id(display_name, level1, level2, level3)), wallet:tyapp_yyems_wallet(*)';
 
 const EAT_EMBED = `*, buy:tyapp_yyems_buy(${BUY_EMBED})`;
 const EAT_HOME_EMBED =
@@ -65,7 +65,10 @@ export class YyemsService {
 
   fridgeRows = signal<YyemsFridgeRow[]>([]);
   bills = signal<YyemsBillEmbed[]>([]);
-  billTotal = signal(0);
+  billListCursor = signal({
+    year: new Date().getFullYear(),
+    month: new Date().getMonth(),
+  });
 
   private dictsLoaded = false;
   private fridgeLoaded = false;
@@ -271,28 +274,20 @@ export class YyemsService {
     };
   }
 
-  async fetchBills(page = 0, pageSize = 50, search = ''): Promise<void> {
+  async fetchBills(fromIso: string, toIsoExclusive: string): Promise<void> {
     this.billsLoading.set(true);
     try {
-      const from = page * pageSize;
-      const to = from + pageSize - 1;
-      const safe = search.trim().replace(/[%*,()]/g, ' ').slice(0, 80);
-      let query = this.supabase
+      const { data, error } = await this.supabase
         .from('tyapp_yyems')
-        .select(BILL_EMBED, { count: 'exact' })
+        .select(BILL_EMBED)
         .is('deleted_at', null)
+        .gte('occurred_at', fromIso)
+        .lt('occurred_at', toIsoExclusive)
         .order('occurred_at', { ascending: false })
-        .range(from, to);
-      if (safe) {
-        query = query.or(
-          `remark.ilike.%${safe}%,description.ilike.%${safe}%`,
-        );
-      }
-      const { data, error, count } = await query;
+        .limit(2000);
       if (error) throw error;
       this.zone.run(() => {
         this.bills.set((data as YyemsBillEmbed[]) ?? []);
-        this.billTotal.set(count ?? 0);
         this.billsLoading.set(false);
       });
     } catch (error: unknown) {

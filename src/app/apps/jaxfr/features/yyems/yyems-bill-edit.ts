@@ -12,10 +12,7 @@ import {
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
-import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
-import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 
 import { RecordStatus } from '../../../../core/models/status.enum';
@@ -30,6 +27,7 @@ import {
   toDateTimeLocalValue,
 } from '../../../../core/utils/date-time.util';
 import {
+  YYEMS_IN_OR_OUT,
   YYEMS_OWNERSHIP_SHARED,
   YyemsBill,
   YyemsBuyEmbed,
@@ -64,9 +62,6 @@ interface BillForm {
     CommonModule,
     FormsModule,
     RouterModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatSelectModule,
     MatButtonModule,
     MatIconModule,
     MatCheckboxModule,
@@ -82,8 +77,8 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
   readonly yyems = inject(YyemsService);
   readonly users = inject(UserService);
 
-  readonly RecordStatus = RecordStatus;
   readonly YYEMS_OWNERSHIP_SHARED = YYEMS_OWNERSHIP_SHARED;
+  readonly YYEMS_IN_OR_OUT = YYEMS_IN_OR_OUT;
   readonly itemLabel = itemLabel;
 
   currentId: string | null = null;
@@ -152,7 +147,7 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
       this.item.set({
         occurred_local: local,
         location_tz: 'TO',
-        in_or_out: 'out',
+        in_or_out: YYEMS_IN_OR_OUT.Out,
         vendor_id: '',
         currency: 'CAD',
         amount: null,
@@ -265,6 +260,35 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
     void this.router.navigate(['/yyems/buys/new'], {
       queryParams: { billId: this.currentId },
     });
+  }
+
+  setFlow(bill: BillForm, flow: YyemsInOrOut) {
+    bill.in_or_out = flow;
+  }
+
+  walletCurrency(bill: BillForm): string {
+    const wallet = this.yyems
+      .wallets()
+      .find((row) => row.tb_tyapp_ywl_id === bill.wallet_id);
+    if (!wallet) return '';
+    const account = this.yyems
+      .financialAccounts()
+      .find((row) => row.tb_tyapp_yfa_id === wallet.financial_account_id);
+    return account?.currency ?? '';
+  }
+
+  fxRateLabel(bill: BillForm): string {
+    if (
+      bill.wallet_amount == null ||
+      bill.amount == null ||
+      bill.amount === 0
+    ) {
+      return '';
+    }
+    const rate = bill.wallet_amount / bill.amount;
+    return `Exchange rate: ${rate.toLocaleString('en-US', {
+      maximumFractionDigits: 4,
+    })}`;
   }
 
   ngOnDestroy() {
