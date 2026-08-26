@@ -1,0 +1,51 @@
+<div class="standard-list-view">
+  <div class="list-search-container">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="list-search-input">
+      <mat-icon matPrefix>search</mat-icon>
+      <mat-label>Search remark or description…</mat-label>
+      <input matInput [(ngModel)]="searchQuery" (ngModelChange)="onSearchChange()" />
+      @if (searchQuery()) {
+        <button mat-icon-button matSuffix (click)="searchQuery.set(''); onSearchChange()">
+          <mat-icon>close</mat-icon>
+        </button>
+      }
+    </mat-form-field>
+  </div>
+
+  <div class="list-container">
+    @if (yyems.billsLoading()) {
+      <div class="list-loading">
+        <mat-spinner diameter="36"></mat-spinner>
+        <span>Loading bills…</span>
+      </div>
+    } @else {
+      @for (row of rows(); track row.bill.tb_tyapp_yym_id) {
+        <a class="item-link" [routerLink]="['../edit', row.bill.tb_tyapp_yym_id]">
+          <div class="item-content">
+            <div class="item-info-group">
+              <span class="main-text">{{ row.vendorName }}</span>
+              <span class="sub-text"
+                >{{ row.when }} · {{ row.bill.currency }}
+                {{ row.bill.amount }} · {{ row.owner }} · {{ row.walletName }}</span
+              >
+            </div>
+            <mat-icon class="chevron">chevron_right</mat-icon>
+          </div>
+        </a>
+      } @empty {
+        <div class="empty-placeholder">No bills found.</div>
+      }
+    }
+  </div>
+
+  <footer class="list-footer paginated">
+    <div class="divider"></div>
+    <mat-paginator
+      [length]="yyems.billTotal()"
+      [pageSize]="pageSize()"
+      [pageIndex]="pageIndex()"
+      [pageSizeOptions]="[25, 50, 100]"
+      (page)="onPageChange($event)"
+    />
+  </footer>
+</div>

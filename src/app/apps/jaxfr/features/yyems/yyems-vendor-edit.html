@@ -1,0 +1,27 @@
+<div class="split-workspace">
+  @if (item(); as v) {
+    <div class="form-scroll-area">
+      <section class="form-group">
+        <h3 class="group-header">Vendor</h3>
+        <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
+          <mat-label>Category</mat-label>
+          <mat-select [(ngModel)]="v.category_id" required>
+            @for (c of yyems.vendorCategories(); track c.tb_tyapp_yvc_id) {
+              <mat-option [value]="c.tb_tyapp_yvc_id">{{ c.display_name }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+        <div class="fields-grid-2 mt-16">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Name</mat-label>
+            <input matInput [(ngModel)]="v.name" required />
+          </mat-form-field>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Short name</mat-label>
+            <input matInput [(ngModel)]="v.name_short" />
+          </mat-form-field>
+        </div>
+      </section>
+    </div>
+  }
+</div>

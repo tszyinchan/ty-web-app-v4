@@ -1,0 +1,27 @@
+<div class="split-workspace">
+  @if (item(); as w) {
+    <div class="form-scroll-area">
+      <section class="form-group">
+        <h3 class="group-header">Wallet</h3>
+        <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
+          <mat-label>Financial account</mat-label>
+          <mat-select [(ngModel)]="w.financial_account_id" required>
+            @for (fa of yyems.financialAccounts(); track fa.tb_tyapp_yfa_id) {
+              <mat-option [value]="fa.tb_tyapp_yfa_id"
+                >{{ fa.display_name }} ({{ fa.currency }})</mat-option
+              >
+            }
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="full-width mt-16" subscriptSizing="dynamic">
+          <mat-label>Name</mat-label>
+          <input matInput [(ngModel)]="w.name" required />
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="full-width mt-16" subscriptSizing="dynamic">
+          <mat-label>Remarks</mat-label>
+          <textarea matInput rows="2" [(ngModel)]="w.remarks"></textarea>
+        </mat-form-field>
+      </section>
+    </div>
+  }
+</div>

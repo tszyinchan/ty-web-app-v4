@@ -1,0 +1,132 @@
+<div class="split-workspace">
+  @if (item(); as bill) {
+    <div class="form-scroll-area">
+      <section class="form-group">
+        <h3 class="group-header">Bill</h3>
+        <div class="fields-grid-2">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>When</mat-label>
+            <input matInput type="datetime-local" [(ngModel)]="bill.occurred_local" required />
+          </mat-form-field>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Timezone</mat-label>
+            <mat-select [(ngModel)]="bill.location_tz">
+              <mat-option value="TO">TO</mat-option>
+              <mat-option value="HK">HK</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+        <div class="fields-grid-2 mt-16">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Vendor</mat-label>
+            <mat-select [(ngModel)]="bill.vendor_id" required>
+              @for (v of yyems.vendors(); track v.tb_tyapp_yvd_id) {
+                <mat-option [value]="v.tb_tyapp_yvd_id">{{ v.name }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Wallet</mat-label>
+            <mat-select [(ngModel)]="bill.wallet_id" required>
+              @for (w of yyems.wallets(); track w.tb_tyapp_ywl_id) {
+                <mat-option [value]="w.tb_tyapp_ywl_id">{{ w.name }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        </div>
+        <div class="fields-grid-2 mt-16">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>In / out</mat-label>
+            <mat-select [(ngModel)]="bill.in_or_out">
+              <mat-option value="out">Out</mat-option>
+              <mat-option value="in">In</mat-option>
+              <mat-option value="free">Free</mat-option>
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Ownership</mat-label>
+            <mat-select [(ngModel)]="bill.ownership_key">
+              <mat-option [value]="YYEMS_OWNERSHIP_SHARED">Shared 50/50</mat-option>
+              @for (u of householdUsers(); track u.user_id) {
+                <mat-option [value]="u.user_id">
+                  {{ u.preferred_first_name || u.legal_first_name }}
+                </mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        </div>
+        <div class="fields-grid-2 mt-16">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Currency</mat-label>
+            <mat-select [(ngModel)]="bill.currency">
+              @for (c of yyems.currencies(); track c.code) {
+                <mat-option [value]="c.code">{{ c.code }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Amount</mat-label>
+            <input matInput type="number" [(ngModel)]="bill.amount" required />
+          </mat-form-field>
+        </div>
+        <div class="fields-grid-2 mt-16">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Wallet amount (if FX)</mat-label>
+            <input matInput type="number" [(ngModel)]="bill.wallet_amount" />
+          </mat-form-field>
+          <div class="mt-16">
+            <mat-checkbox [(ngModel)]="bill.reconciled">Reconciled</mat-checkbox>
+          </div>
+        </div>
+        <mat-form-field appearance="outline" class="full-width mt-16" subscriptSizing="dynamic">
+          <mat-label>Remark</mat-label>
+          <input matInput [(ngModel)]="bill.remark" />
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="full-width mt-16" subscriptSizing="dynamic">
+          <mat-label>Description</mat-label>
+          <textarea matInput rows="2" [(ngModel)]="bill.description"></textarea>
+        </mat-form-field>
+        <div class="fields-grid-2 mt-16">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Period start</mat-label>
+            <input matInput type="date" [(ngModel)]="bill.period_start" />
+          </mat-form-field>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Period end</mat-label>
+            <input matInput type="date" [(ngModel)]="bill.period_end" />
+          </mat-form-field>
+        </div>
+      </section>
+
+      <section class="form-group">
+        <h3 class="group-header">Buys on this bill</h3>
+        @if (!currentId) {
+          <p class="home-empty">Save the bill first, then add grocery lines.</p>
+        } @else {
+          <button mat-stroked-button type="button" class="mb-16" (click)="addBuy()">
+            <mat-icon>add</mat-icon>
+            Add buy
+          </button>
+          @for (buy of buys(); track buy.tb_tyapp_yby_id) {
+            <a class="item-link" [routerLink]="['/yyems/buys/edit', buy.tb_tyapp_yby_id]">
+              <div class="item-content">
+                <div class="item-info-group">
+                  <span class="main-text">{{ itemLabel(buy.price?.item) }}</span>
+                  <span class="sub-text"
+                    >{{ buy.home_amount }} {{ buy.home_unit || '' }}
+                    @if (buy.paid !== null) {
+                      · paid {{ buy.paid }}
+                    }
+                  </span>
+                </div>
+                <mat-icon class="chevron">chevron_right</mat-icon>
+              </div>
+            </a>
+          } @empty {
+            <p class="home-empty">No grocery lines yet.</p>
+          }
+        }
+      </section>
+    </div>
+  }
+</div>

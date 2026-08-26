@@ -1,0 +1,118 @@
+<div class="split-workspace">
+  @if (item(); as buy) {
+    <div class="form-scroll-area">
+      <section class="form-group">
+        <h3 class="group-header">Item</h3>
+        <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
+          <mat-label>Filter items</mat-label>
+          <input matInput [(ngModel)]="itemFilter" placeholder="Type to search…" />
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="full-width mt-16" subscriptSizing="dynamic">
+          <mat-label>Item</mat-label>
+          <mat-select
+            [(ngModel)]="buy.item_id"
+            (ngModelChange)="onItemChange($event)"
+            required
+          >
+            @for (it of filteredItems(); track it.tb_tyapp_yit_id) {
+              <mat-option [value]="it.tb_tyapp_yit_id">{{ itemLabel(it) }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </section>
+
+      <section class="form-group">
+        <h3 class="group-header">Price</h3>
+        <mat-radio-group [(ngModel)]="buy.use_new_price">
+          <mat-radio-button [value]="false">Reuse a recent price</mat-radio-button>
+          <mat-radio-button [value]="true">New price</mat-radio-button>
+        </mat-radio-group>
+
+        @if (!buy.use_new_price) {
+          <mat-form-field appearance="outline" class="full-width mt-16" subscriptSizing="dynamic">
+            <mat-label>Price log</mat-label>
+            <mat-select [(ngModel)]="buy.price_id">
+              @for (p of prices(); track p.tb_tyapp_ypr_id) {
+                <mat-option [value]="p.tb_tyapp_ypr_id">{{ priceCaption(p) }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        } @else {
+          <div class="fields-grid-2 mt-16">
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-label>Vendor</mat-label>
+              <mat-select [(ngModel)]="buy.vendor_id">
+                <mat-option value="">—</mat-option>
+                @for (v of yyems.vendors(); track v.tb_tyapp_yvd_id) {
+                  <mat-option [value]="v.tb_tyapp_yvd_id">{{ v.name }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-label>Currency</mat-label>
+              <mat-select [(ngModel)]="buy.currency">
+                @for (c of yyems.currencies(); track c.code) {
+                  <mat-option [value]="c.code">{{ c.code }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          </div>
+          <div class="fields-grid-2 mt-16">
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-label>Packed price</mat-label>
+              <input matInput type="number" [(ngModel)]="buy.packed_price" />
+            </mat-form-field>
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-label>Packed amount</mat-label>
+              <input matInput type="number" [(ngModel)]="buy.packed_amount" />
+            </mat-form-field>
+          </div>
+          <div class="fields-grid-2 mt-16">
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-label>Packed unit</mat-label>
+              <input matInput [(ngModel)]="buy.packed_unit" />
+            </mat-form-field>
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-label>Barcode</mat-label>
+              <input matInput [(ngModel)]="buy.barcode" />
+            </mat-form-field>
+          </div>
+        }
+      </section>
+
+      <section class="form-group">
+        <h3 class="group-header">This purchase</h3>
+        <div class="fields-grid-2">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Paid (override)</mat-label>
+            <input matInput type="number" [(ngModel)]="buy.paid" />
+          </mat-form-field>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Home amount</mat-label>
+            <input matInput type="number" [(ngModel)]="buy.home_amount" required />
+          </mat-form-field>
+        </div>
+        <div class="fields-grid-2 mt-16">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Home unit</mat-label>
+            <input matInput [(ngModel)]="buy.home_unit" />
+          </mat-form-field>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Expiry</mat-label>
+            <input matInput type="date" [(ngModel)]="buy.expiry_date" />
+          </mat-form-field>
+        </div>
+        <div class="fields-grid-2 mt-16">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Eat priority (lower = sooner)</mat-label>
+            <input matInput type="number" [(ngModel)]="buy.eat_priority" />
+          </mat-form-field>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Remarks</mat-label>
+            <input matInput [(ngModel)]="buy.remarks" />
+          </mat-form-field>
+        </div>
+      </section>
+    </div>
+  }
+</div>

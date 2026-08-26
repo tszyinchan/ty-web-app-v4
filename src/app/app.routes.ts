@@ -149,6 +149,15 @@ const JAXFR_ROUTES: Routes = [
         ],
       },
       {
+        path: 'yyems',
+        canActivate: [featureAccessGuard],
+        data: { featureName: 'YYEMS' },
+        loadChildren: () =>
+          import('./apps/jaxfr/features/yyems/yyems.routes').then(
+            (m) => m.YYEMS_ROUTES,
+          ),
+      },
+      {
         path: 'fit',
         canActivate: [featureAccessGuard],
         data: { featureName: 'Fit' },

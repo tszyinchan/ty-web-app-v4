@@ -48,7 +48,7 @@
                   <article
                     class="cp-item"
                     [class.solo]="!item.links.length"
-                    [attr.aria-label]="item.name"
+                    [attr.aria-label]="tileLabel(item.name)"
                   >
                     <span
                       class="cp-icon"
@@ -64,8 +64,8 @@
                       <a
                         class="cp-title"
                         [routerLink]="item.route"
-                        [title]="item.name"
-                      >{{ item.name }}</a>
+                        [title]="tileLabel(item.name)"
+                      >{{ tileLabel(item.name) }}</a>
                       @if (launcherMode() === 'detailed' && item.links.length) {
                         <div class="cp-links">
                           @for (link of item.links; track link.route; let last = $last) {

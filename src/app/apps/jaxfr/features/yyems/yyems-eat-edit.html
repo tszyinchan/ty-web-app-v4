@@ -1,0 +1,47 @@
+<div class="split-workspace">
+  @if (item(); as eat) {
+    <div class="form-scroll-area">
+      <section class="form-group">
+        <h3 class="group-header">{{ buyLabel() }}</h3>
+        <p class="group-note">Remaining available: {{ remaining() }}</p>
+        <div class="fields-grid-2 mt-16">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Amount</mat-label>
+            <input matInput type="number" [(ngModel)]="eat.home_amount" required />
+          </mat-form-field>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Meal</mat-label>
+            <mat-select [(ngModel)]="eat.meal">
+              @for (m of meals; track m) {
+                <mat-option [value]="m">{{ m }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        </div>
+        <div class="fields-grid-2 mt-16">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Date</mat-label>
+            <input matInput type="date" [(ngModel)]="eat.eat_date" required />
+          </mat-form-field>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Eaten by</mat-label>
+            <mat-select [(ngModel)]="eat.eaten_by_key">
+              @for (u of householdUsers(); track u.user_id) {
+                <mat-option [value]="u.user_id">
+                  {{ u.preferred_first_name || u.legal_first_name }}
+                </mat-option>
+              }
+              <mat-option [value]="YYEMS_EATEN_OTHER.Shared">Shared</mat-option>
+              <mat-option [value]="YYEMS_EATEN_OTHER.DiningOut">Dining out</mat-option>
+              <mat-option [value]="YYEMS_EATEN_OTHER.Nil">None</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+        <mat-form-field appearance="outline" class="full-width mt-16" subscriptSizing="dynamic">
+          <mat-label>Note</mat-label>
+          <input matInput [(ngModel)]="eat.description" />
+        </mat-form-field>
+      </section>
+    </div>
+  }
+</div>

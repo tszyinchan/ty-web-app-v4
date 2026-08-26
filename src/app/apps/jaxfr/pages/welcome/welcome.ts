@@ -46,6 +46,11 @@ const CATEGORY_IMAGES: Record<string, string> = {
   Settings: '/icons/3d/settings.png',
   User: '/icons/3d/user.png',
   Development: '/icons/3d/development.png',
+  YYEMS: '/icons/3d/payments.png',
+};
+
+const CATEGORY_LABELS: Record<string, string> = {
+  YYEMS: '525',
 };
 
 const ARCHIVE_IMAGES: Record<string, string> = {
@@ -67,12 +72,14 @@ const TILE_TONES: Record<string, string> = {
   Settings: 'slate',
   User: 'orange',
   Development: 'red',
+  YYEMS: 'gold',
 };
 
 const HUB_ROUTES: Record<string, string> = {
   Work: '/work',
   Development: '/development',
   User: '/users',
+  YYEMS: '/yyems',
 };
 
 const FALLBACK_TILES: { name: string; icon: string; route: string }[] = [
@@ -85,6 +92,7 @@ const FALLBACK_TILES: { name: string; icon: string; route: string }[] = [
   { name: 'Settings', icon: 'settings', route: '/settings' },
   { name: 'User', icon: 'people_outline', route: '/users' },
   { name: 'Development', icon: 'code', route: '/development' },
+  { name: 'YYEMS', icon: 'kitchen', route: '/yyems' },
 ];
 
 const LAST_ORDER = Number.MAX_SAFE_INTEGER;
@@ -95,6 +103,7 @@ const CATEGORY_LINKS: Record<string, FeatureHubLink[]> = {
   Work: hubLinks('work'),
   Development: hubLinks('development'),
   User: hubLinks('user'),
+  YYEMS: hubLinks('yyems'),
   Article: [
     { title: 'Feed', icon: 'dynamic_feed', route: '/article/feed' },
     { title: 'List', icon: 'list', route: '/article/list' },
@@ -281,6 +290,10 @@ export class Welcome implements OnInit, OnDestroy {
 
   tileTone(name: string): string {
     return TILE_TONES[name] ?? 'blue';
+  }
+
+  tileLabel(name: string): string {
+    return CATEGORY_LABELS[name] ?? name;
   }
 
   async onSignOut() {

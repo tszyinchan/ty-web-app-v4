@@ -1,0 +1,53 @@
+<div class="standard-list-view yyems-home">
+  <div class="home-date-bar">
+    <button mat-icon-button type="button" (click)="shift(-1)" aria-label="Previous day">
+      <mat-icon>chevron_left</mat-icon>
+    </button>
+    <input
+      class="home-date-input"
+      type="date"
+      [ngModel]="viewDate()"
+      (ngModelChange)="goDate($event)"
+    />
+    <button mat-icon-button type="button" (click)="shift(1)" aria-label="Next day">
+      <mat-icon>chevron_right</mat-icon>
+    </button>
+  </div>
+
+  @if (yyems.homeLoading()) {
+    <div class="list-loading">
+      <mat-spinner diameter="36"></mat-spinner>
+      <span>Loading this day…</span>
+    </div>
+  } @else {
+    @for (group of grouped(); track group.meal) {
+      <section class="home-meal">
+        <div class="home-meal-header">
+          <h3>{{ group.title }}</h3>
+          <button mat-stroked-button type="button" (click)="addEat(group.meal)">
+            Add
+          </button>
+        </div>
+        @for (row of group.items; track row.eat.tb_tyapp_yet_id) {
+          <a
+            class="item-link"
+            [routerLink]="['/yyems/eats/edit', row.eat.tb_tyapp_yet_id]"
+          >
+            <div class="item-content">
+              <div class="item-info-group">
+                <span class="main-text">{{ row.label }}</span>
+                <span class="sub-text"
+                  >{{ row.eat.home_amount }}
+                  {{ row.eat.buy?.home_unit || '' }} · {{ row.who }}</span
+                >
+              </div>
+              <mat-icon class="chevron">chevron_right</mat-icon>
+            </div>
+          </a>
+        } @empty {
+          <p class="home-empty">No entries</p>
+        }
+      </section>
+    }
+  }
+</div>

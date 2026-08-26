@@ -1,0 +1,21 @@
+<div class="standard-list-view">
+  <div class="list-container">
+    @for (row of rows(); track row.wallet.tb_tyapp_ywl_id) {
+      <a class="item-link" [routerLink]="['../edit', row.wallet.tb_tyapp_ywl_id]">
+        <div class="item-content">
+          <div class="item-info-group">
+            <span class="main-text">{{ row.wallet.name }}</span>
+            <span class="sub-text"
+              >{{ row.fa?.display_name || '—' }} · {{ row.fa?.currency }}</span
+            >
+          </div>
+          <mat-icon class="chevron">chevron_right</mat-icon>
+        </div>
+      </a>
+    } @empty {
+      @if (!yyems.dictsLoading()) {
+        <div class="empty-placeholder">No wallets.</div>
+      }
+    }
+  </div>
+</div>

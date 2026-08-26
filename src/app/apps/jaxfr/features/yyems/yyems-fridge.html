@@ -1,0 +1,57 @@
+<div class="standard-list-view">
+  <div class="list-search-container">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="list-search-input">
+      <mat-icon matPrefix>search</mat-icon>
+      <mat-label>Search remaining items…</mat-label>
+      <input matInput [(ngModel)]="searchQuery" />
+      @if (searchQuery()) {
+        <button mat-icon-button matSuffix (click)="searchQuery.set('')">
+          <mat-icon>close</mat-icon>
+        </button>
+      }
+    </mat-form-field>
+    @if (presetHint(); as hint) {
+      <p class="yyems-hint">{{ hint }}</p>
+    }
+  </div>
+
+  <div class="list-container">
+    @if (yyems.fridgeLoading()) {
+      <div class="list-loading">
+        <mat-spinner diameter="36"></mat-spinner>
+        <span>Loading fridge…</span>
+      </div>
+    } @else {
+    @for (row of filtered(); track row.buy.tb_tyapp_yby_id) {
+      <div class="fridge-row">
+        <a class="item-link" [routerLink]="['/yyems/buys/edit', row.buy.tb_tyapp_yby_id]">
+          <div class="item-content">
+            <div class="item-info-group">
+              <span class="main-text">{{ itemLabel(row.item) }}</span>
+              <span class="sub-text">
+                {{ row.remaining }} / {{ row.buy.home_amount }}
+                {{ row.buy.home_unit || '' }}
+                @if (row.vendor?.name; as vendorName) {
+                  · {{ vendorName }}
+                }
+                @if (row.buy.expiry_date) {
+                  · exp {{ row.buy.expiry_date }}
+                }
+              </span>
+            </div>
+            <mat-icon class="chevron">chevron_right</mat-icon>
+          </div>
+        </a>
+        <button mat-stroked-button type="button" (click)="goEat(row)">Eat</button>
+      </div>
+    } @empty {
+      <div class="empty-placeholder">Nothing left in the fridge.</div>
+    }
+    }
+  </div>
+
+  <footer class="list-footer" [hidden]="yyems.fridgeLoading() || filtered().length === 0">
+    <div class="divider"></div>
+    <span class="count-text">{{ filtered().length }} remaining</span>
+  </footer>
+</div>

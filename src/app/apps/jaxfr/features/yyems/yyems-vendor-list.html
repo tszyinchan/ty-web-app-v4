@@ -1,0 +1,36 @@
+<div class="standard-list-view">
+  <div class="list-search-container">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="list-search-input">
+      <mat-icon matPrefix>search</mat-icon>
+      <mat-label>Search vendors…</mat-label>
+      <input matInput [(ngModel)]="searchQuery" (ngModelChange)="onSearchChange()" />
+    </mat-form-field>
+  </div>
+  <div class="list-container">
+    @for (v of paged(); track v.tb_tyapp_yvd_id) {
+      <a class="item-link" [routerLink]="['../edit', v.tb_tyapp_yvd_id]">
+        <div class="item-content">
+          <div class="item-info-group">
+            <span class="main-text">{{ v.name }}</span>
+            <span class="sub-text">{{ v.name_short }}</span>
+          </div>
+          <mat-icon class="chevron">chevron_right</mat-icon>
+        </div>
+      </a>
+    } @empty {
+      @if (!yyems.dictsLoading()) {
+        <div class="empty-placeholder">No vendors.</div>
+      }
+    }
+  </div>
+  <footer class="list-footer paginated">
+    <div class="divider"></div>
+    <mat-paginator
+      [length]="filtered().length"
+      [pageSize]="pageSize()"
+      [pageIndex]="pageIndex()"
+      [pageSizeOptions]="[25, 50, 100]"
+      (page)="onPageChange($event)"
+    />
+  </footer>
+</div>

@@ -1,0 +1,41 @@
+<div class="standard-list-view">
+  <div class="list-search-container">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="list-search-input">
+      <mat-icon matPrefix>search</mat-icon>
+      <mat-label>Search items…</mat-label>
+      <input matInput [(ngModel)]="searchQuery" (ngModelChange)="onSearchChange()" />
+    </mat-form-field>
+  </div>
+  <div class="list-container">
+    @if (yyems.dictsLoading()) {
+      <div class="list-loading">
+        <mat-spinner diameter="36"></mat-spinner>
+        <span>Loading items…</span>
+      </div>
+    } @else {
+    @for (row of paged(); track row.item.tb_tyapp_yit_id) {
+      <a class="item-link" [routerLink]="['../edit', row.item.tb_tyapp_yit_id]">
+        <div class="item-content">
+          <div class="item-info-group">
+            <span class="main-text">{{ itemLabel(row.item) }}</span>
+            <span class="sub-text">{{ row.cat }}</span>
+          </div>
+          <mat-icon class="chevron">chevron_right</mat-icon>
+        </div>
+      </a>
+    } @empty {
+      <div class="empty-placeholder">No items.</div>
+    }
+    }
+  </div>
+  <footer class="list-footer paginated">
+    <div class="divider"></div>
+    <mat-paginator
+      [length]="filtered().length"
+      [pageSize]="pageSize()"
+      [pageIndex]="pageIndex()"
+      [pageSizeOptions]="[25, 50, 100]"
+      (page)="onPageChange($event)"
+    />
+  </footer>
+</div>

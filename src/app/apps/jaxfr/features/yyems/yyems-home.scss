@@ -1,0 +1,44 @@
+.yyems-home {
+  padding-bottom: 32px;
+}
+
+.home-date-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px;
+}
+
+.home-date-input {
+  font: 600 16px var(--app-font);
+  color: var(--app-text-primary);
+  background: transparent;
+  border: 1px solid var(--app-border-subtle);
+  border-radius: var(--app-radius);
+  padding: 8px 12px;
+}
+
+.home-meal {
+  padding: 8px 0 16px;
+
+  .home-meal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px;
+
+    h3 {
+      margin: 0;
+      font: 600 15px var(--app-font);
+      color: var(--app-text-accent);
+    }
+  }
+}
+
+.home-empty {
+  margin: 0;
+  padding: 4px 16px 12px;
+  font-size: 13px;
+  color: var(--app-text-muted);
+}

@@ -1,0 +1,38 @@
+<div class="split-workspace">
+  @if (item(); as it) {
+    <div class="form-scroll-area">
+      <section class="form-group">
+        <h3 class="group-header">Item</h3>
+        <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
+          <mat-label>Category</mat-label>
+          <mat-select [(ngModel)]="it.category_id" required>
+            @for (c of yyems.itemCategories(); track c.tb_tyapp_yic_id) {
+              <mat-option [value]="c.tb_tyapp_yic_id">{{ c.name_zh }} ({{ c.code }})</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+        <div class="fields-grid-2 mt-16">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Name (zh)</mat-label>
+            <input matInput [(ngModel)]="it.name_zh" required />
+          </mat-form-field>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Name (en)</mat-label>
+            <input matInput [(ngModel)]="it.name_en" />
+          </mat-form-field>
+        </div>
+        <mat-form-field appearance="outline" class="full-width mt-16" subscriptSizing="dynamic">
+          <mat-label>Food category</mat-label>
+          <input matInput [(ngModel)]="it.food_category" />
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="full-width mt-16" subscriptSizing="dynamic">
+          <mat-label>Description</mat-label>
+          <textarea matInput rows="2" [(ngModel)]="it.description"></textarea>
+        </mat-form-field>
+        <div class="mt-16">
+          <mat-checkbox [(ngModel)]="it.plan_buy">Plan to buy</mat-checkbox>
+        </div>
+      </section>
+    </div>
+  }
+</div>
