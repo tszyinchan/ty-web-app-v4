@@ -11,6 +11,7 @@ import {
 } from '@angular/core';
 import { resolveColorMode } from '../models/user-preference.model';
 import { UserPreferenceService } from '../../apps/jaxfr/features/settings/user-preference.service';
+import { DevHudService } from './dev-hud.service';
 
 const THEME_CLASSES = ['theme-aero', 'theme-material'] as const;
 const MODE_CLASSES = ['mode-light', 'mode-dark'] as const;
@@ -20,20 +21,26 @@ export class ThemeService {
   private document = inject(DOCUMENT);
   private zone = inject(NgZone);
   private prefs = inject(UserPreferenceService);
+  private devHud = inject(DevHudService);
   private renderer = inject(RendererFactory2).createRenderer(null, null);
 
   private osPrefersDark = signal(this.readOsPrefersDark());
 
-  readonly visualTheme = this.prefs.visualTheme;
+  readonly visualTheme = computed(
+    () => this.devHud.appearanceOverride()?.visual_theme ?? this.prefs.visualTheme(),
+  );
   readonly resolvedColorMode = computed(() =>
-    resolveColorMode(this.prefs.colorMode(), this.osPrefersDark()),
+    resolveColorMode(
+      this.devHud.appearanceOverride()?.color_mode ?? this.prefs.colorMode(),
+      this.osPrefersDark(),
+    ),
   );
 
   constructor() {
     this.listenToOsColorScheme();
 
     effect(() => {
-      const theme = this.prefs.visualTheme();
+      const theme = this.visualTheme();
       const mode = this.resolvedColorMode();
       untracked(() => this.apply(theme, mode));
     });

@@ -29,7 +29,7 @@ mat-card-content.custom-content {
 
 .article-title {
   font-size: 20px;
-  font-weight: 700;
+  font-weight: var(--app-weight-strong);
   line-height: 1.4;
   margin: 0 0 8px 0;
   color: var(--app-text-primary);

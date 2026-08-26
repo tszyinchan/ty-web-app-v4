@@ -3,6 +3,8 @@
 
 html {
   --app-font: "Segoe UI", Tahoma, sans-serif;
+  --app-weight-emphasis: 600;
+  --app-weight-strong: 700;
   --app-radius: 3px;
   --app-page-bg: #eaf4fc;
   --app-stage-bg:
@@ -118,6 +120,10 @@ html.theme-aero.mode-dark {
 
 html.theme-material {
   --app-font: Roboto, "Helvetica Neue", sans-serif;
+  // Roboto is loaded at 300/400/500. 600/700 would synthesize extra bold.
+  --app-weight-emphasis: 500;
+  --app-weight-strong: 500;
+  font-synthesis-weight: none;
   --app-radius: 12px;
   --app-page-bg: var(--mat-sys-surface);
   --app-stage-bg: var(--mat-sys-surface);

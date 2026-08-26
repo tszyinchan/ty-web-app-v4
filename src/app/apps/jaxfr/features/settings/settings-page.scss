@@ -27,7 +27,7 @@
 .pref-fieldset legend {
   padding: 0;
   margin-bottom: 10px;
-  font: 600 13px var(--app-font);
+  font: var(--app-weight-emphasis) 13px var(--app-font);
   color: var(--app-text-primary);
 }
 
@@ -69,7 +69,7 @@
 
 .pref-option-title {
   font-size: 14px;
-  font-weight: 600;
+  font-weight: var(--app-weight-emphasis);
   color: var(--app-text-primary);
 }
 

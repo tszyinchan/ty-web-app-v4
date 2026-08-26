@@ -1,0 +1,123 @@
+:host {
+  position: fixed;
+  z-index: 5000;
+  right: 12px;
+  bottom: 12px;
+  pointer-events: none;
+  font-family: var(--app-font);
+}
+
+.hud-panel {
+  pointer-events: auto;
+  width: min(280px, calc(100vw - 24px));
+  padding: 10px 12px 12px;
+  border: 1px solid var(--app-overlay-border);
+  border-radius: var(--app-radius);
+  background: var(--app-overlay-bg);
+  box-shadow: var(--app-overlay-shadow);
+  color: var(--app-text-primary);
+}
+
+.hud-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.hud-title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.hud-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--app-accent);
+  color: var(--app-accent-contrast);
+}
+
+.hud-badge.idle {
+  background: var(--app-tile-hover-bg);
+  color: var(--app-text-muted);
+}
+
+.hud-hint {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--app-text-muted);
+}
+
+.hud-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.hud-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--app-text-muted);
+}
+
+.hud-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.hud-chip,
+.hud-action {
+  margin: 0;
+  padding: 4px 8px;
+  border: 1px solid var(--app-button-border);
+  border-radius: var(--app-radius);
+  background: var(--app-button-bg);
+  box-shadow: var(--app-button-shadow);
+  color: var(--app-text-primary);
+  font: 600 11px var(--app-font);
+  text-transform: capitalize;
+  cursor: pointer;
+}
+
+.hud-chip.selected,
+.hud-action.primary:not(:disabled) {
+  border-color: var(--app-button-primary-border);
+  background: var(--app-button-primary-bg);
+  box-shadow: var(--app-button-primary-shadow);
+  color: var(--app-accent-contrast);
+}
+
+.hud-chip:hover,
+.hud-action:hover:not(:disabled) {
+  background: var(--app-button-bg-hover);
+}
+
+.hud-chip.selected:hover,
+.hud-action.primary:hover:not(:disabled) {
+  background: var(--app-button-primary-bg-hover);
+}
+
+.hud-actions {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.hud-action:disabled {
+  border-color: var(--app-button-disabled-border);
+  background: var(--app-button-disabled-bg);
+  color: var(--app-button-disabled-text);
+  cursor: default;
+}
+
+@media print {
+  :host {
+    display: none;
+  }
+}

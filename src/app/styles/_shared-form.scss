@@ -22,7 +22,7 @@
   margin-bottom: 32px;
 
   .group-header {
-    font: 600 15px var(--app-font);
+    font: var(--app-weight-emphasis) 15px var(--app-font);
     color: var(--app-text-accent);
     text-transform: none;
     letter-spacing: 0;
@@ -70,7 +70,7 @@ section > .full-width {
       font-size: 10px;
       color: var(--app-text-muted);
       margin-bottom: 24px;
-      font-weight: 600;
+      font-weight: var(--app-weight-emphasis);
       letter-spacing: 0.5px;
     }
     .p-label {

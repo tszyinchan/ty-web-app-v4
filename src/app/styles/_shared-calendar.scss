@@ -11,7 +11,7 @@
     text-align: center;
     padding: 6px 0;
     font-size: 13px;
-    font-weight: 600;
+    font-weight: var(--app-weight-emphasis);
     color: var(--app-text-muted);
   }
 }
@@ -40,7 +40,7 @@
 
       &.is-today {
         color: var(--app-accent);
-        font-weight: 700;
+        font-weight: var(--app-weight-strong);
       }
     }
   }

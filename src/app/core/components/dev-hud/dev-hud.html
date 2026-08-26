@@ -1,0 +1,63 @@
+<div class="hud-panel">
+  <div class="hud-head">
+    <span class="hud-title">Dev HUD</span>
+    @if (hud.isPreviewing()) {
+      <span class="hud-badge">preview</span>
+    } @else {
+      <span class="hud-badge idle">saved</span>
+    }
+    <span class="hud-hint">Ctrl+Alt+H</span>
+  </div>
+
+  <div class="hud-row">
+    <span class="hud-label">Theme</span>
+    <div class="hud-chips">
+      @for (theme of themes; track theme) {
+        <button
+          type="button"
+          class="hud-chip"
+          [class.selected]="hud.previewTheme() === theme"
+          (click)="onTheme(theme)"
+        >
+          {{ theme }}
+        </button>
+      }
+    </div>
+  </div>
+
+  <div class="hud-row">
+    <span class="hud-label">Mode</span>
+    <div class="hud-chips">
+      @for (mode of colorModes; track mode) {
+        <button
+          type="button"
+          class="hud-chip"
+          [class.selected]="hud.previewColorMode() === mode"
+          (click)="onColorMode(mode)"
+        >
+          {{ mode }}
+        </button>
+      }
+    </div>
+  </div>
+
+  <div class="hud-actions">
+    <button
+      type="button"
+      class="hud-action"
+      [disabled]="!hud.isPreviewing()"
+      (click)="onReset()"
+    >
+      Reset
+    </button>
+    <button
+      type="button"
+      class="hud-action primary"
+      [disabled]="!canSave() || prefs.saving()"
+      (click)="onSave()"
+    >
+      Save
+    </button>
+    <button type="button" class="hud-action" (click)="onHide()">Hide</button>
+  </div>
+</div>

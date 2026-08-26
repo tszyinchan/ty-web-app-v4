@@ -171,7 +171,7 @@ mat-toolbar.dynamic-navbar.aero {
   }
 
   .page-title {
-    font: 600 16px / 1.2 var(--app-font);
+    font: var(--app-weight-emphasis) 16px / 1.2 var(--app-font);
     color: var(--app-text-primary);
     text-shadow: var(--app-chrome-title-shadow);
   }

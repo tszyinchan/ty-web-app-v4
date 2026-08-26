@@ -48,7 +48,7 @@
 
   .main-text {
     font-size: 15px;
-    font-weight: 600;
+    font-weight: var(--app-weight-emphasis);
     color: var(--app-text-primary);
   }
 
@@ -101,7 +101,7 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  font: 600 15px var(--app-font);
+  font: var(--app-weight-emphasis) 15px var(--app-font);
   color: var(--app-text-accent);
   margin: 24px 16px 12px;
   padding: 0 0 8px;
@@ -122,7 +122,7 @@
 
   .week-header-count {
     font-size: 13px;
-    font-weight: 700;
+    font-weight: var(--app-weight-strong);
     color: var(--app-accent);
     background: var(--app-surface-raised);
     padding: 4px 8px;
