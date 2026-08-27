@@ -72,6 +72,12 @@ export const FEATURE_HUBS: Record<string, FeatureHubConfig> = {
         image: '/icons/3d/user.png',
         route: '/users/groups/list',
       },
+      {
+        title: 'Invites',
+        icon: 'mail_outline',
+        image: '/icons/3d/user.png',
+        route: '/users/invites/list',
+      },
     ],
   },
   yyems: {

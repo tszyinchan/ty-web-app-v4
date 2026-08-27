@@ -1,0 +1,55 @@
+<div class="standard-list-view">
+  <div class="list-container">
+    @for (invite of userService.invitations(); track invite.tb_tyapp_inv_id) {
+      <a class="item-link" [routerLink]="['../edit', invite.tb_tyapp_inv_id]">
+        <div class="item-content">
+          <div class="item-info-group">
+            <span class="main-text">{{ invite.code }}</span>
+            <span class="sub-text"
+              >{{ invite.uses_count }} / {{ invite.max_uses }} uses ·
+              {{ groupName(invite.group_id) }}</span
+            >
+          </div>
+
+          <div class="item-status-group">
+            <span
+              class="status-tag"
+              [class.inactive]="statusLabel(invite) !== 'Active'"
+            >
+              {{ statusLabel(invite) }}
+            </span>
+            <button
+              mat-icon-button
+              type="button"
+              (click)="onCopyCode($event, invite.code)"
+              aria-label="Copy invitation code"
+            >
+              <mat-icon>content_copy</mat-icon>
+            </button>
+            <mat-icon class="chevron">chevron_right</mat-icon>
+          </div>
+        </div>
+      </a>
+    } @empty {
+      @if (!userService.invitationsLoading()) {
+        <div class="empty-placeholder">
+          No invitation codes yet. Create one to let someone register with
+          preset app and feature access.
+        </div>
+      }
+    }
+  </div>
+
+  <footer
+    class="list-footer"
+    [hidden]="
+      userService.invitationsLoading() ||
+      userService.invitations().length === 0
+    "
+  >
+    <div class="divider"></div>
+    <span class="count-text"
+      >TOTAL {{ userService.invitations().length }} ITEMS</span
+    >
+  </footer>
+</div>

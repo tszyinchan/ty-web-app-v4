@@ -1,17 +1,17 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { Router, RouterModule } from '@angular/router';
 import { APP_CONFIG, DEFAULT_ROUTES, SUBDOMAINS } from '../../app.constants';
 import { AccessService } from '../../core/services/access.service';
 import { AppRegistryService } from '../../core/services/app-registry.service';
 import { AuthService } from '../../core/services/auth.service';
-import { Router } from '@angular/router';
 import { getCurrentSubdomain } from '../../core/utils/app-env.util';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [ReactiveFormsModule, MatSnackBarModule],
+  imports: [ReactiveFormsModule, MatSnackBarModule, RouterModule],
   templateUrl: './login.html',
   styleUrl: './login.scss',
 })

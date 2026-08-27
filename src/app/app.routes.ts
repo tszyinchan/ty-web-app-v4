@@ -15,6 +15,11 @@ const JAXFR_ROUTES: Routes = [
     loadComponent: () => import('./pages/login/login').then((m) => m.Login),
   },
   {
+    path: 'register',
+    loadComponent: () =>
+      import('./pages/register/register').then((m) => m.Register),
+  },
+  {
     path: '',
     component: Layout,
     canActivate: [authGuard, appAccessGuard],

@@ -5,3 +5,6 @@ project_id = "hqaxwodbhaohwyunbzxg"
 
 [functions.chat-push]
 verify_jwt = false
+
+[functions.register-with-invite]
+verify_jwt = false

@@ -1,4 +1,6 @@
 import { Routes } from "@angular/router";
+import { InvitationEdit } from "./invitation-edit";
+import { InvitationList } from "./invitation-list";
 import { UserEdit } from "./user-edit";
 import { UserGroupEdit } from "./user-group-edit";
 import { UserGroupList } from "./user-group-list";
@@ -46,6 +48,30 @@ export const USER_ROUTES: Routes = [
           {
             path: 'edit/:id',
             component: UserGroupEdit,
+            canDeactivate: [unsavedChangesGuard],
+          },
+        ],
+      },
+      {
+        path: 'invites',
+        children: [
+          {
+            path: '',
+            redirectTo: 'list',
+            pathMatch: 'full',
+          },
+          {
+            path: 'list',
+            component: InvitationList,
+          },
+          {
+            path: 'new',
+            component: InvitationEdit,
+            canDeactivate: [unsavedChangesGuard],
+          },
+          {
+            path: 'edit/:id',
+            component: InvitationEdit,
             canDeactivate: [unsavedChangesGuard],
           },
         ],

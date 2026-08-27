@@ -8,6 +8,7 @@ import { NotificationService } from "../../../../core/services/notification.serv
 import { SupabaseService } from "../../../../core/services/supabase.service";
 import { RecordStatus } from "../../../../core/models/status.enum";
 import { TyappUser } from "../../../../core/models/user.model";
+import { Invitation } from "./invitation.model";
 import { UserGroup, UserGroupMember } from "./user-group.model";
 
 /**
@@ -25,8 +26,10 @@ export class UserService {
   users = signal<TyappUser[]>([]);
   groups = signal<UserGroup[]>([]);
   groupMembers = signal<UserGroupMember[]>([]);
+  invitations = signal<Invitation[]>([]);
   loading = signal(false);
   groupsLoading = signal(false);
+  invitationsLoading = signal(false);
 
   /**
    * People I may pick in Chat / Filelink: union of my active groups, plus me.
@@ -48,8 +51,10 @@ export class UserService {
 
   private initialized = false;
   private groupsInitialized = false;
+  private invitationsInitialized = false;
   private fetchPromise: Promise<void> | null = null;
   private groupsFetchPromise: Promise<void> | null = null;
+  private invitationsFetchPromise: Promise<void> | null = null;
   private directoryChannel: RealtimeChannel | null = null;
   private groupsChannel: RealtimeChannel | null = null;
 
@@ -66,7 +71,9 @@ export class UserService {
           void this.unsubscribeFromGroups();
           this.groups.set([]);
           this.groupMembers.set([]);
+          this.invitations.set([]);
           this.groupsInitialized = false;
+          this.invitationsInitialized = false;
         }
       });
     });
@@ -454,6 +461,160 @@ export class UserService {
     } catch (error: unknown) {
       this.notification.handleError('Save Group Members Failed', error);
       return false;
+    }
+  }
+
+  fetchInvitations(forceRefresh = false): Promise<void> {
+    if (this.invitationsInitialized && !forceRefresh) return Promise.resolve();
+    if (this.invitationsFetchPromise) return this.invitationsFetchPromise;
+
+    this.invitationsLoading.set(true);
+
+    const request = (async () => {
+      try {
+        const { data, error } = await this.supabase
+          .from('tyapp_invitation')
+          .select('*')
+          .is('deleted_at', null)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        this.zone.run(() => {
+          this.invitations.set((data as Invitation[]) || []);
+          this.invitationsInitialized = true;
+          this.invitationsLoading.set(false);
+        });
+      } catch (error: unknown) {
+        this.notification.handleError('Fetch Invites Failed', error);
+        this.zone.run(() => this.invitationsLoading.set(false));
+      } finally {
+        this.invitationsFetchPromise = null;
+      }
+    })();
+
+    this.invitationsFetchPromise = request;
+    return request;
+  }
+
+  async saveInvitation(invite: Partial<Invitation>): Promise<Invitation | null> {
+    if (!this.authService.isSuperAdmin()) {
+      this.notification.handleError(
+        'Save Invite Failed',
+        'Only a super admin can manage invitations',
+      );
+      return null;
+    }
+
+    const createdBy = this.authService.userProfile()?.user_id;
+    if (!createdBy) {
+      this.notification.handleError('Save Invite Failed', 'Not signed in');
+      return null;
+    }
+
+    const isNew = !invite.tb_tyapp_inv_id;
+    const {
+      created_at,
+      updated_at,
+      deleted_at,
+      tb_tyapp_inv_id,
+      ...payload
+    } = invite;
+
+    const savePayload = isNew
+      ? {
+          ...payload,
+          code: payload.code?.trim() ?? '',
+          remarks: payload.remarks?.trim() || null,
+          group_id: payload.group_id || null,
+          app_ids: [...new Set((payload.app_ids ?? []).filter(Boolean))],
+          feature_ids: [...new Set((payload.feature_ids ?? []).filter(Boolean))],
+          max_uses: Math.max(1, Number(payload.max_uses) || 1),
+          created_by: createdBy,
+          uses_count: 0,
+        }
+      : {
+          status: payload.status,
+          max_uses: Math.max(1, Number(payload.max_uses) || 1),
+          expires_at: payload.expires_at ?? null,
+          remarks: payload.remarks?.trim() || null,
+          group_id: payload.group_id || null,
+          app_ids: [...new Set((payload.app_ids ?? []).filter(Boolean))],
+          feature_ids: [...new Set((payload.feature_ids ?? []).filter(Boolean))],
+        };
+
+    this.invitationsLoading.set(true);
+    try {
+      const query = isNew
+        ? this.supabase
+            .from('tyapp_invitation')
+            .insert(savePayload)
+            .select()
+            .single()
+        : this.supabase
+            .from('tyapp_invitation')
+            .update(savePayload)
+            .eq('tb_tyapp_inv_id', tb_tyapp_inv_id)
+            .select()
+            .single();
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      const saved = data as Invitation;
+      return this.zone.run(() => {
+        this.invitations.update((list) => {
+          const next = isNew
+            ? [saved, ...list]
+            : list.map((item) =>
+                item.tb_tyapp_inv_id === saved.tb_tyapp_inv_id ? saved : item,
+              );
+          return next;
+        });
+        this.invitationsLoading.set(false);
+        this.notification.showSuccess('Saved successfully');
+        return saved;
+      });
+    } catch (error: unknown) {
+      this.notification.handleError('Save Invite Failed', error);
+      return this.zone.run(() => {
+        this.invitationsLoading.set(false);
+        return null;
+      });
+    }
+  }
+
+  async deleteInvitation(inviteId: string): Promise<boolean> {
+    if (!this.authService.isSuperAdmin()) {
+      this.notification.handleError(
+        'Delete Invite Failed',
+        'Only a super admin can manage invitations',
+      );
+      return false;
+    }
+
+    this.invitationsLoading.set(true);
+    try {
+      const { error } = await this.supabase.rpc(
+        'tyapp_invitation_soft_delete_single_record',
+        { record_id: inviteId },
+      );
+      if (error) throw error;
+
+      return this.zone.run(() => {
+        this.invitations.update((list) =>
+          list.filter((item) => item.tb_tyapp_inv_id !== inviteId),
+        );
+        this.invitationsLoading.set(false);
+        this.notification.showSuccess('Invite deleted');
+        return true;
+      });
+    } catch (error: unknown) {
+      this.notification.handleError('Delete Invite Failed', error);
+      return this.zone.run(() => {
+        this.invitationsLoading.set(false);
+        return false;
+      });
     }
   }
 

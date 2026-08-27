@@ -1,0 +1,113 @@
+<div class="aero-stage">
+  <div class="aero-frame">
+    <main class="aero-body">
+      <div class="login-wrap">
+        <h1>Register for {{ appName }}</h1>
+        <p class="aero-sub">
+          You need an invitation code to create an account.
+        </p>
+
+        <form (ngSubmit)="onSubmit()" class="aero-login-form">
+          <label>
+            Invitation code
+            <input
+              class="aero-input"
+              type="text"
+              name="code"
+              autocomplete="off"
+              [(ngModel)]="model.code"
+            />
+            @if (showCodeRequired()) {
+              <span class="aero-field-error">Invitation code is required</span>
+            }
+          </label>
+
+          <label>
+            Email address
+            <input
+              class="aero-input"
+              type="email"
+              name="email"
+              autocomplete="username"
+              [(ngModel)]="model.email"
+            />
+            @if (showEmailRequired()) {
+              <span class="aero-field-error">Email is required</span>
+            }
+            @if (showEmailInvalid()) {
+              <span class="aero-field-error">Please enter a valid email</span>
+            }
+          </label>
+
+          <label>
+            Password
+            <span class="pwd-row">
+              <input
+                class="aero-input"
+                [type]="hidePassword() ? 'password' : 'text'"
+                name="password"
+                autocomplete="new-password"
+                [(ngModel)]="model.password"
+              />
+              <button
+                class="gloss-btn"
+                type="button"
+                (click)="togglePasswordVisibility($event)"
+                tabindex="-1"
+              >
+                {{ hidePassword() ? 'Show' : 'Hide' }}
+              </button>
+            </span>
+            @if (showPasswordRequired()) {
+              <span class="aero-field-error">Password is required</span>
+            }
+            @if (showPasswordMin()) {
+              <span class="aero-field-error">At least 6 characters</span>
+            }
+          </label>
+
+          <label>
+            Legal first name
+            <input
+              class="aero-input"
+              type="text"
+              name="legal_first_name"
+              autocomplete="given-name"
+              [(ngModel)]="model.legal_first_name"
+            />
+            @if (showFirstNameRequired()) {
+              <span class="aero-field-error">First name is required</span>
+            }
+          </label>
+
+          <label>
+            Legal last name
+            <input
+              class="aero-input"
+              type="text"
+              name="legal_last_name"
+              autocomplete="family-name"
+              [(ngModel)]="model.legal_last_name"
+            />
+            @if (showLastNameRequired()) {
+              <span class="aero-field-error">Last name is required</span>
+            }
+          </label>
+
+          <button
+            class="gloss-btn primary wide"
+            type="submit"
+            [disabled]="isLoading()"
+          >
+            {{ isLoading() ? 'Creating account...' : 'Register' }}
+          </button>
+        </form>
+
+        <p class="aero-register-link">
+          Already have an account?
+          <a routerLink="/login">Sign in</a>
+        </p>
+      </div>
+    </main>
+  </div>
+</div>

@@ -1,0 +1,123 @@
+<div class="split-workspace">
+  @if (item(); as invite) {
+    <div class="form-scroll-area">
+      <section class="form-group">
+        <h3 class="group-header">Invitation code</h3>
+        <div class="fields-grid-2">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Code</mat-label>
+            <input matInput [ngModel]="invite.code" disabled />
+          </mat-form-field>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Max uses</mat-label>
+            <input
+              matInput
+              type="number"
+              min="1"
+              [(ngModel)]="invite.max_uses"
+            />
+          </mat-form-field>
+        </div>
+        <p class="group-note">
+          Copy this code and send it yourself. Role is always User. At least
+          the Jaxfr app must stay selected so the person can sign in after
+          registering.
+        </p>
+      </section>
+
+      <section class="form-group">
+        <h3 class="group-header">Limits</h3>
+        <div class="fields-row-2">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Status</mat-label>
+            <mat-select [(ngModel)]="invite.status">
+              <mat-option [value]="RecordStatus.Active">Active</mat-option>
+              <mat-option [value]="RecordStatus.Inactive">Inactive</mat-option>
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Expires on (optional)</mat-label>
+            <input matInput type="date" [(ngModel)]="expiresOn" />
+          </mat-form-field>
+        </div>
+        @if (currentId) {
+          <p class="group-note">
+            Used {{ invite.uses_count ?? 0 }} of {{ invite.max_uses }} times.
+            Inactive codes cannot be used to register.
+          </p>
+        }
+      </section>
+
+      <section class="form-group">
+        <h3 class="group-header">Initial access</h3>
+        <div class="app-access-box">
+          <div class="app-access-title">App & Feature Access</div>
+          <div class="app-access-subtitle">
+            Copied onto the new account at registration. You can change it
+            later on the user profile.
+          </div>
+          <div class="access-app-list">
+            @for (app of appRegistry.apps(); track app.tb_tyapp_app_id) {
+              <div class="access-app-block">
+                <mat-checkbox
+                  [checked]="isAppSelected(app.tb_tyapp_app_id)"
+                  (change)="toggleApp(app.tb_tyapp_app_id, $event.checked)"
+                >
+                  {{ app.name }}
+                </mat-checkbox>
+                <div class="access-feature-list">
+                  @for (
+                    feature of featuresForApp(app.tb_tyapp_app_id);
+                    track feature.tb_tyapp_ap_ftr_id
+                  ) {
+                    <mat-checkbox
+                      [checked]="isFeatureSelected(feature.tb_tyapp_ap_ftr_id)"
+                      (change)="toggleFeature(feature, $event.checked)"
+                    >
+                      {{ feature.name }}
+                      @if (feature.is_admin_only) {
+                        <span class="access-admin-tag">Admin only</span>
+                      }
+                    </mat-checkbox>
+                  } @empty {
+                    <p class="access-feature-empty">
+                      No features under this app.
+                    </p>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Group (optional)</mat-label>
+          <mat-select [(ngModel)]="invite.group_id">
+            <mat-option [value]="null">None</mat-option>
+            @for (group of activeGroups(); track group.tb_tyapp_usr_grp_id) {
+              <mat-option [value]="group.tb_tyapp_usr_grp_id">{{
+                group.name
+              }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+        <p class="group-note">
+          Needed if this person should see others in Chat or Filelink right
+          away. Skip it if they only need solo features.
+        </p>
+      </section>
+
+      <section class="form-group">
+        <h3 class="group-header">Notes</h3>
+        <mat-form-field
+          appearance="outline"
+          class="full-width"
+          subscriptSizing="dynamic"
+        >
+          <mat-label>Internal Remarks</mat-label>
+          <textarea matInput rows="3" [(ngModel)]="invite.remarks"></textarea>
+        </mat-form-field>
+      </section>
+    </div>
+  }
+</div>

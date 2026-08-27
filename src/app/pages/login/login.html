@@ -60,6 +60,13 @@
             {{ isLoading() ? signingInBtn() : signInBtn() }}
           </button>
         </form>
+
+        @if (!isFilelink) {
+          <p class="aero-register-link">
+            Have an invitation code?
+            <a routerLink="/register">Register</a>
+          </p>
+        }
       </div>
     </main>
   </div>
