@@ -1,0 +1,40 @@
+@use "./daily-log-theme" as dl;
+
+:host {
+  @include dl.host-page;
+}
+
+:host-context(html.mode-dark) {
+  @include dl.paper-tokens-dark;
+}
+
+.dl-viewers {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 16px 12px 36px;
+}
+
+.tape {
+  &.tape-top {
+    top: -8px;
+    left: 28%;
+    transform: rotate(-4deg);
+  }
+}
+
+.intro {
+  margin: 0 0 16px;
+  font-size: 13px;
+  color: var(--dl-muted);
+  line-height: 1.5;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.empty-placeholder {
+  padding: 32px 8px;
+  display: flex;
+  justify-content: center;
+}

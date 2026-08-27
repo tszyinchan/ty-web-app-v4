@@ -38,7 +38,7 @@ const CATEGORY_IMAGES: Record<string, string> = {
   Work: '/icons/3d/work.png',
   Article: '/icons/3d/article.png',
   Fit: '/icons/3d/fit.png',
-  'Daily Checklist': '/icons/3d/checklist.png',
+  'Daily Log': '/icons/3d/checklist.png',
   Filelink: '/icons/3d/filelink.png',
   'Tyweb Control': '/icons/3d/web.png',
   Chat: '/icons/3d/chat.png',
@@ -64,7 +64,7 @@ const TILE_TONES: Record<string, string> = {
   Work: 'blue',
   Article: 'gold',
   Fit: 'green',
-  'Daily Checklist': 'green',
+  'Daily Log': 'green',
   Filelink: 'teal',
   'Tyweb Control': 'teal',
   Chat: 'purple',
@@ -80,6 +80,7 @@ const HUB_ROUTES: Record<string, string> = {
   Development: '/development',
   User: '/users',
   YYEMS: '/yyems',
+  'Daily Log': '/daily-log',
 };
 
 const FALLBACK_TILES: { name: string; icon: string; route: string }[] = [

@@ -45,7 +45,7 @@
   background: transparent;
 }
 
-:host(.dcl-route) {
+:host(.dl-route) {
   background: #e4d9c4;
 
   .layout-shell,
@@ -56,7 +56,7 @@
   }
 }
 
-:host-context(html.mode-dark):host(.dcl-route) {
+:host-context(html.mode-dark):host(.dl-route) {
   background: #12100e;
 
   .layout-shell,

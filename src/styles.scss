@@ -3,9 +3,9 @@
 @use "app/styles/shared-list";
 @use "app/styles/shared-form";
 @use "app/styles/aero-controls";
-@use "app/apps/jaxfr/features/daily-checklist/doodle" as dcl;
+@use "app/apps/jaxfr/features/daily-log/daily-log-theme" as dl;
 
-@include dcl.journal-globals;
+@include dl.log-globals;
 
 html {
   @include mat.theme(

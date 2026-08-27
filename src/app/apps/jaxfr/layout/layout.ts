@@ -16,7 +16,7 @@ import { AppToolbar } from '../../../core/components/app-toolbar/app-toolbar';
   styleUrl: './layout.scss',
   host: {
     '[class.print-route]': 'isPrintRoute()',
-    '[class.dcl-route]': 'isDclRoute()',
+    '[class.dl-route]': 'isDailyLogRoute()',
   },
 })
 export class Layout {
@@ -50,13 +50,13 @@ export class Layout {
     { initialValue: this.isDocsignPrint(this.router.url) },
   );
 
-  readonly isDclRoute = toSignal(
+  readonly isDailyLogRoute = toSignal(
     this.router.events.pipe(
       filter((event): event is NavigationEnd => event instanceof NavigationEnd),
-      map((event) => this.isDailyChecklist(event.urlAfterRedirects)),
-      startWith(this.isDailyChecklist(this.router.url)),
+      map((event) => this.isDailyLog(event.urlAfterRedirects)),
+      startWith(this.isDailyLog(this.router.url)),
     ),
-    { initialValue: this.isDailyChecklist(this.router.url) },
+    { initialValue: this.isDailyLog(this.router.url) },
   );
 
   readonly showToolbar = toSignal(
@@ -77,8 +77,8 @@ export class Layout {
     return url.split('?')[0].includes('/docsign/print/');
   }
 
-  private isDailyChecklist(url: string): boolean {
-    return url.split('?')[0].startsWith('/daily-checklist');
+  private isDailyLog(url: string): boolean {
+    return url.split('?')[0].startsWith('/daily-log');
   }
 
   private shouldShowToolbar(url: string): boolean {
@@ -86,7 +86,7 @@ export class Layout {
     return (
       this.isNotWelcome(path) &&
       !this.isDocsignPrint(path) &&
-      !this.isDailyChecklist(path)
+      !this.isDailyLog(path)
     );
   }
 }

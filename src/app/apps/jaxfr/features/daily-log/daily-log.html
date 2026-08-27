@@ -1,0 +1,338 @@
+<div class="dl-log">
+  <app-daily-log-chrome
+    title="Log"
+    [navLinks]="pageNav"
+    [actions]="chromeActions()"
+  />
+
+  <div class="week-strip">
+    <button
+      type="button"
+      class="week-nav"
+      (click)="goPrevWeek()"
+      [disabled]="service.loading() || service.busy()"
+      aria-label="Previous week"
+    >
+      ‹
+    </button>
+
+    <div
+      #weekScroller
+      class="week-scroller"
+      (scroll)="onWeekScroll()"
+    >
+      @for (page of weekPages(); track page[0].date) {
+        <div class="week-page">
+          @for (day of page; track day.date) {
+            <button
+              type="button"
+              class="week-day"
+              [class.selected]="day.isSelected"
+              [class.today]="day.isToday && !day.isSelected"
+              [disabled]="service.loading() || service.busy()"
+              (click)="selectDay(day.date)"
+            >
+              <span class="weekday">{{ day.weekday }}</span>
+              <span class="day-num">{{ day.dayNum }}</span>
+              <span
+                class="day-dot"
+                [class.on]="hasLogged(day)"
+                [class.done]="
+                  day.totalCount > 0 && day.completedCount === day.totalCount
+                "
+              ></span>
+            </button>
+          }
+        </div>
+      }
+    </div>
+
+    <button
+      type="button"
+      class="week-nav"
+      (click)="goNextWeek()"
+      [disabled]="service.loading() || service.busy()"
+      aria-label="Next week"
+    >
+      ›
+    </button>
+  </div>
+
+  @if (showTemplateHint()) {
+    <p class="template-hint">
+      Your Template is empty.
+      <button type="button" class="dl-link" (click)="openTemplate()">
+        Open Template
+      </button>
+    </p>
+  }
+
+  <div class="dl-sheet journal">
+    <span class="tape tape-top" aria-hidden="true"></span>
+    <span class="tape tape-tr" aria-hidden="true"></span>
+    <span class="corner corner-tl" aria-hidden="true"></span>
+    <span class="corner corner-br" aria-hidden="true"></span>
+    <div class="dl-date">
+      <span class="dl-date-num">{{ logDate().dayNum }}</span>
+      <span class="dl-date-wk">{{ logDate().weekday }}</span>
+      <span class="progress-count">
+        @if (totalCount() > 0) {
+          {{ completedCount() }} / {{ totalCount() }}
+        }
+      </span>
+      <span class="paper-tools">
+        <button
+          type="button"
+          class="dl-link"
+          [disabled]="service.loading() || service.busy()"
+          (click)="onCopyYesterday()"
+        >
+          Use yesterday
+        </button>
+        <button
+          type="button"
+          class="dl-link"
+          [disabled]="service.loading() || service.busy()"
+          (click)="onUseTemplate()"
+        >
+          Use template
+        </button>
+      </span>
+    </div>
+
+    <div class="mood-polaroid">
+      <app-daily-log-face [mood]="dayMood()" size="lg" />
+    </div>
+
+    <div class="mood-row">
+      @for (mood of moods; track mood.key) {
+        <button
+          type="button"
+          class="mood-btn"
+          [class.picked]="dayMood() === mood.key"
+          [disabled]="service.busy()"
+          [attr.aria-label]="mood.label"
+          (click)="onSelectMood(mood.key)"
+        >
+          <app-daily-log-face [mood]="mood.key" [selected]="dayMood() === mood.key" />
+          <span class="mood-label">{{ mood.label }}</span>
+        </button>
+      }
+    </div>
+
+    @if (dayMood()) {
+      <div class="mood-clear-row">
+        <button
+          type="button"
+          class="mood-clear"
+          [disabled]="service.busy()"
+          (click)="onClearMood()"
+        >
+          Clear mood
+        </button>
+      </div>
+    }
+
+    <div class="dl-title-wrap">
+      <input
+        class="dl-title"
+        name="day_title"
+        maxlength="80"
+        placeholder="How was your day?"
+        [ngModel]="dayTitle()"
+        (ngModelChange)="dayTitle.set($event)"
+        (blur)="onTitleBlur()"
+        [disabled]="service.busy()"
+      />
+    </div>
+
+  @if (service.loading() && totalCount() === 0) {
+    <div class="empty-placeholder">
+      <mat-spinner diameter="28"></mat-spinner>
+    </div>
+  } @else {
+    @if (isEmpty()) {
+      <div class="empty-box">
+        <p class="empty-title">Nothing on this date yet.</p>
+        <p class="empty-copy">
+          Type a name below, or Use yesterday / Use template beside the date.
+        </p>
+      </div>
+    }
+
+    <div
+      class="item-list"
+      cdkDropList
+      [cdkDropListData]="displayItems()"
+      [cdkDropListDisabled]="!canReorder()"
+      (cdkDropListDropped)="onReorder($event)"
+    >
+      @for (item of displayItems(); track item.tb_tyapp_dl_day_id) {
+        <div
+          class="item-card"
+          cdkDrag
+          [cdkDragDisabled]="!canReorder()"
+          [ngClass]="itemCardClasses(item)"
+        >
+          @if (editingDayId() === item.tb_tyapp_dl_day_id) {
+            <div class="edit-sheet">
+              <div class="paper-field-wrap">
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-label>Name</mat-label>
+                <input matInput [(ngModel)]="editText" name="edit_item_text" />
+              </mat-form-field>
+              </div>
+              <div class="emoji-pick-row">
+                <button
+                  type="button"
+                  class="emoji-trigger"
+                  (click)="openEmojiPicker('edit')"
+                >
+                  {{ editEmoji || 'Add emoji' }}
+                </button>
+                @if (editEmoji) {
+                  <button type="button" class="dl-link" (click)="clearEditEmoji()">
+                    Clear
+                  </button>
+                }
+              </div>
+              <div class="colour-row">
+                @for (preset of colourPresets; track preset.key) {
+                  <button
+                    type="button"
+                    class="colour-chip"
+                    [ngClass]="colourChipClasses(preset.key, editColour === preset.key)"
+                    [attr.aria-label]="preset.label"
+                    (click)="selectEditColour(preset.key)"
+                  ></button>
+                }
+              </div>
+              <div class="paper-field-wrap">
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-label>Remarks</mat-label>
+                <input
+                  matInput
+                  [(ngModel)]="editRemarks"
+                  name="edit_item_remarks"
+                />
+              </mat-form-field>
+              </div>
+              <div class="edit-actions">
+                <button
+                  type="button"
+                  class="edit-save"
+                  [disabled]="service.busy() || !editText.trim()"
+                  (click)="saveEdit(item)"
+                >
+                  Save
+                </button>
+                <button type="button" class="edit-ghost" (click)="cancelEdit()">
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  class="edit-remove"
+                  [disabled]="service.busy()"
+                  (click)="onDelete(item)"
+                >
+                  Remove
+                </button>
+              </div>
+            </div>
+          } @else {
+            <button
+              type="button"
+              class="item-drag-handle"
+              cdkDragHandle
+              matTooltip="Reorder"
+              [disabled]="!canReorder()"
+              [attr.aria-label]="'Reorder ' + item.library.item_text"
+            >
+              <mat-icon>drag_indicator</mat-icon>
+            </button>
+            <button
+              type="button"
+              class="check-btn"
+              [ngClass]="checkBtnClasses(item)"
+              [disabled]="service.busy()"
+              (click)="onToggle(item)"
+              [attr.aria-label]="
+                isCompleted(item) ? 'Mark incomplete' : 'Mark complete'
+              "
+            >
+              @if (isCompleted(item)) {
+                <mat-icon>check</mat-icon>
+              }
+            </button>
+            @if (item.library.emoji) {
+              <span class="item-emoji">{{ item.library.emoji }}</span>
+            }
+            <div class="item-body">
+              <span class="item-text">
+                {{ item.library.item_text }}
+              </span>
+              @if (item.remarks) {
+                <span class="item-remarks">{{ item.remarks }}</span>
+              }
+            </div>
+            <button
+              type="button"
+              class="item-edit"
+              matTooltip="Edit item"
+              (click)="startEdit(item)"
+              [disabled]="service.busy()"
+            >
+              <mat-icon>edit</mat-icon>
+            </button>
+          }
+        </div>
+      }
+    </div>
+
+    <div class="add-row paper-field-wrap" #addRow>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="grow paper-field">
+        <mat-label>Add item</mat-label>
+        <input
+          #addItemInput
+          matInput
+          [ngModel]="newItemText()"
+          (ngModelChange)="newItemText.set($event)"
+          [matAutocomplete]="itemAuto"
+          name="new_item_text"
+          placeholder="Type a name"
+          (focus)="onAddInputFocus()"
+          (blur)="onAddInputBlur()"
+          (keydown.enter)="onAddItem($event)"
+        />
+        <mat-autocomplete
+          #itemAuto="matAutocomplete"
+          [displayWith]="displayLibraryName"
+          (optionSelected)="onSuggestionSelected($event, addItemInput)"
+        >
+          @for (opt of filteredSuggestions(); track opt.tb_tyapp_dl_itm_id) {
+            <mat-option [value]="opt.tb_tyapp_dl_itm_id">
+              {{ suggestionLabel(opt) }}
+            </mat-option>
+          }
+        </mat-autocomplete>
+      </mat-form-field>
+    </div>
+  }
+  </div>
+</div>
+
+@if (addSheetOpen()) {
+  <app-daily-log-add-sheet
+    [initialName]="newItemText()"
+    [busy]="service.busy()"
+    (confirmed)="onSheetConfirm($event)"
+    (cancelled)="closeAddSheet()"
+  />
+}
+
+@if (emojiPickerTarget()) {
+  <div class="emoji-picker-backdrop" (click)="closeEmojiPicker()"></div>
+  <div class="emoji-picker-panel">
+    <emoji-picker (emoji-click)="onPickerEmoji($event)"></emoji-picker>
+  </div>
+}

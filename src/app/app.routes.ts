@@ -167,12 +167,12 @@ const JAXFR_ROUTES: Routes = [
           ),
       },
       {
-        path: 'daily-checklist',
+        path: 'daily-log',
         canActivate: [featureAccessGuard],
-        data: { featureName: 'Daily Checklist' },
+        data: { featureName: 'Daily Log' },
         loadChildren: () =>
-          import('./apps/jaxfr/features/daily-checklist/daily-checklist.routes').then(
-            (m) => m.DAILY_CHECKLIST_ROUTES,
+          import('./apps/jaxfr/features/daily-log/daily-log.routes').then(
+            (m) => m.DAILY_LOG_ROUTES,
           ),
       },
       {
