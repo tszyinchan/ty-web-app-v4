@@ -113,12 +113,10 @@ const CATEGORY_LINKS: Record<string, FeatureHubLink[]> = {
     { title: 'Thread', icon: 'forum', route: '/fit/thread' },
   ],
   'Daily Checklist': [
-    { title: 'Today', icon: 'checklist', route: '/daily-checklist' },
-    { title: 'Shared', icon: 'groups', route: '/daily-checklist/shared' },
-    { title: 'Who can view', icon: 'group_add', route: '/daily-checklist/share' },
-    { title: 'Dashboard', icon: 'insights', route: '/daily-checklist/dashboard' },
-    { title: 'Standard', icon: 'playlist_add_check', route: '/daily-checklist/standard' },
-    { title: 'Items', icon: 'category', route: '/daily-checklist/items' },
+    { title: 'Log', icon: 'checklist', route: '/daily-checklist' },
+    { title: 'Others', icon: 'groups', route: '/daily-checklist/shared' },
+    { title: 'Library', icon: 'category', route: '/daily-checklist/items' },
+    { title: 'Stats', icon: 'insights', route: '/daily-checklist/dashboard' },
   ],
   'Doc Sign': [
     { title: 'Sign list', icon: 'list', route: '/docsign/list' },

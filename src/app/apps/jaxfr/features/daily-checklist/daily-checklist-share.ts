@@ -64,7 +64,7 @@ export class DailyChecklistShare implements OnInit, OnDestroy {
   ngOnInit() {
     this.headerService.setConfig({
       title: 'Who can view',
-      backLink: '/daily-checklist',
+      backLink: '/daily-checklist/shared',
       actions: [
         {
           label: 'Refresh',

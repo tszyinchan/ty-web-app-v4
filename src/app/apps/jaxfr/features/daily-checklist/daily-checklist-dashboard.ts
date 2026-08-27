@@ -38,7 +38,7 @@ export class DailyChecklistDashboard implements OnInit, OnDestroy {
     const isLoading = computed(() => this.service.loading());
 
     this.headerService.setConfig({
-      title: 'Daily Checklist Dashboard',
+      title: 'Stats',
       backLink: '/daily-checklist',
       actions: [
         {

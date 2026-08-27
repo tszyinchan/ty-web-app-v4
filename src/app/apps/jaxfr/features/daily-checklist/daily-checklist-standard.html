@@ -1,13 +1,16 @@
 <div class="dcl-standard">
   <p class="intro">
-    This pack is a list of catalog items, in order. Applying Standard on Today
-    adds any IDs that are not already on that date and leaves the rest alone.
-    Editing a name, emoji, or colour updates the catalog item everywhere.
+    This pack is a list of Library items, in order. Apply template on Log
+    adds items that are not already on that date and leaves the rest alone.
+    Editing a name, emoji, or colour updates the Library item everywhere.
+  </p>
+  <p class="sibling-nav">
+    <a routerLink="/daily-checklist/items">Open Library</a>
   </p>
 
   <div class="add-block">
     <mat-form-field appearance="outline" subscriptSizing="dynamic" class="grow">
-      <mat-label>Add to Standard</mat-label>
+      <mat-label>Add to Template</mat-label>
       <input
         #addItemInput
         matInput
@@ -77,7 +80,7 @@
     </div>
   } @else if (service.standardItems().length === 0) {
     <p class="empty-copy">
-      Your Standard Checklist is empty. Add the items you usually repeat.
+      Your Template is empty. Add the items you usually repeat.
     </p>
   } @else {
     <div class="item-list">
@@ -178,7 +181,7 @@
               <button
                 mat-icon-button
                 type="button"
-                matTooltip="Remove from Standard"
+                matTooltip="Remove from Template"
                 [disabled]="service.busy()"
                 (click)="onDelete(item)"
               >

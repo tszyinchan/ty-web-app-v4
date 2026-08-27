@@ -11,6 +11,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import 'emoji-picker-element';
 import {
   MatAutocompleteModule,
@@ -43,6 +44,7 @@ import {
   imports: [
     CommonModule,
     FormsModule,
+    RouterModule,
     MatAutocompleteModule,
     MatButtonModule,
     MatFormFieldModule,
@@ -101,7 +103,7 @@ export class DailyChecklistStandard implements OnInit, OnDestroy {
     );
 
     this.headerService.setConfig({
-      title: 'Standard Checklist',
+      title: 'Template',
       backLink: '/daily-checklist',
       actions: [
         {
@@ -247,7 +249,7 @@ export class DailyChecklistStandard implements OnInit, OnDestroy {
   async onDelete(item: DailyChecklistStandardRow) {
     if (
       !confirm(
-        `Remove "${item.catalog.item_text}" from the Standard Checklist?`,
+        `Remove "${item.catalog.item_text}" from the Template?`,
       )
     ) {
       return;

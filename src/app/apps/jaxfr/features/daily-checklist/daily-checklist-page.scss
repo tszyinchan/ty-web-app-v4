@@ -108,6 +108,29 @@
   }
 }
 
+.feature-nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  margin: 10px 0 2px;
+  font-size: 13px;
+}
+
+.feature-nav a {
+  color: var(--app-link);
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.nav-sep {
+  opacity: 0.45;
+}
+
 .doodle-page {
   @include doodle.paper;
   margin-top: 14px;

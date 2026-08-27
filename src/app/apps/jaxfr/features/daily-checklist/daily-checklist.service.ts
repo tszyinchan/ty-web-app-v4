@@ -358,7 +358,7 @@ export class DailyChecklistService {
         this.standardLoading.set(false);
       });
     } catch (error: unknown) {
-      this.notification.handleError('Fetch Standard Checklist Failed', error);
+      this.notification.handleError('Fetch Template Failed', error);
       this.zone.run(() => this.standardLoading.set(false));
     }
   }
@@ -743,11 +743,11 @@ export class DailyChecklistService {
       this.zone.run(() => {
         this.mergeInsertedDayRows(rows);
         this.busy.set(false);
-        this.notification.showSuccess('Standard items added');
+        this.notification.showSuccess('Template items added');
       });
       return true;
     } catch (error: unknown) {
-      this.notification.handleError('Use Standard Checklist Failed', error);
+      this.notification.handleError('Apply Template Failed', error);
       this.zone.run(() => this.busy.set(false));
       return false;
     }
@@ -787,8 +787,8 @@ export class DailyChecklistService {
 
     if (this.standardItems().some((row) => row.item_id === itemId)) {
       this.notification.handleError(
-        'Add Standard Item Failed',
-        'That item is already in the Standard Checklist.',
+        'Add Template Item Failed',
+        'That item is already in the Template.',
       );
       return false;
     }
@@ -817,11 +817,11 @@ export class DailyChecklistService {
           this.standardItems.update((list) => [...list, row]);
         }
         this.busy.set(false);
-        this.notification.showSuccess('Standard item added');
+        this.notification.showSuccess('Template item added');
       });
       return true;
     } catch (error: unknown) {
-      this.notification.handleError('Add Standard Item Failed', error);
+      this.notification.handleError('Add Template Item Failed', error);
       this.zone.run(() => this.busy.set(false));
       return false;
     }
@@ -838,7 +838,7 @@ export class DailyChecklistService {
     const text = input.itemText.trim();
     if (!text) {
       this.notification.handleError(
-        'Add Standard Item Failed',
+        'Add Template Item Failed',
         'Item text cannot be blank.',
       );
       return false;
@@ -873,7 +873,7 @@ export class DailyChecklistService {
 
       return this.addStandardItem(catalog.tb_tyapp_dcl_itm_id);
     } catch (error: unknown) {
-      this.notification.handleError('Add Standard Item Failed', error);
+      this.notification.handleError('Add Template Item Failed', error);
       this.zone.run(() => this.busy.set(false));
       return false;
     }
@@ -1064,11 +1064,11 @@ export class DailyChecklistService {
           list.filter((item) => item.tb_tyapp_dcl_std_id !== id),
         );
         this.busy.set(false);
-        this.notification.showSuccess('Removed from Standard Checklist');
+        this.notification.showSuccess('Removed from Template');
       });
       return true;
     } catch (error: unknown) {
-      this.notification.handleError('Delete Standard Item Failed', error);
+      this.notification.handleError('Delete Template Item Failed', error);
       this.zone.run(() => this.busy.set(false));
       return false;
     }
@@ -1108,11 +1108,11 @@ export class DailyChecklistService {
       await this.fetchStandardItems(true);
       this.zone.run(() => {
         this.busy.set(false);
-        this.notification.showSuccess('Standard checklist order updated');
+        this.notification.showSuccess('Template order updated');
       });
       return true;
     } catch (error: unknown) {
-      this.notification.handleError('Reorder Standard Item Failed', error);
+      this.notification.handleError('Reorder Template Item Failed', error);
       this.zone.run(() => this.busy.set(false));
       return false;
     }
@@ -1327,7 +1327,7 @@ export class DailyChecklistService {
         this.sharedLoading.set(false);
       });
     } catch (error: unknown) {
-      this.notification.handleError('Fetch Shared Checklist Failed', error);
+      this.notification.handleError('Fetch Others Failed', error);
       this.zone.run(() => this.sharedLoading.set(false));
     }
   }

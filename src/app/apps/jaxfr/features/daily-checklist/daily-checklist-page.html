@@ -54,11 +54,19 @@
     </button>
   </div>
 
+  <nav class="feature-nav" aria-label="Daily Checklist pages">
+    <a routerLink="/daily-checklist/shared">Others</a>
+    <span class="nav-sep">·</span>
+    <a routerLink="/daily-checklist/items">Library</a>
+    <span class="nav-sep">·</span>
+    <a routerLink="/daily-checklist/dashboard">Stats</a>
+  </nav>
+
   @if (showStandardHint()) {
     <p class="standard-hint">
-      Your Standard Checklist is empty.
+      Your Template is empty.
       <button mat-button type="button" (click)="openStandard()">
-        Open Standard Checklist
+        Open Template
       </button>
     </p>
   }
@@ -116,7 +124,7 @@
       <div class="empty-box">
         <p class="empty-title">Nothing on this date yet.</p>
         <p class="empty-copy">
-          Type a name in the row below, or use Copy yesterday / Apply standard
+          Type a name in the row below, or use Copy yesterday / Apply template
           in the toolbar.
         </p>
       </div>

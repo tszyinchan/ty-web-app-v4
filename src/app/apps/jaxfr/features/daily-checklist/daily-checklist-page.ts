@@ -21,7 +21,7 @@ import {
   CdkDropList,
   moveItemInArray,
 } from '@angular/cdk/drag-drop';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import {
   MatAutocompleteModule,
   MatAutocompleteSelectedEvent,
@@ -80,6 +80,7 @@ type EmojiPickerTarget = 'edit';
     CdkDropList,
     CdkDrag,
     CdkDragHandle,
+    RouterModule,
     DailyChecklistAddSheet,
     DailyChecklistFace,
     MatAutocompleteModule,
@@ -200,7 +201,7 @@ export class DailyChecklistPage implements OnInit, AfterViewInit, OnDestroy {
     );
 
     this.headerService.setConfig({
-      title: 'Daily Checklist',
+      title: 'Log',
       actions: [
         {
           label: 'Refresh',
@@ -224,7 +225,7 @@ export class DailyChecklistPage implements OnInit, AfterViewInit, OnDestroy {
           onClick: () => void this.onCopyYesterday(),
         },
         {
-          label: 'Apply standard',
+          label: 'Apply template',
           icon: 'playlist_add_check',
           type: 'secondary',
           disabled: isBusy,

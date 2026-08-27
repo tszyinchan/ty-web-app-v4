@@ -9,6 +9,7 @@ import {
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import 'emoji-picker-element';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -32,6 +33,7 @@ import { colourClass, findCatalogByName } from './daily-checklist.util';
   imports: [
     CommonModule,
     FormsModule,
+    RouterModule,
     MatButtonModule,
     MatFormFieldModule,
     MatIconModule,
@@ -77,7 +79,7 @@ export class DailyChecklistItems implements OnInit, OnDestroy {
     );
 
     this.headerService.setConfig({
-      title: 'Checklist items',
+      title: 'Library',
       backLink: '/daily-checklist',
       actions: [
         {

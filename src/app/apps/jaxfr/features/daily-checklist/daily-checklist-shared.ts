@@ -224,7 +224,7 @@ export class DailyChecklistShared implements OnInit, OnDestroy {
       year: 'numeric',
     });
     this.headerService.setConfig({
-      title: `Shared · ${label}`,
+      title: `Others · ${label}`,
       backLink: '/daily-checklist',
       actions: [
         {
