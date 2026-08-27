@@ -10,9 +10,7 @@
 }
 
 .dl-others {
-  max-width: 860px;
-  margin: 0 auto;
-  padding: 16px 12px 36px;
+  @include dl.page-shell;
 }
 
 .empty-placeholder,

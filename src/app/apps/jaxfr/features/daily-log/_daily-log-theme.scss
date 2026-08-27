@@ -76,6 +76,12 @@
   box-shadow: var(--dl-paper-shadow);
 }
 
+@mixin page-shell {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 16px 12px 36px;
+}
+
 @mixin host-page {
   @include paper-tokens;
   display: block;

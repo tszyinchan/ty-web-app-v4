@@ -105,6 +105,7 @@ export class DailyLog implements OnInit, AfterViewInit, OnDestroy {
   private addScrollTimers: ReturnType<typeof setTimeout>[] = [];
   private addViewportUnsub: (() => void) | null = null;
   private weekScrollTimer: ReturnType<typeof setTimeout> | null = null;
+  private weekScrollEndHandler: (() => void) | null = null;
   private stripExtending = false;
   private stripHasFetched = false;
 
@@ -259,6 +260,7 @@ export class DailyLog implements OnInit, AfterViewInit, OnDestroy {
   ngOnDestroy() {
     this.querySub?.unsubscribe();
     if (this.weekScrollTimer) clearTimeout(this.weekScrollTimer);
+    this.detachWeekScrollEnd();
     this.clearAddScrollWatch();
     this.headerService.clear();
   }
@@ -321,12 +323,7 @@ export class DailyLog implements OnInit, AfterViewInit, OnDestroy {
 
   onWeekScroll() {
     if (this.ignoreWeekScroll) return;
-    const el = this.weekScroller()?.nativeElement;
-    if (!el || el.clientWidth === 0) return;
-    const page = Math.round(el.scrollLeft / el.clientWidth);
-    if (this.visiblePage() !== page) this.visiblePage.set(page);
-    if (page <= 0) void this.extendStrip(-1);
-    if (page >= this.stripWeekCount() - 1) void this.extendStrip(1);
+    this.syncWeekPageFromScroll();
   }
 
   private scrollStripByPage(direction: -1 | 1) {
@@ -367,6 +364,11 @@ export class DailyLog implements OnInit, AfterViewInit, OnDestroy {
     if (this.stripExtending) return;
     this.stripExtending = true;
     const add = STRIP_EXTEND_WEEKS;
+    const scroller = this.weekScroller()?.nativeElement;
+    const pageBefore =
+      scroller && scroller.clientWidth > 0
+        ? Math.round(scroller.scrollLeft / scroller.clientWidth)
+        : this.visiblePage();
     try {
       if (direction < 0) {
         const newStart = shiftLogDate(this.stripStartDate(), -7 * add);
@@ -384,10 +386,9 @@ export class DailyLog implements OnInit, AfterViewInit, OnDestroy {
           this.afterStripRender(() => {
             const el = this.weekScroller()?.nativeElement;
             if (el && el.clientWidth > 0) {
-              el.scrollLeft += el.clientWidth * add;
-              this.visiblePage.set(
-                Math.round(el.scrollLeft / el.clientWidth),
-              );
+              const pageAfter = pageBefore + add;
+              el.scrollLeft = pageAfter * el.clientWidth;
+              this.visiblePage.set(pageAfter);
             }
             this.ignoreWeekScroll = false;
             resolve();
@@ -426,13 +427,49 @@ export class DailyLog implements OnInit, AfterViewInit, OnDestroy {
   private scrollToPage(page: number, behavior: ScrollBehavior) {
     const el = this.weekScroller()?.nativeElement;
     if (!el || el.clientWidth === 0) return;
-    this.ignoreWeekScroll = true;
     this.visiblePage.set(page);
+    this.holdWeekScroll(el, behavior);
     el.scrollTo({ left: page * el.clientWidth, behavior });
-    if (this.weekScrollTimer) clearTimeout(this.weekScrollTimer);
-    this.weekScrollTimer = setTimeout(() => {
+  }
+
+  private holdWeekScroll(el: HTMLElement, behavior: ScrollBehavior) {
+    this.ignoreWeekScroll = true;
+    this.detachWeekScrollEnd();
+    let released = false;
+    const release = () => {
+      if (released) return;
+      released = true;
+      this.detachWeekScrollEnd();
       this.ignoreWeekScroll = false;
-    }, behavior === 'smooth' ? 400 : 160);
+      this.syncWeekPageFromScroll();
+    };
+    this.weekScrollEndHandler = release;
+    el.addEventListener('scrollend', release);
+    this.weekScrollTimer = setTimeout(
+      release,
+      behavior === 'smooth' ? 650 : 160,
+    );
+  }
+
+  private detachWeekScrollEnd() {
+    const el = this.weekScroller()?.nativeElement;
+    if (el && this.weekScrollEndHandler) {
+      el.removeEventListener('scrollend', this.weekScrollEndHandler);
+    }
+    this.weekScrollEndHandler = null;
+    if (this.weekScrollTimer) {
+      clearTimeout(this.weekScrollTimer);
+      this.weekScrollTimer = null;
+    }
+  }
+
+  private syncWeekPageFromScroll() {
+    const el = this.weekScroller()?.nativeElement;
+    if (!el || el.clientWidth === 0) return;
+    const page = Math.round(el.scrollLeft / el.clientWidth);
+    if (this.visiblePage() !== page) this.visiblePage.set(page);
+    if (page <= 0) void this.extendStrip(-1);
+    if (page >= this.stripWeekCount() - 1) void this.extendStrip(1);
   }
 
   private afterStripRender(fn: () => void) {

@@ -9,9 +9,7 @@
 }
 
 .dl-log {
-  max-width: 720px;
-  margin: 0 auto;
-  padding: 16px 12px 36px;
+  @include dl.page-shell;
 }
 
 .week-strip {
@@ -46,6 +44,7 @@
   display: flex;
   overflow-x: auto;
   overflow-y: hidden;
+  overflow-anchor: none;
   scroll-snap-type: x mandatory;
   touch-action: pan-x;
   overscroll-behavior-x: contain;

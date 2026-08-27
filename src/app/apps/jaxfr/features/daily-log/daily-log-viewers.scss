@@ -9,9 +9,7 @@
 }
 
 .dl-viewers {
-  max-width: 720px;
-  margin: 0 auto;
-  padding: 16px 12px 36px;
+  @include dl.page-shell;
 }
 
 .tape {
