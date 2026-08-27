@@ -10,7 +10,6 @@
 
 .dl-log {
   @include dl.page-shell;
-  padding-bottom: calc(36px + var(--dl-keyboard-inset, 0px));
 }
 
 .week-strip {
@@ -430,17 +429,26 @@
   flex-direction: column;
   gap: 10px;
   width: 100%;
-  scroll-margin-bottom: calc(16px + var(--dl-keyboard-inset, 0px));
 }
 
-.add-row {
-  position: sticky;
-  bottom: 0;
-  z-index: 6;
-  margin-top: 10px;
-  padding: 8px 0 calc(10px + var(--dl-keyboard-inset, 0px));
-  scroll-margin-bottom: calc(16px + var(--dl-keyboard-inset, 0px));
-  background: var(--dl-paper);
+.add-item-btn {
+  @include dl.hand-ui;
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  padding: 12px 8px;
+  border: 1px dashed var(--dl-line);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--dl-ink);
+  cursor: pointer;
+  font-size: 16px;
+  text-align: center;
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.4;
+  }
 }
 
 .new-extras {
@@ -516,7 +524,7 @@
 
 @media (max-width: 600px) {
   .dl-log {
-    padding: 8px 8px calc(24px + var(--dl-keyboard-inset, 0px));
+    padding: 8px 8px 24px;
   }
 
   .week-day {

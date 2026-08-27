@@ -1,6 +1,6 @@
 <div class="dl-new">
   <app-daily-log-chrome
-    title="New item"
+    title="Add item"
     backLabel="Log"
     [backClick]="onBack"
     [actions]="chromeActions()"
@@ -8,7 +8,8 @@
   <div class="notebook-sheet">
     <span class="tape tape-top" aria-hidden="true"></span>
     <p class="intro">
-      This item will be added to {{ logDate() }} and saved in the Library.
+      Tap a Library item to add it to {{ logDate() }}, or type a new name
+      and Save.
     </p>
     <label class="dl-field">
       <span class="dl-field-label">Name</span>
@@ -17,14 +18,18 @@
         [ngModel]="itemText()"
         (ngModelChange)="itemText.set($event)"
         name="new_item_text"
+        placeholder="Filter or create"
+        (keydown.enter)="save($event)"
       />
     </label>
-    @if (existingMatch(); as existing) {
+    @if (alreadyOnDate()) {
+      <p class="existing-note">That item is already on this date.</p>
+    } @else if (existingMatch(); as existing) {
       <p class="existing-note">
         “{{ existing.item_text }}” is already in the Library. Save will add it
         to this date; emoji and colour stay as they are.
       </p>
-    } @else {
+    } @else if (canCreate()) {
       <div class="emoji-pick-row">
         <button type="button" class="emoji-trigger" (click)="openEmojiPicker()">
           {{ emoji() || 'Add emoji' }}
@@ -53,15 +58,36 @@
         }
       </div>
     }
-    <label class="dl-field">
-      <span class="dl-field-label">Remarks</span>
-      <input
-        class="dl-field-input"
-        [ngModel]="remarks()"
-        (ngModelChange)="remarks.set($event)"
-        name="new_item_remarks"
-      />
-    </label>
+    @if (itemText().trim()) {
+      <label class="dl-field">
+        <span class="dl-field-label">Remarks</span>
+        <input
+          class="dl-field-input"
+          [ngModel]="remarks()"
+          (ngModelChange)="remarks.set($event)"
+          name="new_item_remarks"
+        />
+      </label>
+    }
+    @if (suggestions().length) {
+      <p class="pick-heading">Library</p>
+      <div class="pick-list">
+        @for (opt of suggestions(); track opt.tb_tyapp_dl_itm_id) {
+          <button
+            type="button"
+            class="pick-opt"
+            [disabled]="service.busy()"
+            (click)="onPickExisting(opt)"
+          >
+            {{ suggestionLabel(opt) }}
+          </button>
+        }
+      </div>
+    } @else if (!service.libraryLoading() && !itemText().trim()) {
+      <p class="existing-note">
+        Nothing left in the Library for this date. Type a name to create one.
+      </p>
+    }
   </div>
 </div>
 

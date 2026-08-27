@@ -152,7 +152,7 @@
       <div class="empty-box">
         <p class="empty-title">Nothing on this date yet.</p>
         <p class="empty-copy">
-          Type a name below, or Use yesterday / Use template beside the date.
+          Add an item, or Use yesterday / Use template beside the date.
         </p>
       </div>
     }
@@ -299,48 +299,14 @@
       }
     </div>
 
-    <div class="add-row" #addRow>
-      <div class="dl-suggest-wrap">
-        <label class="dl-field">
-          <span class="dl-field-label">Add item</span>
-          <input
-            #addItemInput
-            class="dl-field-input"
-            [ngModel]="newItemText()"
-            (ngModelChange)="newItemText.set($event)"
-            name="new_item_text"
-            placeholder="Type a name, then Enter"
-            (focus)="onAddInputFocus()"
-            (blur)="onAddInputBlur()"
-            (keydown.enter)="onAddItem($event)"
-          />
-        </label>
-        @if (showAddMenu()) {
-          <div class="dl-suggest" role="listbox">
-            @for (opt of filteredSuggestions(); track opt.tb_tyapp_dl_itm_id) {
-              <button
-                type="button"
-                class="dl-suggest-opt"
-                (mousedown)="$event.preventDefault()"
-                (click)="onSuggestionPicked(opt)"
-              >
-                {{ suggestionLabel(opt) }}
-              </button>
-            }
-            @if (canCreateNewItem()) {
-              <button
-                type="button"
-                class="dl-suggest-opt dl-suggest-create"
-                (mousedown)="$event.preventDefault()"
-                (click)="onCreateNewItem()"
-              >
-                Create “{{ newItemText().trim() }}”
-              </button>
-            }
-          </div>
-        }
-      </div>
-    </div>
+    <button
+      type="button"
+      class="add-item-btn"
+      [disabled]="service.busy()"
+      (click)="goToAddItem()"
+    >
+      Add item
+    </button>
   }
   </div>
 </div>

@@ -238,12 +238,15 @@ export function nextSortOrder(items: { sort_order: number }[]): number {
 export function filterLibrarySuggestions(
   library: DailyLogLibraryItem[],
   query: string,
+  limit = 12,
 ): DailyLogLibraryItem[] {
   const q = query.trim().toLowerCase();
   const sorted = [...library].sort((a, b) =>
     a.item_text.localeCompare(b.item_text),
   );
-  if (!q) return sorted.slice(0, 12);
+  const cap = (rows: DailyLogLibraryItem[]) =>
+    limit > 0 ? rows.slice(0, limit) : rows;
+  if (!q) return cap(sorted);
 
   const prefix: DailyLogLibraryItem[] = [];
   const rest: DailyLogLibraryItem[] = [];
@@ -252,7 +255,7 @@ export function filterLibrarySuggestions(
     if (text.startsWith(q)) prefix.push(item);
     else if (text.includes(q)) rest.push(item);
   }
-  return [...prefix, ...rest].slice(0, 12);
+  return cap([...prefix, ...rest]);
 }
 
 export function findLibraryItemByName(

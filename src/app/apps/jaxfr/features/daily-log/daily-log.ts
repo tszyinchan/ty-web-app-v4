@@ -31,7 +31,6 @@ import {
   DL_COLOUR_PRESETS,
   DL_MOODS,
   DailyLogDayRow,
-  DailyLogLibraryItem,
   DailyLogWeekDay,
   DlColourPresetKey,
   DlMoodKey,
@@ -46,8 +45,6 @@ import {
   buildWeekDays,
   colourClass,
   logDateParts,
-  filterLibrarySuggestions,
-  findLibraryItemByName,
   groupWeekDays,
   initialStripStart,
   initialStripWeekCount,
@@ -81,9 +78,6 @@ type EmojiPickerTarget = 'edit';
   templateUrl: './daily-log.html',
   styleUrl: './daily-log.scss',
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
-  host: {
-    '[style.--dl-keyboard-inset]': 'keyboardInset()',
-  },
 })
 export class DailyLog implements OnInit, AfterViewInit, OnDestroy {
   readonly service = inject(DailyLogService);
@@ -94,13 +88,7 @@ export class DailyLog implements OnInit, AfterViewInit, OnDestroy {
   private querySub?: Subscription;
   private readonly weekScroller =
     viewChild<ElementRef<HTMLElement>>('weekScroller');
-  private readonly addRow = viewChild<ElementRef<HTMLElement>>('addRow');
-  private readonly addItemInput =
-    viewChild<ElementRef<HTMLInputElement>>('addItemInput');
   private ignoreWeekScroll = false;
-  private addScrollTimers: ReturnType<typeof setTimeout>[] = [];
-  private addViewportUnsub: (() => void) | null = null;
-  private keyboardUnsub: (() => void) | null = null;
   private weekScrollTimer: ReturnType<typeof setTimeout> | null = null;
   private weekScrollEndHandler: (() => void) | null = null;
   private stripExtending = false;
@@ -110,13 +98,10 @@ export class DailyLog implements OnInit, AfterViewInit, OnDestroy {
   stripStartDate = signal(initialStripStart(formatDate(new Date())));
   stripWeekCount = signal(initialStripWeekCount());
   private visiblePage = signal(STRIP_WEEKS_BEFORE);
-  newItemText = signal('');
-  addFocused = signal(false);
   showTemplateHint = signal(false);
   emojiPickerTarget = signal<EmojiPickerTarget | null>(null);
   editingDayId = signal<string | null>(null);
   reordering = signal(false);
-  keyboardInset = signal('0px');
   dayMood = signal<DlMoodKey | null>(null);
   dayTitle = signal('');
   editText = '';
@@ -175,28 +160,6 @@ export class DailyLog implements OnInit, AfterViewInit, OnDestroy {
     return isDateInLogWeek(this.today, visibleMonday);
   });
 
-  readonly filteredSuggestions = computed(() => {
-    const onDate = new Set(
-      this.service.itemsForDate(this.selectedDate()).map((item) => item.item_id),
-    );
-    return filterLibrarySuggestions(
-      this.service.libraryItems(),
-      this.newItemText(),
-    ).filter((item) => !onDate.has(item.tb_tyapp_dl_itm_id));
-  });
-
-  readonly canCreateNewItem = computed(() => {
-    const text = this.newItemText().trim();
-    if (!text) return false;
-    return !findLibraryItemByName(this.service.libraryItems(), text);
-  });
-
-  readonly showAddMenu = computed(
-    () =>
-      this.addFocused() &&
-      (this.filteredSuggestions().length > 0 || this.canCreateNewItem()),
-  );
-
   readonly pageNav: DailyLogChromeNavLink[] = [
     { label: 'Others', routerLink: '/daily-log/others' },
     { label: 'Library', routerLink: '/daily-log/library' },
@@ -206,6 +169,12 @@ export class DailyLog implements OnInit, AfterViewInit, OnDestroy {
   readonly chromeActions = computed<DailyLogChromeAction[]>(() => {
     const busy = this.service.loading() || this.service.busy();
     return [
+      {
+        label: 'Add',
+        icon: 'add',
+        disabled: this.service.busy(),
+        onClick: () => this.goToAddItem(),
+      },
       {
         label: 'Today',
         icon: 'today',
@@ -244,7 +213,6 @@ export class DailyLog implements OnInit, AfterViewInit, OnDestroy {
       this.selectedDate.set(normalized);
       this.showTemplateHint.set(false);
       this.abandonEdit();
-      this.resetAddPanel();
       if (
         this.stripHasFetched &&
         isDateInStrip(
@@ -260,7 +228,6 @@ export class DailyLog implements OnInit, AfterViewInit, OnDestroy {
 
     void this.service.fetchLibraryItems();
     void this.service.fetchTemplateItems();
-    this.bindKeyboardInset();
   }
 
   ngAfterViewInit() {
@@ -271,8 +238,6 @@ export class DailyLog implements OnInit, AfterViewInit, OnDestroy {
     this.querySub?.unsubscribe();
     if (this.weekScrollTimer) clearTimeout(this.weekScrollTimer);
     this.detachWeekScrollEnd();
-    this.clearAddScrollWatch();
-    this.unbindKeyboardInset();
     this.headerService.clear();
   }
 
@@ -600,15 +565,10 @@ export class DailyLog implements OnInit, AfterViewInit, OnDestroy {
     this.reordering.set(false);
   }
 
-  onAddInputFocus() {
-    this.addFocused.set(true);
-    this.scrollAddRowAboveKeyboard();
-    this.watchAddViewport();
-  }
-
-  onAddInputBlur() {
-    this.addFocused.set(false);
-    this.clearAddScrollWatch();
+  goToAddItem() {
+    void this.router.navigate(['/daily-log/new'], {
+      queryParams: { date: this.selectedDate() },
+    });
   }
 
   hasLogged(day: DailyLogWeekDay): boolean {
@@ -646,133 +606,6 @@ export class DailyLog implements OnInit, AfterViewInit, OnDestroy {
       return true;
     }
     return this.service.upsertDayLog(date, { moodKey: mood, title });
-  }
-
-  async onSuggestionPicked(item: DailyLogLibraryItem) {
-    this.addFocused.set(false);
-    this.resetAddPanel(this.addItemInput()?.nativeElement);
-    await this.service.addExistingItemToDate(
-      this.selectedDate(),
-      item.tb_tyapp_dl_itm_id,
-    );
-    this.scrollAddRowIntoView();
-  }
-
-  suggestionLabel(item: DailyLogLibraryItem): string {
-    const emoji = item.emoji ? `${item.emoji} ` : '';
-    return `${emoji}${item.item_text}`;
-  }
-
-  async onAddItem(event?: Event) {
-    event?.preventDefault();
-    const text = this.newItemText().trim();
-    if (!text || this.service.busy()) return;
-
-    const existing = findLibraryItemByName(this.service.libraryItems(), text);
-    if (existing) {
-      const ok = await this.service.addExistingItemToDate(
-        this.selectedDate(),
-        existing.tb_tyapp_dl_itm_id,
-      );
-      if (ok) {
-        this.resetAddPanel(this.addItemInput()?.nativeElement);
-        this.scrollAddRowIntoView();
-      }
-      return;
-    }
-
-    this.goToNewItem(text);
-  }
-
-  onCreateNewItem() {
-    const text = this.newItemText().trim();
-    if (!text || this.service.busy()) return;
-    this.goToNewItem(text);
-  }
-
-  private goToNewItem(name: string) {
-    void this.router.navigate(['/daily-log/new'], {
-      queryParams: { date: this.selectedDate(), name },
-    });
-  }
-
-  resetAddPanel(input?: HTMLInputElement) {
-    this.newItemText.set('');
-    const native = input ?? this.addItemInput()?.nativeElement;
-    if (native) native.value = '';
-    queueMicrotask(() => {
-      this.newItemText.set('');
-      if (native) native.value = '';
-    });
-  }
-
-  private scrollAddRowIntoView() {
-    this.scrollAddRowAboveKeyboard();
-  }
-
-  private scrollAddRowAboveKeyboard() {
-    const row = this.addRow()?.nativeElement;
-    if (!row) return;
-    const scroller = row.closest('.main-scroll-view');
-    const visibleBottom = window.visualViewport
-      ? window.visualViewport.height + window.visualViewport.offsetTop
-      : window.innerHeight;
-    const margin = 20;
-    const overflow = row.getBoundingClientRect().bottom - (visibleBottom - margin);
-    if (overflow > 0) {
-      if (scroller instanceof HTMLElement) {
-        scroller.scrollTop += overflow;
-      } else {
-        row.scrollIntoView({ block: 'end', behavior: 'smooth' });
-      }
-    }
-  }
-
-  private watchAddViewport() {
-    this.clearAddScrollWatch();
-    const run = () => this.scrollAddRowAboveKeyboard();
-    this.addScrollTimers = [
-      setTimeout(run, 250),
-      setTimeout(run, 550),
-    ];
-  }
-
-  private bindKeyboardInset() {
-    const viewport = window.visualViewport;
-    const update = () => {
-      if (!viewport) {
-        this.keyboardInset.set('0px');
-        return;
-      }
-      const inset = Math.max(
-        0,
-        window.innerHeight - viewport.height - viewport.offsetTop,
-      );
-      this.keyboardInset.set(`${Math.round(inset)}px`);
-      if (this.addFocused() || this.editingDayId()) {
-        this.scrollAddRowAboveKeyboard();
-      }
-    };
-    update();
-    if (!viewport) return;
-    viewport.addEventListener('resize', update);
-    viewport.addEventListener('scroll', update);
-    this.keyboardUnsub = () => {
-      viewport.removeEventListener('resize', update);
-      viewport.removeEventListener('scroll', update);
-    };
-  }
-
-  private unbindKeyboardInset() {
-    this.keyboardUnsub?.();
-    this.keyboardUnsub = null;
-  }
-
-  private clearAddScrollWatch() {
-    for (const timer of this.addScrollTimers) clearTimeout(timer);
-    this.addScrollTimers = [];
-    this.addViewportUnsub?.();
-    this.addViewportUnsub = null;
   }
 
   selectEditColour(key: DlColourPresetKey) {

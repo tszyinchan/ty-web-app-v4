@@ -14,13 +14,18 @@ import 'emoji-picker-element';
 
 import { HeaderService } from '../../../../core/services/header.service';
 import { formatDate } from '../../../../core/utils/date-time.util';
-import { DL_COLOUR_PRESETS, DlColourPresetKey } from './daily-log.model';
+import {
+  DL_COLOUR_PRESETS,
+  DailyLogLibraryItem,
+  DlColourPresetKey,
+} from './daily-log.model';
 import { DailyLogChrome, DailyLogChromeAction } from './daily-log-chrome';
 import { DailyLogIcon } from './daily-log-icon';
 import { DailyLogService } from './daily-log.service';
 import {
   colourClass,
   confirmDiscardEdits,
+  filterLibrarySuggestions,
   findLibraryItemByName,
   isEditDraftDirty,
   normalizeLogDateParam,
@@ -58,11 +63,38 @@ export class DailyLogNew implements OnInit, OnDestroy {
     findLibraryItemByName(this.service.libraryItems(), this.itemText()),
   );
 
+  readonly alreadyOnDate = computed(() => {
+    const match = this.existingMatch();
+    if (!match) return false;
+    return this.service
+      .itemsForDate(this.logDate())
+      .some((item) => item.item_id === match.tb_tyapp_dl_itm_id);
+  });
+
+  readonly canCreate = computed(() => {
+    const text = this.itemText().trim();
+    if (!text) return false;
+    return !this.existingMatch();
+  });
+
+  readonly suggestions = computed(() => {
+    const onDate = new Set(
+      this.service
+        .itemsForDate(this.logDate())
+        .map((item) => item.item_id),
+    );
+    return filterLibrarySuggestions(
+      this.service.libraryItems(),
+      this.itemText(),
+      0,
+    ).filter((item) => !onDate.has(item.tb_tyapp_dl_itm_id));
+  });
+
   readonly chromeActions = computed<DailyLogChromeAction[]>(() => [
     {
       label: 'Save',
       icon: 'save',
-      disabled: this.service.busy() || !this.itemText().trim(),
+      disabled: this.service.busy() || !this.itemText().trim() || this.alreadyOnDate(),
       onClick: () => void this.save(),
     },
     {
@@ -101,6 +133,11 @@ export class DailyLogNew implements OnInit, OnDestroy {
     return classes;
   }
 
+  suggestionLabel(item: DailyLogLibraryItem): string {
+    const emoji = item.emoji ? `${item.emoji} ` : '';
+    return `${emoji}${item.item_text}`;
+  }
+
   selectColour(key: DlColourPresetKey) {
     this.colour.set(key);
   }
@@ -124,9 +161,21 @@ export class DailyLogNew implements OnInit, OnDestroy {
     this.emoji.set(null);
   }
 
-  async save() {
+  async onPickExisting(item: DailyLogLibraryItem) {
+    if (this.service.busy()) return;
+    const date = this.logDate();
+    await this.service.fetchItemsForRange(date, date, date, { merge: true });
+    const ok = await this.service.addExistingItemToDate(
+      date,
+      item.tb_tyapp_dl_itm_id,
+    );
+    if (ok) this.goToLog();
+  }
+
+  async save(event?: Event) {
+    event?.preventDefault();
     const text = this.itemText().trim();
-    if (!text || this.service.busy()) return;
+    if (!text || this.service.busy() || this.alreadyOnDate()) return;
     const date = this.logDate();
     await Promise.all([
       this.service.fetchLibraryItems(),
