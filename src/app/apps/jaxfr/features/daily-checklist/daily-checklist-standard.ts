@@ -31,6 +31,7 @@ import {
   DailyChecklistStandardRow,
   DclColourPresetKey,
 } from './daily-checklist.model';
+import { DailyChecklistChrome, DclChromeAction } from './daily-checklist-chrome';
 import { DailyChecklistService } from './daily-checklist.service';
 import {
   colourClass,
@@ -45,6 +46,7 @@ import {
     CommonModule,
     FormsModule,
     RouterModule,
+    DailyChecklistChrome,
     MatAutocompleteModule,
     MatButtonModule,
     MatFormFieldModule,
@@ -97,24 +99,17 @@ export class DailyChecklistStandard implements OnInit, OnDestroy {
     ).filter((item) => !inPack.has(item.tb_tyapp_dcl_itm_id));
   });
 
-  ngOnInit() {
-    const isBusy = computed(
-      () => this.service.standardLoading() || this.service.busy(),
-    );
+  readonly chromeActions = computed<DclChromeAction[]>(() => [
+    {
+      label: 'Refresh',
+      icon: 'refresh',
+      disabled: this.service.standardLoading() || this.service.busy(),
+      onClick: () => void this.onRefresh(),
+    },
+  ]);
 
-    this.headerService.setConfig({
-      title: 'Template',
-      backLink: '/daily-checklist',
-      actions: [
-        {
-          label: 'Refresh',
-          icon: 'refresh',
-          type: 'secondary',
-          disabled: isBusy,
-          onClick: () => void this.onRefresh(),
-        },
-      ],
-    });
+  ngOnInit() {
+    this.headerService.clear();
 
     void this.service.fetchCatalogItems();
     void this.service.fetchStandardItems();

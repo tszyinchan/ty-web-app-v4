@@ -24,6 +24,7 @@ import {
   DailyChecklistItem,
   DclColourPresetKey,
 } from './daily-checklist.model';
+import { DailyChecklistChrome, DclChromeAction } from './daily-checklist-chrome';
 import { DailyChecklistService } from './daily-checklist.service';
 import { colourClass, findCatalogByName } from './daily-checklist.util';
 
@@ -34,6 +35,7 @@ import { colourClass, findCatalogByName } from './daily-checklist.util';
     CommonModule,
     FormsModule,
     RouterModule,
+    DailyChecklistChrome,
     MatButtonModule,
     MatFormFieldModule,
     MatIconModule,
@@ -73,24 +75,17 @@ export class DailyChecklistItems implements OnInit, OnDestroy {
     return !!findCatalogByName(this.service.catalogItems(), text);
   });
 
-  ngOnInit() {
-    const isBusy = computed(
-      () => this.service.catalogLoading() || this.service.busy(),
-    );
+  readonly chromeActions = computed<DclChromeAction[]>(() => [
+    {
+      label: 'Refresh',
+      icon: 'refresh',
+      disabled: this.service.catalogLoading() || this.service.busy(),
+      onClick: () => void this.onRefresh(),
+    },
+  ]);
 
-    this.headerService.setConfig({
-      title: 'Library',
-      backLink: '/daily-checklist',
-      actions: [
-        {
-          label: 'Refresh',
-          icon: 'refresh',
-          type: 'secondary',
-          disabled: isBusy,
-          onClick: () => void this.onRefresh(),
-        },
-      ],
-    });
+  ngOnInit() {
+    this.headerService.clear();
 
     void this.service.fetchCatalogItems();
     void this.service.fetchCatalogDayCounts(true);

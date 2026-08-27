@@ -1,4 +1,12 @@
 <div class="dcl-share">
+  <app-dcl-chrome
+    title="Who can view"
+    backLink="/daily-checklist/shared"
+    backLabel="Others"
+    [actions]="chromeActions()"
+  />
+  <div class="notebook-sheet">
+    <span class="tape tape-top" aria-hidden="true"></span>
   <p class="intro">
     People you add can open Others and see your daily mood, title, and items.
     They cannot check items off or edit your list. Everyone must belong to the
@@ -40,4 +48,5 @@
       </mat-autocomplete>
     </mat-form-field>
   }
+  </div>
 </div>

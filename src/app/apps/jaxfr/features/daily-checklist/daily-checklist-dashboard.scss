@@ -11,7 +11,24 @@
 .dcl-dashboard {
   max-width: 720px;
   margin: 0 auto;
-  padding: 16px 16px 32px;
+  padding: 16px 12px 36px;
+}
+
+.notebook-sheet {
+  @include doodle.paper;
+  position: relative;
+  padding: 20px 16px 16px;
+  border-radius: 4px;
+}
+
+.tape {
+  @include doodle.tape-bar;
+
+  &.tape-top {
+    top: -8px;
+    left: 28%;
+    transform: rotate(-4deg);
+  }
 }
 
 .range-bar {
@@ -25,7 +42,10 @@
   @include doodle.ink-btn;
 
   &.picked {
-    @include doodle.ink-btn-fill;
+    background: var(--dcl-washi);
+    color: var(--dcl-ink);
+    border-color: transparent;
+    transform: rotate(-1.5deg);
   }
 }
 

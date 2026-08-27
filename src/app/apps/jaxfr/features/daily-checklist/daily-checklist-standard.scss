@@ -14,7 +14,24 @@
 .dcl-items {
   max-width: 720px;
   margin: 0 auto;
-  padding: 16px 16px 32px;
+  padding: 16px 12px 36px;
+}
+
+.notebook-sheet {
+  @include doodle.paper;
+  position: relative;
+  padding: 20px 16px 16px;
+  border-radius: 4px;
+}
+
+.tape {
+  @include doodle.tape-bar;
+
+  &.tape-top {
+    top: -8px;
+    left: 28%;
+    transform: rotate(-4deg);
+  }
 }
 
 .intro,
@@ -31,13 +48,11 @@
 }
 
 .sibling-nav a {
+  @include doodle.hand-ui;
   color: var(--dcl-ink);
   text-decoration: none;
-  border-bottom: 2px solid var(--dcl-brush);
-
-  &:hover {
-    border-bottom-color: var(--dcl-ink);
-  }
+  background: var(--dcl-washi);
+  padding: 1px 8px 2px;
 }
 
 .add-block {
@@ -168,7 +183,7 @@
   position: fixed;
   inset: 0;
   z-index: 20;
-  background: rgba(20, 36, 52, 0.28);
+  background: var(--dcl-veil);
 }
 
 .emoji-picker-panel {

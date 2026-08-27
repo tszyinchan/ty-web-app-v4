@@ -1,4 +1,10 @@
 <div class="dcl-page">
+  <app-dcl-chrome
+    title="Log"
+    [navLinks]="pageNav"
+    [actions]="chromeActions()"
+  />
+
   <div class="week-strip">
     <button
       type="button"
@@ -52,14 +58,6 @@
     </button>
   </div>
 
-  <nav class="feature-nav" aria-label="Daily Checklist pages">
-    <a routerLink="/daily-checklist/shared">Others</a>
-    <span class="nav-sep">·</span>
-    <a routerLink="/daily-checklist/items">Library</a>
-    <span class="nav-sep">·</span>
-    <a routerLink="/daily-checklist/dashboard">Stats</a>
-  </nav>
-
   @if (showStandardHint()) {
     <p class="standard-hint">
       Your Template is empty.
@@ -69,7 +67,11 @@
     </p>
   }
 
-  <div class="doodle-page">
+  <div class="doodle-page journal">
+    <span class="tape tape-top" aria-hidden="true"></span>
+    <span class="tape tape-tr" aria-hidden="true"></span>
+    <span class="corner corner-tl" aria-hidden="true"></span>
+    <span class="corner corner-br" aria-hidden="true"></span>
     <div class="doodle-date">
       <span class="doodle-date-num">{{ doodleDate().dayNum }}</span>
       <span class="doodle-date-wk">{{ doodleDate().weekday }}</span>
@@ -78,9 +80,27 @@
           {{ completedCount() }} / {{ totalCount() }}
         }
       </span>
+      <span class="paper-tools">
+        <button
+          type="button"
+          class="doodle-link"
+          [disabled]="service.loading() || service.busy()"
+          (click)="onCopyYesterday()"
+        >
+          Use yesterday
+        </button>
+        <button
+          type="button"
+          class="doodle-link"
+          [disabled]="service.loading() || service.busy()"
+          (click)="onUseStandard()"
+        >
+          Use template
+        </button>
+      </span>
     </div>
 
-    <div class="mood-hero">
+    <div class="mood-polaroid">
       <app-dcl-face [mood]="dayMood()" size="lg" />
     </div>
 
@@ -135,8 +155,7 @@
       <div class="empty-box">
         <p class="empty-title">Nothing on this date yet.</p>
         <p class="empty-copy">
-          Type a name in the row below, or use Copy yesterday / Apply template
-          in the toolbar.
+          Type a name below, or Use yesterday / Use template beside the date.
         </p>
       </div>
     }
@@ -157,10 +176,12 @@
         >
           @if (editingDayId() === item.tb_tyapp_dcl_day_id) {
             <div class="edit-sheet">
+              <div class="paper-field-wrap">
               <mat-form-field appearance="outline" subscriptSizing="dynamic">
                 <mat-label>Name</mat-label>
                 <input matInput [(ngModel)]="editText" name="edit_item_text" />
               </mat-form-field>
+              </div>
               <div class="emoji-pick-row">
                 <button
                   type="button"
@@ -186,6 +207,7 @@
                   ></button>
                 }
               </div>
+              <div class="paper-field-wrap">
               <mat-form-field appearance="outline" subscriptSizing="dynamic">
                 <mat-label>Remarks</mat-label>
                 <input
@@ -194,6 +216,7 @@
                   name="edit_item_remarks"
                 />
               </mat-form-field>
+              </div>
               <div class="edit-actions">
                 <button
                   type="button"
@@ -208,7 +231,7 @@
                 </button>
                 <button
                   type="button"
-                  class="edit-ghost"
+                  class="edit-remove"
                   [disabled]="service.busy()"
                   (click)="onDelete(item)"
                 >
@@ -266,8 +289,8 @@
       }
     </div>
 
-    <div class="add-row" #addRow>
-      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="grow">
+    <div class="add-row paper-field-wrap" #addRow>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="grow paper-field">
         <mat-label>Add item</mat-label>
         <input
           #addItemInput

@@ -24,6 +24,7 @@ import {
   DailyChecklistDayRow,
   DclMoodKey,
 } from './daily-checklist.model';
+import { DailyChecklistChrome, DclChromeAction, DclChromeMonthNav } from './daily-checklist-chrome';
 import { DailyChecklistFace } from './daily-checklist-face';
 import { DailyChecklistService } from './daily-checklist.service';
 import {
@@ -51,6 +52,7 @@ interface SharedPersonDay {
     MatIconModule,
     MatProgressSpinnerModule,
     CalendarMonthViewComponent,
+    DailyChecklistChrome,
     DailyChecklistFace,
   ],
   providers: [DisplayNamePipe],
@@ -73,6 +75,54 @@ export class DailyChecklistShared implements OnInit, OnDestroy {
   readonly doodleDate = computed(() => {
     const date = this.selectedDate();
     return date ? doodleDateParts(date) : { dayNum: '', weekday: '' };
+  });
+
+  readonly monthLabel = computed(() =>
+    this.viewDate().toLocaleString('en-US', {
+      month: 'short',
+      year: 'numeric',
+    }),
+  );
+
+  readonly chromeTitle = computed(() => this.selectedDate() ?? 'Others');
+
+  readonly isOnCurrentMonth = computed(() => {
+    const view = this.viewDate();
+    const now = new Date();
+    return (
+      view.getFullYear() === now.getFullYear() &&
+      view.getMonth() === now.getMonth()
+    );
+  });
+
+  readonly chromeActions = computed<DclChromeAction[]>(() => {
+    if (this.selectedDate()) {
+      return [
+        {
+          label: 'Calendar',
+          onClick: () => this.closeFeed(),
+        },
+      ];
+    }
+    return [
+      {
+        label: 'Today',
+        disabled: this.isOnCurrentMonth(),
+        onClick: () => this.goTodayMonth(),
+      },
+      {
+        label: 'Who can view',
+        onClick: () => void this.router.navigate(['/daily-checklist/share']),
+      },
+    ];
+  });
+
+  readonly monthNav = computed<DclChromeMonthNav | null>(() => {
+    if (this.selectedDate()) return null;
+    return {
+      prev: () => this.goPrevMonth(),
+      next: () => this.goNextMonth(),
+    };
   });
 
   readonly calendarEvents = computed<CalendarEvent[]>(() => {
@@ -138,6 +188,7 @@ export class DailyChecklistShared implements OnInit, OnDestroy {
   });
 
   ngOnInit() {
+    this.headerService.clear();
     void this.userService.fetchAllUsers();
     void this.userService.fetchGroups();
 
@@ -145,7 +196,6 @@ export class DailyChecklistShared implements OnInit, OnDestroy {
       const raw = params.get('date');
       if (!raw) {
         this.selectedDate.set(null);
-        this.setCalendarHeader();
         void this.loadMonth(this.viewDate());
         return;
       }
@@ -160,7 +210,6 @@ export class DailyChecklistShared implements OnInit, OnDestroy {
       this.selectedDate.set(normalized);
       const parsed = new Date(`${normalized}T00:00:00`);
       this.viewDate.set(parsed);
-      this.setFeedHeader(normalized);
       void this.loadMonth(parsed);
     });
   }
@@ -187,6 +236,14 @@ export class DailyChecklistShared implements OnInit, OnDestroy {
     return meta?.mood ?? null;
   }
 
+  visibleMoodFaces(events: CalendarEvent[]): CalendarEvent[] {
+    return events.filter((event) => this.eventMood(event)).slice(0, 3);
+  }
+
+  extraMoodCount(events: CalendarEvent[]): number {
+    return Math.max(0, events.filter((event) => this.eventMood(event)).length - 3);
+  }
+
   onDayClicked(date: Date) {
     void this.router.navigate([], {
       queryParams: { date: formatDate(date) },
@@ -196,15 +253,19 @@ export class DailyChecklistShared implements OnInit, OnDestroy {
   goPrevMonth() {
     const next = subMonths(this.viewDate(), 1);
     this.viewDate.set(next);
-    this.setCalendarHeader();
     void this.loadMonth(next);
   }
 
   goNextMonth() {
     const next = addMonths(this.viewDate(), 1);
     this.viewDate.set(next);
-    this.setCalendarHeader();
     void this.loadMonth(next);
+  }
+
+  goTodayMonth() {
+    const today = new Date();
+    this.viewDate.set(today);
+    void this.loadMonth(today);
   }
 
   closeFeed() {
@@ -215,52 +276,6 @@ export class DailyChecklistShared implements OnInit, OnDestroy {
     const date = this.selectedDate();
     void this.router.navigate(['/daily-checklist'], {
       queryParams: date ? { date } : {},
-    });
-  }
-
-  private setCalendarHeader() {
-    const label = this.viewDate().toLocaleString('en-US', {
-      month: 'long',
-      year: 'numeric',
-    });
-    this.headerService.setConfig({
-      title: `Others · ${label}`,
-      backLink: '/daily-checklist',
-      actions: [
-        {
-          label: 'Previous month',
-          icon: 'chevron_left',
-          type: 'icon',
-          onClick: () => this.goPrevMonth(),
-        },
-        {
-          label: 'Next month',
-          icon: 'chevron_right',
-          type: 'icon',
-          onClick: () => this.goNextMonth(),
-        },
-        {
-          label: 'Who can view',
-          icon: 'group_add',
-          type: 'secondary',
-          onClick: () => this.router.navigate(['/daily-checklist/share']),
-        },
-      ],
-    });
-  }
-
-  private setFeedHeader(date: string) {
-    this.headerService.setConfig({
-      title: date,
-      backLink: '/daily-checklist/shared',
-      actions: [
-        {
-          label: 'Back to calendar',
-          icon: 'calendar_month',
-          type: 'secondary',
-          onClick: () => this.closeFeed(),
-        },
-      ],
     });
   }
 

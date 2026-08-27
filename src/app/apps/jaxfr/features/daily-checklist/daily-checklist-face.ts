@@ -9,6 +9,7 @@ import { moodImage } from './daily-checklist.util';
     @if (image(); as src) {
       <img
         class="dcl-glyph"
+        [class.size-xs]="size() === 'xs'"
         [class.size-sm]="size() === 'sm'"
         [class.size-lg]="size() === 'lg'"
         [class.selected]="selected()"
@@ -18,6 +19,7 @@ import { moodImage } from './daily-checklist.util';
     } @else {
       <span
         class="dcl-empty"
+        [class.size-xs]="size() === 'xs'"
         [class.size-sm]="size() === 'sm'"
         [class.size-lg]="size() === 'lg'"
       ></span>
@@ -27,7 +29,7 @@ import { moodImage } from './daily-checklist.util';
 })
 export class DailyChecklistFace {
   readonly mood = input<DclMoodKey | null>(null);
-  readonly size = input<'sm' | 'md' | 'lg'>('md');
+  readonly size = input<'xs' | 'sm' | 'md' | 'lg'>('md');
   readonly selected = input(false);
 
   readonly image = computed(() => moodImage(this.mood()));

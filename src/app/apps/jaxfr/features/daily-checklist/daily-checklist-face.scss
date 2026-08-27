@@ -1,13 +1,6 @@
-@use "./doodle";
-
 :host {
   display: inline-flex;
   line-height: 0;
-  @include doodle.paper-tokens;
-}
-
-:host-context(html.mode-dark) {
-  @include doodle.paper-tokens-dark;
 }
 
 .dcl-glyph {
@@ -15,6 +8,11 @@
   width: 40px;
   height: 40px;
   object-fit: contain;
+
+  &.size-xs {
+    width: 20px;
+    height: 20px;
+  }
 
   &.size-sm {
     width: 28px;
@@ -27,7 +25,9 @@
   }
 
   &.selected {
-    filter: drop-shadow(0 2px 0 var(--dcl-ink));
+    outline: 2px dashed var(--dcl-stamp);
+    outline-offset: 2px;
+    border-radius: 50%;
   }
 }
 
@@ -38,6 +38,11 @@
   height: 40px;
   border: 2px dashed var(--dcl-line);
   border-radius: 50%;
+
+  &.size-xs {
+    width: 20px;
+    height: 20px;
+  }
 
   &.size-sm {
     width: 28px;

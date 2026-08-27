@@ -3,7 +3,7 @@
 @include doodle.colour-classes;
 
 :host {
-  @include doodle.host-page;
+  @include doodle.paper-tokens;
 }
 
 :host-context(html.mode-dark) {
@@ -14,7 +14,7 @@
   position: fixed;
   inset: 0;
   z-index: 22;
-  background: rgba(20, 36, 52, 0.28);
+  background: var(--dcl-veil);
 }
 
 .sheet {
@@ -84,7 +84,7 @@
 }
 
 .sheet-ghost {
-  @include doodle.ink-btn;
+  @include doodle.text-link;
 }
 
 .doodle-link {
@@ -95,7 +95,7 @@
   position: fixed;
   inset: 0;
   z-index: 24;
-  background: rgba(20, 36, 52, 0.28);
+  background: var(--dcl-veil);
 }
 
 .emoji-picker-panel {

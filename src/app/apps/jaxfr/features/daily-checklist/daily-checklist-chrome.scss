@@ -1,0 +1,145 @@
+@use "./doodle";
+
+:host {
+  display: block;
+  @include doodle.paper-tokens;
+}
+
+:host-context(html.mode-dark) {
+  @include doodle.paper-tokens-dark;
+}
+
+.dcl-chrome {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.home-stamp {
+  @include doodle.stamp;
+  flex-shrink: 0;
+  width: 52px;
+  height: 52px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.chrome-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+}
+
+.back-link {
+  @include doodle.text-link;
+  font-size: 16px;
+}
+
+.month-chevron {
+  @include doodle.text-link;
+  padding: 0 2px;
+  font-size: 26px;
+  line-height: 1;
+  text-decoration: none;
+}
+
+.chrome-title {
+  @include doodle.hand-letter;
+  margin: 0;
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.month-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.month-label {
+  @include doodle.hand-letter;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.chrome-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 12px;
+  margin-left: auto;
+}
+
+.chrome-action {
+  @include doodle.text-link;
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  font-size: 16px;
+  line-height: 1;
+  text-decoration: none;
+
+  &:hover:not(:disabled) {
+    text-decoration: underline;
+  }
+}
+
+.chrome-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--dcl-ink);
+  cursor: pointer;
+  line-height: 0;
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.4;
+  }
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+    line-height: 20px;
+    overflow: hidden;
+  }
+}
+
+.chrome-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+  margin-top: 2px;
+  @include doodle.hand-ui;
+  font-size: 17px;
+}
+
+.chrome-nav a {
+  color: var(--dcl-ink);
+  text-decoration: none;
+  text-underline-offset: 3px;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.nav-sep {
+  opacity: 0.45;
+}

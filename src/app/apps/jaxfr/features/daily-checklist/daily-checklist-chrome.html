@@ -1,0 +1,62 @@
+<header class="dcl-chrome">
+  <a routerLink="/welcome" class="home-stamp" aria-label="Home">Home</a>
+  <div class="chrome-main">
+    <div class="title-row">
+      @if (backLink(); as link) {
+        <a class="back-link" [routerLink]="link">{{ backLabel() }}</a>
+      }
+      <h1 class="chrome-title">{{ title() }}</h1>
+      @if (actions().length) {
+        <div class="chrome-actions">
+          @for (action of actions(); track action.label) {
+            <button
+              type="button"
+              [class.chrome-action]="!action.icon"
+              [class.chrome-icon]="!!action.icon"
+              [disabled]="action.disabled"
+              [attr.aria-label]="action.label"
+              (click)="action.onClick()"
+            >
+              @if (action.icon) {
+                <mat-icon>{{ action.icon }}</mat-icon>
+              } @else {
+                {{ action.label }}
+              }
+            </button>
+          }
+        </div>
+      }
+    </div>
+    @if (monthNav(); as nav) {
+      <div class="month-row">
+        <button
+          type="button"
+          class="month-chevron"
+          aria-label="Previous month"
+          (click)="nav.prev()"
+        >
+          ‹
+        </button>
+        <span class="month-label">{{ monthLabel() }}</span>
+        <button
+          type="button"
+          class="month-chevron"
+          aria-label="Next month"
+          (click)="nav.next()"
+        >
+          ›
+        </button>
+      </div>
+    }
+    @if (navLinks().length) {
+      <nav class="chrome-nav" aria-label="Daily Checklist pages">
+        @for (link of navLinks(); track link.routerLink; let last = $last) {
+          <a [routerLink]="link.routerLink">{{ link.label }}</a>
+          @if (!last) {
+            <span class="nav-sep">·</span>
+          }
+        }
+      </nav>
+    }
+  </div>
+</header>

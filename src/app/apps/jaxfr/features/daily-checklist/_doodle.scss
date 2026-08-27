@@ -1,30 +1,75 @@
 @mixin paper-tokens {
-  --dcl-paper: #f3efe6;
-  --dcl-ink: #2a2a2a;
-  --dcl-muted: rgba(42, 42, 42, 0.62);
-  --dcl-brush: rgba(150, 205, 240, 0.55);
-  --dcl-line: rgba(42, 42, 42, 0.18);
-  --dcl-stamp: #4f7cac;
+  --dcl-desk: #e4d9c4;
+  --dcl-paper: #f6f0e4;
+  --dcl-raised: #fffaf0;
+  --dcl-ink: #2a2420;
+  --dcl-muted: rgba(42, 36, 32, 0.62);
+  --dcl-brush: rgba(150, 205, 240, 0.62);
+  --dcl-washi: #f3c6c1;
+  --dcl-washi-alt: #cde3c4;
+  --dcl-washi-stripe: rgba(255, 255, 255, 0.28);
+  --dcl-tape: rgba(236, 214, 140, 0.78);
+  --dcl-line: rgba(42, 36, 32, 0.16);
+  --dcl-rule: rgba(90, 140, 190, 0.18);
+  --dcl-stamp: #b23a3a;
   --dcl-today: #c05612;
-  --dcl-paper-shadow: 0 8px 18px rgba(40, 50, 60, 0.08);
+  --dcl-veil: rgba(42, 36, 32, 0.32);
+  --dcl-script: "Caveat", cursive;
+  --dcl-hand: "Patrick Hand", cursive;
+  --dcl-paper-shadow: 0 10px 22px rgba(60, 45, 30, 0.12);
+  --dcl-grain: rgba(42, 36, 32, 0.05);
+  --dcl-hole-ring: rgba(42, 36, 32, 0.28);
+  --dcl-fill-btn-bg: #2a2420;
+  --dcl-fill-btn-fg: #f6f0e4;
 }
 
 @mixin paper-tokens-dark {
-  --dcl-paper: #2c261c;
+  --dcl-desk: #12100e;
+  --dcl-paper: #2a231c;
+  --dcl-raised: #3a3228;
   --dcl-ink: #f3ead8;
   --dcl-muted: rgba(243, 234, 216, 0.62);
-  --dcl-brush: rgba(90, 150, 200, 0.5);
-  --dcl-line: rgba(243, 234, 216, 0.18);
-  --dcl-stamp: #6a93b8;
+  --dcl-brush: rgba(90, 150, 200, 0.45);
+  --dcl-washi: #6a4540;
+  --dcl-washi-alt: #3d5344;
+  --dcl-washi-stripe: rgba(255, 255, 255, 0.08);
+  --dcl-tape: rgba(196, 154, 72, 0.42);
+  --dcl-line: rgba(243, 234, 216, 0.14);
+  --dcl-rule: rgba(243, 234, 216, 0.08);
+  --dcl-stamp: #e8a0a8;
   --dcl-today: #e08a4a;
+  --dcl-veil: rgba(0, 0, 0, 0.62);
+  --dcl-script: "Caveat", cursive;
+  --dcl-hand: "Patrick Hand", cursive;
   --dcl-paper-shadow:
-    inset 0 1px 0 rgba(255, 236, 214, 0.08),
-    0 10px 24px rgba(0, 0, 0, 0.38);
+    inset 0 1px 0 rgba(255, 236, 214, 0.06),
+    0 10px 28px rgba(0, 0, 0, 0.45);
+  --dcl-grain: rgba(243, 234, 216, 0.04);
+  --dcl-hole-ring: rgba(243, 234, 216, 0.18);
+  --dcl-fill-btn-bg: #3a3228;
+  --dcl-fill-btn-fg: #f3ead8;
+}
+
+@mixin paper-grain {
+  background-color: var(--dcl-paper);
+  background-image: radial-gradient(var(--dcl-grain) 0.55px, transparent 0.7px);
+  background-size: 3px 3px;
+}
+
+@mixin ruled-sheet {
+  background-image:
+    radial-gradient(var(--dcl-grain) 0.55px, transparent 0.7px),
+    repeating-linear-gradient(
+      transparent,
+      transparent 27px,
+      var(--dcl-rule) 27px,
+      var(--dcl-rule) 28px
+    );
+  background-size: 3px 3px, 100% 28px;
 }
 
 @mixin paper {
-  @include paper-tokens;
-  background-color: var(--dcl-paper);
+  @include paper-grain;
   color: var(--dcl-ink);
   font-family: var(--app-font);
   border: 1px solid var(--dcl-line);
@@ -34,12 +79,19 @@
 @mixin host-page {
   @include paper-tokens;
   display: block;
+  min-height: 100%;
+  min-height: 100dvh;
   color: var(--dcl-ink);
   font-family: var(--app-font);
+  background: var(--dcl-desk);
 }
 
 @mixin hand-letter {
-  font-family: "Segoe Print", "Bradley Hand", cursive, var(--app-font);
+  font-family: var(--dcl-script), cursive, var(--app-font);
+}
+
+@mixin hand-ui {
+  font-family: var(--dcl-hand), cursive, var(--app-font);
 }
 
 @mixin emoji {
@@ -60,21 +112,30 @@
 @mixin title-brush {
   @include hand-letter;
   display: inline-block;
-  padding: 0 8px 2px;
-  background: var(--dcl-brush);
-  border-radius: 2px;
+  padding: 2px 14px 4px;
+  background: var(--dcl-washi);
+  background-image: repeating-linear-gradient(
+    90deg,
+    transparent,
+    transparent 7px,
+    var(--dcl-washi-stripe) 7px,
+    var(--dcl-washi-stripe) 9px
+  );
+  transform: rotate(-1.2deg);
   font-weight: 700;
   line-height: 1.3;
 }
 
 @mixin ink-btn {
-  padding: 8px 14px;
+  @include hand-ui;
+  padding: 6px 12px;
   border: 1px solid var(--dcl-ink);
-  border-radius: 8px;
+  border-radius: 4px;
   background: transparent;
   color: var(--dcl-ink);
   cursor: pointer;
-  font: 700 13px var(--app-font);
+  font-size: 15px;
+  font-weight: 400;
 
   &:disabled {
     cursor: default;
@@ -84,19 +145,79 @@
 
 @mixin ink-btn-fill {
   @include ink-btn;
-  background: var(--dcl-ink);
-  color: var(--dcl-paper);
+  background: var(--dcl-fill-btn-bg);
+  border-color: var(--dcl-fill-btn-bg);
+  color: var(--dcl-fill-btn-fg);
 }
 
 @mixin text-link {
+  @include hand-ui;
   padding: 0;
   border: 0;
   background: transparent;
   color: var(--dcl-ink);
   cursor: pointer;
-  font: 13px var(--app-font);
+  font-size: 16px;
   text-decoration: underline;
   text-underline-offset: 3px;
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.4;
+    text-decoration: none;
+  }
+}
+
+@mixin stamp {
+  @include hand-letter;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed var(--dcl-stamp);
+  border-radius: 50%;
+  color: var(--dcl-stamp);
+  transform: rotate(-8deg);
+  text-decoration: none;
+}
+
+@mixin binder-holes {
+  position: relative;
+  padding-left: 30px;
+
+  &::before {
+    content: "";
+    position: absolute;
+    left: 9px;
+    top: 28px;
+    bottom: 28px;
+    width: 12px;
+    background-image: radial-gradient(
+      circle at 50% 50%,
+      var(--dcl-desk) 4.5px,
+      var(--dcl-hole-ring) 5px,
+      transparent 5.5px
+    );
+    background-size: 12px 26px;
+    background-repeat: repeat-y;
+  }
+}
+
+@mixin tape-bar {
+  position: absolute;
+  height: 18px;
+  width: 72px;
+  background: var(--dcl-tape);
+  box-shadow: 0 1px 2px rgba(40, 30, 20, 0.16);
+  pointer-events: none;
+}
+
+@mixin photo-corner {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--dcl-ink);
+  opacity: 0.35;
+  pointer-events: none;
 }
 
 @mixin colour-classes {

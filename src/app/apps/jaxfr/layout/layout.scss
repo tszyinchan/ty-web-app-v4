@@ -45,6 +45,28 @@
   background: transparent;
 }
 
+:host(.dcl-route) {
+  background: #e4d9c4;
+
+  .layout-shell,
+  .main-scroll-view,
+  .main-scroll-view .page-container {
+    background: #e4d9c4;
+    background-image: none;
+  }
+}
+
+:host-context(html.mode-dark):host(.dcl-route) {
+  background: #12100e;
+
+  .layout-shell,
+  .main-scroll-view,
+  .main-scroll-view .page-container {
+    background: #12100e;
+    background-image: none;
+  }
+}
+
 :host.print-route,
 :host.print-route .layout-shell,
 :host.print-route .main-scroll-view,

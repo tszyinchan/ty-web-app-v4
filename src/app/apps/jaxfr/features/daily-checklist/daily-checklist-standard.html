@@ -1,4 +1,12 @@
 <div class="dcl-standard">
+  <app-dcl-chrome
+    title="Template"
+    backLink="/daily-checklist"
+    backLabel="Log"
+    [actions]="chromeActions()"
+  />
+  <div class="notebook-sheet">
+    <span class="tape tape-top" aria-hidden="true"></span>
   <p class="intro">
     This pack is a list of Library items, in order. Apply template on Log
     adds items that are not already on that date and leaves the rest alone.
@@ -193,6 +201,7 @@
       }
     </div>
   }
+  </div>
 </div>
 
 @if (emojiPickerTarget()) {

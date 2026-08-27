@@ -16,6 +16,7 @@ import { AppToolbar } from '../../../core/components/app-toolbar/app-toolbar';
   styleUrl: './layout.scss',
   host: {
     '[class.print-route]': 'isPrintRoute()',
+    '[class.dcl-route]': 'isDclRoute()',
   },
 })
 export class Layout {
@@ -49,6 +50,15 @@ export class Layout {
     { initialValue: this.isDocsignPrint(this.router.url) },
   );
 
+  readonly isDclRoute = toSignal(
+    this.router.events.pipe(
+      filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+      map((event) => this.isDailyChecklist(event.urlAfterRedirects)),
+      startWith(this.isDailyChecklist(this.router.url)),
+    ),
+    { initialValue: this.isDailyChecklist(this.router.url) },
+  );
+
   readonly showToolbar = toSignal(
     this.router.events.pipe(
       filter((event): event is NavigationEnd => event instanceof NavigationEnd),
@@ -67,8 +77,16 @@ export class Layout {
     return url.split('?')[0].includes('/docsign/print/');
   }
 
+  private isDailyChecklist(url: string): boolean {
+    return url.split('?')[0].startsWith('/daily-checklist');
+  }
+
   private shouldShowToolbar(url: string): boolean {
     const path = url.split('?')[0];
-    return this.isNotWelcome(path) && !this.isDocsignPrint(path);
+    return (
+      this.isNotWelcome(path) &&
+      !this.isDocsignPrint(path) &&
+      !this.isDailyChecklist(path)
+    );
   }
 }

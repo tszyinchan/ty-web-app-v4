@@ -1,4 +1,12 @@
 <div class="dcl-items">
+  <app-dcl-chrome
+    title="Library"
+    backLink="/daily-checklist"
+    backLabel="Log"
+    [actions]="chromeActions()"
+  />
+  <div class="notebook-sheet">
+    <span class="tape tape-top" aria-hidden="true"></span>
   <p class="intro">
     These items are reused on dates and in the Template. Editing a
     name, emoji, or colour updates it everywhere. An item can be deleted only
@@ -164,6 +172,7 @@
       }
     </div>
   }
+  </div>
 </div>
 
 @if (emojiPickerTarget()) {

@@ -5,6 +5,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { HeaderService } from '../../../../core/services/header.service';
 import { formatDate } from '../../../../core/utils/date-time.util';
 import { DailyChecklistDashboardRange } from './daily-checklist.model';
+import { DailyChecklistChrome, DclChromeAction } from './daily-checklist-chrome';
 import { DailyChecklistService } from './daily-checklist.service';
 import { buildDashboardVm } from './daily-checklist.util';
 
@@ -20,7 +21,7 @@ const DASHBOARD_RANGES: {
 @Component({
   selector: 'app-daily-checklist-dashboard',
   standalone: true,
-  imports: [CommonModule, MatProgressSpinnerModule],
+  imports: [CommonModule, DailyChecklistChrome, MatProgressSpinnerModule],
   templateUrl: './daily-checklist-dashboard.html',
   styleUrl: './daily-checklist-dashboard.scss',
 })
@@ -39,23 +40,17 @@ export class DailyChecklistDashboard implements OnInit, OnDestroy {
     ),
   );
 
+  readonly chromeActions = computed<DclChromeAction[]>(() => [
+    {
+      label: 'Refresh',
+      icon: 'refresh',
+      disabled: this.service.loading(),
+      onClick: () => void this.service.fetchHistoryItems(true),
+    },
+  ]);
+
   ngOnInit() {
-    const isLoading = computed(() => this.service.loading());
-
-    this.headerService.setConfig({
-      title: 'Stats',
-      backLink: '/daily-checklist',
-      actions: [
-        {
-          label: 'Refresh',
-          icon: 'refresh',
-          type: 'secondary',
-          disabled: isLoading,
-          onClick: () => void this.service.fetchHistoryItems(true),
-        },
-      ],
-    });
-
+    this.headerService.clear();
     void this.service.fetchHistoryItems(true);
   }
 

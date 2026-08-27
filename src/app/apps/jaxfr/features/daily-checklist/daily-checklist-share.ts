@@ -15,6 +15,7 @@ import { HeaderService } from '../../../../core/services/header.service';
 import { NotificationService } from '../../../../core/services/notification.service';
 import { DisplayNamePipe } from '../../../../core/pipes/display-name.pipe';
 import { UserService } from '../user/user.service';
+import { DailyChecklistChrome, DclChromeAction } from './daily-checklist-chrome';
 import { DailyChecklistService } from './daily-checklist.service';
 
 @Component({
@@ -22,6 +23,7 @@ import { DailyChecklistService } from './daily-checklist.service';
   standalone: true,
   imports: [
     CommonModule,
+    DailyChecklistChrome,
     MatAutocompleteModule,
     MatChipsModule,
     MatFormFieldModule,
@@ -61,22 +63,17 @@ export class DailyChecklistShare implements OnInit, OnDestroy {
       .filter((opt) => (q ? opt.label.toLowerCase().includes(q) : true));
   });
 
+  readonly chromeActions = computed<DclChromeAction[]>(() => [
+    {
+      label: 'Refresh',
+      icon: 'refresh',
+      disabled: this.service.shareLoading() || this.service.busy(),
+      onClick: () => void this.service.fetchShareGrants(true),
+    },
+  ]);
+
   ngOnInit() {
-    this.headerService.setConfig({
-      title: 'Who can view',
-      backLink: '/daily-checklist/shared',
-      actions: [
-        {
-          label: 'Refresh',
-          icon: 'refresh',
-          type: 'secondary',
-          disabled: computed(
-            () => this.service.shareLoading() || this.service.busy(),
-          ),
-          onClick: () => void this.service.fetchShareGrants(true),
-        },
-      ],
-    });
+    this.headerService.clear();
     void this.userService.fetchAllUsers();
     void this.userService.fetchGroups();
     void this.service.fetchShareGrants(true);

@@ -46,6 +46,11 @@ import {
   DclMoodKey,
 } from './daily-checklist.model';
 import { DailyChecklistAddSheet } from './daily-checklist-add-sheet';
+import {
+  DailyChecklistChrome,
+  DclChromeAction,
+  DclChromeNavLink,
+} from './daily-checklist-chrome';
 import { DailyChecklistFace } from './daily-checklist-face';
 import { DailyChecklistService } from './daily-checklist.service';
 import {
@@ -82,6 +87,7 @@ type EmojiPickerTarget = 'edit';
     CdkDragHandle,
     RouterModule,
     DailyChecklistAddSheet,
+    DailyChecklistChrome,
     DailyChecklistFace,
     MatAutocompleteModule,
     MatFormFieldModule,
@@ -185,6 +191,29 @@ export class DailyChecklistPage implements OnInit, AfterViewInit, OnDestroy {
     ).filter((item) => !onDate.has(item.tb_tyapp_dcl_itm_id));
   });
 
+  readonly pageNav: DclChromeNavLink[] = [
+    { label: 'Others', routerLink: '/daily-checklist/shared' },
+    { label: 'Library', routerLink: '/daily-checklist/items' },
+    { label: 'Stats', routerLink: '/daily-checklist/dashboard' },
+  ];
+
+  readonly chromeActions = computed<DclChromeAction[]>(() => {
+    const busy = this.service.loading() || this.service.busy();
+    return [
+      {
+        label: 'Today',
+        disabled: this.isOnTodayView() || busy,
+        onClick: () => this.goToday(),
+      },
+      {
+        label: 'Refresh',
+        icon: 'refresh',
+        disabled: busy,
+        onClick: () => void this.onRefresh(),
+      },
+    ];
+  });
+
   constructor() {
     effect(() => {
       const date = this.selectedDate();
@@ -197,43 +226,7 @@ export class DailyChecklistPage implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnInit() {
-    const isBusy = computed(
-      () => this.service.loading() || this.service.busy(),
-    );
-
-    this.headerService.setConfig({
-      title: 'Log',
-      actions: [
-        {
-          label: 'Refresh',
-          icon: 'refresh',
-          type: 'secondary',
-          disabled: isBusy,
-          onClick: () => this.onRefresh(),
-        },
-        {
-          label: 'Jump to today',
-          icon: 'today',
-          type: 'secondary',
-          disabled: computed(() => this.isOnTodayView() || isBusy()),
-          onClick: () => this.goToday(),
-        },
-        {
-          label: 'Copy yesterday',
-          icon: 'history',
-          type: 'secondary',
-          disabled: isBusy,
-          onClick: () => void this.onCopyYesterday(),
-        },
-        {
-          label: 'Apply template',
-          icon: 'playlist_add_check',
-          type: 'secondary',
-          disabled: isBusy,
-          onClick: () => void this.onUseStandard(),
-        },
-      ],
-    });
+    this.headerService.clear();
 
     this.querySub = this.route.queryParamMap.subscribe((params) => {
       const normalized = normalizeChecklistDateParam(params.get('date'));

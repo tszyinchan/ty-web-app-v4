@@ -1,4 +1,12 @@
 <div class="dcl-dashboard">
+  <app-dcl-chrome
+    title="Stats"
+    backLink="/daily-checklist"
+    backLabel="Log"
+    [actions]="chromeActions()"
+  />
+  <div class="notebook-sheet">
+    <span class="tape tape-top" aria-hidden="true"></span>
   <div class="range-bar">
     @for (opt of ranges; track opt.value) {
       <button
@@ -99,4 +107,5 @@
       }
     </section>
   }
+  </div>
 </div>
