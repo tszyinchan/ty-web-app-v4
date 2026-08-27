@@ -148,7 +148,7 @@
 
   @if (service.loading() && totalCount() === 0) {
     <div class="empty-placeholder">
-      <mat-spinner diameter="28"></mat-spinner>
+      <span class="dl-spinner" role="status" aria-label="Loading"></span>
     </div>
   } @else {
     @if (isEmpty()) {
@@ -176,12 +176,14 @@
         >
           @if (editingDayId() === item.tb_tyapp_dl_day_id) {
             <div class="edit-sheet">
-              <div class="paper-field-wrap">
-              <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                <mat-label>Name</mat-label>
-                <input matInput [(ngModel)]="editText" name="edit_item_text" />
-              </mat-form-field>
-              </div>
+              <label class="dl-field">
+                <span class="dl-field-label">Name</span>
+                <input
+                  class="dl-field-input"
+                  [(ngModel)]="editText"
+                  name="edit_item_text"
+                />
+              </label>
               <div class="emoji-pick-row">
                 <button
                   type="button"
@@ -191,8 +193,14 @@
                   {{ editEmoji || 'Add emoji' }}
                 </button>
                 @if (editEmoji) {
-                  <button type="button" class="dl-link" (click)="clearEditEmoji()">
-                    Clear
+                  <button
+                    type="button"
+                    class="dl-icon-btn"
+                    aria-label="Clear emoji"
+                    title="Clear emoji"
+                    (click)="clearEditEmoji()"
+                  >
+                    <app-daily-log-icon name="clear-emoji" />
                   </button>
                 }
               </div>
@@ -207,35 +215,43 @@
                   ></button>
                 }
               </div>
-              <div class="paper-field-wrap">
-              <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                <mat-label>Remarks</mat-label>
+              <label class="dl-field">
+                <span class="dl-field-label">Remarks</span>
                 <input
-                  matInput
+                  class="dl-field-input"
                   [(ngModel)]="editRemarks"
                   name="edit_item_remarks"
                 />
-              </mat-form-field>
-              </div>
+              </label>
               <div class="edit-actions">
                 <button
                   type="button"
-                  class="edit-save"
+                  class="dl-icon-btn-fill"
+                  aria-label="Save"
+                  title="Save"
                   [disabled]="service.busy() || !editText.trim()"
                   (click)="saveEdit(item)"
                 >
-                  Save
-                </button>
-                <button type="button" class="edit-ghost" (click)="cancelEdit()">
-                  Cancel
+                  <app-daily-log-icon name="save" />
                 </button>
                 <button
                   type="button"
-                  class="edit-remove"
+                  class="dl-icon-btn"
+                  aria-label="Cancel"
+                  title="Cancel"
+                  (click)="cancelEdit()"
+                >
+                  <app-daily-log-icon name="cancel" />
+                </button>
+                <button
+                  type="button"
+                  class="dl-icon-btn-danger edit-delete"
+                  aria-label="Remove"
+                  title="Remove"
                   [disabled]="service.busy()"
                   (click)="onDelete(item)"
                 >
-                  Remove
+                  <app-daily-log-icon name="delete" />
                 </button>
               </div>
             </div>
@@ -244,11 +260,11 @@
               type="button"
               class="item-drag-handle"
               cdkDragHandle
-              matTooltip="Reorder"
+              title="Reorder"
               [disabled]="!canReorder()"
               [attr.aria-label]="'Reorder ' + item.library.item_text"
             >
-              <mat-icon>drag_indicator</mat-icon>
+              ⋮⋮
             </button>
             <button
               type="button"
@@ -260,9 +276,7 @@
                 isCompleted(item) ? 'Mark incomplete' : 'Mark complete'
               "
             >
-              @if (isCompleted(item)) {
-                <mat-icon>check</mat-icon>
-              }
+              <span class="check-mark" aria-hidden="true"></span>
             </button>
             @if (item.library.emoji) {
               <span class="item-emoji">{{ item.library.emoji }}</span>
@@ -277,45 +291,50 @@
             </div>
             <button
               type="button"
-              class="item-edit"
-              matTooltip="Edit item"
+              class="item-edit dl-icon-btn"
+              title="Edit item"
+              aria-label="Edit item"
               (click)="startEdit(item)"
               [disabled]="service.busy()"
             >
-              <mat-icon>edit</mat-icon>
+              <app-daily-log-icon name="edit" />
             </button>
           }
         </div>
       }
     </div>
 
-    <div class="add-row paper-field-wrap" #addRow>
-      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="grow paper-field">
-        <mat-label>Add item</mat-label>
-        <input
-          #addItemInput
-          matInput
-          [ngModel]="newItemText()"
-          (ngModelChange)="newItemText.set($event)"
-          [matAutocomplete]="itemAuto"
-          name="new_item_text"
-          placeholder="Type a name"
-          (focus)="onAddInputFocus()"
-          (blur)="onAddInputBlur()"
-          (keydown.enter)="onAddItem($event)"
-        />
-        <mat-autocomplete
-          #itemAuto="matAutocomplete"
-          [displayWith]="displayLibraryName"
-          (optionSelected)="onSuggestionSelected($event, addItemInput)"
-        >
-          @for (opt of filteredSuggestions(); track opt.tb_tyapp_dl_itm_id) {
-            <mat-option [value]="opt.tb_tyapp_dl_itm_id">
-              {{ suggestionLabel(opt) }}
-            </mat-option>
-          }
-        </mat-autocomplete>
-      </mat-form-field>
+    <div class="add-row" #addRow>
+      <div class="dl-suggest-wrap">
+        <label class="dl-field">
+          <span class="dl-field-label">Add item</span>
+          <input
+            #addItemInput
+            class="dl-field-input"
+            [ngModel]="newItemText()"
+            (ngModelChange)="newItemText.set($event)"
+            name="new_item_text"
+            placeholder="Type a name"
+            (focus)="onAddInputFocus()"
+            (blur)="onAddInputBlur()"
+            (keydown.enter)="onAddItem($event)"
+          />
+        </label>
+        @if (addFocused() && filteredSuggestions().length) {
+          <div class="dl-suggest" role="listbox">
+            @for (opt of filteredSuggestions(); track opt.tb_tyapp_dl_itm_id) {
+              <button
+                type="button"
+                class="dl-suggest-opt"
+                (mousedown)="$event.preventDefault()"
+                (click)="onSuggestionPicked(opt)"
+              >
+                {{ suggestionLabel(opt) }}
+              </button>
+            }
+          </div>
+        }
+      </div>
     </div>
   }
   </div>

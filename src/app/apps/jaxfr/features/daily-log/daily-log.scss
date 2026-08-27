@@ -54,8 +54,6 @@
 
   &::-webkit-scrollbar {
     display: none;
-    width: 0;
-    height: 0;
   }
 }
 
@@ -102,7 +100,8 @@
     border-color: var(--dl-stamp);
     color: var(--dl-stamp);
     background: transparent;
-    transform: rotate(-4deg);
+    transform: rotate(-4deg) scale(1.06);
+    transition: transform 160ms ease;
 
     .day-dot.on {
       background: var(--dl-stamp);
@@ -227,9 +226,14 @@
     opacity: 0.5;
   }
 
-  &.picked .mood-label {
-    font-weight: 700;
-    opacity: 1;
+  &.picked {
+    transform: scale(1.08);
+    transition: transform 160ms ease;
+
+    .mood-label {
+      font-weight: 700;
+      opacity: 1;
+    }
   }
 }
 
@@ -317,6 +321,8 @@
   background: var(--dl-tint, transparent);
   color: var(--dl-ink);
   border-radius: 14px;
+  animation: dl-fade-up 200ms ease-out;
+  transition: background-color 180ms ease, color 180ms ease;
 
   &.completed {
     background: var(--dl-fill);
@@ -325,6 +331,10 @@
     .item-drag-handle,
     .item-edit {
       color: #fff;
+    }
+
+    .item-remarks {
+      opacity: 0.88;
     }
 
     .check-btn.done {
@@ -343,7 +353,6 @@
 }
 
 .item-drag-handle,
-.item-edit,
 .check-btn {
   flex-shrink: 0;
   padding: 0;
@@ -358,30 +367,41 @@
   }
 }
 
-.item-drag-handle,
-.item-edit {
+.item-drag-handle {
   width: 28px;
   height: 32px;
+  @include dl.hand-ui;
+  font-size: 14px;
 }
 
 .check-btn {
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   border: 2px solid var(--dl-fill, var(--dl-ink));
-  border-radius: 50%;
+  border-radius: 5px;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: background-color 160ms ease, border-color 160ms ease;
+
+  .check-mark {
+    display: none;
+    width: 7px;
+    height: 12px;
+    margin-top: -2px;
+    border-right: 2.5px solid currentColor;
+    border-bottom: 2.5px solid currentColor;
+    transform: rotate(40deg);
+  }
 
   &.done {
     background: var(--dl-fill);
     color: #fff;
-  }
 
-  mat-icon {
-    font-size: 14px;
-    width: 14px;
-    height: 14px;
+    .check-mark {
+      display: block;
+      animation: dl-check-pop 220ms ease-out;
+    }
   }
 }
 
@@ -405,10 +425,6 @@
   word-break: break-word;
 }
 
-.item-card.completed .item-remarks {
-  opacity: 0.88;
-}
-
 .edit-sheet {
   display: flex;
   flex-direction: column;
@@ -430,32 +446,13 @@
   gap: 8px;
 }
 
-.edit-save {
-  @include dl.ink-btn-fill;
-}
-
-.edit-ghost {
-  @include dl.text-link;
-}
-
-.edit-remove {
-  @include dl.text-link;
-  color: var(--dl-stamp);
-}
-
-.paper-field-wrap {
-  border: 1px dashed var(--dl-line);
-  border-radius: 4px;
-  padding: 2px 4px 0;
-  background: transparent;
-}
-
-div.paper-field-wrap mat-form-field .mdc-notched-outline {
-  opacity: 0;
-}
-
-.grow {
+.edit-actions {
+  flex-wrap: nowrap;
   width: 100%;
+}
+
+.edit-delete {
+  margin-left: auto;
 }
 
 .emoji-trigger {

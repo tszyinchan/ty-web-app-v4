@@ -30,6 +30,7 @@
   padding: 16px;
   border-radius: 12px;
   @include dl.paper;
+  animation: dl-sheet-in 220ms ease-out;
 }
 
 .sheet-title {
@@ -75,18 +76,6 @@
   &.selected {
     box-shadow: 0 0 0 2px var(--dl-paper), 0 0 0 4px var(--dl-ink);
   }
-}
-
-.sheet-save {
-  @include dl.ink-btn-fill;
-}
-
-.sheet-ghost {
-  @include dl.text-link;
-}
-
-.dl-link {
-  @include dl.text-link;
 }
 
 .emoji-picker-backdrop {

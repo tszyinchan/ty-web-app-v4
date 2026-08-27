@@ -22,7 +22,7 @@
 
   @if (service.loading() && service.historyItems().length === 0) {
     <div class="empty-placeholder">
-      <mat-spinner diameter="28"></mat-spinner>
+      <span class="dl-spinner" role="status" aria-label="Loading"></span>
     </div>
   } @else {
     <section class="dash-section">

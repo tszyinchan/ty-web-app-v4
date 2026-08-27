@@ -10,7 +10,7 @@
 
   @if (service.othersLoading() && calendarEvents().length === 0 && feedPeople().length === 0) {
     <div class="empty-placeholder">
-      <mat-spinner diameter="28"></mat-spinner>
+      <span class="dl-spinner" role="status" aria-label="Loading"></span>
     </div>
   } @else if (selectedDate()) {
     <div class="feed">
@@ -20,8 +20,14 @@
           <div class="person-head">
             <span class="person-name">{{ person.name }}</span>
             @if (person.isSelf) {
-              <button type="button" class="text-link" (click)="openToday()">
-                Edit in Log
+              <button
+                type="button"
+                class="dl-icon-btn"
+                aria-label="Edit in Log"
+                title="Edit in Log"
+                (click)="openToday()"
+              >
+                <app-daily-log-icon name="edit" />
               </button>
             }
           </div>

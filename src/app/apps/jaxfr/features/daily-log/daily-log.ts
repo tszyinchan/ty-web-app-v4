@@ -22,15 +22,6 @@ import {
   moveItemInArray,
 } from '@angular/cdk/drag-drop';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import {
-  MatAutocompleteModule,
-  MatAutocompleteSelectedEvent,
-} from '@angular/material/autocomplete';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatIconModule } from '@angular/material/icon';
-import { MatInputModule } from '@angular/material/input';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatTooltipModule } from '@angular/material/tooltip';
 import { Subscription } from 'rxjs';
 import 'emoji-picker-element';
 
@@ -52,6 +43,7 @@ import {
   DailyLogChromeNavLink,
 } from './daily-log-chrome';
 import { DailyLogFace } from './daily-log-face';
+import { DailyLogIcon } from './daily-log-icon';
 import { DailyLogService } from './daily-log.service';
 import {
   STRIP_EXTEND_WEEKS,
@@ -67,6 +59,8 @@ import {
   isDateInLogWeek,
   isDateInStrip,
   isDayItemCompleted,
+  isEditDraftDirty,
+  confirmDiscardEdits,
   normalizeLogDateParam,
   shiftLogDate,
   sortDayRowsForDisplay,
@@ -89,12 +83,7 @@ type EmojiPickerTarget = 'edit';
     DailyLogAddSheet,
     DailyLogChrome,
     DailyLogFace,
-    MatAutocompleteModule,
-    MatFormFieldModule,
-    MatIconModule,
-    MatInputModule,
-    MatProgressSpinnerModule,
-    MatTooltipModule,
+    DailyLogIcon,
   ],
   templateUrl: './daily-log.html',
   styleUrl: './daily-log.scss',
@@ -124,6 +113,7 @@ export class DailyLog implements OnInit, AfterViewInit, OnDestroy {
   stripWeekCount = signal(initialStripWeekCount());
   private visiblePage = signal(STRIP_WEEKS_BEFORE);
   newItemText = signal('');
+  addFocused = signal(false);
   showTemplateHint = signal(false);
   emojiPickerTarget = signal<EmojiPickerTarget | null>(null);
   editingDayId = signal<string | null>(null);
@@ -135,6 +125,12 @@ export class DailyLog implements OnInit, AfterViewInit, OnDestroy {
   editEmoji: string | null = null;
   editColour: DlColourPresetKey = 'slate';
   editRemarks = '';
+  private editOrigin: {
+    text: string;
+    emoji: string | null;
+    colour: DlColourPresetKey;
+    remarks: string;
+  } | null = null;
 
   readonly colourPresets = DL_COLOUR_PRESETS;
   readonly moods = DL_MOODS;
@@ -202,6 +198,7 @@ export class DailyLog implements OnInit, AfterViewInit, OnDestroy {
     return [
       {
         label: 'Today',
+        icon: 'today',
         disabled: this.isOnTodayView() || busy,
         onClick: () => this.goToday(),
       },
@@ -236,7 +233,7 @@ export class DailyLog implements OnInit, AfterViewInit, OnDestroy {
       }
       this.selectedDate.set(normalized);
       this.showTemplateHint.set(false);
-      this.cancelEdit();
+      this.abandonEdit();
       this.resetAddPanel();
       if (
         this.stripHasFetched &&
@@ -286,14 +283,6 @@ export class DailyLog implements OnInit, AfterViewInit, OnDestroy {
     if (selected) classes.push('selected');
     return classes;
   }
-
-  displayLibraryName = (id: string): string => {
-    if (!id) return '';
-    return (
-      this.service.libraryItems().find((row) => row.tb_tyapp_dl_itm_id === id)
-        ?.item_text ?? id
-    );
-  };
 
   goToDate(dateStr: string, replaceUrl = false) {
     void this.router.navigate([], {
@@ -477,21 +466,47 @@ export class DailyLog implements OnInit, AfterViewInit, OnDestroy {
   }
 
   startEdit(item: DailyLogDayRow) {
+    if (this.editingDayId() === item.tb_tyapp_dl_day_id) return;
+    if (this.editingDayId() && !confirmDiscardEdits(this.isEditDirty())) return;
     this.editingDayId.set(item.tb_tyapp_dl_day_id);
     this.editText = item.library.item_text;
     this.editEmoji = item.library.emoji;
     this.editColour = item.library.colour_preset_key;
     this.editRemarks = item.remarks ?? '';
+    this.editOrigin = {
+      text: this.editText,
+      emoji: this.editEmoji,
+      colour: this.editColour,
+      remarks: this.editRemarks,
+    };
     this.emojiPickerTarget.set(null);
   }
 
   cancelEdit() {
+    if (!confirmDiscardEdits(this.isEditDirty())) return;
+    this.abandonEdit();
+  }
+
+  private abandonEdit() {
     this.editingDayId.set(null);
     this.editText = '';
     this.editEmoji = null;
     this.editColour = 'slate';
     this.editRemarks = '';
+    this.editOrigin = null;
     if (this.emojiPickerTarget() === 'edit') this.emojiPickerTarget.set(null);
+  }
+
+  private isEditDirty(): boolean {
+    return isEditDraftDirty(
+      {
+        text: this.editText,
+        emoji: this.editEmoji,
+        colour: this.editColour,
+        remarks: this.editRemarks,
+      },
+      this.editOrigin,
+    );
   }
 
   async saveEdit(item: DailyLogDayRow) {
@@ -506,12 +521,12 @@ export class DailyLog implements OnInit, AfterViewInit, OnDestroy {
       this.editRemarks,
       false,
     );
-    if (remarksOk) this.cancelEdit();
+    if (remarksOk) this.abandonEdit();
   }
 
   async onDelete(item: DailyLogDayRow) {
     if (!confirm(`Remove "${item.library.item_text}" from this date?`)) return;
-    if (this.editingDayId() === item.tb_tyapp_dl_day_id) this.cancelEdit();
+    if (this.editingDayId() === item.tb_tyapp_dl_day_id) this.abandonEdit();
     await this.service.deleteDayItem(item.tb_tyapp_dl_day_id);
   }
 
@@ -538,11 +553,13 @@ export class DailyLog implements OnInit, AfterViewInit, OnDestroy {
   }
 
   onAddInputFocus() {
+    this.addFocused.set(true);
     this.scrollAddRowAboveKeyboard();
     this.watchAddViewport();
   }
 
   onAddInputBlur() {
+    this.addFocused.set(false);
     this.clearAddScrollWatch();
   }
 
@@ -579,16 +596,13 @@ export class DailyLog implements OnInit, AfterViewInit, OnDestroy {
     await this.service.upsertDayLog(date, { moodKey: mood, title });
   }
 
-  async onSuggestionSelected(
-    event: MatAutocompleteSelectedEvent,
-    input: HTMLInputElement,
-  ) {
-    const itemId = String(event.option.value ?? '');
-    if (!itemId) return;
-    // MatAutocomplete writes displayWith() into the native input after this
-    // event, which would put the chosen name back into the box.
-    this.resetAddPanel(input);
-    await this.service.addExistingItemToDate(this.selectedDate(), itemId);
+  async onSuggestionPicked(item: DailyLogLibraryItem) {
+    this.addFocused.set(false);
+    this.resetAddPanel(this.addItemInput()?.nativeElement);
+    await this.service.addExistingItemToDate(
+      this.selectedDate(),
+      item.tb_tyapp_dl_itm_id,
+    );
     this.scrollAddRowIntoView();
   }
 

@@ -13,16 +13,6 @@ import {
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import 'emoji-picker-element';
-import {
-  MatAutocompleteModule,
-  MatAutocompleteSelectedEvent,
-} from '@angular/material/autocomplete';
-import { MatButtonModule } from '@angular/material/button';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatIconModule } from '@angular/material/icon';
-import { MatInputModule } from '@angular/material/input';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { HeaderService } from '../../../../core/services/header.service';
 import {
@@ -32,11 +22,14 @@ import {
   DlColourPresetKey,
 } from './daily-log.model';
 import { DailyLogChrome, DailyLogChromeAction } from './daily-log-chrome';
+import { DailyLogIcon } from './daily-log-icon';
 import { DailyLogService } from './daily-log.service';
 import {
   colourClass,
   filterLibrarySuggestions,
   findLibraryItemByName,
+  confirmDiscardEdits,
+  isEditDraftDirty,
 } from './daily-log.util';
 
 @Component({
@@ -47,13 +40,7 @@ import {
     FormsModule,
     RouterModule,
     DailyLogChrome,
-    MatAutocompleteModule,
-    MatButtonModule,
-    MatFormFieldModule,
-    MatIconModule,
-    MatInputModule,
-    MatProgressSpinnerModule,
-    MatTooltipModule,
+    DailyLogIcon,
   ],
   templateUrl: './daily-log-template.html',
   styleUrl: './daily-log-template.scss',
@@ -75,12 +62,18 @@ export class DailyLogTemplate implements OnInit, OnDestroy {
   }
 
   newItemText = signal('');
+  addFocused = signal(false);
   newEmoji = signal<string | null>(null);
   newColour = signal<DlColourPresetKey>('slate');
   editingId = signal<string | null>(null);
   editText = '';
   editEmoji: string | null = null;
   editColour: DlColourPresetKey = 'slate';
+  private editOrigin: {
+    text: string;
+    emoji: string | null;
+    colour: DlColourPresetKey;
+  } | null = null;
 
   readonly showNewItemExtras = computed(() => {
     const text = this.newItemText().trim();
@@ -124,27 +117,15 @@ export class DailyLogTemplate implements OnInit, OnDestroy {
     await this.service.fetchTemplateItems(true);
   }
 
-  displayLibraryName = (id: string): string => {
-    if (!id) return '';
-    return (
-      this.service.libraryItems().find((row) => row.tb_tyapp_dl_itm_id === id)
-        ?.item_text ?? id
-    );
-  };
-
   suggestionLabel(item: DailyLogLibraryItem): string {
     const emoji = item.emoji ? `${item.emoji} ` : '';
     return `${emoji}${item.item_text}`;
   }
 
-  async onSuggestionSelected(
-    event: MatAutocompleteSelectedEvent,
-    input: HTMLInputElement,
-  ) {
-    const itemId = String(event.option.value ?? '');
-    if (!itemId) return;
-    this.resetAddPanel(input);
-    await this.service.addTemplateItem(itemId);
+  async onSuggestionPicked(item: DailyLogLibraryItem) {
+    this.addFocused.set(false);
+    this.resetAddPanel();
+    await this.service.addTemplateItem(item.tb_tyapp_dl_itm_id);
   }
 
   async onAdd() {
@@ -212,18 +193,42 @@ export class DailyLogTemplate implements OnInit, OnDestroy {
   }
 
   startEdit(item: DailyLogTemplateRow) {
+    if (this.editingId() === item.item_id) return;
+    if (this.editingId() && !confirmDiscardEdits(this.isEditDirty())) return;
     this.editingId.set(item.item_id);
     this.editText = item.library.item_text;
     this.editEmoji = item.library.emoji;
     this.editColour = item.library.colour_preset_key;
+    this.editOrigin = {
+      text: this.editText,
+      emoji: this.editEmoji,
+      colour: this.editColour,
+    };
   }
 
   cancelEdit() {
+    if (!confirmDiscardEdits(this.isEditDirty())) return;
+    this.abandonEdit();
+  }
+
+  private abandonEdit() {
     this.editingId.set(null);
     this.editText = '';
     this.editEmoji = null;
     this.editColour = 'slate';
+    this.editOrigin = null;
     if (this.emojiPickerTarget() === 'edit') this.emojiPickerTarget.set(null);
+  }
+
+  private isEditDirty(): boolean {
+    return isEditDraftDirty(
+      {
+        text: this.editText,
+        emoji: this.editEmoji,
+        colour: this.editColour,
+      },
+      this.editOrigin,
+    );
   }
 
   selectEditColour(key: DlColourPresetKey) {
@@ -238,7 +243,7 @@ export class DailyLogTemplate implements OnInit, OnDestroy {
       emoji: this.editEmoji,
       colourPresetKey: this.editColour,
     });
-    if (ok) this.cancelEdit();
+    if (ok) this.abandonEdit();
   }
 
   async onDelete(item: DailyLogTemplateRow) {
@@ -249,7 +254,7 @@ export class DailyLogTemplate implements OnInit, OnDestroy {
     ) {
       return;
     }
-    if (this.editingId() === item.item_id) this.cancelEdit();
+    if (this.editingId() === item.item_id) this.abandonEdit();
     await this.service.deleteTemplateItem(item.tb_tyapp_dl_tpl_id);
   }
 

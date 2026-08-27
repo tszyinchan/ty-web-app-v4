@@ -1,16 +1,24 @@
 <div class="sheet-backdrop" (click)="cancel()"></div>
 <div class="sheet" (click)="$event.stopPropagation()">
   <h2 class="sheet-title">New item</h2>
-  <mat-form-field appearance="outline" subscriptSizing="dynamic" class="grow">
-    <mat-label>Name</mat-label>
-    <input matInput [(ngModel)]="itemText" name="sheet_item_text" />
-  </mat-form-field>
+  <label class="dl-field">
+    <span class="dl-field-label">Name</span>
+    <input class="dl-field-input" [(ngModel)]="itemText" name="sheet_item_text" />
+  </label>
   <div class="emoji-pick-row">
     <button type="button" class="emoji-trigger" (click)="openEmojiPicker()">
       {{ emoji || 'Add emoji' }}
     </button>
     @if (emoji) {
-      <button type="button" class="dl-link" (click)="clearEmoji()">Clear</button>
+      <button
+        type="button"
+        class="dl-icon-btn"
+        aria-label="Clear emoji"
+        title="Clear emoji"
+        (click)="clearEmoji()"
+      >
+        <app-daily-log-icon name="clear-emoji" />
+      </button>
     }
   </div>
   <div class="colour-row">
@@ -24,20 +32,30 @@
       ></button>
     }
   </div>
-  <mat-form-field appearance="outline" subscriptSizing="dynamic" class="grow">
-    <mat-label>Remarks</mat-label>
-    <input matInput [(ngModel)]="remarks" name="sheet_item_remarks" />
-  </mat-form-field>
+  <label class="dl-field">
+    <span class="dl-field-label">Remarks</span>
+    <input class="dl-field-input" [(ngModel)]="remarks" name="sheet_item_remarks" />
+  </label>
   <div class="sheet-actions">
     <button
       type="button"
-      class="sheet-save"
+      class="dl-icon-btn-fill"
+      aria-label="Add"
+      title="Add"
       [disabled]="busy() || !itemText.trim()"
       (click)="confirm()"
     >
-      Add
+      <app-daily-log-icon name="add" />
     </button>
-    <button type="button" class="sheet-ghost" (click)="cancel()">Cancel</button>
+    <button
+      type="button"
+      class="dl-icon-btn"
+      aria-label="Cancel"
+      title="Cancel"
+      (click)="cancel()"
+    >
+      <app-daily-log-icon name="cancel" />
+    </button>
   </div>
 </div>
 

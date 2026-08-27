@@ -8,8 +8,6 @@ import {
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
 import 'emoji-picker-element';
 
 import {
@@ -17,6 +15,7 @@ import {
   DlColourPresetKey,
 } from './daily-log.model';
 import { colourClass } from './daily-log.util';
+import { DailyLogIcon } from './daily-log-icon';
 
 @Component({
   selector: 'app-daily-log-add-sheet',
@@ -24,8 +23,7 @@ import { colourClass } from './daily-log.util';
   imports: [
     CommonModule,
     FormsModule,
-    MatFormFieldModule,
-    MatInputModule,
+    DailyLogIcon,
   ],
   templateUrl: './daily-log-add-sheet.html',
   styleUrl: './daily-log-add-sheet.scss',

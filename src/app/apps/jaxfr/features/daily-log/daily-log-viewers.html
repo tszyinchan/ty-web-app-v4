@@ -15,38 +15,51 @@
 
   @if (service.viewersLoading() && service.outgoingGrants().length === 0) {
     <div class="empty-placeholder">
-      <mat-spinner diameter="28"></mat-spinner>
+      <span class="dl-spinner" role="status" aria-label="Loading"></span>
     </div>
   } @else {
-    <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
-      <mat-label>Allowed viewers</mat-label>
-      <mat-chip-grid #userGrid aria-label="Viewers who can see your daily log">
-        @for (uid of viewerIds(); track uid) {
-          <mat-chip-row (removed)="removeViewer(uid)">
-            {{ displayUserName(uid) }}
-            <button matChipRemove aria-label="remove viewer">
-              <mat-icon>cancel</mat-icon>
-            </button>
-          </mat-chip-row>
+    <div class="dl-chip-list">
+      @for (uid of viewerIds(); track uid) {
+        <span class="dl-chip">
+          {{ displayUserName(uid) }}
+          <button
+            type="button"
+            class="dl-chip-x"
+            aria-label="Remove viewer"
+            (click)="removeViewer(uid)"
+          >
+            ×
+          </button>
+        </span>
+      }
+      <div class="dl-suggest-wrap grow">
+        <label class="dl-field">
+          <span class="dl-field-label">Allowed viewers</span>
+          <input
+            class="dl-field-input"
+            placeholder="Search a person to grant view access..."
+            [value]="userSearch()"
+            (input)="onSearchInput($event)"
+            (focus)="searchOpen.set(true)"
+            (blur)="searchOpen.set(false)"
+          />
+        </label>
+        @if (searchOpen() && filteredUsers().length) {
+          <div class="dl-suggest" role="listbox">
+            @for (opt of filteredUsers(); track opt.value) {
+              <button
+                type="button"
+                class="dl-suggest-opt"
+                (mousedown)="$event.preventDefault()"
+                (click)="addViewer(opt.value)"
+              >
+                {{ opt.label }}
+              </button>
+            }
+          </div>
         }
-        <input
-          placeholder="Search a person to grant view access..."
-          #userInput
-          [matChipInputFor]="userGrid"
-          [matAutocomplete]="userAuto"
-          (input)="userSearch.set(userInput.value)"
-          (focus)="userSearch.set('')"
-        />
-      </mat-chip-grid>
-      <mat-autocomplete
-        #userAuto="matAutocomplete"
-        (optionSelected)="addViewer($event); userInput.value = ''"
-      >
-        @for (opt of filteredUsers(); track opt.value) {
-          <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
-        }
-      </mat-autocomplete>
-    </mat-form-field>
+      </div>
+    </div>
   }
   </div>
 </div>

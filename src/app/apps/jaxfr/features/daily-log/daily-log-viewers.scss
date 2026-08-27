@@ -29,8 +29,11 @@
   line-height: 1.5;
 }
 
-.full-width {
+.full-width,
+.grow {
   width: 100%;
+  flex: 1;
+  min-width: 180px;
 }
 
 .empty-placeholder {

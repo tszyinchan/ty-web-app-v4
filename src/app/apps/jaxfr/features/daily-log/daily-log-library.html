@@ -17,17 +17,17 @@
   </p>
 
   <div class="add-block">
-    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="grow">
-      <mat-label>New item</mat-label>
+    <label class="dl-field">
+      <span class="dl-field-label">New item</span>
       <input
-        matInput
+        class="dl-field-input"
         [ngModel]="newItemText()"
         (ngModelChange)="newItemText.set($event)"
         name="new_library_text"
         placeholder="Name"
         (keydown.enter)="onAdd()"
       />
-    </mat-form-field>
+    </label>
 
     @if (nameTaken()) {
       <p class="empty-copy">That name already exists.</p>
@@ -44,8 +44,14 @@
             {{ newEmoji() || 'Add emoji' }}
           </button>
           @if (newEmoji()) {
-            <button mat-button type="button" (click)="clearNewEmoji()">
-              Clear
+            <button
+              type="button"
+              class="dl-icon-btn"
+              aria-label="Clear emoji"
+              title="Clear emoji"
+              (click)="clearNewEmoji()"
+            >
+              <app-daily-log-icon name="clear-emoji" />
             </button>
           }
         </div>
@@ -61,13 +67,14 @@
           }
         </div>
         <button
-          mat-flat-button
-          color="primary"
           type="button"
+          class="dl-icon-btn-fill"
+          aria-label="Add"
+          title="Add"
           [disabled]="service.busy() || !newItemText().trim()"
           (click)="onAdd()"
         >
-          Add
+          <app-daily-log-icon name="add" />
         </button>
       </div>
     }
@@ -75,7 +82,7 @@
 
   @if (service.libraryLoading() && service.libraryItems().length === 0) {
     <div class="empty-placeholder">
-      <mat-spinner diameter="28"></mat-spinner>
+      <span class="dl-spinner" role="status" aria-label="Loading"></span>
     </div>
   } @else if (service.libraryItems().length === 0) {
     <p class="empty-copy">No Library items yet. Add a name above.</p>
@@ -85,10 +92,14 @@
         <div class="item-row">
           @if (editingId() === item.tb_tyapp_dl_itm_id) {
             <div class="edit-block">
-              <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                <mat-label>Item</mat-label>
-                <input matInput [(ngModel)]="editText" name="edit_library_text" />
-              </mat-form-field>
+              <label class="dl-field">
+                <span class="dl-field-label">Item</span>
+                <input
+                  class="dl-field-input"
+                  [(ngModel)]="editText"
+                  name="edit_library_text"
+                />
+              </label>
               <div class="emoji-pick-row">
                 <button
                   type="button"
@@ -98,8 +109,14 @@
                   {{ editEmoji || 'Add emoji' }}
                 </button>
                 @if (editEmoji) {
-                  <button mat-button type="button" (click)="clearEditEmoji()">
-                    Clear
+                  <button
+                    type="button"
+                    class="dl-icon-btn"
+                    aria-label="Clear emoji"
+                    title="Clear emoji"
+                    (click)="clearEditEmoji()"
+                  >
+                    <app-daily-log-icon name="clear-emoji" />
                   </button>
                 }
               </div>
@@ -118,15 +135,23 @@
               </div>
               <div class="row-actions">
                 <button
-                  mat-button
                   type="button"
+                  class="dl-icon-btn-fill"
+                  aria-label="Save"
+                  title="Save"
                   [disabled]="service.busy()"
                   (click)="saveEdit()"
                 >
-                  Save
+                  <app-daily-log-icon name="save" />
                 </button>
-                <button mat-button type="button" (click)="cancelEdit()">
-                  Cancel
+                <button
+                  type="button"
+                  class="dl-icon-btn"
+                  aria-label="Cancel"
+                  title="Cancel"
+                  (click)="cancelEdit()"
+                >
+                  <app-daily-log-icon name="cancel" />
                 </button>
               </div>
             </div>
@@ -146,25 +171,27 @@
             <div class="row-actions">
               <span class="usage-copy">{{ usageLabel(item) }}</span>
               <button
-                mat-icon-button
                 type="button"
-                matTooltip="Edit Library item"
+                class="dl-row-btn"
+                title="Edit Library item"
+                aria-label="Edit Library item"
                 [disabled]="service.busy()"
                 (click)="startEdit(item)"
               >
-                <mat-icon>edit</mat-icon>
+                <app-daily-log-icon name="edit" />
               </button>
               <button
-                mat-icon-button
                 type="button"
-                [matTooltip]="deleteTooltip(item)"
+                class="dl-icon-btn-danger"
+                [attr.title]="deleteTooltip(item)"
+                [attr.aria-label]="deleteTooltip(item)"
                 [disabled]="
                   service.busy() ||
                   !service.canDeleteLibraryItem(item.tb_tyapp_dl_itm_id)
                 "
                 (click)="onDelete(item)"
               >
-                <mat-icon>delete_outline</mat-icon>
+                <app-daily-log-icon name="delete" />
               </button>
             </div>
           }

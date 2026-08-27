@@ -8,8 +8,6 @@ import {
   signal,
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { MatIconModule } from '@angular/material/icon';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { CalendarEvent, CalendarMonthViewComponent } from 'angular-calendar';
 import { addMonths, endOfMonth, startOfDay, startOfMonth, subMonths } from 'date-fns';
 import { Subscription } from 'rxjs';
@@ -26,6 +24,7 @@ import {
 } from './daily-log.model';
 import { DailyLogChrome, DailyLogChromeAction, DailyLogChromeMonthNav } from './daily-log-chrome';
 import { DailyLogFace } from './daily-log-face';
+import { DailyLogIcon } from './daily-log-icon';
 import { DailyLogService } from './daily-log.service';
 import {
   DATE_QUERY_PATTERN,
@@ -49,11 +48,10 @@ interface OthersPersonDay {
   standalone: true,
   imports: [
     CommonModule,
-    MatIconModule,
-    MatProgressSpinnerModule,
     CalendarMonthViewComponent,
     DailyLogChrome,
     DailyLogFace,
+    DailyLogIcon,
   ],
   providers: [DisplayNamePipe],
   templateUrl: './daily-log-others.html',
@@ -100,6 +98,7 @@ export class DailyLogOthers implements OnInit, OnDestroy {
       return [
         {
           label: 'Calendar',
+          icon: 'calendar',
           onClick: () => this.closeFeed(),
         },
       ];
@@ -107,11 +106,13 @@ export class DailyLogOthers implements OnInit, OnDestroy {
     return [
       {
         label: 'Today',
+        icon: 'today',
         disabled: this.isOnCurrentMonth(),
         onClick: () => this.goTodayMonth(),
       },
       {
         label: 'Who can view',
+        icon: 'people',
         onClick: () => void this.router.navigate(['/daily-log/viewers']),
       },
     ];

@@ -1,14 +1,5 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
-import {
-  MatAutocompleteModule,
-  MatAutocompleteSelectedEvent,
-} from '@angular/material/autocomplete';
-import { MatChipsModule } from '@angular/material/chips';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatIconModule } from '@angular/material/icon';
-import { MatInputModule } from '@angular/material/input';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import { AuthService } from '../../../../core/services/auth.service';
 import { HeaderService } from '../../../../core/services/header.service';
@@ -24,12 +15,6 @@ import { DailyLogService } from './daily-log.service';
   imports: [
     CommonModule,
     DailyLogChrome,
-    MatAutocompleteModule,
-    MatChipsModule,
-    MatFormFieldModule,
-    MatIconModule,
-    MatInputModule,
-    MatProgressSpinnerModule,
   ],
   providers: [DisplayNamePipe],
   templateUrl: './daily-log-viewers.html',
@@ -44,6 +29,7 @@ export class DailyLogViewers implements OnInit, OnDestroy {
   private displayNamePipe = inject(DisplayNamePipe);
 
   userSearch = signal('');
+  searchOpen = signal(false);
 
   readonly viewerIds = computed(() =>
     this.service.outgoingGrants().map((row) => row.viewer_user_id),
@@ -88,9 +74,14 @@ export class DailyLogViewers implements OnInit, OnDestroy {
     return this.displayNamePipe.transform(user);
   }
 
-  async addViewer(event: MatAutocompleteSelectedEvent) {
-    const userId = String(event.option.value ?? '');
+  onSearchInput(event: Event) {
+    const value = (event.target as HTMLInputElement | null)?.value ?? '';
+    this.userSearch.set(value);
+  }
+
+  async addViewer(userId: string) {
     this.userSearch.set('');
+    this.searchOpen.set(false);
     if (!userId) return;
     const owner = this.authService.userProfile()?.user_id || '';
     if (

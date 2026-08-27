@@ -11,17 +11,13 @@
           @for (action of actions(); track action.label) {
             <button
               type="button"
-              [class.chrome-action]="!action.icon"
-              [class.chrome-icon]="!!action.icon"
+              class="chrome-action"
               [disabled]="action.disabled"
               [attr.aria-label]="action.label"
+              [attr.title]="action.label"
               (click)="action.onClick()"
             >
-              @if (action.icon) {
-                <mat-icon>{{ action.icon }}</mat-icon>
-              } @else {
-                {{ action.label }}
-              }
+              <app-daily-log-icon [name]="action.icon" />
             </button>
           }
         </div>

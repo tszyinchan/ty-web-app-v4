@@ -23,6 +23,34 @@ export function isDayItemCompleted(item: { completed_at: string | null }): boole
   return item.completed_at != null;
 }
 
+export function confirmDiscardEdits(dirty: boolean): boolean {
+  if (!dirty) return true;
+  return confirm('Discard unsaved changes?');
+}
+
+export function isEditDraftDirty(
+  current: {
+    text: string;
+    emoji: string | null;
+    colour: DlColourPresetKey;
+    remarks?: string;
+  },
+  origin: {
+    text: string;
+    emoji: string | null;
+    colour: DlColourPresetKey;
+    remarks?: string;
+  } | null,
+): boolean {
+  if (!origin) return false;
+  return (
+    current.text !== origin.text ||
+    current.emoji !== origin.emoji ||
+    current.colour !== origin.colour ||
+    (current.remarks ?? '') !== (origin.remarks ?? '')
+  );
+}
+
 export function completionPercent(completed: number, total: number): number {
   if (total <= 0) return 0;
   return Math.round((completed / total) * 100);

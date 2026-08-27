@@ -17,30 +17,36 @@
   </p>
 
   <div class="add-block">
-    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="grow">
-      <mat-label>Add to Template</mat-label>
-      <input
-        #addItemInput
-        matInput
-        [ngModel]="newItemText()"
-        (ngModelChange)="newItemText.set($event)"
-        [matAutocomplete]="itemAuto"
-        name="new_template_text"
-        placeholder="Name, or pick an existing item"
-        (keydown.enter)="onAdd()"
-      />
-      <mat-autocomplete
-        #itemAuto="matAutocomplete"
-        [displayWith]="displayLibraryName"
-        (optionSelected)="onSuggestionSelected($event, addItemInput)"
-      >
-        @for (opt of filteredSuggestions(); track opt.tb_tyapp_dl_itm_id) {
-          <mat-option [value]="opt.tb_tyapp_dl_itm_id">
-            {{ suggestionLabel(opt) }}
-          </mat-option>
-        }
-      </mat-autocomplete>
-    </mat-form-field>
+    <div class="dl-suggest-wrap">
+      <label class="dl-field">
+        <span class="dl-field-label">Add to Template</span>
+        <input
+          #addItemInput
+          class="dl-field-input"
+          [ngModel]="newItemText()"
+          (ngModelChange)="newItemText.set($event)"
+          name="new_template_text"
+          placeholder="Name, or pick an existing item"
+          (focus)="addFocused.set(true)"
+          (blur)="addFocused.set(false)"
+          (keydown.enter)="onAdd()"
+        />
+      </label>
+      @if (addFocused() && filteredSuggestions().length) {
+        <div class="dl-suggest" role="listbox">
+          @for (opt of filteredSuggestions(); track opt.tb_tyapp_dl_itm_id) {
+            <button
+              type="button"
+              class="dl-suggest-opt"
+              (mousedown)="$event.preventDefault()"
+              (click)="onSuggestionPicked(opt)"
+            >
+              {{ suggestionLabel(opt) }}
+            </button>
+          }
+        </div>
+      }
+    </div>
 
     @if (showNewItemExtras()) {
       <div class="new-extras">
@@ -53,8 +59,14 @@
             {{ newEmoji() || 'Add emoji' }}
           </button>
           @if (newEmoji()) {
-            <button mat-button type="button" (click)="clearNewEmoji()">
-              Clear
+            <button
+              type="button"
+              class="dl-icon-btn"
+              aria-label="Clear emoji"
+              title="Clear emoji"
+              (click)="clearNewEmoji()"
+            >
+              <app-daily-log-icon name="clear-emoji" />
             </button>
           }
         </div>
@@ -70,13 +82,14 @@
           }
         </div>
         <button
-          mat-flat-button
-          color="primary"
           type="button"
+          class="dl-icon-btn-fill"
+          aria-label="Add"
+          title="Add"
           [disabled]="service.busy() || !newItemText().trim()"
           (click)="onAdd()"
         >
-          Add
+          <app-daily-log-icon name="add" />
         </button>
       </div>
     }
@@ -84,7 +97,7 @@
 
   @if (service.templateLoading() && service.templateItems().length === 0) {
     <div class="empty-placeholder">
-      <mat-spinner diameter="28"></mat-spinner>
+      <span class="dl-spinner" role="status" aria-label="Loading"></span>
     </div>
   } @else if (service.templateItems().length === 0) {
     <p class="empty-copy">
@@ -100,10 +113,14 @@
         <div class="item-row">
           @if (editingId() === item.item_id) {
             <div class="edit-block">
-              <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                <mat-label>Item</mat-label>
-                <input matInput [(ngModel)]="editText" name="edit_library_text" />
-              </mat-form-field>
+              <label class="dl-field">
+                <span class="dl-field-label">Item</span>
+                <input
+                  class="dl-field-input"
+                  [(ngModel)]="editText"
+                  name="edit_library_text"
+                />
+              </label>
               <div class="emoji-pick-row">
                 <button
                   type="button"
@@ -113,8 +130,14 @@
                   {{ editEmoji || 'Add emoji' }}
                 </button>
                 @if (editEmoji) {
-                  <button mat-button type="button" (click)="clearEditEmoji()">
-                    Clear
+                  <button
+                    type="button"
+                    class="dl-icon-btn"
+                    aria-label="Clear emoji"
+                    title="Clear emoji"
+                    (click)="clearEditEmoji()"
+                  >
+                    <app-daily-log-icon name="clear-emoji" />
                   </button>
                 }
               </div>
@@ -133,15 +156,23 @@
               </div>
               <div class="row-actions">
                 <button
-                  mat-button
                   type="button"
+                  class="dl-icon-btn-fill"
+                  aria-label="Save"
+                  title="Save"
                   [disabled]="service.busy()"
                   (click)="saveEdit()"
                 >
-                  Save
+                  <app-daily-log-icon name="save" />
                 </button>
-                <button mat-button type="button" (click)="cancelEdit()">
-                  Cancel
+                <button
+                  type="button"
+                  class="dl-icon-btn"
+                  aria-label="Cancel"
+                  title="Cancel"
+                  (click)="cancelEdit()"
+                >
+                  <app-daily-log-icon name="cancel" />
                 </button>
               </div>
             </div>
@@ -160,40 +191,44 @@
             </div>
             <div class="row-actions">
               <button
-                mat-icon-button
                 type="button"
-                matTooltip="Move up"
+                class="dl-row-btn"
+                title="Move up"
+                aria-label="Move up"
                 [disabled]="service.busy() || !canMoveUp(i)"
                 (click)="move(item, -1)"
               >
-                <mat-icon>keyboard_arrow_up</mat-icon>
+                <app-daily-log-icon name="up" />
               </button>
               <button
-                mat-icon-button
                 type="button"
-                matTooltip="Move down"
+                class="dl-row-btn"
+                title="Move down"
+                aria-label="Move down"
                 [disabled]="service.busy() || !canMoveDown(i)"
                 (click)="move(item, 1)"
               >
-                <mat-icon>keyboard_arrow_down</mat-icon>
+                <app-daily-log-icon name="down" />
               </button>
               <button
-                mat-icon-button
                 type="button"
-                matTooltip="Edit Library item"
+                class="dl-row-btn"
+                title="Edit Library item"
+                aria-label="Edit Library item"
                 [disabled]="service.busy()"
                 (click)="startEdit(item)"
               >
-                <mat-icon>edit</mat-icon>
+                <app-daily-log-icon name="edit" />
               </button>
               <button
-                mat-icon-button
                 type="button"
-                matTooltip="Remove from Template"
+                class="dl-icon-btn-danger"
+                title="Remove from Template"
+                aria-label="Remove from Template"
                 [disabled]="service.busy()"
                 (click)="onDelete(item)"
               >
-                <mat-icon>delete_outline</mat-icon>
+                <app-daily-log-icon name="delete" />
               </button>
             </div>
           }

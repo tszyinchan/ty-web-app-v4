@@ -1,10 +1,10 @@
 import { Component, input } from '@angular/core';
 import { RouterModule } from '@angular/router';
-import { MatIconModule } from '@angular/material/icon';
+import { DailyLogIcon, DailyLogIconName } from './daily-log-icon';
 
 export interface DailyLogChromeAction {
   label: string;
-  icon?: string;
+  icon: DailyLogIconName;
   disabled?: boolean;
   onClick: () => void;
 }
@@ -22,7 +22,7 @@ export interface DailyLogChromeMonthNav {
 @Component({
   selector: 'app-daily-log-chrome',
   standalone: true,
-  imports: [RouterModule, MatIconModule],
+  imports: [RouterModule, DailyLogIcon],
   templateUrl: './daily-log-chrome.html',
   styleUrl: './daily-log-chrome.scss',
 })

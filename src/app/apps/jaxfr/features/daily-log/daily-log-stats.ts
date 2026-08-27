@@ -1,6 +1,5 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import { HeaderService } from '../../../../core/services/header.service';
 import { formatDate } from '../../../../core/utils/date-time.util';
@@ -21,7 +20,7 @@ const STATS_RANGES: {
 @Component({
   selector: 'app-daily-log-stats',
   standalone: true,
-  imports: [CommonModule, DailyLogChrome, MatProgressSpinnerModule],
+  imports: [CommonModule, DailyLogChrome],
   templateUrl: './daily-log-stats.html',
   styleUrl: './daily-log-stats.scss',
 })
