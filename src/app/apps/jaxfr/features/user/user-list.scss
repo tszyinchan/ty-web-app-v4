@@ -1,0 +1,30 @@
+.reactivation-banner {
+  max-width: 800px;
+  margin: 16px auto 0;
+  padding: 16px;
+  border: 1px solid var(--app-border-subtle);
+  border-radius: var(--app-radius);
+  background: var(--app-surface-raised);
+}
+
+.reactivation-title {
+  font-size: 14px;
+  font-weight: var(--app-weight-emphasis);
+  color: var(--app-text-primary);
+}
+
+.reactivation-copy {
+  margin: 6px 0 10px;
+  font-size: 13px;
+  color: var(--app-text-secondary);
+}
+
+.reactivation-list {
+  margin: 0;
+  padding-left: 18px;
+
+  a {
+    color: var(--app-link);
+    text-decoration: none;
+  }
+}

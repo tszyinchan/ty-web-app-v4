@@ -7,7 +7,7 @@ import { AuthService } from "../../../../core/services/auth.service";
 import { NotificationService } from "../../../../core/services/notification.service";
 import { SupabaseService } from "../../../../core/services/supabase.service";
 import { RecordStatus } from "../../../../core/models/status.enum";
-import { TyappUser } from "../../../../core/models/user.model";
+import { ReactivationRequest, TyappUser, USER_ROLES, DELETED_USER_LABEL, NameDisplayMode } from "../../../../core/models/user.model";
 import { Invitation } from "./invitation.model";
 import { UserGroup, UserGroupMember } from "./user-group.model";
 
@@ -27,6 +27,7 @@ export class UserService {
   groups = signal<UserGroup[]>([]);
   groupMembers = signal<UserGroupMember[]>([]);
   invitations = signal<Invitation[]>([]);
+  reactivationRequests = signal<ReactivationRequest[]>([]);
   loading = signal(false);
   groupsLoading = signal(false);
   invitationsLoading = signal(false);
@@ -38,16 +39,21 @@ export class UserService {
    */
   visibleUsers = computed(() => {
     const visibleIds = this.visibleUserIds();
-    return this.users().filter((user) => visibleIds.has(user.user_id));
+    return this.users().filter(
+      (user) => !user.deleted_at && visibleIds.has(user.user_id),
+    );
   });
 
   /**
-   * Work pickers: Super Admin can assign records to anyone; others follow
-   * the same circle as Chat / Filelink.
+   * Work pickers: Super Admin can assign records to anyone still in the
+   * directory; others follow the same circle as Chat / Filelink.
    */
-  pickerUsers = computed(() =>
-    this.authService.isSuperAdmin() ? this.users() : this.visibleUsers(),
-  );
+  pickerUsers = computed(() => {
+    const source = this.authService.isSuperAdmin()
+      ? this.users().filter((user) => !user.deleted_at)
+      : this.visibleUsers();
+    return source;
+  });
 
   private initialized = false;
   private groupsInitialized = false;
@@ -66,12 +72,16 @@ export class UserService {
           this.subscribeToDirectory();
           this.subscribeToGroups();
           void this.fetchGroups();
+          if (this.authService.isSuperAdmin()) {
+            void this.fetchReactivationRequests();
+          }
         } else {
           void this.unsubscribeFromDirectory();
           void this.unsubscribeFromGroups();
           this.groups.set([]);
           this.groupMembers.set([]);
           this.invitations.set([]);
+          this.reactivationRequests.set([]);
           this.groupsInitialized = false;
           this.invitationsInitialized = false;
         }
@@ -141,7 +151,6 @@ export class UserService {
         const { data, error } = await this.supabase
           .from('tyapp_user')
           .select('*')
-          .is('deleted_at', null)
           .order('tb_tyapp_pofl_seq_no', { ascending: true });
 
         if (error) throw error;
@@ -166,18 +175,21 @@ export class UserService {
   async fetchUserById(userId: string): Promise<TyappUser | null> {
     this.loading.set(true);
     try {
-      const { data, error } = await this.supabase
-        .from('tyapp_user')
-        .select('*')
-        .eq('user_id', userId)
-        .is('deleted_at', null)
-        .single();
+      const query = this.authService.isSuperAdmin()
+        ? this.supabase.from('tyapp_user').select('*').eq('user_id', userId)
+        : this.supabase
+            .from('tyapp_user')
+            .select('*')
+            .eq('user_id', userId)
+            .is('deleted_at', null);
+
+      const { data, error } = await query.maybeSingle();
 
       if (error) throw error;
 
       return this.zone.run(() => {
         this.loading.set(false);
-        return data as TyappUser;
+        return (data as TyappUser | null) ?? null;
       });
     } catch (error: unknown) {
       this.notification.handleError('Fetch User Error', error);
@@ -237,6 +249,158 @@ export class UserService {
         return false;
       });
     }
+  }
+
+  pendingReactivationUserIds(): Set<string> {
+    return new Set(
+      this.reactivationRequests()
+        .filter((row) => !row.resolved_at)
+        .map((row) => row.user_id),
+    );
+  }
+
+  async fetchReactivationRequests(): Promise<void> {
+    if (!this.authService.isSuperAdmin()) {
+      this.reactivationRequests.set([]);
+      return;
+    }
+    try {
+      const { data, error } = await this.supabase
+        .from('tyapp_account_reactivation_request')
+        .select('*')
+        .is('resolved_at', null)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      this.zone.run(() => {
+        this.reactivationRequests.set((data as ReactivationRequest[]) || []);
+      });
+    } catch (error: unknown) {
+      this.notification.handleError('Fetch Reactivation Requests Failed', error);
+    }
+  }
+
+  async setUserStatus(
+    userId: string,
+    status: RecordStatus,
+  ): Promise<TyappUser | null> {
+    this.loading.set(true);
+    try {
+      const { data, error } = await this.supabase.rpc('tyapp_user_set_status', {
+        p_user_id: userId,
+        p_status: status,
+      });
+      if (error) throw error;
+      const saved = data as TyappUser;
+      return this.zone.run(() => {
+        this.upsertUser(saved);
+        if (userId === this.authService.userProfile()?.user_id) {
+          if (saved.status === RecordStatus.Inactive) {
+            void this.authService.logout();
+          } else {
+            this.authService.updateLocalProfile(saved);
+          }
+        }
+        this.loading.set(false);
+        this.notification.showSuccess(
+          status === RecordStatus.Active
+            ? 'Account activated'
+            : 'Account deactivated',
+        );
+        void this.fetchReactivationRequests();
+        return saved;
+      });
+    } catch (error: unknown) {
+      this.notification.handleError('Update Status Failed', error);
+      return this.zone.run(() => {
+        this.loading.set(false);
+        return null;
+      });
+    }
+  }
+
+  async softDeleteUser(userId: string): Promise<boolean> {
+    this.loading.set(true);
+    try {
+      const { error } = await this.supabase.rpc('tyapp_user_soft_delete', {
+        p_user_id: userId,
+      });
+      if (error) throw error;
+      return this.zone.run(() => {
+        this.users.update((list) =>
+          list.map((item) =>
+            item.user_id === userId
+              ? {
+                  ...item,
+                  deleted_at: new Date().toISOString(),
+                  status: RecordStatus.Inactive,
+                  customized_display_name: DELETED_USER_LABEL,
+                  name_display_mode: NameDisplayMode.CustomizedOnly,
+                }
+              : item,
+          ),
+        );
+        this.loading.set(false);
+        this.notification.showSuccess('Account deleted');
+        if (userId === this.authService.userProfile()?.user_id) {
+          void this.authService.logout();
+        }
+        void this.fetchReactivationRequests();
+        return true;
+      });
+    } catch (error: unknown) {
+      this.notification.handleError('Delete Account Failed', error);
+      return this.zone.run(() => {
+        this.loading.set(false);
+        return false;
+      });
+    }
+  }
+
+  async restoreUser(userId: string): Promise<TyappUser | null> {
+    if (!this.authService.isSuperAdmin()) {
+      this.notification.handleError(
+        'Restore Failed',
+        'Only a super admin can restore an account',
+      );
+      return null;
+    }
+    this.loading.set(true);
+    try {
+      const { data, error } = await this.supabase.rpc('tyapp_user_restore', {
+        p_user_id: userId,
+      });
+      if (error) throw error;
+      const saved = data as TyappUser;
+      return this.zone.run(() => {
+        this.upsertUser(saved);
+        this.loading.set(false);
+        this.notification.showSuccess('Account restored');
+        return saved;
+      });
+    } catch (error: unknown) {
+      this.notification.handleError('Restore Failed', error);
+      return this.zone.run(() => {
+        this.loading.set(false);
+        return null;
+      });
+    }
+  }
+
+  isLastActiveSuperAdmin(userId: string): boolean {
+    const target = this.users().find((item) => item.user_id === userId);
+    if (target && (target.role < USER_ROLES.SUPER_ADMIN || target.deleted_at)) {
+      return false;
+    }
+    const activeSAs = this.users().filter(
+      (item) =>
+        !item.deleted_at &&
+        item.status === RecordStatus.Active &&
+        item.role >= USER_ROLES.SUPER_ADMIN,
+    );
+    if (activeSAs.length === 0) {
+      return true;
+    }
+    return activeSAs.length <= 1 && activeSAs.some((item) => item.user_id === userId);
   }
 
   private selfProfileUpdates(updates: Partial<TyappUser>): Partial<TyappUser> {
@@ -676,14 +840,14 @@ export class UserService {
       const row = payload.new as unknown as TyappUser;
       if (!row?.user_id) return;
 
-      if (row.deleted_at) {
-        this.removeUserFromList(row.user_id);
-      } else {
-        this.upsertUser(row);
-      }
+      this.upsertUser(row);
 
       if (row.user_id === this.authService.userProfile()?.user_id) {
-        this.authService.updateLocalProfile(row);
+        if (row.deleted_at || row.status === RecordStatus.Inactive) {
+          void this.authService.logout();
+        } else {
+          this.authService.updateLocalProfile(row);
+        }
       }
       return;
     }

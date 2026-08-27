@@ -26,11 +26,13 @@ export class Register implements OnInit {
   readonly hidePassword = signal(true);
   readonly isLoading = signal(false);
   readonly attempted = signal(false);
+  readonly showOptional = signal(false);
 
   model = {
     code: '',
     email: '',
     password: '',
+    display_name: '',
     legal_first_name: '',
     legal_last_name: '',
   };
@@ -44,6 +46,11 @@ export class Register implements OnInit {
   togglePasswordVisibility(event: MouseEvent) {
     event.preventDefault();
     this.hidePassword.update((v) => !v);
+  }
+
+  toggleOptional(event: MouseEvent) {
+    event.preventDefault();
+    this.showOptional.update((v) => !v);
   }
 
   showCodeRequired() {
@@ -74,12 +81,8 @@ export class Register implements OnInit {
     );
   }
 
-  showFirstNameRequired() {
-    return this.attempted() && !this.model.legal_first_name.trim();
-  }
-
-  showLastNameRequired() {
-    return this.attempted() && !this.model.legal_last_name.trim();
+  showNameRequired() {
+    return this.attempted() && !this.model.display_name.trim();
   }
 
   isFormInvalid() {
@@ -88,8 +91,7 @@ export class Register implements OnInit {
       !this.model.email.trim() ||
       !isValidEmail(this.model.email) ||
       this.model.password.length < 6 ||
-      !this.model.legal_first_name.trim() ||
-      !this.model.legal_last_name.trim()
+      !this.model.display_name.trim()
     );
   }
 
@@ -103,8 +105,9 @@ export class Register implements OnInit {
         code: this.model.code.trim(),
         email: this.model.email.trim(),
         password: this.model.password,
-        legal_first_name: this.model.legal_first_name.trim(),
-        legal_last_name: this.model.legal_last_name.trim(),
+        display_name: this.model.display_name.trim(),
+        legal_first_name: this.model.legal_first_name.trim() || null,
+        legal_last_name: this.model.legal_last_name.trim() || null,
       });
 
       const currentApp = getCurrentSubdomain();

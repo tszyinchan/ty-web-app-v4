@@ -1,16 +1,16 @@
 import { Injectable, inject, signal, computed, NgZone } from '@angular/core';
-import { Router } from '@angular/router';
-import { SupabaseService } from './supabase.service';
-import { NotificationService } from './notification.service';
+import { RecordStatus } from '../models/status.enum';
 import { TyappUser, USER_ROLES } from '../models/user.model';
+import { SupabaseService } from './supabase.service';
 import { clearActiveUserPreferenceCache } from '../utils/user-preference-cache.util';
+
+export const AUTH_ACCOUNT_INACTIVE = 'ACCOUNT_INACTIVE';
+export const AUTH_ACCOUNT_REJECTED = 'ACCOUNT_REJECTED';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private supabase = inject(SupabaseService).client;
-  private router = inject(Router);
   private zone = inject(NgZone);
-  private notification = inject(NotificationService);
 
   private _userProfile = signal<TyappUser | null>(null);
   public userProfile = this._userProfile.asReadonly();
@@ -25,7 +25,15 @@ export class AuthService {
     const {
       data: { session },
     } = await this.supabase.auth.getSession();
-    if (session?.user) await this.fetchProfile(session.user.id);
+    if (session?.user) {
+      const state = await this.loadActiveProfile(session.user.id);
+      if (state === 'inactive') {
+        await this.requestReactivationBestEffort();
+      }
+      if (state !== 'ok') {
+        await this.supabase.auth.signOut();
+      }
+    }
 
     this.supabase.auth.onAuthStateChange((event, session) => {
       this.zone.run(async () => {
@@ -33,7 +41,7 @@ export class AuthService {
           (event === 'SIGNED_IN' || event === 'USER_UPDATED') &&
           session?.user
         ) {
-          await this.fetchProfile(session.user.id);
+          await this.loadActiveProfile(session.user.id);
         } else if (event === 'SIGNED_OUT') {
           clearActiveUserPreferenceCache();
           this._userProfile.set(null);
@@ -48,20 +56,28 @@ export class AuthService {
     });
   }
 
-  private async fetchProfile(userId: string) {
+  private async loadActiveProfile(
+    userId: string,
+  ): Promise<'ok' | 'inactive' | 'rejected'> {
     const { data, error } = await this.supabase
       .from('tyapp_user')
       .select('*')
       .eq('user_id', userId)
-      .is('deleted_at', null)
-      .single();
+      .maybeSingle();
 
-    if (error) {
+    if (error || !data || data.deleted_at) {
       this._userProfile.set(null);
-      this.notification.handleError('Fetch Profile Error', error);
-      return;
+      return 'rejected';
     }
-    this._userProfile.set(data as TyappUser);
+
+    const profile = data as TyappUser;
+    if (profile.status === RecordStatus.Inactive) {
+      this._userProfile.set(null);
+      return 'inactive';
+    }
+
+    this._userProfile.set(profile);
+    return 'ok';
   }
 
   async login(email: string, pass: string) {
@@ -70,17 +86,30 @@ export class AuthService {
       password: pass,
     });
     if (error) throw error;
-    if (data.session?.user) {
-      await this.fetchProfile(data.session.user.id);
+
+    const userId = data.session?.user.id;
+    if (!userId) throw new Error(AUTH_ACCOUNT_REJECTED);
+
+    const state = await this.loadActiveProfile(userId);
+    if (state === 'ok') return;
+
+    if (state === 'inactive') {
+      await this.requestReactivationBestEffort();
+      await this.supabase.auth.signOut();
+      throw new Error(AUTH_ACCOUNT_INACTIVE);
     }
+
+    await this.supabase.auth.signOut();
+    throw new Error(AUTH_ACCOUNT_REJECTED);
   }
 
   async register(input: {
     code: string;
     email: string;
     password: string;
-    legal_first_name: string;
-    legal_last_name: string;
+    display_name: string;
+    legal_first_name: string | null;
+    legal_last_name: string | null;
   }): Promise<void> {
     const { data, error } = await this.supabase.functions.invoke(
       'register-with-invite',
@@ -102,6 +131,14 @@ export class AuthService {
   async logout() {
     clearActiveUserPreferenceCache();
     await this.supabase.auth.signOut();
+  }
+
+  private async requestReactivationBestEffort(): Promise<void> {
+    try {
+      await this.supabase.rpc('tyapp_user_request_reactivation');
+    } catch {
+      // Login still tells the user; Super Admin just may not see a ping yet.
+    }
   }
 
   updateLocalProfile(updatedUser: TyappUser) {

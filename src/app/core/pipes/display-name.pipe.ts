@@ -1,5 +1,5 @@
 import { Pipe, PipeTransform } from '@angular/core';
-import { NameDisplayMode, TyappUser } from '../models/user.model';
+import { DELETED_USER_LABEL, NameDisplayMode, TyappUser } from '../models/user.model';
 
 @Pipe({
   name: 'tyDisplayName',
@@ -8,7 +8,7 @@ import { NameDisplayMode, TyappUser } from '../models/user.model';
 })
 export class DisplayNamePipe implements PipeTransform {
   transform(user: TyappUser | null | undefined): string {
-    if (!user) return 'Unknown User';
+    if (!user) return DELETED_USER_LABEL;
 
     const {
       name_display_mode,
@@ -18,7 +18,10 @@ export class DisplayNamePipe implements PipeTransform {
       preferred_first_name,
       customized_display_name,
       user_id,
+      deleted_at,
     } = user;
+
+    if (deleted_at) return DELETED_USER_LABEL;
 
     const buildName = (...parts: (string | null | undefined)[]) =>
       parts.filter((p) => !!p).join(' ');

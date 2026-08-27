@@ -5,7 +5,7 @@ import { Router, RouterModule } from '@angular/router';
 import { APP_CONFIG, DEFAULT_ROUTES, SUBDOMAINS } from '../../app.constants';
 import { AccessService } from '../../core/services/access.service';
 import { AppRegistryService } from '../../core/services/app-registry.service';
-import { AuthService } from '../../core/services/auth.service';
+import { AuthService, AUTH_ACCOUNT_INACTIVE, AUTH_ACCOUNT_REJECTED } from '../../core/services/auth.service';
 import { getCurrentSubdomain } from '../../core/utils/app-env.util';
 
 @Component({
@@ -135,7 +135,13 @@ export class Login implements OnInit {
       const errorMessage = e instanceof Error ? e.message : undefined;
       let message = errorMessage || this.defaultErrorMsg();
 
-      if (errorMessage === 'APP_ACCESS_DENIED') {
+      if (errorMessage === AUTH_ACCOUNT_INACTIVE) {
+        message = this.isFilelink
+          ? '此帳號已停用。已通知管理員，請等候重新啟用。'
+          : 'This account is inactive. An admin has been notified and can turn it back on.';
+      } else if (errorMessage === AUTH_ACCOUNT_REJECTED) {
+        message = this.defaultErrorMsg();
+      } else if (errorMessage === 'APP_ACCESS_DENIED') {
         const currentApp = getCurrentSubdomain();
         message =
           currentApp === SUBDOMAINS.FILELINK

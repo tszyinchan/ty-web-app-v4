@@ -65,3 +65,14 @@
     color: var(--app-text-accent);
   }
 }
+
+.aero-optional-toggle {
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 12px;
+  color: var(--app-text-accent);
+  cursor: pointer;
+}

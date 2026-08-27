@@ -5,6 +5,8 @@ import { MatIconModule } from "@angular/material/icon";
 import { MatMenuModule } from "@angular/material/menu";
 import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
 import { Router, RouterModule } from "@angular/router";
+import { RecordStatus } from "../../../../core/models/status.enum";
+import { TyappUser } from "../../../../core/models/user.model";
 import { DisplayNamePipe } from "../../../../core/pipes/display-name.pipe";
 import { RoleLabelPipe } from "../../../../core/pipes/role-label.pipe";
 import { AuthService } from "../../../../core/services/auth.service";
@@ -28,6 +30,7 @@ import { UserService } from "./user.service";
   ],
   providers: [DisplayNamePipe, RoleLabelPipe],
   templateUrl: './user-list.html',
+  styleUrl: './user-list.scss',
 })
 export class UserList implements OnInit, OnDestroy {
   public readonly userService = inject(UserService);
@@ -38,6 +41,9 @@ export class UserList implements OnInit, OnDestroy {
   private roleLabelPipe = inject(RoleLabelPipe);
 
   readonly showDirectory = signal(false);
+  readonly pendingRequests = computed(() =>
+    this.userService.reactivationRequests().filter((row) => !row.resolved_at),
+  );
 
   ngOnInit() {
     if (!this.auth.isSuperAdmin()) {
@@ -78,21 +84,37 @@ export class UserList implements OnInit, OnDestroy {
 
     this.userService.fetchAllUsers();
     void this.userService.fetchGroups();
+    void this.userService.fetchReactivationRequests();
   }
 
   ngOnDestroy() {
     this.headerService.clear();
   }
 
+  statusLabel(user: TyappUser): string {
+    if (user.deleted_at) return 'Deleted';
+    return user.status === RecordStatus.Active ? 'Active' : 'Inactive';
+  }
+
+  hasPendingReactivation(userId: string): boolean {
+    return this.userService.pendingReactivationUserIds().has(userId);
+  }
+
+  nameFor(userId: string): string {
+    const user = this.userService.users().find((item) => item.user_id === userId);
+    return this.displayNamePipe.transform(user) || userId;
+  }
+
   onExport() {
     const users = this.userService.users();
     if (users.length === 0) return;
 
-    const headers = ['ID', 'Name', 'Role'];
+    const headers = ['ID', 'Name', 'Role', 'Status'];
     const rows = users.map((u) => [
       u.user_id,
       this.displayNamePipe.transform(u),
       this.roleLabelPipe.transform(u.role),
+      this.statusLabel(u),
     ]);
 
     exportToCsv('User List', headers, rows);
@@ -102,6 +124,7 @@ export class UserList implements OnInit, OnDestroy {
     await Promise.all([
       this.userService.fetchAllUsers(true),
       this.userService.fetchGroups(true),
+      this.userService.fetchReactivationRequests(),
     ]);
   }
 }

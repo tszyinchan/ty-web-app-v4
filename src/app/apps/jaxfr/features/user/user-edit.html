@@ -6,7 +6,11 @@
         <div class="fields-grid-2">
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
             <mat-label>Legal First Name</mat-label>
-            <input matInput [(ngModel)]="u.legal_first_name" required />
+            <input
+              matInput
+              [(ngModel)]="u.legal_first_name"
+              [disabled]="isDeleted()"
+            />
           </mat-form-field>
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
             <mat-label>Preferred Name (Known As)</mat-label>
@@ -14,15 +18,24 @@
               matInput
               [(ngModel)]="u.preferred_first_name"
               placeholder="e.g. Jax"
+              [disabled]="isDeleted()"
             />
           </mat-form-field>
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
             <mat-label>Legal Middle Name</mat-label>
-            <input matInput [(ngModel)]="u.legal_middle_name" />
+            <input
+              matInput
+              [(ngModel)]="u.legal_middle_name"
+              [disabled]="isDeleted()"
+            />
           </mat-form-field>
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
             <mat-label>Legal Last Name</mat-label>
-            <input matInput [(ngModel)]="u.legal_last_name" required />
+            <input
+              matInput
+              [(ngModel)]="u.legal_last_name"
+              [disabled]="isDeleted()"
+            />
           </mat-form-field>
         </div>
       </section>
@@ -32,17 +45,89 @@
         <div class="fields-row-2">
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
             <mat-label>Display Mode</mat-label>
-            <mat-select [(ngModel)]="u.name_display_mode">
+            <mat-select
+              [(ngModel)]="u.name_display_mode"
+              [disabled]="isDeleted()"
+            >
               @for (m of availableModes; track m) {
                 <mat-option [value]="m">{{ m | tyDisplayNameMode }}</mat-option>
               }
             </mat-select>
           </mat-form-field>
-          @if (u.name_display_mode === NameDisplayMode.CustomizedOnly) {
-            <mat-form-field appearance="outline" subscriptSizing="dynamic">
-              <mat-label>Customized Display Name</mat-label>
-              <input matInput [(ngModel)]="u.customized_display_name" />
-            </mat-form-field>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Customized Display Name</mat-label>
+            <input
+              matInput
+              [(ngModel)]="u.customized_display_name"
+              [disabled]="isDeleted()"
+            />
+          </mat-form-field>
+        </div>
+        <p class="account-hint">
+          A display name is required. Legal names are optional and used when
+          you pick a legal or preferred display mode.
+        </p>
+      </section>
+
+      <section class="form-group">
+        <h3 class="group-header">Account</h3>
+        <p class="account-status">Status: {{ accountStatusLabel() }}</p>
+        @if (hasPendingReactivation()) {
+          <p class="account-hint highlight">
+            This person asked to be turned back on.
+          </p>
+        }
+        @if (isLastSuperAdmin()) {
+          <p class="account-hint">
+            The last super admin cannot be deactivated or deleted.
+          </p>
+        }
+        <p class="account-hint">
+          Deactivate pauses sign-in (they can ask to come back). Delete leaves
+          every chat room; old messages stay and show as "Deleted user". Only a
+          super admin can turn an account back on.
+        </p>
+        <div class="account-actions">
+          @if (canActivate()) {
+            <button
+              mat-stroked-button
+              type="button"
+              [disabled]="userService.loading()"
+              (click)="onActivate()"
+            >
+              Activate
+            </button>
+          }
+          @if (canDeactivate()) {
+            <button
+              mat-stroked-button
+              type="button"
+              [disabled]="userService.loading()"
+              (click)="onDeactivate()"
+            >
+              Deactivate
+            </button>
+          }
+          @if (canRestore()) {
+            <button
+              mat-stroked-button
+              type="button"
+              [disabled]="userService.loading()"
+              (click)="onRestore()"
+            >
+              Restore
+            </button>
+          }
+          @if (canDeleteAccount()) {
+            <button
+              mat-stroked-button
+              color="warn"
+              type="button"
+              [disabled]="userService.loading()"
+              (click)="onDeleteAccount()"
+            >
+              Delete account
+            </button>
           }
         </div>
       </section>
@@ -54,7 +139,9 @@
           <div class="app-access-box">
             <div class="app-access-title">App & Feature Access</div>
             <div class="app-access-subtitle">
-              @if (isAccessLocked()) {
+              @if (isDeleted()) {
+                Restore this account before changing app or feature access.
+              } @else if (isAccessLocked()) {
                 Super admin has access to all apps and features. Grant checkboxes
                 are not used for this role.
               } @else {
@@ -107,6 +194,7 @@
               <mat-select
                 [(ngModel)]="u.role"
                 (ngModelChange)="onRoleChange($event)"
+                [disabled]="isDeleted()"
               >
                 @for (r of availableRoles; track r) {
                   <mat-option [value]="r">{{ r | tyRoleLabel }}</mat-option>
@@ -115,20 +203,17 @@
             </mat-form-field>
             <mat-form-field appearance="outline" subscriptSizing="dynamic">
               <mat-label>Status</mat-label>
-              <input
-                matInput
-                [value]="
-                  u.status === RecordStatus.Active ? 'Active' : 'Inactive'
-                "
-                disabled
-              />
+              <input matInput [value]="accountStatusLabel()" disabled />
             </mat-form-field>
           </div>
 
           <div class="fields-row-2 mt-16">
             <mat-form-field appearance="outline" subscriptSizing="dynamic">
               <mat-label>YY525 Identity Binding</mat-label>
-              <mat-select [(ngModel)]="u.appsheet_525_user_id">
+              <mat-select
+                [(ngModel)]="u.appsheet_525_user_id"
+                [disabled]="isDeleted()"
+              >
                 <mat-option [value]="null">None (Blank)</mat-option>
                 <mat-option value="cty">CTY</mat-option>
                 <mat-option value="frd">FRD</mat-option>
@@ -142,7 +227,12 @@
             subscriptSizing="dynamic"
           >
             <mat-label>Internal Remarks</mat-label>
-            <textarea matInput rows="3" [(ngModel)]="u.remarks"></textarea>
+            <textarea
+              matInput
+              rows="3"
+              [(ngModel)]="u.remarks"
+              [disabled]="isDeleted()"
+            ></textarea>
           </mat-form-field>
         </section>
       }

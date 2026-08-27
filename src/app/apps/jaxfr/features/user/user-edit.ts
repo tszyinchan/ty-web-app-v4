@@ -98,8 +98,6 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
     NameDisplayMode.PreferredLastMiddleFirst,
     NameDisplayMode.CustomizedOnly,
   ];
-  readonly NameDisplayMode = NameDisplayMode;
-  readonly RecordStatus = RecordStatus;
   readonly canManageUsers = this.auth.isSuperAdmin;
 
   user = signal<TyappUser | null>(null);
@@ -130,12 +128,36 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
     return 'none';
   });
 
+  isDeleted = computed(() => !!this.user()?.deleted_at);
+  isInactive = computed(() => {
+    const u = this.user();
+    return !!u && !u.deleted_at && u.status === RecordStatus.Inactive;
+  });
+  isSelf = computed(
+    () => this.user()?.user_id === this.auth.userProfile()?.user_id,
+  );
+  isLastSuperAdmin = computed(() => {
+    const u = this.user();
+    if (!u || u.deleted_at || u.role < USER_ROLES.SUPER_ADMIN) return false;
+    return this.userService.isLastActiveSuperAdmin(u.user_id);
+  });
+  hasPendingReactivation = computed(() => {
+    const id = this.user()?.user_id;
+    return !!id && this.userService.pendingReactivationUserIds().has(id);
+  });
+  accountStatusLabel = computed(() => {
+    const u = this.user();
+    if (!u) return '';
+    if (u.deleted_at) return 'Deleted';
+    return u.status === RecordStatus.Active ? 'Active' : 'Inactive';
+  });
+
   isSaveDisabled = computed(
     () =>
       this.isSaving() ||
       !this.user() ||
-      !this.user()?.legal_first_name?.trim() ||
-      !this.user()?.legal_last_name?.trim() ||
+      this.isDeleted() ||
+      !this.hasUsableName(this.user()) ||
       (!!this.user()?.user_id && !this.isDirty()),
   );
 
@@ -154,10 +176,13 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
 
     const canManage = this.auth.isSuperAdmin();
 
+    void this.userService.fetchAllUsers();
+
     if (canManage) {
       await Promise.all([
         this.appRegistry.fetchAllApps(),
         this.featureService.fetchAllFeatures(),
+        this.userService.fetchReactivationRequests(),
       ]);
     }
 
@@ -220,8 +245,44 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
   isAccessLocked(): boolean {
     return (
       !this.auth.isSuperAdmin() ||
+      this.isDeleted() ||
       (this.user()?.role ?? 0) >= USER_ROLES.SUPER_ADMIN
     );
+  }
+
+  hasUsableName(user: TyappUser | null): boolean {
+    if (!user) return false;
+    return !!(
+      user.customized_display_name?.trim() ||
+      user.preferred_first_name?.trim() ||
+      user.legal_first_name?.trim() ||
+      user.legal_last_name?.trim()
+    );
+  }
+
+  canActivate(): boolean {
+    return this.auth.isSuperAdmin() && this.isInactive();
+  }
+
+  canDeactivate(): boolean {
+    return (
+      !this.isDeleted() &&
+      !this.isInactive() &&
+      !this.isLastSuperAdmin() &&
+      (this.auth.isSuperAdmin() || this.isSelf())
+    );
+  }
+
+  canDeleteAccount(): boolean {
+    return (
+      !this.isDeleted() &&
+      !this.isLastSuperAdmin() &&
+      (this.auth.isSuperAdmin() || this.isSelf())
+    );
+  }
+
+  canRestore(): boolean {
+    return this.auth.isSuperAdmin() && this.isDeleted();
   }
 
   featuresForApp(appId: string): AppFeature[] {
@@ -331,13 +392,14 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
 
   async onSave() {
     const data = this.user();
-    if (
-      !data ||
-      this.isSaving() ||
-      !data.legal_first_name?.trim() ||
-      !data.legal_last_name?.trim()
-    )
+    if (!data || this.isSaving() || this.isDeleted() || !this.hasUsableName(data))
       return;
+
+    data.legal_first_name = data.legal_first_name?.trim() || null;
+    data.legal_middle_name = data.legal_middle_name?.trim() || null;
+    data.legal_last_name = data.legal_last_name?.trim() || null;
+    data.preferred_first_name = data.preferred_first_name?.trim() || null;
+    data.customized_display_name = data.customized_display_name?.trim() || null;
 
     this.isSaving.set(true);
 
@@ -442,16 +504,92 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
         u.customized_display_name || '',
         this.displayNamePipe.transform(u),
         this.roleLabelPipe.transform(u.role),
-        u.status === RecordStatus.Active ? 'Active' : 'Inactive',
+        this.accountStatusLabel(),
         u.remarks || '',
       ],
     ];
 
     exportToCsv(
-      `User_Detail_${u.legal_first_name || u.user_id}`,
+      `User_Detail_${this.displayNamePipe.transform(u) || u.user_id}`,
       headers,
       rows,
     );
+  }
+
+  async onActivate() {
+    const u = this.user();
+    if (!u || !this.canActivate()) return;
+    if (!confirm('Activate this account so they can sign in again?')) return;
+
+    const saved = await this.userService.setUserStatus(
+      u.user_id,
+      RecordStatus.Active,
+    );
+    if (saved) {
+      this.applyLifecycleUser(saved);
+    }
+  }
+
+  async onDeactivate() {
+    const u = this.user();
+    if (!u || !this.canDeactivate()) return;
+
+    const message = this.isSelf()
+      ? 'Deactivate your account? You will be signed out. Try signing in again to ask a super admin to turn it back on.'
+      : 'Deactivate this account? They cannot sign in until a super admin turns it back on. Shared records stay.';
+    if (!confirm(message)) return;
+
+    const saved = await this.userService.setUserStatus(
+      u.user_id,
+      RecordStatus.Inactive,
+    );
+    if (saved && !this.isSelf()) {
+      this.applyLifecycleUser(saved);
+    }
+  }
+
+  async onDeleteAccount() {
+    const u = this.user();
+    if (!u || !this.canDeleteAccount()) return;
+
+    const message = this.isSelf()
+      ? 'Delete your account? You will leave every chat room and be signed out. Old messages stay and show as "Deleted user". Only a super admin can restore the account.'
+      : 'Delete this account? They leave every chat room. Old messages stay and show as "Deleted user". App access and groups are removed. Only a super admin can restore.';
+    if (!confirm(message)) return;
+
+    const ok = await this.userService.softDeleteUser(u.user_id);
+    if (ok && !this.isSelf()) {
+      const next = this.userService
+        .users()
+        .find((item) => item.user_id === u.user_id);
+      if (next) this.setUserAndAccess(next, [], []);
+    }
+  }
+
+  async onRestore() {
+    const u = this.user();
+    if (!u || !this.canRestore()) return;
+    if (
+      !confirm(
+        'Restore this account? They can sign in again. Display name is still "Deleted user" until you edit it, and you must grant app access and groups again.',
+      )
+    ) {
+      return;
+    }
+
+    const saved = await this.userService.restoreUser(u.user_id);
+    if (!saved) return;
+
+    const grants = await this.access.fetchAccessForUser(saved.user_id);
+    this.zone.run(() => {
+      this.setUserAndAccess(saved, grants.appIds, grants.featureIds);
+    });
+  }
+
+  private applyLifecycleUser(saved: TyappUser) {
+    this.user.set(structuredClone(saved));
+    this.originalDataStr.set(JSON.stringify(saved));
+    this.isDirty.set(false);
   }
 
   ngOnDestroy() {

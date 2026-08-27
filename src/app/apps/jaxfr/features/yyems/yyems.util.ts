@@ -47,7 +47,8 @@ export function eatenByLabel(
   return (
     user.preferred_first_name ||
     user.customized_display_name ||
-    user.legal_first_name
+    user.legal_first_name ||
+    '—'
   );
 }
 
@@ -61,7 +62,8 @@ export function ownershipLabel(
   return (
     user.preferred_first_name ||
     user.customized_display_name ||
-    user.legal_first_name
+    user.legal_first_name ||
+    '—'
   );
 }
 

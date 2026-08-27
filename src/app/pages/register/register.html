@@ -67,32 +67,50 @@
           </label>
 
           <label>
-            Legal first name
+            Display name
             <input
               class="aero-input"
               type="text"
-              name="legal_first_name"
-              autocomplete="given-name"
-              [(ngModel)]="model.legal_first_name"
+              name="display_name"
+              autocomplete="nickname"
+              [(ngModel)]="model.display_name"
             />
-            @if (showFirstNameRequired()) {
-              <span class="aero-field-error">First name is required</span>
+            @if (showNameRequired()) {
+              <span class="aero-field-error">A name is required</span>
             }
           </label>
 
-          <label>
-            Legal last name
-            <input
-              class="aero-input"
-              type="text"
-              name="legal_last_name"
-              autocomplete="family-name"
-              [(ngModel)]="model.legal_last_name"
-            />
-            @if (showLastNameRequired()) {
-              <span class="aero-field-error">Last name is required</span>
-            }
-          </label>
+          <button
+            class="aero-optional-toggle"
+            type="button"
+            (click)="toggleOptional($event)"
+          >
+            {{ showOptional() ? 'Hide optional details' : 'Add optional details' }}
+          </button>
+
+          @if (showOptional()) {
+            <label>
+              Legal first name
+              <input
+                class="aero-input"
+                type="text"
+                name="legal_first_name"
+                autocomplete="given-name"
+                [(ngModel)]="model.legal_first_name"
+              />
+            </label>
+
+            <label>
+              Legal last name
+              <input
+                class="aero-input"
+                type="text"
+                name="legal_last_name"
+                autocomplete="family-name"
+                [(ngModel)]="model.legal_last_name"
+              />
+            </label>
+          }
 
           <button
             class="gloss-btn primary wide"

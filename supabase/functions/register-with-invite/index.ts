@@ -2,7 +2,7 @@ import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
 
 const USER_ROLE = 100;
 const RECORD_ACTIVE = 1;
-const NAME_DISPLAY_LEGAL_FIRST_MIDDLE_LAST = 1;
+const NAME_DISPLAY_CUSTOMIZED_ONLY = 5;
 const GENERIC_INVITE_ERROR = 'invalid_invite';
 const MIN_PASSWORD_LENGTH = 6;
 
@@ -16,6 +16,7 @@ interface RegisterBody {
   code?: unknown;
   email?: unknown;
   password?: unknown;
+  display_name?: unknown;
   legal_first_name?: unknown;
   legal_last_name?: unknown;
 }
@@ -137,14 +138,14 @@ Deno.serve(async (req) => {
   const code = asTrimmedString(payload.code);
   const email = asTrimmedString(payload.email).toLowerCase();
   const password = typeof payload.password === 'string' ? payload.password : '';
-  const legalFirstName = asTrimmedString(payload.legal_first_name);
-  const legalLastName = asTrimmedString(payload.legal_last_name);
+  const displayName = asTrimmedString(payload.display_name);
+  const legalFirstName = asTrimmedString(payload.legal_first_name) || null;
+  const legalLastName = asTrimmedString(payload.legal_last_name) || null;
 
   if (
     !code ||
     !email ||
-    !legalFirstName ||
-    !legalLastName ||
+    !displayName ||
     password.length < MIN_PASSWORD_LENGTH
   ) {
     return jsonResponse({ error: 'invalid_request' }, 400);
@@ -219,8 +220,8 @@ Deno.serve(async (req) => {
       legal_last_name: legalLastName,
       legal_middle_name: null,
       preferred_first_name: null,
-      customized_display_name: null,
-      name_display_mode: NAME_DISPLAY_LEGAL_FIRST_MIDDLE_LAST,
+      customized_display_name: displayName,
+      name_display_mode: NAME_DISPLAY_CUSTOMIZED_ONLY,
       status: RECORD_ACTIVE,
       remarks: null,
       appsheet_525_user_id: null,

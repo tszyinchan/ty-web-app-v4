@@ -1,5 +1,24 @@
 @if (showDirectory()) {
 <div class="standard-list-view">
+  @if (pendingRequests().length) {
+    <div class="reactivation-banner">
+      <div class="reactivation-title">Wants to sign in again</div>
+      <p class="reactivation-copy">
+        These inactive accounts tried to log in. Open one and Activate when you
+        are ready.
+      </p>
+      <ul class="reactivation-list">
+        @for (req of pendingRequests(); track req.tb_tyapp_usr_ract_id) {
+          <li>
+            <a [routerLink]="['../edit', req.user_id]">{{
+              nameFor(req.user_id)
+            }}</a>
+          </li>
+        }
+      </ul>
+    </div>
+  }
+
   <div class="list-container">
     @for (user of userService.users(); track user.user_id) {
       <a class="item-link" [routerLink]="['../edit', user.user_id]">
@@ -12,6 +31,15 @@
           </div>
 
           <div class="item-status-group">
+            @if (hasPendingReactivation(user.user_id)) {
+              <span class="status-tag inactive">Wants access</span>
+            }
+            <span
+              class="status-tag"
+              [class.inactive]="statusLabel(user) !== 'Active'"
+            >
+              {{ statusLabel(user) }}
+            </span>
             <mat-icon class="chevron">chevron_right</mat-icon>
           </div>
         </div>
