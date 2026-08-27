@@ -112,12 +112,6 @@ const CATEGORY_LINKS: Record<string, FeatureHubLink[]> = {
     { title: 'Sessions', icon: 'fitness_center', route: '/fit/list' },
     { title: 'Thread', icon: 'forum', route: '/fit/thread' },
   ],
-  'Daily Checklist': [
-    { title: 'Log', icon: 'checklist', route: '/daily-checklist' },
-    { title: 'Others', icon: 'groups', route: '/daily-checklist/shared' },
-    { title: 'Library', icon: 'category', route: '/daily-checklist/items' },
-    { title: 'Stats', icon: 'insights', route: '/daily-checklist/dashboard' },
-  ],
   'Doc Sign': [
     { title: 'Sign list', icon: 'list', route: '/docsign/list' },
     { title: 'Print log', icon: 'print', route: '/docsign/prints' },
