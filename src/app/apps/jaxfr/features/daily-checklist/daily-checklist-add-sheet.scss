@@ -1,7 +1,5 @@
 @use "./doodle";
 
-@include doodle.colour-classes;
-
 :host {
   @include doodle.paper-tokens;
 }
@@ -106,16 +104,4 @@
   transform: translate(-50%, -50%);
   border-radius: 12px;
   box-shadow: var(--dcl-paper-shadow);
-}
-
-emoji-picker {
-  display: block;
-  width: min(352px, calc(100vw - 24px));
-  height: min(400px, calc(100dvh - 48px));
-  --background: var(--dcl-paper);
-  --border-color: var(--dcl-line);
-  --input-border-color: var(--dcl-line);
-  --input-font-color: var(--dcl-ink);
-  --outline-color: var(--dcl-stamp);
-  --indicator-color: var(--dcl-stamp);
 }

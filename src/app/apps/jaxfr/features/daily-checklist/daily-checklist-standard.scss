@@ -1,7 +1,5 @@
 @use "./doodle";
 
-@include doodle.colour-classes;
-
 :host {
   @include doodle.host-page;
 }
@@ -17,16 +15,7 @@
   padding: 16px 12px 36px;
 }
 
-.notebook-sheet {
-  @include doodle.paper;
-  position: relative;
-  padding: 20px 16px 16px;
-  border-radius: 4px;
-}
-
 .tape {
-  @include doodle.tape-bar;
-
   &.tape-top {
     top: -8px;
     left: 28%;
@@ -104,7 +93,6 @@
 
 .item-emoji {
   margin-right: 6px;
-  @include doodle.item-emoji;
   font-size: 22px;
   filter: none;
 }
@@ -197,22 +185,6 @@
   overflow: auto;
   border-radius: 12px;
   box-shadow: var(--dcl-paper-shadow);
-}
-
-emoji-picker {
-  display: block;
-  width: min(352px, calc(100vw - 24px));
-  height: min(400px, calc(100dvh - 48px));
-  --background: var(--dcl-paper);
-  --border-color: var(--dcl-line);
-  --input-border-color: var(--dcl-line);
-  --input-font-color: var(--dcl-ink);
-  --input-placeholder-color: var(--dcl-muted);
-  --outline-color: var(--dcl-stamp);
-  --indicator-color: var(--dcl-stamp);
-  --category-font-color: var(--dcl-muted);
-  --button-hover-background: var(--dcl-brush);
-  --button-active-background: var(--dcl-brush);
 }
 
 @media (max-width: 600px) {

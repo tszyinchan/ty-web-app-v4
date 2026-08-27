@@ -14,16 +14,7 @@
   padding: 16px 12px 36px;
 }
 
-.notebook-sheet {
-  @include doodle.paper;
-  position: relative;
-  padding: 20px 16px 16px;
-  border-radius: 4px;
-}
-
 .tape {
-  @include doodle.tape-bar;
-
   &.tape-top {
     top: -8px;
     left: 28%;
