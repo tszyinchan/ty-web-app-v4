@@ -21,7 +21,7 @@ import {
   CdkDropList,
   moveItemInArray,
 } from '@angular/cdk/drag-drop';
-import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import 'emoji-picker-element';
 
@@ -36,12 +36,7 @@ import {
   DlColourPresetKey,
   DlMoodKey,
 } from './daily-log.model';
-import { DailyLogAddSheet } from './daily-log-add-sheet';
-import {
-  DailyLogChrome,
-  DailyLogChromeAction,
-  DailyLogChromeNavLink,
-} from './daily-log-chrome';
+import { DailyLogChrome, DailyLogChromeAction, DailyLogChromeNavLink } from './daily-log-chrome';
 import { DailyLogFace } from './daily-log-face';
 import { DailyLogIcon } from './daily-log-icon';
 import { DailyLogService } from './daily-log.service';
@@ -79,8 +74,6 @@ type EmojiPickerTarget = 'edit';
     CdkDropList,
     CdkDrag,
     CdkDragHandle,
-    RouterModule,
-    DailyLogAddSheet,
     DailyLogChrome,
     DailyLogFace,
     DailyLogIcon,
@@ -88,6 +81,9 @@ type EmojiPickerTarget = 'edit';
   templateUrl: './daily-log.html',
   styleUrl: './daily-log.scss',
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
+  host: {
+    '[style.--dl-keyboard-inset]': 'keyboardInset()',
+  },
 })
 export class DailyLog implements OnInit, AfterViewInit, OnDestroy {
   readonly service = inject(DailyLogService);
@@ -104,6 +100,7 @@ export class DailyLog implements OnInit, AfterViewInit, OnDestroy {
   private ignoreWeekScroll = false;
   private addScrollTimers: ReturnType<typeof setTimeout>[] = [];
   private addViewportUnsub: (() => void) | null = null;
+  private keyboardUnsub: (() => void) | null = null;
   private weekScrollTimer: ReturnType<typeof setTimeout> | null = null;
   private weekScrollEndHandler: (() => void) | null = null;
   private stripExtending = false;
@@ -118,8 +115,8 @@ export class DailyLog implements OnInit, AfterViewInit, OnDestroy {
   showTemplateHint = signal(false);
   emojiPickerTarget = signal<EmojiPickerTarget | null>(null);
   editingDayId = signal<string | null>(null);
-  addSheetOpen = signal(false);
   reordering = signal(false);
+  keyboardInset = signal('0px');
   dayMood = signal<DlMoodKey | null>(null);
   dayTitle = signal('');
   editText = '';
@@ -188,6 +185,18 @@ export class DailyLog implements OnInit, AfterViewInit, OnDestroy {
     ).filter((item) => !onDate.has(item.tb_tyapp_dl_itm_id));
   });
 
+  readonly canCreateNewItem = computed(() => {
+    const text = this.newItemText().trim();
+    if (!text) return false;
+    return !findLibraryItemByName(this.service.libraryItems(), text);
+  });
+
+  readonly showAddMenu = computed(
+    () =>
+      this.addFocused() &&
+      (this.filteredSuggestions().length > 0 || this.canCreateNewItem()),
+  );
+
   readonly pageNav: DailyLogChromeNavLink[] = [
     { label: 'Others', routerLink: '/daily-log/others' },
     { label: 'Library', routerLink: '/daily-log/library' },
@@ -251,6 +260,7 @@ export class DailyLog implements OnInit, AfterViewInit, OnDestroy {
 
     void this.service.fetchLibraryItems();
     void this.service.fetchTemplateItems();
+    this.bindKeyboardInset();
   }
 
   ngAfterViewInit() {
@@ -262,6 +272,7 @@ export class DailyLog implements OnInit, AfterViewInit, OnDestroy {
     if (this.weekScrollTimer) clearTimeout(this.weekScrollTimer);
     this.detachWeekScrollEnd();
     this.clearAddScrollWatch();
+    this.unbindKeyboardInset();
     this.headerService.clear();
   }
 
@@ -607,30 +618,34 @@ export class DailyLog implements OnInit, AfterViewInit, OnDestroy {
   }
 
   async onSelectMood(mood: DlMoodKey) {
-    const next = this.dayMood() === mood ? null : mood;
+    const previous = this.dayMood();
+    const next = previous === mood ? null : mood;
     this.dayMood.set(next);
-    await this.saveDayLog();
+    const ok = await this.saveDayLog();
+    if (!ok) this.dayMood.set(previous);
   }
 
   async onClearMood() {
-    if (this.dayMood() === null) return;
+    const previous = this.dayMood();
+    if (previous === null) return;
     this.dayMood.set(null);
-    await this.saveDayLog();
+    const ok = await this.saveDayLog();
+    if (!ok) this.dayMood.set(previous);
   }
 
   async onTitleBlur() {
     await this.saveDayLog();
   }
 
-  private async saveDayLog() {
+  private async saveDayLog(): Promise<boolean> {
     const date = this.selectedDate();
     const log = this.service.dayLogForDate(date);
     const mood = this.dayMood();
     const title = this.dayTitle().trim() || null;
     if ((log?.mood_key ?? null) === mood && (log?.title ?? null) === title) {
-      return;
+      return true;
     }
-    await this.service.upsertDayLog(date, { moodKey: mood, title });
+    return this.service.upsertDayLog(date, { moodKey: mood, title });
   }
 
   async onSuggestionPicked(item: DailyLogLibraryItem) {
@@ -666,35 +681,23 @@ export class DailyLog implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    this.addSheetOpen.set(true);
+    this.goToNewItem(text);
   }
 
-  async onSheetConfirm(event: {
-    itemText: string;
-    emoji: string | null;
-    colourPresetKey: DlColourPresetKey;
-    remarks: string | null;
-  }) {
-    const ok = await this.service.createLibraryItemAndAddToDate(this.selectedDate(), {
-      itemText: event.itemText,
-      emoji: event.emoji,
-      colourPresetKey: event.colourPresetKey,
-      remarks: event.remarks,
+  onCreateNewItem() {
+    const text = this.newItemText().trim();
+    if (!text || this.service.busy()) return;
+    this.goToNewItem(text);
+  }
+
+  private goToNewItem(name: string) {
+    void this.router.navigate(['/daily-log/new'], {
+      queryParams: { date: this.selectedDate(), name },
     });
-    if (ok) {
-      this.resetAddPanel(this.addItemInput()?.nativeElement);
-      this.scrollAddRowIntoView();
-    }
-  }
-
-  closeAddSheet() {
-    this.addSheetOpen.set(false);
   }
 
   resetAddPanel(input?: HTMLInputElement) {
     this.newItemText.set('');
-    this.addSheetOpen.set(false);
-    if (this.emojiPickerTarget() === 'edit') this.emojiPickerTarget.set(null);
     const native = input ?? this.addItemInput()?.nativeElement;
     if (native) native.value = '';
     queueMicrotask(() => {
@@ -732,11 +735,37 @@ export class DailyLog implements OnInit, AfterViewInit, OnDestroy {
       setTimeout(run, 250),
       setTimeout(run, 550),
     ];
+  }
+
+  private bindKeyboardInset() {
     const viewport = window.visualViewport;
+    const update = () => {
+      if (!viewport) {
+        this.keyboardInset.set('0px');
+        return;
+      }
+      const inset = Math.max(
+        0,
+        window.innerHeight - viewport.height - viewport.offsetTop,
+      );
+      this.keyboardInset.set(`${Math.round(inset)}px`);
+      if (this.addFocused() || this.editingDayId()) {
+        this.scrollAddRowAboveKeyboard();
+      }
+    };
+    update();
     if (!viewport) return;
-    const onResize = () => run();
-    viewport.addEventListener('resize', onResize);
-    this.addViewportUnsub = () => viewport.removeEventListener('resize', onResize);
+    viewport.addEventListener('resize', update);
+    viewport.addEventListener('scroll', update);
+    this.keyboardUnsub = () => {
+      viewport.removeEventListener('resize', update);
+      viewport.removeEventListener('scroll', update);
+    };
+  }
+
+  private unbindKeyboardInset() {
+    this.keyboardUnsub?.();
+    this.keyboardUnsub = null;
   }
 
   private clearAddScrollWatch() {

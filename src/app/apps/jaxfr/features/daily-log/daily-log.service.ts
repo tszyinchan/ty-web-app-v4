@@ -630,7 +630,6 @@ export class DailyLogService {
   async toggleDayItemCompletion(item: DailyLogDayRow): Promise<boolean> {
     const nextCompletedAt = item.completed_at ? null : new Date().toISOString();
 
-    this.busy.set(true);
     try {
       const { data, error } = await this.supabase
         .from('tyapp_daily_log_day_item')
@@ -644,12 +643,10 @@ export class DailyLogService {
 
       this.zone.run(() => {
         this.mergeWeekRow(data as DailyLogDayItem);
-        this.busy.set(false);
       });
       return true;
     } catch (error: unknown) {
       this.notification.handleError('Update Completion Failed', error);
-      this.zone.run(() => this.busy.set(false));
       return false;
     }
   }
@@ -1127,7 +1124,6 @@ export class DailyLogService {
 
     const title = input.title?.trim() || null;
     const existing = this.dayLogForDate(logDate);
-    this.busy.set(true);
     try {
       if (existing) {
         const { data, error } = await this.supabase
@@ -1140,8 +1136,6 @@ export class DailyLogService {
         if (error) throw error;
         this.zone.run(() => {
           this.mergeDayLog(data as DailyLogDay);
-          this.busy.set(false);
-          this.notification.showSuccess('Day updated');
         });
         return true;
       }
@@ -1160,13 +1154,10 @@ export class DailyLogService {
       if (error) throw error;
       this.zone.run(() => {
         this.mergeDayLog(data as DailyLogDay);
-        this.busy.set(false);
-        this.notification.showSuccess('Day updated');
       });
       return true;
     } catch (error: unknown) {
       this.notification.handleError('Save Day Failed', error);
-      this.zone.run(() => this.busy.set(false));
       return false;
     }
   }

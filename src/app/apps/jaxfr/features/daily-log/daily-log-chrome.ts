@@ -30,6 +30,8 @@ export class DailyLogChrome {
   readonly title = input.required<string>();
   readonly backLink = input<string | null>(null);
   readonly backLabel = input('Back');
+  readonly backClick = input<(() => void) | null>(null);
+  readonly backQueryParams = input<Record<string, string>>({});
   readonly navLinks = input<DailyLogChromeNavLink[]>([]);
   readonly actions = input<DailyLogChromeAction[]>([]);
   readonly monthNav = input<DailyLogChromeMonthNav | null>(null);

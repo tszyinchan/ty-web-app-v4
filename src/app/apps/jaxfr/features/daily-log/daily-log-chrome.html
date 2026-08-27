@@ -2,8 +2,18 @@
   <a routerLink="/welcome" class="home-stamp" aria-label="Home">Home</a>
   <div class="chrome-main">
     <div class="title-row">
-      @if (backLink(); as link) {
-        <a class="back-link" [routerLink]="link">{{ backLabel() }}</a>
+      @if (backClick(); as onBack) {
+        <button type="button" class="back-link" (click)="onBack()">
+          {{ backLabel() }}
+        </button>
+      } @else if (backLink(); as link) {
+        <a
+          class="back-link"
+          [routerLink]="link"
+          [queryParams]="backQueryParams()"
+        >
+          {{ backLabel() }}
+        </a>
       }
       <h1 class="chrome-title">{{ title() }}</h1>
       @if (actions().length) {

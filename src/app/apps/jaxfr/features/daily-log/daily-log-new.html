@@ -1,0 +1,73 @@
+<div class="dl-new">
+  <app-daily-log-chrome
+    title="New item"
+    backLabel="Log"
+    [backClick]="onBack"
+    [actions]="chromeActions()"
+  />
+  <div class="notebook-sheet">
+    <span class="tape tape-top" aria-hidden="true"></span>
+    <p class="intro">
+      This item will be added to {{ logDate() }} and saved in the Library.
+    </p>
+    <label class="dl-field">
+      <span class="dl-field-label">Name</span>
+      <input
+        class="dl-field-input"
+        [ngModel]="itemText()"
+        (ngModelChange)="itemText.set($event)"
+        name="new_item_text"
+      />
+    </label>
+    @if (existingMatch(); as existing) {
+      <p class="existing-note">
+        “{{ existing.item_text }}” is already in the Library. Save will add it
+        to this date; emoji and colour stay as they are.
+      </p>
+    } @else {
+      <div class="emoji-pick-row">
+        <button type="button" class="emoji-trigger" (click)="openEmojiPicker()">
+          {{ emoji() || 'Add emoji' }}
+        </button>
+        @if (emoji()) {
+          <button
+            type="button"
+            class="dl-icon-btn"
+            aria-label="Clear emoji"
+            title="Clear emoji"
+            (click)="clearEmoji()"
+          >
+            <app-daily-log-icon name="clear-emoji" />
+          </button>
+        }
+      </div>
+      <div class="colour-row">
+        @for (preset of colourPresets; track preset.key) {
+          <button
+            type="button"
+            class="colour-chip"
+            [ngClass]="colourChipClasses(preset.key, colour() === preset.key)"
+            [attr.aria-label]="preset.label"
+            (click)="selectColour(preset.key)"
+          ></button>
+        }
+      </div>
+    }
+    <label class="dl-field">
+      <span class="dl-field-label">Remarks</span>
+      <input
+        class="dl-field-input"
+        [ngModel]="remarks()"
+        (ngModelChange)="remarks.set($event)"
+        name="new_item_remarks"
+      />
+    </label>
+  </div>
+</div>
+
+@if (showEmojiPicker()) {
+  <div class="emoji-picker-backdrop" (click)="closeEmojiPicker()"></div>
+  <div class="emoji-picker-panel">
+    <emoji-picker (emoji-click)="onPickerEmoji($event)"></emoji-picker>
+  </div>
+}

@@ -515,6 +515,15 @@
     }
   }
 
+  .dl-suggest-create {
+    border-top: 1px dashed var(--dl-line);
+    color: var(--dl-stamp);
+
+    &:first-child {
+      border-top: 0;
+    }
+  }
+
   .dl-chip-list {
     display: flex;
     flex-wrap: wrap;

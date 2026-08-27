@@ -10,7 +10,7 @@
       type="button"
       class="week-nav"
       (click)="goPrevWeek()"
-      [disabled]="service.loading() || service.busy()"
+      [disabled]="service.loading()"
       aria-label="Previous week"
     >
       ‹
@@ -29,7 +29,7 @@
               class="week-day"
               [class.selected]="day.isSelected"
               [class.today]="day.isToday && !day.isSelected"
-              [disabled]="service.loading() || service.busy()"
+              [disabled]="service.loading()"
               (click)="selectDay(day.date)"
             >
               <span class="weekday">{{ day.weekday }}</span>
@@ -51,7 +51,7 @@
       type="button"
       class="week-nav"
       (click)="goNextWeek()"
-      [disabled]="service.loading() || service.busy()"
+      [disabled]="service.loading()"
       aria-label="Next week"
     >
       ›
@@ -84,7 +84,7 @@
         <button
           type="button"
           class="dl-link"
-          [disabled]="service.loading() || service.busy()"
+          [disabled]="service.loading()"
           (click)="onCopyYesterday()"
         >
           Use yesterday
@@ -92,7 +92,7 @@
         <button
           type="button"
           class="dl-link"
-          [disabled]="service.loading() || service.busy()"
+          [disabled]="service.loading()"
           (click)="onUseTemplate()"
         >
           Use template
@@ -110,7 +110,6 @@
           type="button"
           class="mood-btn"
           [class.picked]="dayMood() === mood.key"
-          [disabled]="service.busy()"
           [attr.aria-label]="mood.label"
           (click)="onSelectMood(mood.key)"
         >
@@ -125,7 +124,6 @@
         <button
           type="button"
           class="mood-clear"
-          [disabled]="service.busy()"
           (click)="onClearMood()"
         >
           Clear mood
@@ -142,7 +140,6 @@
         [ngModel]="dayTitle()"
         (ngModelChange)="dayTitle.set($event)"
         (blur)="onTitleBlur()"
-        [disabled]="service.busy()"
       />
     </div>
 
@@ -270,7 +267,6 @@
               type="button"
               class="check-btn"
               [ngClass]="checkBtnClasses(item)"
-              [disabled]="service.busy()"
               (click)="onToggle(item)"
               [attr.aria-label]="
                 isCompleted(item) ? 'Mark incomplete' : 'Mark complete'
@@ -295,7 +291,6 @@
               title="Edit item"
               aria-label="Edit item"
               (click)="startEdit(item)"
-              [disabled]="service.busy()"
             >
               <app-daily-log-icon name="edit" />
             </button>
@@ -314,13 +309,13 @@
             [ngModel]="newItemText()"
             (ngModelChange)="newItemText.set($event)"
             name="new_item_text"
-            placeholder="Type a name"
+            placeholder="Type a name, then Enter"
             (focus)="onAddInputFocus()"
             (blur)="onAddInputBlur()"
             (keydown.enter)="onAddItem($event)"
           />
         </label>
-        @if (addFocused() && filteredSuggestions().length) {
+        @if (showAddMenu()) {
           <div class="dl-suggest" role="listbox">
             @for (opt of filteredSuggestions(); track opt.tb_tyapp_dl_itm_id) {
               <button
@@ -332,6 +327,16 @@
                 {{ suggestionLabel(opt) }}
               </button>
             }
+            @if (canCreateNewItem()) {
+              <button
+                type="button"
+                class="dl-suggest-opt dl-suggest-create"
+                (mousedown)="$event.preventDefault()"
+                (click)="onCreateNewItem()"
+              >
+                Create “{{ newItemText().trim() }}”
+              </button>
+            }
           </div>
         }
       </div>
@@ -339,15 +344,6 @@
   }
   </div>
 </div>
-
-@if (addSheetOpen()) {
-  <app-daily-log-add-sheet
-    [initialName]="newItemText()"
-    [busy]="service.busy()"
-    (confirmed)="onSheetConfirm($event)"
-    (cancelled)="closeAddSheet()"
-  />
-}
 
 @if (emojiPickerTarget()) {
   <div class="emoji-picker-backdrop" (click)="closeEmojiPicker()"></div>

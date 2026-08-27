@@ -1,52 +1,47 @@
 @use "./daily-log-theme" as dl;
 
 :host {
-  @include dl.paper-tokens;
+  @include dl.host-page;
 }
 
 :host-context(html.mode-dark) {
   @include dl.paper-tokens-dark;
 }
 
-.sheet-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 22;
-  background: var(--dl-veil);
+.dl-new {
+  @include dl.page-shell;
 }
 
-.sheet {
-  position: fixed;
-  z-index: 23;
-  left: 50%;
-  top: 12vh;
-  transform: translateX(-50%);
-  width: min(420px, calc(100vw - 24px));
-  max-height: min(520px, calc(100dvh - 24px));
-  overflow: auto;
+.tape {
+  &.tape-top {
+    top: -8px;
+    left: 28%;
+    transform: rotate(-4deg);
+  }
+}
+
+.intro {
+  margin: 0 0 16px;
+  font-size: 13px;
+  color: var(--dl-muted);
+  line-height: 1.5;
+}
+
+.existing-note {
+  margin: 0;
+  font-size: 13px;
+  color: var(--dl-muted);
+  line-height: 1.5;
+}
+
+.notebook-sheet {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 16px;
-  border-radius: 12px;
-  @include dl.paper;
-  animation: dl-sheet-in 220ms ease-out;
-}
-
-.sheet-title {
-  margin: 0;
-  @include dl.hand-letter;
-  font-size: 18px;
-  color: var(--dl-ink);
-}
-
-.grow {
-  width: 100%;
 }
 
 .emoji-pick-row,
-.colour-row,
-.sheet-actions {
+.colour-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -81,16 +76,19 @@
 .emoji-picker-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 24;
+  z-index: 20;
   background: var(--dl-veil);
 }
 
 .emoji-picker-panel {
   position: fixed;
-  z-index: 25;
+  z-index: 21;
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
+  max-width: calc(100vw - 24px);
+  max-height: calc(100dvh - 24px);
+  overflow: auto;
   border-radius: 12px;
   box-shadow: var(--dl-paper-shadow);
 }

@@ -10,6 +10,7 @@
 
 .dl-log {
   @include dl.page-shell;
+  padding-bottom: calc(36px + var(--dl-keyboard-inset, 0px));
 }
 
 .week-strip {
@@ -429,11 +430,24 @@
   flex-direction: column;
   gap: 10px;
   width: 100%;
+  scroll-margin-bottom: calc(16px + var(--dl-keyboard-inset, 0px));
 }
 
 .add-row {
+  position: sticky;
+  bottom: 0;
+  z-index: 6;
   margin-top: 10px;
-  scroll-margin-bottom: 42vh;
+  padding: 8px 0 calc(10px + var(--dl-keyboard-inset, 0px));
+  scroll-margin-bottom: calc(16px + var(--dl-keyboard-inset, 0px));
+  background: var(--dl-paper);
+}
+
+.new-extras {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
 }
 
 .edit-actions,
@@ -502,7 +516,7 @@
 
 @media (max-width: 600px) {
   .dl-log {
-    padding: 8px 8px 24px;
+    padding: 8px 8px calc(24px + var(--dl-keyboard-inset, 0px));
   }
 
   .week-day {
