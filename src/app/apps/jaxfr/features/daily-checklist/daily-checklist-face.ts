@@ -1,19 +1,20 @@
 import { Component, computed, input } from '@angular/core';
 import { DclMoodKey } from './daily-checklist.model';
-import { moodEmoji } from './daily-checklist.util';
+import { moodImage } from './daily-checklist.util';
 
 @Component({
   selector: 'app-dcl-face',
   standalone: true,
   template: `
-    @if (glyph(); as emoji) {
-      <span
+    @if (image(); as src) {
+      <img
         class="dcl-glyph"
         [class.size-sm]="size() === 'sm'"
         [class.size-lg]="size() === 'lg'"
         [class.selected]="selected()"
-        >{{ emoji }}</span
-      >
+        [src]="src"
+        alt=""
+      />
     } @else {
       <span
         class="dcl-empty"
@@ -29,5 +30,5 @@ export class DailyChecklistFace {
   readonly size = input<'sm' | 'md' | 'lg'>('md');
   readonly selected = input(false);
 
-  readonly glyph = computed(() => moodEmoji(this.mood()));
+  readonly image = computed(() => moodImage(this.mood()));
 }

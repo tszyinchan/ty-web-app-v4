@@ -1,14 +1,13 @@
 <div class="dcl-page">
   <div class="week-strip">
     <button
-      mat-icon-button
       type="button"
       class="week-nav"
-      matTooltip="Previous week"
       (click)="goPrevWeek()"
       [disabled]="service.loading() || service.busy()"
+      aria-label="Previous week"
     >
-      <mat-icon>chevron_left</mat-icon>
+      ‹
     </button>
 
     <div
@@ -31,7 +30,7 @@
               <span class="day-num">{{ day.dayNum }}</span>
               <span
                 class="day-dot"
-                [class.on]="day.isSelected || day.totalCount > 0"
+                [class.on]="hasLogged(day)"
                 [class.done]="
                   day.totalCount > 0 && day.completedCount === day.totalCount
                 "
@@ -43,14 +42,13 @@
     </div>
 
     <button
-      mat-icon-button
       type="button"
       class="week-nav"
-      matTooltip="Next week"
       (click)="goNextWeek()"
       [disabled]="service.loading() || service.busy()"
+      aria-label="Next week"
     >
-      <mat-icon>chevron_right</mat-icon>
+      ›
     </button>
   </div>
 
@@ -65,7 +63,7 @@
   @if (showStandardHint()) {
     <p class="standard-hint">
       Your Template is empty.
-      <button mat-button type="button" (click)="openStandard()">
+      <button type="button" class="doodle-link" (click)="openStandard()">
         Open Template
       </button>
     </p>
@@ -101,6 +99,19 @@
         </button>
       }
     </div>
+
+    @if (dayMood()) {
+      <div class="mood-clear-row">
+        <button
+          type="button"
+          class="mood-clear"
+          [disabled]="service.busy()"
+          (click)="onClearMood()"
+        >
+          Clear mood
+        </button>
+      </div>
+    }
 
     <div class="doodle-title-wrap">
       <input
@@ -159,7 +170,7 @@
                   {{ editEmoji || 'Add emoji' }}
                 </button>
                 @if (editEmoji) {
-                  <button mat-button type="button" (click)="clearEditEmoji()">
+                  <button type="button" class="doodle-link" (click)="clearEditEmoji()">
                     Clear
                   </button>
                 }
@@ -185,20 +196,19 @@
               </mat-form-field>
               <div class="edit-actions">
                 <button
-                  mat-flat-button
-                  color="primary"
                   type="button"
+                  class="edit-save"
                   [disabled]="service.busy() || !editText.trim()"
                   (click)="saveEdit(item)"
                 >
                   Save
                 </button>
-                <button mat-button type="button" (click)="cancelEdit()">
+                <button type="button" class="edit-ghost" (click)="cancelEdit()">
                   Cancel
                 </button>
                 <button
-                  mat-button
                   type="button"
+                  class="edit-ghost"
                   [disabled]="service.busy()"
                   (click)="onDelete(item)"
                 >
@@ -231,11 +241,11 @@
                 <mat-icon>check</mat-icon>
               }
             </button>
+            @if (item.catalog.emoji) {
+              <span class="item-emoji">{{ item.catalog.emoji }}</span>
+            }
             <div class="item-body">
               <span class="item-text">
-                @if (item.catalog.emoji) {
-                  <span class="item-emoji">{{ item.catalog.emoji }}</span>
-                }
                 {{ item.catalog.item_text }}
               </span>
               @if (item.remarks) {
@@ -268,6 +278,7 @@
           name="new_item_text"
           placeholder="Type a name"
           (focus)="onAddInputFocus()"
+          (blur)="onAddInputBlur()"
           (keydown.enter)="onAddItem($event)"
         />
         <mat-autocomplete

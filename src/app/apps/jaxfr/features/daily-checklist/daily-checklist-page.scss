@@ -1,13 +1,19 @@
-@use "../../../../styles/aero" as aero;
 @use "./doodle";
 
 @include doodle.colour-classes;
+
+:host {
+  @include doodle.host-page;
+}
+
+:host-context(html.mode-dark) {
+  @include doodle.paper-tokens-dark;
+}
 
 .dcl-page {
   max-width: 720px;
   margin: 0 auto;
   padding: 12px 12px 32px;
-  font-family: var(--app-font);
 }
 
 .week-strip {
@@ -20,6 +26,20 @@
 .week-nav {
   flex-shrink: 0;
   align-self: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--dcl-ink);
+  cursor: pointer;
+  font: 700 22px/1 var(--app-font);
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.4;
+  }
 }
 
 .week-scroller {
@@ -51,14 +71,17 @@
 }
 
 .week-day {
+  --dcl-day-radius: 16px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
   min-height: 72px;
   padding: 8px 2px 6px;
-  @include aero.gloss-surface;
-  border-radius: 16px;
+  background: var(--dcl-paper);
+  border: 1px solid var(--dcl-line);
+  border-radius: var(--dcl-day-radius);
+  color: var(--dcl-ink);
   cursor: pointer;
   font-family: inherit;
 
@@ -67,16 +90,24 @@
     cursor: default;
   }
 
-  &.today {
-    border-color: var(--app-accent);
+  &.today:not(.selected) {
+    .weekday,
+    .day-num {
+      color: var(--dcl-today);
+    }
   }
 
   &.selected {
-    @include aero.gloss-primary-surface;
-    color: var(--app-accent-contrast);
+    background: var(--dcl-stamp);
+    border-color: var(--dcl-stamp);
+    color: #fff;
 
-    .day-dot {
-      background: var(--app-accent-contrast);
+    .day-dot.on {
+      background: #fff;
+    }
+
+    .day-dot.done {
+      background: #ffe08a;
     }
   }
 }
@@ -100,11 +131,11 @@
   background: transparent;
 
   &.on {
-    background: var(--app-text-muted);
+    background: var(--dcl-muted);
   }
 
   &.done {
-    background: var(--app-text-accent);
+    background: var(--dcl-today);
   }
 }
 
@@ -119,11 +150,12 @@
 }
 
 .feature-nav a {
-  color: var(--app-link);
+  color: var(--dcl-ink);
   text-decoration: none;
+  border-bottom: 2px solid var(--dcl-brush);
 
   &:hover {
-    text-decoration: underline;
+    border-bottom-color: var(--dcl-ink);
   }
 }
 
@@ -135,16 +167,7 @@
   @include doodle.paper;
   margin-top: 14px;
   padding: 18px 16px 20px;
-  border-radius: 4px;
-}
-
-:host-context(html.mode-dark) .doodle-page {
-  @include doodle.paper-tokens-dark;
-}
-
-:host-context(html.theme-material) .doodle-page {
-  box-shadow: none;
-  border-radius: var(--app-radius);
+  border-radius: 12px;
 }
 
 .doodle-date {
@@ -179,15 +202,13 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 112px;
-  margin: 4px 0 10px;
+  margin: 2px 0 8px;
 }
 
 .mood-row {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 8px 12px;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px 4px;
   margin: 0 0 14px;
 }
 
@@ -196,8 +217,8 @@
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  min-width: 52px;
-  padding: 4px 2px;
+  min-width: 0;
+  padding: 4px 0;
   border: 0;
   background: transparent;
   color: var(--dcl-ink);
@@ -218,6 +239,23 @@
   font-size: 11px;
   line-height: 1.2;
   opacity: 0.72;
+}
+
+.mood-clear-row {
+  display: flex;
+  justify-content: center;
+  margin: -6px 0 12px;
+}
+
+.mood-clear {
+  @include doodle.text-link;
+  font-size: 12px;
+  opacity: 0.65;
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.4;
+  }
 }
 
 .doodle-title-wrap {
@@ -255,7 +293,7 @@
 .item-list {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
 .item-list.cdk-drop-list-dragging .item-card:not(.cdk-drag-placeholder) {
@@ -270,16 +308,15 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 8px;
-  border-bottom: 1px dashed var(--dcl-line);
+  padding: 10px 12px;
+  border: 0;
   background: var(--dcl-tint, transparent);
   color: var(--dcl-ink);
-  border-radius: 4px;
+  border-radius: 14px;
 
   &.completed {
     background: var(--dcl-fill);
     color: #fff;
-    border-bottom-color: transparent;
 
     .item-drag-handle,
     .item-edit {
@@ -296,7 +333,8 @@
   &.editing {
     flex-direction: column;
     align-items: stretch;
-    border-bottom: 1px solid var(--dcl-line);
+    border: 1px dashed var(--dcl-line);
+    background: transparent;
   }
 }
 
@@ -358,8 +396,7 @@
 }
 
 .item-emoji {
-  margin-right: 4px;
-  @include doodle.emoji;
+  @include doodle.item-emoji;
 }
 
 .item-remarks {
@@ -381,6 +418,7 @@
 
 .add-row {
   margin-top: 10px;
+  scroll-margin-bottom: 42vh;
 }
 
 .edit-actions,
@@ -390,6 +428,14 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
+}
+
+.edit-save {
+  @include doodle.ink-btn-fill;
+}
+
+.edit-ghost {
+  @include doodle.ink-btn;
 }
 
 .grow {
@@ -421,6 +467,10 @@
   }
 }
 
+.doodle-link {
+  @include doodle.text-link;
+}
+
 .emoji-picker-backdrop {
   position: fixed;
   inset: 0;
@@ -435,19 +485,19 @@
   top: 50%;
   transform: translate(-50%, -50%);
   border-radius: 12px;
-  box-shadow: var(--app-overlay-shadow);
+  box-shadow: var(--dcl-paper-shadow);
 }
 
 emoji-picker {
   display: block;
   width: min(352px, calc(100vw - 24px));
   height: min(400px, calc(100dvh - 48px));
-  --background: var(--app-overlay-bg);
-  --border-color: var(--app-border-subtle);
-  --input-border-color: var(--app-input-border);
-  --input-font-color: var(--app-text-primary);
-  --outline-color: var(--app-accent);
-  --indicator-color: var(--app-accent);
+  --background: var(--dcl-paper);
+  --border-color: var(--dcl-line);
+  --input-border-color: var(--dcl-line);
+  --input-font-color: var(--dcl-ink);
+  --outline-color: var(--dcl-stamp);
+  --indicator-color: var(--dcl-stamp);
 }
 
 @media (max-width: 600px) {
@@ -458,7 +508,7 @@ emoji-picker {
   .week-day {
     min-height: 64px;
     padding: 6px 0 5px;
-    border-radius: 14px;
+    border-radius: var(--dcl-day-radius);
   }
 
   .day-num {

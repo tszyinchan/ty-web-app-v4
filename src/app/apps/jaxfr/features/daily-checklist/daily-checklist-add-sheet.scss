@@ -1,13 +1,14 @@
-@use "../../../../styles/aero" as aero;
+@use "./doodle";
 
-.colour-purple { --dcl-fill: #5b3a8c; }
-.colour-blue { --dcl-fill: #1b5fa8; }
-.colour-teal { --dcl-fill: #1a7a72; }
-.colour-green { --dcl-fill: #217346; }
-.colour-gold { --dcl-fill: #b07a12; }
-.colour-orange { --dcl-fill: #c05612; }
-.colour-red { --dcl-fill: #a31f1f; }
-.colour-slate { --dcl-fill: #4a5a6a; }
+@include doodle.colour-classes;
+
+:host {
+  @include doodle.host-page;
+}
+
+:host-context(html.mode-dark) {
+  @include doodle.paper-tokens-dark;
+}
 
 .sheet-backdrop {
   position: fixed;
@@ -30,13 +31,14 @@
   gap: 10px;
   padding: 16px;
   border-radius: 12px;
-  @include aero.gloss-surface;
+  @include doodle.paper;
 }
 
 .sheet-title {
   margin: 0;
-  font: 700 16px var(--app-font);
-  color: var(--app-text-primary);
+  @include doodle.hand-letter;
+  font-size: 18px;
+  color: var(--dcl-ink);
 }
 
 .grow {
@@ -55,8 +57,10 @@
 .emoji-trigger {
   min-height: 40px;
   padding: 8px 14px;
-  @include aero.gloss-surface;
-  border-radius: 12px;
+  border: 1px dashed var(--dcl-line);
+  background: transparent;
+  color: var(--dcl-ink);
+  border-radius: 8px;
   cursor: pointer;
   font: 15px var(--app-font);
 }
@@ -71,8 +75,20 @@
   background: var(--dcl-fill);
 
   &.selected {
-    box-shadow: 0 0 0 2px var(--app-accent-contrast), 0 0 0 4px var(--app-accent);
+    box-shadow: 0 0 0 2px var(--dcl-paper), 0 0 0 4px var(--dcl-ink);
   }
+}
+
+.sheet-save {
+  @include doodle.ink-btn-fill;
+}
+
+.sheet-ghost {
+  @include doodle.ink-btn;
+}
+
+.doodle-link {
+  @include doodle.text-link;
 }
 
 .emoji-picker-backdrop {
@@ -89,17 +105,17 @@
   top: 50%;
   transform: translate(-50%, -50%);
   border-radius: 12px;
-  box-shadow: var(--app-overlay-shadow);
+  box-shadow: var(--dcl-paper-shadow);
 }
 
 emoji-picker {
   display: block;
   width: min(352px, calc(100vw - 24px));
   height: min(400px, calc(100dvh - 48px));
-  --background: var(--app-overlay-bg);
-  --border-color: var(--app-border-subtle);
-  --input-border-color: var(--app-input-border);
-  --input-font-color: var(--app-text-primary);
-  --outline-color: var(--app-accent);
-  --indicator-color: var(--app-accent);
+  --background: var(--dcl-paper);
+  --border-color: var(--dcl-line);
+  --input-border-color: var(--dcl-line);
+  --input-font-color: var(--dcl-ink);
+  --outline-color: var(--dcl-stamp);
+  --indicator-color: var(--dcl-stamp);
 }

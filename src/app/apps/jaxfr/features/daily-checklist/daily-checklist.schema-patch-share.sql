@@ -20,7 +20,8 @@ CREATE TABLE IF NOT EXISTS public.tyapp_daily_checklist_day (
   deleted_at timestamptz,
   CONSTRAINT tyapp_daily_checklist_day_mood_key
     CHECK (mood_key IS NULL OR mood_key IN (
-      'green', 'gold', 'red', 'blue', 'purple'
+      'green', 'gold', 'red', 'blue', 'purple',
+      'grin', 'rest', 'blank', 'cry', 'mad'
     ))
 );
 

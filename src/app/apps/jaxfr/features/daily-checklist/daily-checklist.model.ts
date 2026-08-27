@@ -50,21 +50,33 @@ export const DCL_MOOD_KEYS = [
   'red',
   'blue',
   'purple',
+  'grin',
+  'rest',
+  'blank',
+  'cry',
+  'mad',
 ] as const;
 
 export type DclMoodKey = (typeof DCL_MOOD_KEYS)[number];
 
-/** Display order. Keys stay the DB CHECK values in `DCL_MOOD_KEYS`. */
+/** Display order: 5×2 grid. Colour keys stay the original DB CHECK values.
+ *  Each face has its own fill in /dcl-moods/*.svg — not shared by column. */
 export const DCL_MOODS: readonly {
   key: DclMoodKey;
   emoji: string;
   label: string;
+  image: string;
 }[] = [
-  { key: 'green', emoji: '😄', label: 'Happy' },
-  { key: 'gold', emoji: '😌', label: 'Calm' },
-  { key: 'purple', emoji: '😐', label: 'Meh' },
-  { key: 'blue', emoji: '😢', label: 'Sad' },
-  { key: 'red', emoji: '😠', label: 'Angry' },
+  { key: 'green', emoji: '😊', label: 'Happy', image: '/dcl-moods/happy.svg' },
+  { key: 'gold', emoji: '🙂', label: 'Calm', image: '/dcl-moods/calm.svg' },
+  { key: 'purple', emoji: '😑', label: 'Meh', image: '/dcl-moods/meh.svg' },
+  { key: 'blue', emoji: '😞', label: 'Sad', image: '/dcl-moods/sad.svg' },
+  { key: 'red', emoji: '😡', label: 'Angry', image: '/dcl-moods/angry.svg' },
+  { key: 'grin', emoji: '😄', label: 'Grin', image: '/dcl-moods/grin.svg' },
+  { key: 'rest', emoji: '😌', label: 'Rest', image: '/dcl-moods/rest.svg' },
+  { key: 'blank', emoji: '😐', label: 'Blank', image: '/dcl-moods/blank.svg' },
+  { key: 'cry', emoji: '😢', label: 'Cry', image: '/dcl-moods/cry.svg' },
+  { key: 'mad', emoji: '😠', label: 'Mad', image: '/dcl-moods/mad.svg' },
 ];
 
 export const DCL_SELECTED_DAY_BG = '#4a1f6b';

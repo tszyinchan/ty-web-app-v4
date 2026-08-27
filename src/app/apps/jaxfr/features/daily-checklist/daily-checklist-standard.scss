@@ -1,16 +1,27 @@
+@use "./doodle";
+
+@include doodle.colour-classes;
+
+:host {
+  @include doodle.host-page;
+}
+
+:host-context(html.mode-dark) {
+  @include doodle.paper-tokens-dark;
+}
+
 .dcl-standard,
 .dcl-items {
   max-width: 720px;
   margin: 0 auto;
   padding: 16px 16px 32px;
-  font-family: var(--app-font);
 }
 
 .intro,
 .empty-copy {
   margin: 0 0 16px;
   font-size: 13px;
-  color: var(--app-text-muted);
+  color: var(--dcl-muted);
   line-height: 1.5;
 }
 
@@ -20,11 +31,12 @@
 }
 
 .sibling-nav a {
-  color: var(--app-link);
+  color: var(--dcl-ink);
   text-decoration: none;
+  border-bottom: 2px solid var(--dcl-brush);
 
   &:hover {
-    text-decoration: underline;
+    border-bottom-color: var(--dcl-ink);
   }
 }
 
@@ -54,8 +66,8 @@
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--app-border-subtle);
+  padding: 10px 0;
+  border-bottom: 1px dashed var(--dcl-line);
 }
 
 .item-body,
@@ -71,12 +83,15 @@
   padding-top: 10px;
   font-size: 15px;
   font-weight: 600;
-  color: var(--app-text-primary);
+  color: var(--dcl-ink);
   word-break: break-word;
 }
 
 .item-emoji {
-  margin-right: 4px;
+  margin-right: 6px;
+  @include doodle.item-emoji;
+  font-size: 22px;
+  filter: none;
 }
 
 .item-body {
@@ -90,6 +105,7 @@
   border-radius: 50%;
   flex-shrink: 0;
   margin-top: 10px;
+  background: var(--dcl-fill);
 }
 
 .row-actions {
@@ -103,7 +119,7 @@
   margin: 0 8px 0 0;
   font-size: 12px;
   font-weight: 400;
-  color: var(--app-text-muted);
+  color: var(--dcl-muted);
   white-space: nowrap;
 }
 
@@ -122,10 +138,10 @@
 .emoji-trigger {
   min-height: 40px;
   padding: 8px 14px;
-  border: 1px solid var(--app-button-border);
-  border-radius: 12px;
-  background: var(--app-button-bg);
-  color: var(--app-text-primary);
+  border: 1px dashed var(--dcl-line);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--dcl-ink);
   cursor: pointer;
   font: 15px var(--app-font);
 }
@@ -137,28 +153,16 @@
   border: 2px solid transparent;
   border-radius: 50%;
   cursor: pointer;
+  background: var(--dcl-fill);
 
   &.selected {
-    box-shadow: 0 0 0 2px var(--app-accent-contrast), 0 0 0 4px var(--app-accent);
+    box-shadow: 0 0 0 2px var(--dcl-paper), 0 0 0 4px var(--dcl-ink);
   }
 }
 
-.colour-chip.colour-purple,
-.colour-dot.colour-purple { background: #5b3a8c; }
-.colour-chip.colour-blue,
-.colour-dot.colour-blue { background: #1b5fa8; }
-.colour-chip.colour-teal,
-.colour-dot.colour-teal { background: #1a7a72; }
-.colour-chip.colour-green,
-.colour-dot.colour-green { background: #217346; }
-.colour-chip.colour-gold,
-.colour-dot.colour-gold { background: #b07a12; }
-.colour-chip.colour-orange,
-.colour-dot.colour-orange { background: #c05612; }
-.colour-chip.colour-red,
-.colour-dot.colour-red { background: #a31f1f; }
-.colour-chip.colour-slate,
-.colour-dot.colour-slate { background: #4a5a6a; }
+.doodle-link {
+  @include doodle.text-link;
+}
 
 .emoji-picker-backdrop {
   position: fixed;
@@ -177,23 +181,23 @@
   max-height: calc(100dvh - 24px);
   overflow: auto;
   border-radius: 12px;
-  box-shadow: var(--app-overlay-shadow);
+  box-shadow: var(--dcl-paper-shadow);
 }
 
 emoji-picker {
   display: block;
   width: min(352px, calc(100vw - 24px));
   height: min(400px, calc(100dvh - 48px));
-  --background: var(--app-overlay-bg);
-  --border-color: var(--app-border-subtle);
-  --input-border-color: var(--app-input-border);
-  --input-font-color: var(--app-text-primary);
-  --input-placeholder-color: var(--app-text-muted);
-  --outline-color: var(--app-accent);
-  --indicator-color: var(--app-accent);
-  --category-font-color: var(--app-text-muted);
-  --button-hover-background: var(--app-tile-hover-bg);
-  --button-active-background: var(--app-tile-hover-bg);
+  --background: var(--dcl-paper);
+  --border-color: var(--dcl-line);
+  --input-border-color: var(--dcl-line);
+  --input-font-color: var(--dcl-ink);
+  --input-placeholder-color: var(--dcl-muted);
+  --outline-color: var(--dcl-stamp);
+  --indicator-color: var(--dcl-stamp);
+  --category-font-color: var(--dcl-muted);
+  --button-hover-background: var(--dcl-brush);
+  --button-active-background: var(--dcl-brush);
 }
 
 @media (max-width: 600px) {

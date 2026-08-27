@@ -1,0 +1,18 @@
+OpenMoji
+https://github.com/hfg-gmuend/openmoji
+License: CC-BY-SA 4.0
+
+Line art is OpenMoji. Face fills were recolored from OpenMoji yellow
+and cropped tighter than the original 72×72 canvas. Each mood has its
+own fill:
+
+happy  #B1CC33 lime
+calm   #FCEA2B gold
+meh    #B399C8 lilac
+sad    #61B2E4 sky
+angry  #EA5A47 red
+grin   #F4AA41 peach
+rest   #7AC4C0 mint
+blank  #9AA7B2 stone
+cry    #5B6CC8 indigo
+mad    #E27022 orange

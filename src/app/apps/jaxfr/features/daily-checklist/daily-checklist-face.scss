@@ -11,42 +11,41 @@
 }
 
 .dcl-glyph {
-  @include doodle.emoji;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 32px;
-  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.08));
+  display: block;
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
 
   &.size-sm {
-    font-size: 20px;
+    width: 28px;
+    height: 28px;
   }
 
   &.size-lg {
-    font-size: 104px;
-    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.12));
+    width: 88px;
+    height: 88px;
   }
 
   &.selected {
-    transform: translateY(-1px);
+    filter: drop-shadow(0 2px 0 var(--dcl-ink));
   }
 }
 
 .dcl-empty {
   display: inline-block;
   box-sizing: border-box;
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border: 2px dashed var(--dcl-line);
   border-radius: 50%;
 
   &.size-sm {
-    width: 20px;
-    height: 20px;
+    width: 28px;
+    height: 28px;
   }
 
   &.size-lg {
-    width: 104px;
-    height: 104px;
+    width: 88px;
+    height: 88px;
   }
 }

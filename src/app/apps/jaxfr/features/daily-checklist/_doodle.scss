@@ -1,16 +1,22 @@
 @mixin paper-tokens {
   --dcl-paper: #f3efe6;
   --dcl-ink: #2a2a2a;
+  --dcl-muted: rgba(42, 42, 42, 0.62);
   --dcl-brush: rgba(150, 205, 240, 0.55);
   --dcl-line: rgba(42, 42, 42, 0.18);
+  --dcl-stamp: #4f7cac;
+  --dcl-today: #c05612;
   --dcl-paper-shadow: 0 8px 18px rgba(40, 50, 60, 0.08);
 }
 
 @mixin paper-tokens-dark {
   --dcl-paper: #2c261c;
   --dcl-ink: #f3ead8;
+  --dcl-muted: rgba(243, 234, 216, 0.62);
   --dcl-brush: rgba(90, 150, 200, 0.5);
   --dcl-line: rgba(243, 234, 216, 0.18);
+  --dcl-stamp: #6a93b8;
+  --dcl-today: #e08a4a;
   --dcl-paper-shadow:
     inset 0 1px 0 rgba(255, 236, 214, 0.08),
     0 10px 24px rgba(0, 0, 0, 0.38);
@@ -25,6 +31,13 @@
   box-shadow: var(--dcl-paper-shadow);
 }
 
+@mixin host-page {
+  @include paper-tokens;
+  display: block;
+  color: var(--dcl-ink);
+  font-family: var(--app-font);
+}
+
 @mixin hand-letter {
   font-family: "Segoe Print", "Bradley Hand", cursive, var(--app-font);
 }
@@ -36,6 +49,14 @@
   line-height: 1;
 }
 
+@mixin item-emoji {
+  @include emoji;
+  flex-shrink: 0;
+  font-size: 28px;
+  line-height: 1;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.28));
+}
+
 @mixin title-brush {
   @include hand-letter;
   display: inline-block;
@@ -44,6 +65,38 @@
   border-radius: 2px;
   font-weight: 700;
   line-height: 1.3;
+}
+
+@mixin ink-btn {
+  padding: 8px 14px;
+  border: 1px solid var(--dcl-ink);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--dcl-ink);
+  cursor: pointer;
+  font: 700 13px var(--app-font);
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.4;
+  }
+}
+
+@mixin ink-btn-fill {
+  @include ink-btn;
+  background: var(--dcl-ink);
+  color: var(--dcl-paper);
+}
+
+@mixin text-link {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--dcl-ink);
+  cursor: pointer;
+  font: 13px var(--app-font);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 @mixin colour-classes {

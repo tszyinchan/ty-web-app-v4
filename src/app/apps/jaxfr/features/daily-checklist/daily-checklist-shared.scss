@@ -3,18 +3,25 @@
 
 @include doodle.colour-classes;
 
+:host {
+  @include doodle.host-page;
+}
+
+:host-context(html.mode-dark) {
+  @include doodle.paper-tokens-dark;
+}
+
 .dcl-shared {
   max-width: 860px;
   margin: 0 auto;
   padding: 12px 12px 32px;
-  font-family: var(--app-font);
 }
 
 .empty-placeholder,
 .empty-copy {
   padding: 24px 8px;
   text-align: center;
-  color: var(--app-text-muted);
+  color: var(--dcl-muted);
 }
 
 .feed {
@@ -26,16 +33,7 @@
 .doodle-page {
   @include doodle.paper;
   padding: 18px 16px 20px;
-  border-radius: 4px;
-}
-
-:host-context(html.mode-dark) .doodle-page {
-  @include doodle.paper-tokens-dark;
-}
-
-:host-context(html.theme-material) .doodle-page {
-  box-shadow: none;
-  border-radius: var(--app-radius);
+  border-radius: 12px;
 }
 
 .person-head {
@@ -51,11 +49,7 @@
 }
 
 .text-link {
-  border: 0;
-  background: transparent;
-  color: var(--app-link);
-  cursor: pointer;
-  font: 13px var(--app-font);
+  @include doodle.text-link;
 }
 
 .doodle-date {
@@ -79,7 +73,7 @@
 .mood-block {
   display: flex;
   justify-content: center;
-  margin: 12px 0;
+  margin: 8px 0 10px;
 }
 
 .doodle-title {
@@ -97,9 +91,12 @@
 }
 
 .item-row {
-  padding: 8px 10px;
-  margin-bottom: 4px;
-  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  margin-bottom: 6px;
+  border-radius: 14px;
   background: var(--dcl-tint, transparent);
   font-weight: 700;
   color: var(--dcl-ink);
@@ -110,24 +107,20 @@
   }
 }
 
+.item-tick {
+  flex-shrink: 0;
+  width: 1.1em;
+  text-align: center;
+}
+
 .item-emoji {
-  margin-right: 6px;
-  @include doodle.emoji;
+  @include doodle.item-emoji;
 }
 
 .calendar-body {
   @include doodle.paper;
   overflow: auto;
-  border-radius: 4px;
-}
-
-:host-context(html.mode-dark) .calendar-body {
-  @include doodle.paper-tokens-dark;
-}
-
-:host-context(html.theme-material) .calendar-body {
-  box-shadow: none;
-  border-radius: var(--app-radius);
+  border-radius: 12px;
 }
 
 .cal-custom-header {
@@ -144,7 +137,7 @@
 }
 
 .cal-custom-cell {
-  min-height: 88px;
+  min-height: 92px;
   padding: 6px 4px;
   cursor: pointer;
 }
@@ -166,10 +159,12 @@
 .face-stack {
   display: flex;
   flex-wrap: wrap;
-  margin-top: 4px;
+  align-items: center;
+  margin-top: 6px;
+  gap: 2px;
 
   app-dcl-face {
-    margin-left: -8px;
+    margin-left: -4px;
 
     &:first-child {
       margin-left: 0;

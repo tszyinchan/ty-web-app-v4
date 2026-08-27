@@ -1,19 +1,31 @@
+@use "./doodle";
+
+:host {
+  @include doodle.host-page;
+}
+
+:host-context(html.mode-dark) {
+  @include doodle.paper-tokens-dark;
+}
+
 .dcl-dashboard {
   max-width: 720px;
   margin: 0 auto;
   padding: 16px 16px 32px;
-  font-family: var(--app-font);
 }
 
 .range-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
   margin-bottom: 16px;
 }
 
-.full-width-toggle {
-  width: 100%;
+.range-chip {
+  @include doodle.ink-btn;
 
-  mat-button-toggle {
-    flex: 1;
+  &.picked {
+    @include doodle.ink-btn-fill;
   }
 }
 
@@ -29,8 +41,9 @@
 
 .section-title {
   margin: 0 0 12px;
-  font: 600 15px var(--app-font);
-  color: var(--app-text-accent);
+  @include doodle.hand-letter;
+  font-size: 16px;
+  color: var(--dcl-ink);
 }
 
 .summary-grid {
@@ -44,20 +57,19 @@
   flex-direction: column;
   gap: 4px;
   padding: 12px;
-  background: var(--app-surface-raised);
-  border: 1px solid var(--app-border-subtle);
-  border-radius: var(--app-radius);
+  @include doodle.paper;
+  border-radius: 12px;
 }
 
 .summary-value {
   font-size: 22px;
   font-weight: 700;
-  color: var(--app-accent);
+  color: var(--dcl-stamp);
 }
 
 .summary-label {
   font-size: 12px;
-  color: var(--app-text-muted);
+  color: var(--dcl-muted);
 }
 
 .stat-row {
@@ -66,7 +78,7 @@
   align-items: flex-start;
   gap: 12px;
   padding: 10px 0;
-  border-bottom: 1px solid var(--app-border-subtle);
+  border-bottom: 1px dashed var(--dcl-line);
 }
 
 .stat-main {
@@ -79,14 +91,14 @@
 .stat-title {
   font-size: 14px;
   font-weight: 600;
-  color: var(--app-text-primary);
+  color: var(--dcl-ink);
   word-break: break-word;
 }
 
 .stat-sub,
 .empty-copy {
   font-size: 12px;
-  color: var(--app-text-muted);
+  color: var(--dcl-muted);
 }
 
 .empty-copy {
@@ -97,7 +109,7 @@
   flex-shrink: 0;
   font-size: 13px;
   font-weight: 700;
-  color: var(--app-accent);
+  color: var(--dcl-stamp);
 }
 
 @media (max-width: 600px) {

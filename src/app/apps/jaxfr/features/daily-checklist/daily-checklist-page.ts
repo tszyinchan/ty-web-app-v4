@@ -26,7 +26,6 @@ import {
   MatAutocompleteModule,
   MatAutocompleteSelectedEvent,
 } from '@angular/material/autocomplete';
-import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
@@ -42,6 +41,7 @@ import {
   DCL_MOODS,
   DailyChecklistDayRow,
   DailyChecklistItem,
+  DailyChecklistWeekDay,
   DclColourPresetKey,
   DclMoodKey,
 } from './daily-checklist.model';
@@ -84,7 +84,6 @@ type EmojiPickerTarget = 'edit';
     DailyChecklistAddSheet,
     DailyChecklistFace,
     MatAutocompleteModule,
-    MatButtonModule,
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
@@ -108,6 +107,8 @@ export class DailyChecklistPage implements OnInit, AfterViewInit, OnDestroy {
   private readonly addItemInput =
     viewChild<ElementRef<HTMLInputElement>>('addItemInput');
   private ignoreWeekScroll = false;
+  private addScrollTimers: ReturnType<typeof setTimeout>[] = [];
+  private addViewportUnsub: (() => void) | null = null;
   private weekScrollTimer: ReturnType<typeof setTimeout> | null = null;
   private stripExtending = false;
   private stripHasFetched = false;
@@ -268,6 +269,7 @@ export class DailyChecklistPage implements OnInit, AfterViewInit, OnDestroy {
   ngOnDestroy() {
     this.querySub?.unsubscribe();
     if (this.weekScrollTimer) clearTimeout(this.weekScrollTimer);
+    this.clearAddScrollWatch();
     this.headerService.clear();
   }
 
@@ -543,15 +545,29 @@ export class DailyChecklistPage implements OnInit, AfterViewInit, OnDestroy {
   }
 
   onAddInputFocus() {
-    this.addRow()?.nativeElement.scrollIntoView({
-      block: 'center',
-      behavior: 'smooth',
-    });
+    this.scrollAddRowAboveKeyboard();
+    this.watchAddViewport();
+  }
+
+  onAddInputBlur() {
+    this.clearAddScrollWatch();
+  }
+
+  hasLogged(day: DailyChecklistWeekDay): boolean {
+    if (day.totalCount > 0) return true;
+    const log = this.service.dayLogForDate(day.date);
+    return !!(log?.mood_key || log?.title?.trim());
   }
 
   async onSelectMood(mood: DclMoodKey) {
     const next = this.dayMood() === mood ? null : mood;
     this.dayMood.set(next);
+    await this.saveDayLog();
+  }
+
+  async onClearMood() {
+    if (this.dayMood() === null) return;
+    this.dayMood.set(null);
     await this.saveDayLog();
   }
 
@@ -644,14 +660,46 @@ export class DailyChecklistPage implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private scrollAddRowIntoView() {
-    queueMicrotask(() => {
-      requestAnimationFrame(() => {
-        this.addRow()?.nativeElement.scrollIntoView({
-          block: 'end',
-          behavior: 'smooth',
-        });
-      });
-    });
+    this.scrollAddRowAboveKeyboard();
+  }
+
+  private scrollAddRowAboveKeyboard() {
+    const row = this.addRow()?.nativeElement;
+    if (!row) return;
+    const scroller = row.closest('.main-scroll-view');
+    const visibleBottom = window.visualViewport
+      ? window.visualViewport.height + window.visualViewport.offsetTop
+      : window.innerHeight;
+    const margin = 20;
+    const overflow = row.getBoundingClientRect().bottom - (visibleBottom - margin);
+    if (overflow > 0) {
+      if (scroller instanceof HTMLElement) {
+        scroller.scrollTop += overflow;
+      } else {
+        row.scrollIntoView({ block: 'end', behavior: 'smooth' });
+      }
+    }
+  }
+
+  private watchAddViewport() {
+    this.clearAddScrollWatch();
+    const run = () => this.scrollAddRowAboveKeyboard();
+    this.addScrollTimers = [
+      setTimeout(run, 250),
+      setTimeout(run, 550),
+    ];
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+    const onResize = () => run();
+    viewport.addEventListener('resize', onResize);
+    this.addViewportUnsub = () => viewport.removeEventListener('resize', onResize);
+  }
+
+  private clearAddScrollWatch() {
+    for (const timer of this.addScrollTimers) clearTimeout(timer);
+    this.addScrollTimers = [];
+    this.addViewportUnsub?.();
+    this.addViewportUnsub = null;
   }
 
   selectEditColour(key: DclColourPresetKey) {

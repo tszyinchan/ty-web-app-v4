@@ -10,7 +10,7 @@
       {{ emoji || 'Add emoji' }}
     </button>
     @if (emoji) {
-      <button mat-button type="button" (click)="clearEmoji()">Clear</button>
+      <button type="button" class="doodle-link" (click)="clearEmoji()">Clear</button>
     }
   </div>
   <div class="colour-row">
@@ -30,15 +30,14 @@
   </mat-form-field>
   <div class="sheet-actions">
     <button
-      mat-flat-button
-      color="primary"
       type="button"
+      class="sheet-save"
       [disabled]="busy() || !itemText.trim()"
       (click)="confirm()"
     >
       Add
     </button>
-    <button mat-button type="button" (click)="cancel()">Cancel</button>
+    <button type="button" class="sheet-ghost" (click)="cancel()">Cancel</button>
   </div>
 </div>
 

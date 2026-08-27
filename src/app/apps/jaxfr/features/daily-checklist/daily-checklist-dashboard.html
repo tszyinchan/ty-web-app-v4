@@ -1,14 +1,15 @@
 <div class="dcl-dashboard">
   <div class="range-bar">
-    <mat-button-toggle-group
-      [value]="range()"
-      (change)="onRangeChange($event)"
-      class="full-width-toggle"
-    >
-      <mat-button-toggle value="week">This week</mat-button-toggle>
-      <mat-button-toggle value="last30">Last 30 days</mat-button-toggle>
-      <mat-button-toggle value="all">All time</mat-button-toggle>
-    </mat-button-toggle-group>
+    @for (opt of ranges; track opt.value) {
+      <button
+        type="button"
+        class="range-chip"
+        [class.picked]="range() === opt.value"
+        (click)="setRange(opt.value)"
+      >
+        {{ opt.label }}
+      </button>
+    }
   </div>
 
   @if (service.loading() && service.historyItems().length === 0) {

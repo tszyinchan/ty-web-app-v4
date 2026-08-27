@@ -47,9 +47,9 @@ export function isMoodKey(value: string | null | undefined): value is DclMoodKey
   return DCL_MOOD_KEYS.some((key) => key === value);
 }
 
-export function moodEmoji(key: string | null | undefined): string | null {
+export function moodImage(key: string | null | undefined): string | null {
   if (!isMoodKey(key)) return null;
-  return DCL_MOODS.find((mood) => mood.key === key)?.emoji ?? null;
+  return DCL_MOODS.find((mood) => mood.key === key)?.image ?? null;
 }
 
 export function normalizeChecklistDateParam(
