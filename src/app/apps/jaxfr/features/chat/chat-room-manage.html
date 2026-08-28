@@ -36,15 +36,21 @@
         </mat-form-field>
       </section>
 
-      @if (isCreator()) {
-        <section class="form-group">
-          <h3 class="group-header">Members</h3>
-          <button mat-stroked-button type="button" (click)="goToMembers()">
-            <mat-icon>group</mat-icon>
-            Manage Members
-          </button>
-        </section>
+      <section class="form-group">
+        <h3 class="group-header">Members</h3>
+        @if (isCreatorDeleted()) {
+          <p class="room-lock-banner">
+            The creator of this room has been deleted/deactivated. You can no
+            longer add or remove members in this room.
+          </p>
+        }
+        <button mat-stroked-button type="button" (click)="goToMembers()">
+          <mat-icon>group</mat-icon>
+          Manage Members
+        </button>
+      </section>
 
+      @if (canDeleteRoom()) {
         <section class="form-group">
           <h3 class="group-header">Danger Zone</h3>
           <p class="danger-hint">
@@ -61,6 +67,14 @@
             <mat-icon>delete_outline</mat-icon>
             Delete Room
           </button>
+        </section>
+      } @else if (isCreatorDeleted()) {
+        <section class="form-group">
+          <h3 class="group-header">Danger Zone</h3>
+          <p class="room-lock-banner">
+            The creator of this room has been deleted. This room cannot be
+            deleted.
+          </p>
         </section>
       }
     </div>

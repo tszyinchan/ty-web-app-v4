@@ -4,6 +4,13 @@
       <section class="form-group">
         <h3 class="group-header">Members</h3>
 
+        @if (isCreatorDeleted()) {
+          <p class="room-lock-banner">
+            The creator of this room has been deleted/deactivated. You can no
+            longer add or remove members in this room.
+          </p>
+        }
+
         <ul class="manage-member-list">
           @for (userId of room.member_user_ids; track userId) {
             <li class="manage-member">
@@ -16,7 +23,7 @@
                   <span class="manage-tag">creator</span>
                 }
               </span>
-              @if (userId !== room.created_by) {
+              @if (userId !== room.created_by && canManageMembers()) {
                 <button
                   mat-icon-button
                   type="button"
@@ -35,29 +42,31 @@
           }
         </ul>
 
-        <mat-form-field
-          appearance="outline"
-          class="full-width"
-          subscriptSizing="dynamic"
-        >
-          <mat-label>Add people</mat-label>
-          <input
-            matInput
-            #manageUserInput
-            placeholder="Search a person to add..."
-            [matAutocomplete]="manageAuto"
-            (input)="userSearch.set(manageUserInput.value)"
-            (focus)="userSearch.set('')"
-          />
-          <mat-autocomplete
-            #manageAuto="matAutocomplete"
-            (optionSelected)="onAddMember($event); manageUserInput.value = ''"
+        @if (canManageMembers()) {
+          <mat-form-field
+            appearance="outline"
+            class="full-width"
+            subscriptSizing="dynamic"
           >
-            @for (opt of filteredUsers(); track opt.value) {
-              <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
-            }
-          </mat-autocomplete>
-        </mat-form-field>
+            <mat-label>Add people</mat-label>
+            <input
+              matInput
+              #manageUserInput
+              placeholder="Search a person to add..."
+              [matAutocomplete]="manageAuto"
+              (input)="userSearch.set(manageUserInput.value)"
+              (focus)="userSearch.set('')"
+            />
+            <mat-autocomplete
+              #manageAuto="matAutocomplete"
+              (optionSelected)="onAddMember($event); manageUserInput.value = ''"
+            >
+              @for (opt of filteredUsers(); track opt.value) {
+                <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
+              }
+            </mat-autocomplete>
+          </mat-form-field>
+        }
       </section>
     </div>
   }

@@ -1,6 +1,7 @@
 import { RecordStatus } from "./status.enum";
 
 export const DELETED_USER_LABEL = 'Deleted user';
+export const DELETED_USER_SUFFIX = ' (Deleted)';
 
 export interface TyappUser {
   user_id: string;

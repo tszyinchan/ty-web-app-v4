@@ -191,17 +191,16 @@
           @if (canManageUsers()) {
             <p class="account-hint">
               Deactivate pauses sign-in; they can ask to come back. Delete
-              removes them from chat rooms and pickers. Other people see old
-              messages as "{{ DELETED_USER_LABEL }}". The name stays on this
-              page so you can tell who it was. Only a super admin can turn an
-              account back on.
+              stops sign-in. Chat rooms, groups, and grants stay. Other people
+              see old messages as the person's name plus (Deleted). Only a
+              super admin can turn an account back on.
             </p>
           } @else {
             <p class="account-hint">
               Deactivate pauses sign-in; try logging in later to ask a super
-              admin to turn it back on. Delete signs you out and leaves every
-              chat room. Other people still see old messages as
-              "{{ DELETED_USER_LABEL }}".
+              admin to turn it back on. Delete signs you out. Chat rooms keep
+              your membership; other people see old messages as your name
+              plus (Deleted).
             </p>
           }
           <div class="account-actions">
@@ -255,11 +254,7 @@
       <div class="sticky-preview">
         <div class="p-header">LIVE PREVIEW</div>
         <div class="p-label">Final Display Name</div>
-        <div class="p-value">{{ u | tyDisplayName: true }}</div>
-        @if (isDeleted()) {
-          <div class="p-label">Others see</div>
-          <div class="p-value">{{ DELETED_USER_LABEL }}</div>
-        }
+        <div class="p-value">{{ u | tyDisplayName }}</div>
         <div class="p-divider"></div>
         <div class="p-label">Assigned Role</div>
         <div class="p-chip">{{ u.role | tyRoleLabel }}</div>

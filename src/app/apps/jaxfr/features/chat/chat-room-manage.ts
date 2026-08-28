@@ -23,6 +23,7 @@ import { map } from 'rxjs/operators';
 import { AuthService } from '../../../../core/services/auth.service';
 import { HeaderService } from '../../../../core/services/header.service';
 import { HasUnsavedChanges } from '../../../../core/guards/unsaved-changes.guard';
+import { UserService } from '../user/user.service';
 import { CHAT_ROOM_DESCRIPTION_MAX } from './chat.constants';
 import { ChatService } from './chat.service';
 
@@ -49,6 +50,7 @@ export class ChatRoomManage
   private auth = inject(AuthService);
 
   readonly chatService = inject(ChatService);
+  readonly userService = inject(UserService);
   readonly descriptionMax = CHAT_ROOM_DESCRIPTION_MAX;
 
   readonly roomId = toSignal(
@@ -79,6 +81,19 @@ export class ChatRoomManage
     const me = this.currentUserId();
     return !!room && !!me && room.created_by === me;
   });
+
+  isCreatorDeleted = computed(() => {
+    const creatorId = this.room()?.created_by;
+    if (!creatorId) return false;
+    const creator = this.userService
+      .users()
+      .find((user) => user.user_id === creatorId);
+    return !!creator?.deleted_at;
+  });
+
+  canDeleteRoom = computed(
+    () => this.isCreator() && !this.isCreatorDeleted(),
+  );
 
   isLoading = computed(() => this.chatService.loading());
 
@@ -141,7 +156,10 @@ export class ChatRoomManage
   }
 
   async ngOnInit() {
-    await this.chatService.fetchRooms(true);
+    await Promise.all([
+      this.chatService.fetchRooms(true),
+      this.userService.fetchAllUsers(),
+    ]);
     const room = this.room();
     this.name = room?.name ?? '';
     this.description = room?.description ?? '';
@@ -179,7 +197,7 @@ export class ChatRoomManage
 
   goToMembers() {
     const room = this.room();
-    if (!room || !this.isCreator()) return;
+    if (!room) return;
     void this.router.navigate([
       '/chat',
       room.tb_tyapp_chat_rm_id,
@@ -190,7 +208,7 @@ export class ChatRoomManage
 
   async onDeleteRoom() {
     const room = this.room();
-    if (!room || !this.isCreator()) return;
+    if (!room || !this.canDeleteRoom()) return;
     if (!confirm(`Delete room "${room.name}"? This cannot be undone.`)) return;
     const ok = await this.chatService.deleteRoom(room.tb_tyapp_chat_rm_id);
     if (ok) {

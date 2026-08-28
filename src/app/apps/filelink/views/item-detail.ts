@@ -8,6 +8,7 @@ import { FilelinkService } from '../../../core/domains/filelink/filelink.service
 import { FilelinkItem } from '../../../core/domains/filelink/filelink.model';
 import { buildFileDisplayTitle } from '../../../core/domains/filelink/filelink.util';
 import { resolveUrlActionConfig } from '../../../core/domains/filelink/filelink-url.util';
+import { UserService } from '../../jaxfr/features/user/user.service';
 
 interface MetaPair {
   key: string;
@@ -32,6 +33,7 @@ export class ItemDetail implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private filelinkService = inject(FilelinkService);
+  private userService = inject(UserService);
 
   loading = signal(true);
   item = signal<FilelinkItem | null>(null);
@@ -125,8 +127,13 @@ export class ItemDetail implements OnInit {
       return;
     }
 
+    await this.userService.fetchAllUsers();
     const fetchedItem = await this.filelinkService.fetchItemById(id);
-    this.item.set(fetchedItem);
+    if (fetchedItem && this.userService.isUnavailableId(fetchedItem.user_id)) {
+      this.item.set(null);
+    } else {
+      this.item.set(fetchedItem);
+    }
     this.loading.set(false);
   }
 

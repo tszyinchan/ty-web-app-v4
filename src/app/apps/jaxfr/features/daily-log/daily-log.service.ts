@@ -3,6 +3,7 @@ import { RecordStatus } from '../../../../core/models/status.enum';
 import { AuthService } from '../../../../core/services/auth.service';
 import { NotificationService } from '../../../../core/services/notification.service';
 import { SupabaseService } from '../../../../core/services/supabase.service';
+import { UserService } from '../user/user.service';
 import {
   DailyLogDayItem,
   DailyLogDay,
@@ -26,6 +27,7 @@ export class DailyLogService {
   private supabase = inject(SupabaseService).client;
   private authService = inject(AuthService);
   private notification = inject(NotificationService);
+  private userService = inject(UserService);
   private zone = inject(NgZone);
 
   libraryItems = signal<DailyLogLibraryItem[]>([]);
@@ -412,7 +414,13 @@ export class DailyLogService {
   othersOwnerIds(): string[] {
     const me = this.currentUserId();
     if (!me) return [];
-    const owners = this.incomingGrants().map((row) => row.owner_user_id);
+    const owners = this.incomingGrants()
+      .filter(
+        (row) =>
+          !this.userService.isUnavailableId(row.owner_user_id) &&
+          !this.userService.isUnavailableId(row.viewer_user_id),
+      )
+      .map((row) => row.owner_user_id);
     return [me, ...owners.filter((id, index) => owners.indexOf(id) === index)];
   }
 
@@ -1264,6 +1272,7 @@ export class DailyLogService {
 
     this.othersLoading.set(true);
     try {
+      await this.userService.fetchAllUsers();
       await this.fetchViewerGrants(force);
       const ownerIds = this.othersOwnerIds();
       if (ownerIds.length === 0) {

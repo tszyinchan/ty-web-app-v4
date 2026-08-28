@@ -68,8 +68,8 @@
         >
           <mat-label>Allowed Users</mat-label>
           <mat-chip-grid #userGrid aria-label="User selection">
-            @for (uid of fl.allowed_users; track uid; let idx = $index) {
-              <mat-chip-row (removed)="removeAllowedUser(idx)">
+            @for (uid of visibleAllowedUserIds(); track uid) {
+              <mat-chip-row (removed)="removeAllowedUser(uid)">
                 {{ displayUserName(uid) }}
                 <button matChipRemove><mat-icon>cancel</mat-icon></button>
               </mat-chip-row>

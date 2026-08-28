@@ -335,23 +335,19 @@ export class ChatPage implements OnInit, OnDestroy {
                 },
               ]
             : [
-                ...(isCreator
-                  ? [
-                      {
-                        label: 'Members',
-                        icon: 'group',
-                        type: 'secondary' as const,
-                        disabled: () => loading,
-                        onClick: () =>
-                          void this.router.navigate([
-                            '/chat',
-                            id,
-                            'manage',
-                            'members',
-                          ]),
-                      },
-                    ]
-                  : []),
+                {
+                  label: 'Members',
+                  icon: 'group',
+                  type: 'secondary' as const,
+                  disabled: () => loading,
+                  onClick: () =>
+                    void this.router.navigate([
+                      '/chat',
+                      id,
+                      'manage',
+                      'members',
+                    ]),
+                },
                 {
                   label: 'Manage Room',
                   icon: 'settings',

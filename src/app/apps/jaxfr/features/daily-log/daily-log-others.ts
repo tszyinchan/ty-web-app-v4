@@ -147,9 +147,11 @@ export class DailyLogOthers implements OnInit, OnDestroy {
     };
 
     for (const log of logs) {
+      if (this.userService.isUnavailableId(log.user_id)) continue;
       push(log.user_id, log.log_date, log.mood_key);
     }
     for (const item of items) {
+      if (this.userService.isUnavailableId(item.user_id)) continue;
       const log = logs.find(
         (row) =>
           row.user_id === item.user_id &&
@@ -166,10 +168,18 @@ export class DailyLogOthers implements OnInit, OnDestroy {
     const me = this.authService.userProfile()?.user_id ?? '';
     const logs = this.service
       .othersDayLogs()
-      .filter((row) => row.log_date === date);
+      .filter(
+        (row) =>
+          row.log_date === date &&
+          (row.user_id === me || !this.userService.isUnavailableId(row.user_id)),
+      );
     const items = this.service
       .othersDayItems()
-      .filter((row) => row.log_date === date);
+      .filter(
+        (row) =>
+          row.log_date === date &&
+          (row.user_id === me || !this.userService.isUnavailableId(row.user_id)),
+      );
     const ids = new Set<string>([
       ...logs.map((row) => row.user_id),
       ...items.map((row) => row.user_id),

@@ -93,13 +93,25 @@ export class FilelinkEdit implements OnInit, OnDestroy, DoCheck {
 
   userSearch = signal<string>('');
 
+  visibleAllowedUserIds = computed(() =>
+    (this.item()?.allowed_users || []).filter(
+      (id) => !this.userService.isUnavailableId(id),
+    ),
+  );
+
   filteredUsers = computed(() => {
     const q = this.userSearch().toLowerCase();
     const item = this.item();
     const owner = item?.user_id || this.authService.userProfile()?.user_id || '';
     const allowed = item?.allowed_users || [];
+    const visibleAllowed = this.visibleAllowedUserIds();
     return this.userService
-      .usersSharingOneGroupWith([owner, ...allowed])
+      .usersSharingOneGroupWith([owner, ...visibleAllowed])
+      .filter(
+        (user) =>
+          !this.userService.isUnavailable(user) &&
+          !allowed.includes(user.user_id),
+      )
       .map((u) => ({
         value: u.user_id,
         label: this.displayNamePipe.transform(u),
@@ -258,9 +270,12 @@ export class FilelinkEdit implements OnInit, OnDestroy, DoCheck {
     const curr = this.item();
     if (!curr) return;
     const allowed = curr.allowed_users || [];
-    if (allowed.includes(userId)) return;
+    if (allowed.includes(userId) || this.userService.isUnavailableId(userId)) {
+      return;
+    }
     const owner = curr.user_id || this.authService.userProfile()?.user_id || '';
-    if (!this.userService.idsShareAGroup([owner, ...allowed, userId])) {
+    const visibleAllowed = this.visibleAllowedUserIds();
+    if (!this.userService.idsShareAGroup([owner, ...visibleAllowed, userId])) {
       this.notification.handleError(
         'Add User Failed',
         'Everyone granted access must belong to the same user group',
@@ -270,12 +285,13 @@ export class FilelinkEdit implements OnInit, OnDestroy, DoCheck {
     this.item.set({ ...curr, allowed_users: [...allowed, userId] });
   }
 
-  removeAllowedUser(index: number): void {
+  removeAllowedUser(userId: string): void {
     this.item.update((curr) => {
       if (!curr) return curr;
-      const newUsers = [...(curr.allowed_users || [])];
-      newUsers.splice(index, 1);
-      return { ...curr, allowed_users: newUsers };
+      return {
+        ...curr,
+        allowed_users: (curr.allowed_users || []).filter((id) => id !== userId),
+      };
     });
   }
 
@@ -314,9 +330,12 @@ export class FilelinkEdit implements OnInit, OnDestroy, DoCheck {
     if (!data || !data.user_id) return;
 
     const allowed = data.allowed_users || [];
+    const visibleAllowed = allowed.filter(
+      (id) => !this.userService.isUnavailableId(id),
+    );
     if (
-      allowed.length > 0 &&
-      !this.userService.idsShareAGroup([data.user_id, ...allowed])
+      visibleAllowed.length > 0 &&
+      !this.userService.idsShareAGroup([data.user_id, ...visibleAllowed])
     ) {
       this.notification.handleError(
         'Save Failed',

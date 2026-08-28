@@ -28,7 +28,7 @@
             <mat-select [(ngModel)]="eat.eaten_by_key">
               @for (u of householdUsers(); track u.user_id) {
                 <mat-option [value]="u.user_id">
-                  {{ u.preferred_first_name || u.legal_first_name }}
+                  {{ u | tyDisplayName }}
                 </mat-option>
               }
               <mat-option [value]="YYEMS_EATEN_OTHER.Shared">Shared</mat-option>

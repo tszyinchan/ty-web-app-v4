@@ -8,6 +8,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { Router, ActivatedRoute } from '@angular/router';
 import { FilelinkService } from '../../../core/domains/filelink/filelink.service';
 import { RecordStatus } from '../../../core/models/status.enum';
+import { UserService } from '../../jaxfr/features/user/user.service';
 import {
   FilelinkSortOption,
   extractFolderContent,
@@ -31,6 +32,7 @@ import {
 })
 export class PortalView implements OnInit {
   public filelinkService = inject(FilelinkService);
+  private userService = inject(UserService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
 
@@ -40,7 +42,9 @@ export class PortalView implements OnInit {
   currentFolderContent = computed(() => {
     const allItems = this.filelinkService.items();
     const activeItems = allItems.filter(
-      (item) => item.status === RecordStatus.Active,
+      (item) =>
+        item.status === RecordStatus.Active &&
+        !this.userService.isUnavailableId(item.user_id),
     );
 
     const { files, folders } = extractFolderContent(
@@ -57,7 +61,9 @@ export class PortalView implements OnInit {
   });
 
   ngOnInit() {
-    this.filelinkService.fetchAllItems();
+    void this.userService.fetchAllUsers().then(() => {
+      this.filelinkService.fetchAllItems();
+    });
   }
 
   enterFolder(folderName: string) {

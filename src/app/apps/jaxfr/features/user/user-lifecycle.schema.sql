@@ -4,11 +4,12 @@
 -- Inactive (status = 0, deleted_at IS NULL): pause. Sign-in is blocked and
 -- records a reactivation request for Super Admin.
 -- Soft-deleted (deleted_at set): gone. Sign-in looks like bad credentials.
--- The tyapp_user row stays for FKs, including the person's name so Super
--- Admin can still tell who it was. Chat / shared UIs render "Deleted user"
--- from deleted_at; they do not rewrite the stored name. Chat: leave every
--- room (same as the existing leave RPC, including reassigning created_by).
--- Old messages stay.
+-- The tyapp_user row stays for FKs, including the person's name.
+-- The UI shows that name with (Deleted) via tyDisplayName; it does not
+-- rewrite the stored name.
+-- Memberships, groups, grants, and related rows stay in the database.
+-- The UI hides deleted people from pickers and freezes room membership
+-- when the room creator is deleted.
 
 ALTER TABLE public.tyapp_user
   ALTER COLUMN legal_first_name DROP NOT NULL;
@@ -54,52 +55,6 @@ AS $$
   WHERE deleted_at IS NULL
     AND status = 1
     AND role >= 998;
-$$;
-
-CREATE OR REPLACE FUNCTION public.tyapp_user_detach_from_chat(p_user_id uuid)
-RETURNS void
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-DECLARE
-  v_room public.tyapp_chat_room;
-  v_remaining uuid[];
-  v_new_creator uuid;
-BEGIN
-  FOR v_room IN
-    SELECT *
-    FROM public.tyapp_chat_room
-    WHERE deleted_at IS NULL
-      AND p_user_id = ANY (member_user_ids)
-  LOOP
-    v_remaining := array_remove(v_room.member_user_ids, p_user_id);
-
-    IF cardinality(v_remaining) < 2 THEN
-      UPDATE public.tyapp_chat_room
-      SET deleted_at = now()
-      WHERE tb_tyapp_chat_rm_id = v_room.tb_tyapp_chat_rm_id
-        AND deleted_at IS NULL;
-      CONTINUE;
-    END IF;
-
-    v_new_creator := v_room.created_by;
-    IF v_room.created_by = p_user_id THEN
-      v_new_creator := v_remaining[1];
-    END IF;
-
-    UPDATE public.tyapp_chat_room
-    SET
-      created_by = v_new_creator,
-      member_user_ids = v_remaining,
-      former_member_user_ids = array_append(
-        v_room.former_member_user_ids,
-        p_user_id
-      )
-    WHERE tb_tyapp_chat_rm_id = v_room.tb_tyapp_chat_rm_id
-      AND deleted_at IS NULL;
-  END LOOP;
-END;
 $$;
 
 CREATE OR REPLACE FUNCTION public.tyapp_user_ban_auth(p_user_id uuid)
@@ -234,16 +189,6 @@ BEGIN
      AND public.tyapp_user_active_super_admin_count() <= 1 THEN
     RAISE EXCEPTION 'Cannot delete the last super admin';
   END IF;
-
-  PERFORM public.tyapp_user_detach_from_chat(p_user_id);
-
-  DELETE FROM public.tyapp_user_group_member WHERE user_id = p_user_id;
-  DELETE FROM public.tyapp_user_app_access WHERE user_id = p_user_id;
-  DELETE FROM public.tyapp_user_feature_access WHERE user_id = p_user_id;
-  DELETE FROM public.tyapp_push_subscription WHERE user_id = p_user_id;
-  DELETE FROM public.tyapp_user_presence WHERE user_id = p_user_id;
-  DELETE FROM public.tyapp_user_preference WHERE user_id = p_user_id;
-  DELETE FROM public.tyapp_user_signature WHERE user_id = p_user_id;
 
   PERFORM set_config('tyapp.allow_user_lifecycle', 'on', true);
 
@@ -403,8 +348,8 @@ GRANT EXECUTE ON FUNCTION public.tyapp_user_restore(uuid)
 GRANT EXECUTE ON FUNCTION public.tyapp_user_request_reactivation()
   TO authenticated;
 
-REVOKE ALL ON FUNCTION public.tyapp_user_detach_from_chat(uuid)
-  FROM PUBLIC, anon, authenticated;
+DROP FUNCTION IF EXISTS public.tyapp_user_detach_from_chat(uuid);
+
 REVOKE ALL ON FUNCTION public.tyapp_user_ban_auth(uuid)
   FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.tyapp_user_unban_auth(uuid)

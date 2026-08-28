@@ -73,6 +73,25 @@ export class ChatRoomMembers implements OnInit, OnDestroy {
     );
   });
 
+  isCreator = computed(() => {
+    const room = this.room();
+    const me = this.currentUserId();
+    return !!room && !!me && room.created_by === me;
+  });
+
+  isCreatorDeleted = computed(() => {
+    const creatorId = this.room()?.created_by;
+    if (!creatorId) return false;
+    const creator = this.userService
+      .users()
+      .find((user) => user.user_id === creatorId);
+    return !!creator?.deleted_at;
+  });
+
+  canManageMembers = computed(
+    () => this.isCreator() && !this.isCreatorDeleted(),
+  );
+
   canRemoveMembers = computed(
     () => (this.room()?.member_user_ids.length ?? 0) > CHAT_ROOM_MIN_MEMBERS,
   );
@@ -95,17 +114,11 @@ export class ChatRoomMembers implements OnInit, OnDestroy {
     effect(() => {
       const room = this.room();
       const ready = this.chatService.roomsReady();
-      const me = this.currentUserId();
       untracked(() => {
         if (!ready || this.redirected) return;
         if (!room) {
           this.redirected = true;
           void this.router.navigate(['/chat']);
-          return;
-        }
-        if (!!me && room.created_by !== me) {
-          this.redirected = true;
-          void this.router.navigate(['/chat', room.tb_tyapp_chat_rm_id]);
         }
       });
     });
@@ -135,14 +148,14 @@ export class ChatRoomMembers implements OnInit, OnDestroy {
   async onAddMember(event: MatAutocompleteSelectedEvent) {
     const room = this.room();
     const userId = String(event.option.value);
-    if (!room || !userId) return;
+    if (!room || !userId || !this.canManageMembers()) return;
     this.userSearch.set('');
     await this.chatService.addRoomMembers(room.tb_tyapp_chat_rm_id, [userId]);
   }
 
   async onRemoveMember(userId: string) {
     const room = this.room();
-    if (!room) return;
+    if (!room || !this.canManageMembers()) return;
     const name = this.memberDisplayName(userId);
     if (!confirm(`Remove ${name} from this room?`)) return;
     await this.chatService.removeRoomMember(room.tb_tyapp_chat_rm_id, userId);

@@ -107,7 +107,7 @@
             <option [value]="YYEMS_OWNERSHIP_SHARED">Shared 50/50</option>
             @for (u of householdUsers(); track u.user_id) {
               <option [value]="u.user_id">
-                {{ u.preferred_first_name || u.legal_first_name }}
+                {{ u | tyDisplayName }}
               </option>
             }
           </select>

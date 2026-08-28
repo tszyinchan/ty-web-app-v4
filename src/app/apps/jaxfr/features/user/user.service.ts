@@ -55,6 +55,22 @@ export class UserService {
     return source;
   });
 
+  isUnavailable(user: TyappUser | null | undefined): boolean {
+    return (
+      !user || !!user.deleted_at || user.status === RecordStatus.Inactive
+    );
+  }
+
+  isUnavailableId(userId: string): boolean {
+    if (userId === this.authService.userProfile()?.user_id) {
+      const self = this.users().find((item) => item.user_id === userId);
+      return self ? this.isUnavailable(self) : false;
+    }
+    const user = this.users().find((item) => item.user_id === userId);
+    if (!user) return this.users().length > 0;
+    return this.isUnavailable(user);
+  }
+
   private initialized = false;
   private groupsInitialized = false;
   private invitationsInitialized = false;

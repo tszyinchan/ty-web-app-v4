@@ -21,7 +21,6 @@ import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { AppFeature } from '../development/app-feature/app-feature.model';
 import { AppFeatureService } from '../development/app-feature/app-feature.service';
 import {
-  DELETED_USER_LABEL,
   NameDisplayMode,
   TyappUser,
   USER_ROLES,
@@ -99,7 +98,6 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
     NameDisplayMode.PreferredLastMiddleFirst,
     NameDisplayMode.CustomizedOnly,
   ];
-  readonly DELETED_USER_LABEL = DELETED_USER_LABEL;
   readonly canManageUsers = this.auth.isSuperAdmin;
 
   user = signal<TyappUser | null>(null);
@@ -555,8 +553,8 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
     if (!u || !this.canDeleteAccount()) return;
 
     const message = this.isSelf()
-      ? 'Delete your account? You will leave every chat room and be signed out. Other people will still see your old messages as "Deleted user". Only a super admin can restore the account.'
-      : 'Delete this account? They leave every chat room. Other people will still see old messages as "Deleted user". The name stays here so you can tell who it was. App access and groups are removed. Only a super admin can restore.';
+      ? 'Delete your account? You will be signed out. Chat rooms keep your membership and old messages; other people see your name with (Deleted). Only a super admin can restore the account.'
+      : 'Delete this account? They cannot sign in. Chat rooms, groups, and grants stay in the database. Other people see old messages as the person\'s name with (Deleted). Only a super admin can restore.';
     if (!confirm(message)) return;
 
     const ok = await this.userService.softDeleteUser(u.user_id);
@@ -564,7 +562,10 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
       const next = this.userService
         .users()
         .find((item) => item.user_id === u.user_id);
-      if (next) this.setUserAndAccess(next, [], []);
+      const grants = await this.access.fetchAccessForUser(u.user_id);
+      if (next) {
+        this.setUserAndAccess(next, grants.appIds, grants.featureIds);
+      }
     }
   }
 
@@ -573,7 +574,7 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
     if (!u || !this.canRestore()) return;
     if (
       !confirm(
-        'Restore this account? They can sign in again. You must grant app access and groups again.',
+        'Restore this account? They can sign in again. Chat rooms, groups, and app access from before the delete are still there.',
       )
     ) {
       return;

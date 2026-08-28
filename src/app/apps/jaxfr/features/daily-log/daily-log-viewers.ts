@@ -32,16 +32,27 @@ export class DailyLogViewers implements OnInit, OnDestroy {
   searchOpen = signal(false);
 
   readonly viewerIds = computed(() =>
-    this.service.outgoingGrants().map((row) => row.viewer_user_id),
+    this.service
+      .outgoingGrants()
+      .map((row) => row.viewer_user_id)
+      .filter((id) => !this.userService.isUnavailableId(id)),
   );
 
   readonly filteredUsers = computed(() => {
     const q = this.userSearch().toLowerCase();
     const owner = this.authService.userProfile()?.user_id || '';
-    const allowed = this.viewerIds();
+    const allowed = this.service
+      .outgoingGrants()
+      .map((row) => row.viewer_user_id);
+    const visibleAllowed = this.viewerIds();
     return this.userService
-      .usersSharingOneGroupWith([owner, ...allowed])
-      .filter((user) => user.user_id !== owner && !allowed.includes(user.user_id))
+      .usersSharingOneGroupWith([owner, ...visibleAllowed])
+      .filter(
+        (user) =>
+          !this.userService.isUnavailable(user) &&
+          user.user_id !== owner &&
+          !allowed.includes(user.user_id),
+      )
       .map((user) => ({
         value: user.user_id,
         label: this.displayNamePipe.transform(user),
@@ -84,6 +95,7 @@ export class DailyLogViewers implements OnInit, OnDestroy {
     this.searchOpen.set(false);
     if (!userId) return;
     const owner = this.authService.userProfile()?.user_id || '';
+    if (this.userService.isUnavailableId(userId)) return;
     if (
       !this.userService.idsShareAGroup([owner, ...this.viewerIds(), userId])
     ) {

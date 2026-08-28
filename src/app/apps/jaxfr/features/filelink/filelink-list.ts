@@ -56,9 +56,10 @@ export class FilelinkList implements OnInit, OnDestroy {
 
   currentFolderContent = computed(() => {
     const currentUserId = this.authService.userProfile()?.user_id;
-    const myItems = this.filelinkService
-      .items()
-      .filter((item) => item.user_id === currentUserId);
+    const myItems = this.filelinkService.items().filter((item) => {
+      if (item.user_id !== currentUserId) return false;
+      return !this.userService.isUnavailableId(item.user_id);
+    });
     const users = this.userService.users();
 
     const { files, folders } = extractFolderContent(
@@ -68,6 +69,7 @@ export class FilelinkList implements OnInit, OnDestroy {
 
     const mappedFiles = files.map((file) => {
       const allowedNames = (file.allowed_users || [])
+        .filter((uid) => !this.userService.isUnavailableId(uid))
         .map((uid) => {
           const u = users.find((x) => x.user_id === uid);
           return u ? this.displayNamePipe.transform(u) : 'Unknown';
@@ -129,6 +131,7 @@ export class FilelinkList implements OnInit, OnDestroy {
     });
 
     this.filelinkService.fetchAllItems();
+    void this.userService.fetchAllUsers();
   }
 
   enterFolder(folderName: string) {
@@ -153,9 +156,10 @@ export class FilelinkList implements OnInit, OnDestroy {
 
   onExport() {
     const currentUserId = this.authService.userProfile()?.user_id;
-    const myItems = this.filelinkService
-      .items()
-      .filter((i) => i.user_id === currentUserId);
+    const myItems = this.filelinkService.items().filter((i) => {
+      if (i.user_id !== currentUserId) return false;
+      return !this.userService.isUnavailableId(i.user_id);
+    });
     if (!myItems.length) return;
 
     const headers = ['Title', 'Path', 'Ref Date', 'URL', 'Status'];

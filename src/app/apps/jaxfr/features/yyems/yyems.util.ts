@@ -1,4 +1,5 @@
 import { TyappUser } from '../../../../core/models/user.model';
+import { formatUserDisplayName } from '../../../../core/pipes/display-name.pipe';
 import { toDateTimeLocalValue } from '../../../../core/utils/date-time.util';
 import {
   YYEMS_EATEN_OTHER,
@@ -44,12 +45,7 @@ export function eatenByLabel(
   if (eat.eaten_by_other === YYEMS_EATEN_OTHER.Nil) return 'None';
   const user = users.find((u) => u.user_id === eat.eaten_by_user_id);
   if (!user) return '—';
-  return (
-    user.preferred_first_name ||
-    user.customized_display_name ||
-    user.legal_first_name ||
-    '—'
-  );
+  return formatUserDisplayName(user);
 }
 
 export function ownershipLabel(
@@ -59,12 +55,7 @@ export function ownershipLabel(
   if (!ownershipUserId) return 'Shared';
   const user = users.find((u) => u.user_id === ownershipUserId);
   if (!user) return '—';
-  return (
-    user.preferred_first_name ||
-    user.customized_display_name ||
-    user.legal_first_name ||
-    '—'
-  );
+  return formatUserDisplayName(user);
 }
 
 export function ownershipKey(ownershipUserId: string | null): string {

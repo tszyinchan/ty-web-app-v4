@@ -23,6 +23,7 @@ import {
   HeaderAction,
   HeaderService,
 } from '../../../../core/services/header.service';
+import { DisplayNamePipe } from '../../../../core/pipes/display-name.pipe';
 import { UserService } from '../user/user.service';
 import { formatDate } from '../../../../core/utils/date-time.util';
 import {
@@ -61,6 +62,7 @@ interface EatForm {
     MatSelectModule,
     MatButtonModule,
     MatIconModule,
+    DisplayNamePipe,
   ],
   templateUrl: './yyems-eat-edit.html',
   styleUrl: './yyems-eat-edit.scss',

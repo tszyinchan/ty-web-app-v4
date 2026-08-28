@@ -21,6 +21,7 @@ import {
   HeaderAction,
   HeaderService,
 } from '../../../../core/services/header.service';
+import { DisplayNamePipe } from '../../../../core/pipes/display-name.pipe';
 import { UserService } from '../user/user.service';
 import {
   fromDateTimeLocalValue,
@@ -65,6 +66,7 @@ interface BillForm {
     MatButtonModule,
     MatIconModule,
     MatCheckboxModule,
+    DisplayNamePipe,
   ],
   templateUrl: './yyems-bill-edit.html',
   styleUrl: './yyems-bill-edit.scss',
