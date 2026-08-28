@@ -7,7 +7,15 @@ import { DELETED_USER_LABEL, NameDisplayMode, TyappUser } from '../models/user.m
   pure: false
 })
 export class DisplayNamePipe implements PipeTransform {
-  transform(user: TyappUser | null | undefined): string {
+  /**
+   * Shared features (Chat, etc.) pass nothing: a deleted account is
+   * "Deleted user". User management passes `true` so Super Admin still
+   * sees who it was.
+   */
+  transform(
+    user: TyappUser | null | undefined,
+    revealDeletedIdentity = false,
+  ): string {
     if (!user) return DELETED_USER_LABEL;
 
     const {
@@ -21,7 +29,7 @@ export class DisplayNamePipe implements PipeTransform {
       deleted_at,
     } = user;
 
-    if (deleted_at) return DELETED_USER_LABEL;
+    if (deleted_at && !revealDeletedIdentity) return DELETED_USER_LABEL;
 
     const buildName = (...parts: (string | null | undefined)[]) =>
       parts.filter((p) => !!p).join(' ');

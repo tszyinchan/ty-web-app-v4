@@ -102,7 +102,7 @@ export class UserList implements OnInit, OnDestroy {
 
   nameFor(userId: string): string {
     const user = this.userService.users().find((item) => item.user_id === userId);
-    return this.displayNamePipe.transform(user) || userId;
+    return this.displayNamePipe.transform(user, true) || userId;
   }
 
   onExport() {
@@ -112,7 +112,7 @@ export class UserList implements OnInit, OnDestroy {
     const headers = ['ID', 'Name', 'Role', 'Status'];
     const rows = users.map((u) => [
       u.user_id,
-      this.displayNamePipe.transform(u),
+      this.displayNamePipe.transform(u, true),
       this.roleLabelPipe.transform(u.role),
       this.statusLabel(u),
     ]);

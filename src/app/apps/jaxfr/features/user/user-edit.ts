@@ -21,6 +21,7 @@ import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { AppFeature } from '../development/app-feature/app-feature.model';
 import { AppFeatureService } from '../development/app-feature/app-feature.service';
 import {
+  DELETED_USER_LABEL,
   NameDisplayMode,
   TyappUser,
   USER_ROLES,
@@ -98,6 +99,7 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
     NameDisplayMode.PreferredLastMiddleFirst,
     NameDisplayMode.CustomizedOnly,
   ];
+  readonly DELETED_USER_LABEL = DELETED_USER_LABEL;
   readonly canManageUsers = this.auth.isSuperAdmin;
 
   user = signal<TyappUser | null>(null);
@@ -502,7 +504,7 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
         u.legal_last_name || '',
         this.displayNameModePipe.transform(u.name_display_mode),
         u.customized_display_name || '',
-        this.displayNamePipe.transform(u),
+        this.displayNamePipe.transform(u, true),
         this.roleLabelPipe.transform(u.role),
         this.accountStatusLabel(),
         u.remarks || '',
@@ -510,7 +512,7 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
     ];
 
     exportToCsv(
-      `User_Detail_${this.displayNamePipe.transform(u) || u.user_id}`,
+      `User_Detail_${this.displayNamePipe.transform(u, true) || u.user_id}`,
       headers,
       rows,
     );
@@ -553,8 +555,8 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
     if (!u || !this.canDeleteAccount()) return;
 
     const message = this.isSelf()
-      ? 'Delete your account? You will leave every chat room and be signed out. Old messages stay and show as "Deleted user". Only a super admin can restore the account.'
-      : 'Delete this account? They leave every chat room. Old messages stay and show as "Deleted user". App access and groups are removed. Only a super admin can restore.';
+      ? 'Delete your account? You will leave every chat room and be signed out. Other people will still see your old messages as "Deleted user". Only a super admin can restore the account.'
+      : 'Delete this account? They leave every chat room. Other people will still see old messages as "Deleted user". The name stays here so you can tell who it was. App access and groups are removed. Only a super admin can restore.';
     if (!confirm(message)) return;
 
     const ok = await this.userService.softDeleteUser(u.user_id);
@@ -571,7 +573,7 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
     if (!u || !this.canRestore()) return;
     if (
       !confirm(
-        'Restore this account? They can sign in again. Display name is still "Deleted user" until you edit it, and you must grant app access and groups again.',
+        'Restore this account? They can sign in again. You must grant app access and groups again.',
       )
     ) {
       return;

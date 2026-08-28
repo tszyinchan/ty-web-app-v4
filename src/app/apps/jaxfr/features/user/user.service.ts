@@ -7,7 +7,7 @@ import { AuthService } from "../../../../core/services/auth.service";
 import { NotificationService } from "../../../../core/services/notification.service";
 import { SupabaseService } from "../../../../core/services/supabase.service";
 import { RecordStatus } from "../../../../core/models/status.enum";
-import { ReactivationRequest, TyappUser, USER_ROLES, DELETED_USER_LABEL, NameDisplayMode } from "../../../../core/models/user.model";
+import { ReactivationRequest, TyappUser, USER_ROLES } from "../../../../core/models/user.model";
 import { Invitation } from "./invitation.model";
 import { UserGroup, UserGroupMember } from "./user-group.model";
 
@@ -333,8 +333,6 @@ export class UserService {
                   ...item,
                   deleted_at: new Date().toISOString(),
                   status: RecordStatus.Inactive,
-                  customized_display_name: DELETED_USER_LABEL,
-                  name_display_mode: NameDisplayMode.CustomizedOnly,
                 }
               : item,
           ),

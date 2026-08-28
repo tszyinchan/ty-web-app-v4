@@ -69,69 +69,6 @@
         </p>
       </section>
 
-      <section class="form-group">
-        <h3 class="group-header">Account</h3>
-        <p class="account-status">Status: {{ accountStatusLabel() }}</p>
-        @if (hasPendingReactivation()) {
-          <p class="account-hint highlight">
-            This person asked to be turned back on.
-          </p>
-        }
-        @if (isLastSuperAdmin()) {
-          <p class="account-hint">
-            The last super admin cannot be deactivated or deleted.
-          </p>
-        }
-        <p class="account-hint">
-          Deactivate pauses sign-in (they can ask to come back). Delete leaves
-          every chat room; old messages stay and show as "Deleted user". Only a
-          super admin can turn an account back on.
-        </p>
-        <div class="account-actions">
-          @if (canActivate()) {
-            <button
-              mat-stroked-button
-              type="button"
-              [disabled]="userService.loading()"
-              (click)="onActivate()"
-            >
-              Activate
-            </button>
-          }
-          @if (canDeactivate()) {
-            <button
-              mat-stroked-button
-              type="button"
-              [disabled]="userService.loading()"
-              (click)="onDeactivate()"
-            >
-              Deactivate
-            </button>
-          }
-          @if (canRestore()) {
-            <button
-              mat-stroked-button
-              type="button"
-              [disabled]="userService.loading()"
-              (click)="onRestore()"
-            >
-              Restore
-            </button>
-          }
-          @if (canDeleteAccount()) {
-            <button
-              mat-stroked-button
-              color="warn"
-              type="button"
-              [disabled]="userService.loading()"
-              (click)="onDeleteAccount()"
-            >
-              Delete account
-            </button>
-          }
-        </div>
-      </section>
-
       @if (canManageUsers()) {
         <section class="form-group">
           <h3 class="group-header">System Access & Admin</h3>
@@ -201,10 +138,6 @@
                 }
               </mat-select>
             </mat-form-field>
-            <mat-form-field appearance="outline" subscriptSizing="dynamic">
-              <mat-label>Status</mat-label>
-              <input matInput [value]="accountStatusLabel()" disabled />
-            </mat-form-field>
           </div>
 
           <div class="fields-row-2 mt-16">
@@ -236,16 +169,102 @@
           </mat-form-field>
         </section>
       }
+
+      <section class="form-group">
+        <h3 class="group-header">Account status</h3>
+        <div class="account-panel">
+          <p class="account-status">{{ accountStatusLabel() }}</p>
+          <p class="account-hint">
+            These buttons apply immediately. They are not part of Save
+            Changes.
+          </p>
+          @if (hasPendingReactivation()) {
+            <p class="account-hint highlight">
+              This person asked to be turned back on.
+            </p>
+          }
+          @if (isLastSuperAdmin()) {
+            <p class="account-hint">
+              The last super admin cannot be deactivated or deleted.
+            </p>
+          }
+          @if (canManageUsers()) {
+            <p class="account-hint">
+              Deactivate pauses sign-in; they can ask to come back. Delete
+              removes them from chat rooms and pickers. Other people see old
+              messages as "{{ DELETED_USER_LABEL }}". The name stays on this
+              page so you can tell who it was. Only a super admin can turn an
+              account back on.
+            </p>
+          } @else {
+            <p class="account-hint">
+              Deactivate pauses sign-in; try logging in later to ask a super
+              admin to turn it back on. Delete signs you out and leaves every
+              chat room. Other people still see old messages as
+              "{{ DELETED_USER_LABEL }}".
+            </p>
+          }
+          <div class="account-actions">
+            @if (canActivate()) {
+              <button
+                mat-stroked-button
+                type="button"
+                [disabled]="userService.loading()"
+                (click)="onActivate()"
+              >
+                Activate now
+              </button>
+            }
+            @if (canDeactivate()) {
+              <button
+                mat-stroked-button
+                type="button"
+                [disabled]="userService.loading()"
+                (click)="onDeactivate()"
+              >
+                Deactivate now
+              </button>
+            }
+            @if (canRestore()) {
+              <button
+                mat-stroked-button
+                type="button"
+                [disabled]="userService.loading()"
+                (click)="onRestore()"
+              >
+                Restore now
+              </button>
+            }
+            @if (canDeleteAccount()) {
+              <button
+                mat-stroked-button
+                color="warn"
+                type="button"
+                [disabled]="userService.loading()"
+                (click)="onDeleteAccount()"
+              >
+                Delete account now
+              </button>
+            }
+          </div>
+        </div>
+      </section>
     </div>
 
     <aside class="preview-sidebar">
       <div class="sticky-preview">
         <div class="p-header">LIVE PREVIEW</div>
         <div class="p-label">Final Display Name</div>
-        <div class="p-value">{{ u | tyDisplayName }}</div>
+        <div class="p-value">{{ u | tyDisplayName: true }}</div>
+        @if (isDeleted()) {
+          <div class="p-label">Others see</div>
+          <div class="p-value">{{ DELETED_USER_LABEL }}</div>
+        }
         <div class="p-divider"></div>
         <div class="p-label">Assigned Role</div>
         <div class="p-chip">{{ u.role | tyRoleLabel }}</div>
+        <div class="p-label">Account</div>
+        <div class="p-chip">{{ accountStatusLabel() }}</div>
       </div>
     </aside>
   }

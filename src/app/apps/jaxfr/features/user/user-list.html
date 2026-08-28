@@ -24,7 +24,7 @@
       <a class="item-link" [routerLink]="['../edit', user.user_id]">
         <div class="item-content">
           <div class="item-info-group">
-            <span class="main-text">{{ user | tyDisplayName }}</span>
+            <span class="main-text">{{ user | tyDisplayName: true }}</span>
             <span class="sub-text"
               >{{ user.role | tyRoleLabel }} · {{ user.user_id }}</span
             >

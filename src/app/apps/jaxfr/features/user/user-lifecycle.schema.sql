@@ -4,9 +4,11 @@
 -- Inactive (status = 0, deleted_at IS NULL): pause. Sign-in is blocked and
 -- records a reactivation request for Super Admin.
 -- Soft-deleted (deleted_at set): gone. Sign-in looks like bad credentials.
--- The tyapp_user row stays for FKs. Chat: leave every room (same as the
--- existing leave RPC, including reassigning created_by). Old messages stay
--- and render as "Deleted user".
+-- The tyapp_user row stays for FKs, including the person's name so Super
+-- Admin can still tell who it was. Chat / shared UIs render "Deleted user"
+-- from deleted_at; they do not rewrite the stored name. Chat: leave every
+-- room (same as the existing leave RPC, including reassigning created_by).
+-- Old messages stay.
 
 ALTER TABLE public.tyapp_user
   ALTER COLUMN legal_first_name DROP NOT NULL;
@@ -249,14 +251,6 @@ BEGIN
   SET
     status = 0,
     deleted_at = now(),
-    legal_first_name = NULL,
-    legal_middle_name = NULL,
-    legal_last_name = NULL,
-    preferred_first_name = NULL,
-    customized_display_name = 'Deleted user',
-    name_display_mode = 5,
-    remarks = NULL,
-    appsheet_525_user_id = NULL,
     allowed_apps = '{}'
   WHERE user_id = p_user_id
     AND deleted_at IS NULL;
