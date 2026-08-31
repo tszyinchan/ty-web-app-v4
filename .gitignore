@@ -15,6 +15,9 @@ yarn-error.log
 /supabase/.env
 /supabase/.temp
 
+# Cursor agent test logins (never commit; copy from test-credentials.example.json)
+.cursor/test-credentials.local.json
+
 
 # IDEs and editors
 .idea/

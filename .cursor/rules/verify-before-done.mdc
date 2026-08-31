@@ -1,0 +1,48 @@
+---
+description: After UI/behavior changes, invent test scenarios, run them, and report expected vs actual before claiming done
+alwaysApply: true
+---
+
+# Verify before done
+
+This is how Jaxfr is tested. Do **not** add `.spec.ts` / Playwright / Cypress files.
+
+After any change that affects UI, layout, routing, client state, or data behavior:
+
+1. **Invent scenarios** covering: the main path, empty/error/edge states, and other screens that share the same state or components.
+2. **Run them** in the Cursor browser like a user (click, type, submit, navigate). A screenshot is not verification.
+
+### Login (Jaxfr is auth-gated)
+
+Cursor's browser is **not** the user's Chrome.
+
+- If `.cursor/test-credentials.local.json` exists, open `appUrl`, fill **user-a** (USER role) on the login form, submit, then test in that same tab. Use **user-b** only when the scenario needs a second person (e.g. chat). Never put Super Admin in that file.
+- If that file is missing, **stop** on the login page and ask in Traditional Chinese: 請在 Cursor 這個瀏覽器分頁登入 USER 測試帳（不要用平常的 Chrome），成功後回「已登入，繼續」。
+- Never read passwords from `environment.ts`, `app.constants.ts`, `.cursorrules`, or chat. Never add a skip-auth path.
+- If login does not happen, mark authenticated cases **Blocked** — not Pass.
+
+### Role-gated cases (USER vs Super Admin)
+
+Cursor tests as a **USER** test account, never as the owner's Super Admin.
+
+- Invent the Super Admin / Admin cases anyway (invite codes, deactivate/delete user, User list for others, etc.).
+- **Do not skip them silently.** Put each one in the 驗證報告 with 結果 = `Needs Super Admin` (or `Needs Admin`) and one line of what the user should click.
+- Never mark those cases Pass. Never use the owner's Super Admin password.
+
+3. **Put a 驗證報告 in the reply** (Traditional Chinese) **before** the commit-or-keep question. Do not say the work is done while any case is Fail. `Needs Super Admin` is not Fail — it is a handoff. Fix real Fails, re-run, update the table.
+4. Run `npm run lint` on touched files when practical; include whether it passed.
+
+## 驗證報告 format
+
+| # | 情境 | 我做了什麼 | 預期 | 實際 | 結果 |
+|---|------|------------|------|------|------|
+| 1 | … | … | … | … | Pass / Fail / Blocked / Needs Super Admin |
+
+Then one line: `N passed, N failed, N blocked, N need Super Admin.` For Blocked or Needs Super Admin, say exactly what the user should click.
+
+## Skip only when
+
+- The change is rules/docs/comments with no app behavior change.
+- The user explicitly said not to test this turn.
+
+Never invent Pass. If you could not run a case, it is Blocked, not Pass.

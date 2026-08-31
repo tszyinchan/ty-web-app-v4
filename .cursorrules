@@ -11,6 +11,7 @@ This project previously over-invested in "industrial-grade" architecture (separa
 - Type safety, enums over magic numbers, consistent naming/file structure.
 - Data integrity: soft deletes, RLS-safe queries, no silent error swallowing.
 - Clear user-facing feedback on every async action (success/error).
+- Agent verification after UI/behavior changes (see §8 and `.cursor/rules/verify-before-done.mdc`): invent scenarios, run them, report expected vs actual. This is not a unit/e2e suite.
 
 **Let go of (do not introduce unless explicitly asked):**
 - Layered service architecture (api/state/facade/repository split).
@@ -57,7 +58,9 @@ This project previously over-invested in "industrial-grade" architecture (separa
 - **NO Inline Styles:** Avoid using `style="..."` in HTML templates. Move them to the component's SCSS file.
 
 # 8. Testing & Workflow
-- **No Mandatory Tests:** Unit/e2e tests are not required at this team size. Do NOT auto-generate `.spec.ts` files unless explicitly requested.
+- **No Unit/E2E Suites:** Do NOT auto-generate `.spec.ts`, Playwright, or Cypress suites unless explicitly requested. Jasmine/Karma in `package.json` is unused Angular scaffolding — do not start filling it in.
+- **Agent verification is mandatory** for UI, routing, client state, or data-behavior changes. Follow `.cursor/rules/verify-before-done.mdc`: invent scenarios, execute them in the browser (click/type, not a screenshot), and put a 驗證報告 (expected vs actual, Pass/Fail/Blocked/Needs Super Admin) in the reply **before** asking commit-or-keep. Cursor tests as USER. Super Admin–only cases must stay in the table as `Needs Super Admin` with what the user should click — never omit them, never invent a Pass.
+- **Health check on request only:** Do not start a full-repo audit unprompted. When the user asks, scope it to rules-vs-code drift and data-correctness hotspots (auth, delete/inactive, tokens, shared state), not style nits.
 - **Lightweight Git Process:** No enforced PR review, commit message format, or branch protection is expected. Direct commits are normal; only follow a specific process if the user asks for one in a given session.
 - **ESLint (`npm run lint`):** Configured in `eslint.config.js` to check ONLY the "Hold the Line" items above — `no-explicit-any`, `no-console`, direct DOM manipulation (`document.getElementById`/`querySelector`/`element.style`), plus base bug-catchers (unused vars, `prefer-const`, etc.). Deliberately excludes `tseslint.configs.stylistic` and `angular.configs.templateAccessibility` (array-type/interface-vs-type preferences, WCAG a11y rules) — those are "Let It Go" style opinions, not real risk. The `src/app/apps/jaxfr/archive/` folder is excluded entirely (see Section 10). When a flagged line is a deliberate, documented exception (e.g. the two below), silence it with a scoped `// eslint-disable-next-line <rule>` plus a one-line comment explaining why — never disable a rule file-wide or globally to avoid a single legitimate case.
   - `core/utils/csv-export.util.ts`: `link.style.visibility` is set on a detached, non-Angular-managed `<a>` element used only for the browser download trick — not part of the component tree, so the signal/class-binding rule doesn't apply.
