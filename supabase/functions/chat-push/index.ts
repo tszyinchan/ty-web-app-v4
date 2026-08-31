@@ -1,4 +1,4 @@
-import { createClient } from 'npm:@supabase/supabase-js@2';
+import { createAdminClient, readServiceKey } from '../_shared/admin-client.ts';
 import { buildPushPayload } from 'npm:@block65/webcrypto-web-push@1.0.2';
 
 const PUSH_BODY_MAX = 120;
@@ -62,23 +62,6 @@ function senderLabel(row: SenderRow | null): string {
   return name || 'Someone';
 }
 
-function readServiceKey(): string {
-  const raw = Deno.env.get('SUPABASE_SECRET_KEYS') ?? '';
-  if (raw) {
-    try {
-      const parsed = JSON.parse(raw) as Record<string, unknown>;
-      const preferred =
-        parsed['default'] ?? parsed['service_role'] ?? Object.values(parsed)[0];
-      if (typeof preferred === 'string' && preferred) return preferred;
-    } catch {
-      // fall through to the other env vars
-    }
-  }
-  const single = Deno.env.get('SUPABASE_SECRET_KEY') ?? '';
-  if (single) return single;
-  return Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-}
-
 function extractRecord(body: WebhookBody): ChatMessageRecord | null {
   if (body.record && typeof body.record === 'object') return body.record;
   const maybe = body as ChatMessageRecord;
@@ -132,7 +115,7 @@ Deno.serve(async (req) => {
     return jsonResponse({ skipped: true, reason: 'deleted' });
   }
 
-  const supabase = createClient(supabaseUrl, serviceKey);
+  const supabase = createAdminClient(supabaseUrl, serviceKey);
   const { data: roomData, error: roomError } = await supabase
     .from('tyapp_chat_room')
     .select('name, member_user_ids, deleted_at')

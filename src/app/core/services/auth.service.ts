@@ -150,9 +150,12 @@ const GENERIC_REGISTER_ERROR =
   'Registration failed. Check your invitation code and try again.';
 const EMAIL_TAKEN_ERROR =
   'This email is already registered. Try signing in.';
+const WEAK_PASSWORD_ERROR =
+  'That password is too easy to guess. Choose a longer, unique password.';
 
 function mapRegisterErrorCode(code: string): string {
   if (code === 'email_taken') return EMAIL_TAKEN_ERROR;
+  if (code === 'weak_password') return WEAK_PASSWORD_ERROR;
   return GENERIC_REGISTER_ERROR;
 }
 

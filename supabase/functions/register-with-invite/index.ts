@@ -1,4 +1,5 @@
-import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
+import { type SupabaseClient } from 'npm:@supabase/supabase-js@2';
+import { createAdminClient, readServiceKey } from '../_shared/admin-client.ts';
 
 const USER_ROLE = 100;
 const RECORD_ACTIVE = 1;
@@ -47,23 +48,6 @@ function jsonResponse(
     status,
     headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
   });
-}
-
-function readServiceKey(): string {
-  const raw = Deno.env.get('SUPABASE_SECRET_KEYS') ?? '';
-  if (raw) {
-    try {
-      const parsed = JSON.parse(raw) as Record<string, unknown>;
-      const preferred =
-        parsed['default'] ?? parsed['service_role'] ?? Object.values(parsed)[0];
-      if (typeof preferred === 'string' && preferred) return preferred;
-    } catch {
-      // fall through to the other env vars
-    }
-  }
-  const single = Deno.env.get('SUPABASE_SECRET_KEY') ?? '';
-  if (single) return single;
-  return Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 }
 
 function asTrimmedString(value: unknown): string {
@@ -151,7 +135,7 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: 'invalid_request' }, 400);
   }
 
-  const supabase = createClient(supabaseUrl, serviceKey);
+  const supabase = createAdminClient(supabaseUrl, serviceKey);
 
   const { data: inviteData, error: inviteError } = await supabase
     .from('tyapp_invitation')
@@ -163,6 +147,7 @@ Deno.serve(async (req) => {
     .maybeSingle();
 
   if (inviteError) {
+    console.error('register-with-invite invite lookup', inviteError);
     return jsonResponse({ error: GENERIC_INVITE_ERROR }, 400);
   }
 
@@ -180,12 +165,20 @@ Deno.serve(async (req) => {
 
   if (createError || !created.user) {
     const message = (createError?.message ?? '').toLowerCase();
+    console.error('register-with-invite createUser', createError);
     if (
       message.includes('already') ||
       message.includes('registered') ||
       message.includes('exists')
     ) {
       return jsonResponse({ error: 'email_taken' }, 409);
+    }
+    if (
+      message.includes('leaked') ||
+      message.includes('pwned') ||
+      message.includes('weak')
+    ) {
+      return jsonResponse({ error: 'weak_password' }, 400);
     }
     return jsonResponse({ error: GENERIC_INVITE_ERROR }, 400);
   }
@@ -298,7 +291,8 @@ Deno.serve(async (req) => {
     }
 
     return jsonResponse({ ok: true });
-  } catch {
+  } catch (error) {
+    console.error('register-with-invite profile', error);
     await rollbackUser(supabase, userId);
     return jsonResponse({ error: GENERIC_INVITE_ERROR }, 400);
   }
