@@ -112,6 +112,7 @@ const CATEGORY_LINKS: Record<string, FeatureHubLink[]> = {
   Fit: [
     { title: 'Sessions', icon: 'fitness_center', route: '/fit/list' },
     { title: 'Thread', icon: 'forum', route: '/fit/thread' },
+    { title: 'Patterns', icon: 'view_list', route: '/fit/patterns' },
   ],
   'Doc Sign': [
     { title: 'Sign list', icon: 'list', route: '/docsign/list' },

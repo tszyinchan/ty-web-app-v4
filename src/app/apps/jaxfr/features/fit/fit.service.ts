@@ -14,6 +14,7 @@ import {
   FitSessionDetail,
 } from './fit.model';
 import { RecordStatus } from '../../../../core/models/status.enum';
+import { formatDate } from '../../../../core/utils/date-time.util';
 
 @Injectable({ providedIn: 'root' })
 export class FitService {
@@ -23,6 +24,7 @@ export class FitService {
   private zone = inject(NgZone);
 
   sessions = signal<FitSession[]>([]);
+  patterns = signal<FitSession[]>([]);
   loading = signal(false);
 
   async fetchAllSessions(force = false) {
@@ -38,6 +40,7 @@ export class FitService {
         .from('tyapp_fit_session')
         .select('*')
         .eq('user_id', userId)
+        .eq('is_pattern', false)
         .is('deleted_at', null)
         .order('session_date', { ascending: false })
         .order('tb_tyapp_fit_ssn_seq_no', { ascending: false });
@@ -50,6 +53,36 @@ export class FitService {
       });
     } catch (error: unknown) {
       this.notification.handleError('Fetch Fit Sessions Failed', error);
+      this.zone.run(() => this.loading.set(false));
+    }
+  }
+
+  async fetchPatterns(force = false) {
+    if (this.patterns().length > 0 && !force) return;
+
+    const userId = this.authService.userProfile()?.user_id;
+    if (!userId) return;
+
+    this.loading.set(true);
+
+    try {
+      const { data, error } = await this.supabase
+        .from('tyapp_fit_session')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('is_pattern', true)
+        .is('deleted_at', null)
+        .order('session_title', { ascending: true })
+        .order('tb_tyapp_fit_ssn_seq_no', { ascending: true });
+
+      if (error) throw error;
+
+      this.zone.run(() => {
+        this.patterns.set((data || []) as FitSession[]);
+        this.loading.set(false);
+      });
+    } catch (error: unknown) {
+      this.notification.handleError('Fetch Fit Patterns Failed', error);
       this.zone.run(() => this.loading.set(false));
     }
   }
@@ -133,6 +166,7 @@ export class FitService {
           session_title: payload.session_title,
           location: payload.location,
           remarks: payload.remarks,
+          is_pattern: payload.is_pattern ?? false,
           status: payload.status,
         })
         .select()
@@ -146,11 +180,19 @@ export class FitService {
         await this.insertEntryWithSets(sessionId, entry);
       }
 
-      await this.fetchAllSessions(true);
+      if (payload.is_pattern) {
+        await this.fetchPatterns(true);
+      } else {
+        await this.fetchAllSessions(true);
+      }
 
       return this.zone.run(() => {
         this.loading.set(false);
-        this.notification.showSuccess('Fit session created successfully');
+        this.notification.showSuccess(
+          payload.is_pattern
+            ? '課表已建立'
+            : 'Fit session created successfully',
+        );
         return sessionId;
       });
     } catch (error: unknown) {
@@ -177,6 +219,7 @@ export class FitService {
           session_title: payload.session_title,
           location: payload.location,
           remarks: payload.remarks,
+          is_pattern: payload.is_pattern,
           status: payload.status,
         })
         .eq('tb_tyapp_fit_ssn_id', sessionId)
@@ -219,11 +262,19 @@ export class FitService {
         await this.softDeleteEntryWithSets(removedEntry.tb_tyapp_fit_ntry_id);
       }
 
-      await this.fetchAllSessions(true);
+      if (payload.is_pattern) {
+        await this.fetchPatterns(true);
+      } else {
+        await this.fetchAllSessions(true);
+      }
 
       return this.zone.run(() => {
         this.loading.set(false);
-        this.notification.showSuccess('Fit session updated successfully');
+        this.notification.showSuccess(
+          payload.is_pattern
+            ? '課表已更新'
+            : 'Fit session updated successfully',
+        );
         return true;
       });
     } catch (error: unknown) {
@@ -283,6 +334,9 @@ export class FitService {
         this.sessions.update((list) =>
           list.filter((item) => item.tb_tyapp_fit_ssn_id !== id),
         );
+        this.patterns.update((list) =>
+          list.filter((item) => item.tb_tyapp_fit_ssn_id !== id),
+        );
       });
 
       return this.zone.run(() => {
@@ -306,6 +360,68 @@ export class FitService {
 
     const createdId = await this.createSession(payload);
     return !!createdId;
+  }
+
+  async applyPatternToToday(patternId: string): Promise<string | null> {
+    const detail = await this.fetchSessionDetail(patternId);
+    if (!detail) return null;
+
+    if (!detail.session.is_pattern) {
+      this.notification.handleError(
+        '套用課表失敗',
+        new Error('這不是課表'),
+      );
+      return null;
+    }
+
+    if (!detail.entries.length) {
+      this.notification.handleError(
+        '套用課表失敗',
+        new Error('課表還沒有訓練項目'),
+      );
+      return null;
+    }
+
+    return this.createSession(this.cloneDetailAsTodaySession(detail));
+  }
+
+  private cloneDetailAsTodaySession(
+    detail: FitSessionDetail,
+  ): FitEditSessionInput {
+    return {
+      id: null,
+      session_date: formatDate(new Date()),
+      session_title: detail.session.session_title,
+      location: detail.session.location,
+      remarks: detail.session.remarks,
+      is_pattern: false,
+      status: detail.session.status ?? RecordStatus.Active,
+      entries: (detail.entries || []).map((entry, entryIndex) => ({
+        id: null,
+        sort_order: entry.sort_order ?? entryIndex + 1,
+        entry_type: entry.entry_type,
+        exercise_name: entry.exercise_name || '',
+        source_url: entry.source_url,
+        remarks: entry.remarks,
+        status: entry.status ?? RecordStatus.Active,
+        sets: (entry.sets || []).map((set, setIndex) => ({
+          id: null,
+          set_no: set.set_no ?? setIndex + 1,
+          weight_value: set.weight_value ?? null,
+          weight_unit: set.weight_unit,
+          reps_value: set.reps_value ?? null,
+          duration_sec: set.duration_sec ?? null,
+          calories_value: set.calories_value ?? null,
+          distance_value: set.distance_value ?? null,
+          distance_unit: set.distance_unit,
+          incline_value: set.incline_value ?? null,
+          level_text: set.level_text,
+          side_code: set.side_code ?? null,
+          remarks: set.remarks,
+          status: set.status ?? RecordStatus.Active,
+        })),
+      })),
+    };
   }
 
   buildRepeatedSets(input: {
@@ -565,6 +681,7 @@ export class FitService {
         .from('tyapp_fit_session')
         .select('*')
         .eq('user_id', userId)
+        .eq('is_pattern', false)
         .is('deleted_at', null)
         .order('session_date', { ascending: false })
         .limit(limit);

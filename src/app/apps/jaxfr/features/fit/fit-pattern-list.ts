@@ -7,32 +7,20 @@ import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 
 import { HeaderService } from '../../../../core/services/header.service';
 import { FitService } from './fit.service';
-
-import {
-  getWeekRange,
-  groupItemsByPeriod,
-} from '../../../../core/utils/date-time.util';
 import { RecordStatus } from '../../../../core/models/status.enum';
 
-type FitListItemVm = {
+type FitPatternListItemVm = {
   tb_tyapp_fit_ssn_id: string;
-  session_date: string;
   session_title: string;
   location: string | null;
   remarks: string | null;
   status: number;
   displayTitle: string;
   displaySubtitle: string;
-  displayMeta: string;
-};
-
-type FitListGroupVm = {
-  periodLabel: string;
-  items: FitListItemVm[];
 };
 
 @Component({
-  selector: 'app-fit-list',
+  selector: 'app-fit-pattern-list',
   standalone: true,
   imports: [
     CommonModule,
@@ -41,10 +29,10 @@ type FitListGroupVm = {
     MatIconModule,
     MatProgressSpinnerModule,
   ],
-  templateUrl: './fit-list.html',
-  styleUrl: './fit-list.scss',
+  templateUrl: './fit-pattern-list.html',
+  styleUrl: './fit-pattern-list.scss',
 })
-export class FitList implements OnInit, OnDestroy {
+export class FitPatternList implements OnInit, OnDestroy {
   public fitService = inject(FitService);
 
   private headerService = inject(HeaderService);
@@ -53,36 +41,26 @@ export class FitList implements OnInit, OnDestroy {
 
   readonly RecordStatus = RecordStatus;
 
-  listVM = computed<FitListItemVm[]>(() => {
-    return this.fitService.sessions().map((session) => {
-      const title = session.session_title?.trim() || 'Untitled Session';
-
+  listVM = computed<FitPatternListItemVm[]>(() => {
+    return this.fitService.patterns().map((session) => {
+      const title = session.session_title?.trim() || '未命名課表';
       const subtitleParts = [
         session.location?.trim(),
         session.remarks?.trim(),
       ].filter(Boolean);
 
-      const displaySubtitle =
-        subtitleParts.length > 0 ? subtitleParts.join(' · ') : 'No extra notes';
-
       return {
         tb_tyapp_fit_ssn_id: session.tb_tyapp_fit_ssn_id,
-        session_date: session.session_date,
         session_title: session.session_title || '',
         location: session.location || null,
         remarks: session.remarks || null,
         status: session.status,
-        displayTitle: session.session_date,
-        displaySubtitle,
-        displayMeta: title,
+        displayTitle: title,
+        displaySubtitle:
+          subtitleParts.length > 0
+            ? subtitleParts.join(' · ')
+            : '尚未填地點或備註',
       };
-    });
-  });
-
-  groupedListVM = computed<FitListGroupVm[]>(() => {
-    return groupItemsByPeriod(this.listVM(), (item) => {
-      const range = getWeekRange(item.session_date);
-      return range ? range.label : 'Unknown Week';
     });
   });
 
@@ -92,18 +70,11 @@ export class FitList implements OnInit, OnDestroy {
     this.headerService.setConfig({
       actions: [
         {
-          label: 'Thread',
-          icon: 'forum',
+          label: 'List',
+          icon: 'list',
           type: 'secondary',
           onClick: () =>
-            this.router.navigate(['../thread'], { relativeTo: this.route }),
-        },
-        {
-          label: 'Patterns',
-          icon: 'view_list',
-          type: 'secondary',
-          onClick: () =>
-            this.router.navigate(['../patterns'], { relativeTo: this.route }),
+            this.router.navigate(['../list'], { relativeTo: this.route }),
         },
         {
           label: 'Refresh',
@@ -113,21 +84,32 @@ export class FitList implements OnInit, OnDestroy {
           onClick: () => this.onRefresh(),
         },
         {
-          label: 'New Session',
+          label: 'New Pattern',
           icon: 'add',
           type: 'primary',
           disabled: isLoading,
-          onClick: () =>
-            this.router.navigate(['../new'], { relativeTo: this.route }),
+          onClick: () => this.router.navigate(['/fit/patterns/new']),
         },
       ],
     });
 
-    this.fitService.fetchAllSessions();
+    this.fitService.fetchPatterns();
   }
 
   async onRefresh() {
-    await this.fitService.fetchAllSessions(true);
+    await this.fitService.fetchPatterns(true);
+  }
+
+  async onApplyToday(patternId: string, event: Event) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const newId = await this.fitService.applyPatternToToday(patternId);
+    if (newId) {
+      this.router.navigate(['/fit/edit', newId], {
+        queryParams: { returnUrl: '/fit/list' },
+      });
+    }
   }
 
   ngOnDestroy() {

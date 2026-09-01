@@ -77,6 +77,7 @@ export class FitEdit implements OnInit, OnDestroy, DoCheck {
 
   item = signal<FitEditVm | null>(null);
   currentId: string | null = null;
+  isPattern = signal(false);
   returnUrl = '/fit/list';
 
   originalDataStr = signal<string>('');
@@ -133,6 +134,7 @@ export class FitEdit implements OnInit, OnDestroy, DoCheck {
       this.fitService.loading() ||
       (!!this.currentId && !currentlyDirty) ||
       !current.session_date ||
+      (this.isPattern() && !current.session_title?.trim()) ||
       !(current.entries || []).length ||
       !this.hasValidEntries(current);
 
@@ -142,9 +144,11 @@ export class FitEdit implements OnInit, OnDestroy, DoCheck {
   }
 
   async ngOnInit() {
+    this.isPattern.set(this.route.snapshot.data['isPattern'] === true);
     this.currentId = this.route.snapshot.paramMap.get('id');
     this.returnUrl =
-      this.route.snapshot.queryParamMap.get('returnUrl') || '/fit/list';
+      this.route.snapshot.queryParamMap.get('returnUrl') ||
+      (this.isPattern() ? '/fit/patterns' : '/fit/list');
 
     const actions: HeaderAction[] = [
       {
@@ -170,8 +174,22 @@ export class FitEdit implements OnInit, OnDestroy, DoCheck {
       });
     }
 
+    if (this.isPattern() && this.currentId) {
+      actions.push({
+        label: '套用今日',
+        icon: 'play_arrow',
+        type: 'secondary',
+        disabled: this.fitService.loading,
+        onClick: () => this.onApplyToday(),
+      });
+    }
+
     actions.push({
-      label: this.currentId ? 'Save Changes' : 'Create Session',
+      label: this.currentId
+        ? 'Save Changes'
+        : this.isPattern()
+          ? 'Create Pattern'
+          : 'Create Session',
       icon: 'check',
       type: 'primary',
       disabled: this.isSaveDisabled,
@@ -189,6 +207,20 @@ export class FitEdit implements OnInit, OnDestroy, DoCheck {
 
       if (!detail) {
         this.router.navigateByUrl(this.returnUrl);
+        return;
+      }
+
+      if (detail.session.is_pattern && !this.isPattern()) {
+        this.router.navigate(['/fit/patterns/edit', this.currentId], {
+          replaceUrl: true,
+        });
+        return;
+      }
+
+      if (!detail.session.is_pattern && this.isPattern()) {
+        this.router.navigate(['/fit/edit', this.currentId], {
+          replaceUrl: true,
+        });
         return;
       }
 
@@ -511,12 +543,32 @@ export class FitEdit implements OnInit, OnDestroy, DoCheck {
   async onDelete() {
     if (!this.currentId) return;
 
-    if (confirm('Are you sure you want to delete this fit session?')) {
+    const confirmMessage = this.isPattern()
+      ? '確定要刪除這份課表？不會刪除已套用過的當日紀錄。'
+      : 'Are you sure you want to delete this fit session?';
+
+    if (confirm(confirmMessage)) {
       const success = await this.fitService.deleteSession(this.currentId);
       if (success) {
         this.isDirty.set(false);
         this.router.navigateByUrl(this.returnUrl);
       }
+    }
+  }
+
+  async onApplyToday() {
+    if (!this.currentId || !this.isPattern()) return;
+
+    if (this.isDirty()) {
+      confirm('課表有未儲存的變更，請先儲存再套用。');
+      return;
+    }
+
+    const newId = await this.fitService.applyPatternToToday(this.currentId);
+    if (newId) {
+      this.router.navigate(['/fit/edit', newId], {
+        queryParams: { returnUrl: '/fit/list' },
+      });
     }
   }
 
@@ -527,6 +579,7 @@ export class FitEdit implements OnInit, OnDestroy, DoCheck {
       session_title: '',
       location: '',
       remarks: '',
+      is_pattern: this.isPattern(),
       status: RecordStatus.Active,
       entries: [this.createNewEntry('strength', 1)],
     };
@@ -578,6 +631,7 @@ export class FitEdit implements OnInit, OnDestroy, DoCheck {
       session_title: detail.session.session_title || '',
       location: detail.session.location || '',
       remarks: detail.session.remarks || '',
+      is_pattern: detail.session.is_pattern ?? this.isPattern(),
       status: detail.session.status ?? RecordStatus.Active,
       entries: (detail.entries || []).map((entry, entryIndex) => ({
         id: entry.tb_tyapp_fit_ntry_id,
@@ -621,6 +675,7 @@ export class FitEdit implements OnInit, OnDestroy, DoCheck {
       session_title: this.normalizeText(current.session_title),
       location: this.normalizeText(current.location),
       remarks: this.normalizeText(current.remarks),
+      is_pattern: this.isPattern(),
       status: current.status ?? RecordStatus.Active,
       entries: (current.entries || []).map((entry, entryIndex) => ({
         id: entry.id ?? null,

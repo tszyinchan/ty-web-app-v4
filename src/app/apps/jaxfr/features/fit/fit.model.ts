@@ -12,6 +12,7 @@ export interface FitSession {
   session_title: string | null;
   location: string | null;
   remarks: string | null;
+  is_pattern: boolean;
   status: RecordStatus;
   created_at: string;
   updated_at: string;
@@ -100,6 +101,7 @@ export interface FitEditSessionInput {
   session_title: string | null;
   location: string | null;
   remarks: string | null;
+  is_pattern: boolean;
   status: RecordStatus;
   entries: FitEditEntryInput[];
 }

@@ -2,33 +2,38 @@
   @if (item(); as fit) {
     <div class="form-scroll-area">
       <section class="form-group">
-        <h3 class="group-header">訓練資訊</h3>
+        <h3 class="group-header">{{ isPattern() ? "課表資訊" : "訓練資訊" }}</h3>
 
         <div class="fields-grid-2">
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>訓練日期</mat-label>
-            <input
-              matInput
-              [matDatepicker]="sessionDatePicker"
-              [ngModel]="fit.session_date"
-              (ngModelChange)="fit.session_date = $event"
-              name="session_date"
-              required
-            />
-            <mat-datepicker-toggle
-              matIconSuffix
-              [for]="sessionDatePicker"
-            ></mat-datepicker-toggle>
-            <mat-datepicker #sessionDatePicker></mat-datepicker>
-          </mat-form-field>
+          @if (!isPattern()) {
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-label>訓練日期</mat-label>
+              <input
+                matInput
+                [matDatepicker]="sessionDatePicker"
+                [ngModel]="fit.session_date"
+                (ngModelChange)="fit.session_date = $event"
+                name="session_date"
+                required
+              />
+              <mat-datepicker-toggle
+                matIconSuffix
+                [for]="sessionDatePicker"
+              ></mat-datepicker-toggle>
+              <mat-datepicker #sessionDatePicker></mat-datepicker>
+            </mat-form-field>
+          }
 
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>訓練標題</mat-label>
+            <mat-label>{{ isPattern() ? "課表名稱" : "訓練標題" }}</mat-label>
             <input
               matInput
               [(ngModel)]="fit.session_title"
               name="session_title"
-              placeholder="例如：推胸日 / 晚間有氧"
+              [placeholder]="
+                isPattern() ? '例如：A / B / 推胸日' : '例如：推胸日 / 晚間有氧'
+              "
+              [required]="isPattern()"
             />
           </mat-form-field>
         </div>
@@ -74,7 +79,11 @@
           <div>
             <h3 class="group-header mb-4">訓練項目</h3>
             <p class="section-subtitle">
-              打字輸入動作名稱，系統會自動切換對應的項目欄位與類型。
+              @if (isPattern()) {
+                先定這天要練的動作與組數。套用到某日後，再依實際訓練調整。
+              } @else {
+                打字輸入動作名稱，系統會自動切換對應的項目欄位與類型。
+              }
             </p>
           </div>
         </div>
@@ -476,33 +485,33 @@
                         </mat-form-field>
                       }
 
-                      @if (entry.showAdvanced) {
-                        <mat-form-field
-                          appearance="outline"
-                          subscriptSizing="dynamic"
+                      <mat-form-field
+                        appearance="outline"
+                        subscriptSizing="dynamic"
+                      >
+                        <mat-label>側別</mat-label>
+                        <mat-select
+                          [ngModel]="set.side_code"
+                          (ngModelChange)="
+                            updateSetField(
+                              entryIndex,
+                              setIndex,
+                              'side_code',
+                              $event
+                            )
+                          "
+                          [name]="'side_' + entryIndex + '_' + setIndex"
                         >
-                          <mat-label>側別</mat-label>
-                          <mat-select
-                            [ngModel]="set.side_code"
-                            (ngModelChange)="
-                              updateSetField(
-                                entryIndex,
-                                setIndex,
-                                'side_code',
-                                $event
-                              )
-                            "
-                            [name]="'side_' + entryIndex + '_' + setIndex"
-                          >
-                            <mat-option [value]="null">--</mat-option>
-                            @for (opt of sideCodeOptions; track opt.value) {
-                              <mat-option [value]="opt.value">{{
-                                opt.label
-                              }}</mat-option>
-                            }
-                          </mat-select>
-                        </mat-form-field>
+                          <mat-option [value]="null">--</mat-option>
+                          @for (opt of sideCodeOptions; track opt.value) {
+                            <mat-option [value]="opt.value">{{
+                              opt.label
+                            }}</mat-option>
+                          }
+                        </mat-select>
+                      </mat-form-field>
 
+                      @if (entry.showAdvanced) {
                         <mat-form-field
                           appearance="outline"
                           subscriptSizing="dynamic"

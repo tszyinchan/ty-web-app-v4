@@ -57,6 +57,13 @@ export class FitThread implements OnInit, OnDestroy {
             this.router.navigate(['../list'], { relativeTo: this.route }),
         },
         {
+          label: 'Patterns',
+          icon: 'view_list',
+          type: 'secondary',
+          onClick: () =>
+            this.router.navigate(['../patterns'], { relativeTo: this.route }),
+        },
+        {
           label: 'Refresh',
           icon: 'refresh',
           type: 'secondary',

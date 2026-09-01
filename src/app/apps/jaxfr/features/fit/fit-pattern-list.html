@@ -1,0 +1,52 @@
+<div class="standard-list-view">
+  <div class="list-container">
+    @for (item of listVM(); track item.tb_tyapp_fit_ssn_id) {
+      <a
+        class="item-link"
+        [routerLink]="['/fit/patterns/edit', item.tb_tyapp_fit_ssn_id]"
+      >
+        <div class="item-content">
+          <div class="item-info-group">
+            <span class="main-text">{{ item.displayTitle }}</span>
+            <span class="sub-text">{{ item.displaySubtitle }}</span>
+          </div>
+
+          <div class="item-status-group">
+            <button
+              mat-stroked-button
+              type="button"
+              (click)="onApplyToday(item.tb_tyapp_fit_ssn_id, $event)"
+              [disabled]="fitService.loading()"
+            >
+              套用今日
+            </button>
+            <span
+              class="status-tag"
+              [class.inactive]="item.status === RecordStatus.Inactive"
+            >
+              {{ item.status === RecordStatus.Active ? "Active" : "Inactive" }}
+            </span>
+            <mat-icon class="chevron">chevron_right</mat-icon>
+          </div>
+        </div>
+      </a>
+    } @empty {
+      @if (!fitService.loading()) {
+        <div class="empty-placeholder">
+          還沒有課表。先新增 Day A / B / C / D，再套用到今天。
+        </div>
+      }
+    }
+  </div>
+
+  <footer
+    class="list-footer"
+    [hidden]="fitService.loading() || listVM().length === 0"
+  >
+    <div class="divider"></div>
+    <span class="count-text">TOTAL {{ listVM().length }} ITEMS</span>
+    @if (fitService.loading()) {
+      <mat-spinner diameter="16"></mat-spinner>
+    }
+  </footer>
+</div>
