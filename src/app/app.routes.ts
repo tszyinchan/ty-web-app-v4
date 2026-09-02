@@ -20,6 +20,13 @@ const JAXFR_ROUTES: Routes = [
       import('./pages/register/register').then((m) => m.Register),
   },
   {
+    path: 'reset-password',
+    loadComponent: () =>
+      import('./pages/reset-password/reset-password').then(
+        (m) => m.ResetPassword,
+      ),
+  },
+  {
     path: '',
     component: Layout,
     canActivate: [authGuard, appAccessGuard],

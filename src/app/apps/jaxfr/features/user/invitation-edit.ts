@@ -123,7 +123,7 @@ export class InvitationEdit implements OnInit, OnDestroy, DoCheck {
   });
 
   async ngOnInit() {
-    if (!this.auth.isSuperAdmin()) {
+    if (!this.auth.isAdmin()) {
       const myId = this.auth.userProfile()?.user_id;
       void this.router.navigate(myId ? ['/users/edit', myId] : ['/welcome'], {
         replaceUrl: true,

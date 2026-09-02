@@ -102,7 +102,7 @@ export class AccessService {
     userId: string,
   ): Promise<{ appIds: string[]; featureIds: string[] }> {
     if (
-      !this.auth.isSuperAdmin() &&
+      !this.auth.isAdmin() &&
       userId !== this.auth.userProfile()?.user_id
     ) {
       return { appIds: [], featureIds: [] };
@@ -136,15 +136,28 @@ export class AccessService {
   }
 
   async replaceAppAccess(userId: string, appIds: string[]): Promise<boolean> {
-    if (!this.auth.isSuperAdmin()) {
+    if (!this.auth.isAdmin()) {
       this.notification.handleError(
         'Save App Access Failed',
-        'Only a super admin can change app access',
+        'Only an admin can change app access',
       );
       return false;
     }
 
     try {
+      const { data: target, error: targetError } = await this.supabase
+        .from('tyapp_user')
+        .select('role')
+        .eq('user_id', userId)
+        .maybeSingle();
+      if (targetError) throw targetError;
+      if (!this.auth.canManageUserRole(target?.role ?? 0)) {
+        this.notification.handleError(
+          'Save App Access Failed',
+          'You cannot change this account',
+        );
+        return false;
+      }
       const { error: delError } = await this.supabase
         .from('tyapp_user_app_access')
         .delete()
@@ -172,15 +185,28 @@ export class AccessService {
     userId: string,
     featureIds: string[],
   ): Promise<boolean> {
-    if (!this.auth.isSuperAdmin()) {
+    if (!this.auth.isAdmin()) {
       this.notification.handleError(
         'Save Feature Access Failed',
-        'Only a super admin can change feature access',
+        'Only an admin can change feature access',
       );
       return false;
     }
 
     try {
+      const { data: target, error: targetError } = await this.supabase
+        .from('tyapp_user')
+        .select('role')
+        .eq('user_id', userId)
+        .maybeSingle();
+      if (targetError) throw targetError;
+      if (!this.auth.canManageUserRole(target?.role ?? 0)) {
+        this.notification.handleError(
+          'Save Feature Access Failed',
+          'You cannot change this account',
+        );
+        return false;
+      }
       const { error: delError } = await this.supabase
         .from('tyapp_user_feature_access')
         .delete()

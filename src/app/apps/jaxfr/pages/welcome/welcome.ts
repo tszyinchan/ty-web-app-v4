@@ -186,6 +186,7 @@ export class Welcome implements OnInit, OnDestroy {
         if (feature.status !== RecordStatus.Active) return false;
         if (!feature.route || !feature.icon) return false;
         if (!this.access.isAppActive(feature.app_id)) return false;
+        if (feature.name === 'User' && this.auth.isAdmin()) return true;
         return this.access.hasFeature(feature.tb_tyapp_ap_ftr_id);
       })
       .map((feature) => this.toCategory(feature, apps));
@@ -202,7 +203,7 @@ export class Welcome implements OnInit, OnDestroy {
         ...tile,
         route: this.featureHubRoute(tile.name, tile.route),
       };
-      if (isSuperAdmin) {
+      if (isSuperAdmin || (tile.name === 'User' && this.auth.isAdmin())) {
         return [this.withLinks({ ...resolved, ...this.orderOf(feature, apps) })];
       }
       if (!feature || !this.access.hasFeature(feature.tb_tyapp_ap_ftr_id)) {
@@ -230,7 +231,7 @@ export class Welcome implements OnInit, OnDestroy {
   }
 
   private featureHubRoute(featureName: string, fallbackRoute: string): string {
-    if (featureName === 'User' && !this.auth.isSuperAdmin()) {
+    if (featureName === 'User' && !this.auth.isAdmin()) {
       const myId = this.auth.userProfile()?.user_id;
       if (myId) return `/users/edit/${myId}`;
     }
@@ -250,7 +251,7 @@ export class Welcome implements OnInit, OnDestroy {
   }
 
   private linksFor(name: string): FeatureHubLink[] {
-    if (name === 'User' && !this.auth.isSuperAdmin()) return [];
+    if (name === 'User' && !this.auth.isAdmin()) return [];
     return CATEGORY_LINKS[name] ?? [];
   }
 

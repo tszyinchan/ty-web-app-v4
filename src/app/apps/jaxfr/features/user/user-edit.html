@@ -9,7 +9,7 @@
             <input
               matInput
               [(ngModel)]="u.legal_first_name"
-              [disabled]="isDeleted()"
+              [disabled]="!canEditProfile()"
             />
           </mat-form-field>
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
@@ -18,7 +18,7 @@
               matInput
               [(ngModel)]="u.preferred_first_name"
               placeholder="e.g. Jax"
-              [disabled]="isDeleted()"
+              [disabled]="!canEditProfile()"
             />
           </mat-form-field>
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
@@ -26,7 +26,7 @@
             <input
               matInput
               [(ngModel)]="u.legal_middle_name"
-              [disabled]="isDeleted()"
+              [disabled]="!canEditProfile()"
             />
           </mat-form-field>
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
@@ -34,7 +34,7 @@
             <input
               matInput
               [(ngModel)]="u.legal_last_name"
-              [disabled]="isDeleted()"
+              [disabled]="!canEditProfile()"
             />
           </mat-form-field>
         </div>
@@ -47,7 +47,7 @@
             <mat-label>Display Mode</mat-label>
             <mat-select
               [(ngModel)]="u.name_display_mode"
-              [disabled]="isDeleted()"
+              [disabled]="!canEditProfile()"
             >
               @for (m of availableModes; track m) {
                 <mat-option [value]="m">{{ m | tyDisplayNameMode }}</mat-option>
@@ -59,7 +59,7 @@
             <input
               matInput
               [(ngModel)]="u.customized_display_name"
-              [disabled]="isDeleted()"
+              [disabled]="!canEditProfile()"
             />
           </mat-form-field>
         </div>
@@ -78,6 +78,8 @@
             <div class="app-access-subtitle">
               @if (isDeleted()) {
                 Restore this account before changing app or feature access.
+              } @else if (!canManageTarget()) {
+                Only a super admin can change this account.
               } @else if (isAccessLocked()) {
                 Super admin has access to all apps and features. Grant checkboxes
                 are not used for this role.
@@ -131,9 +133,9 @@
               <mat-select
                 [(ngModel)]="u.role"
                 (ngModelChange)="onRoleChange($event)"
-                [disabled]="isDeleted()"
+                [disabled]="isRoleLocked()"
               >
-                @for (r of availableRoles; track r) {
+                @for (r of assignableRoles(); track r) {
                   <mat-option [value]="r">{{ r | tyRoleLabel }}</mat-option>
                 }
               </mat-select>
@@ -145,7 +147,7 @@
               <mat-label>YY525 Identity Binding</mat-label>
               <mat-select
                 [(ngModel)]="u.appsheet_525_user_id"
-                [disabled]="isDeleted()"
+                [disabled]="isDeleted() || !canManageTarget()"
               >
                 <mat-option [value]="null">None (Blank)</mat-option>
                 <mat-option value="cty">CTY</mat-option>
@@ -164,9 +166,131 @@
               matInput
               rows="3"
               [(ngModel)]="u.remarks"
-              [disabled]="isDeleted()"
+              [disabled]="isDeleted() || !canManageTarget()"
             ></textarea>
           </mat-form-field>
+        </section>
+      }
+
+      @if (
+        canChangeOwnPassword() ||
+        canSetOthersPassword() ||
+        canSendPasswordReset()
+      ) {
+        <section class="form-group">
+          <h3 class="group-header">Password</h3>
+          <div class="account-panel">
+            <p class="account-hint">
+              Applies immediately. Not part of Save Changes.
+              @if (canChangeOwnPassword()) {
+                Enter your current password, then a new one.
+              } @else if (canSetOthersPassword()) {
+                Super Admin can set a new password for this person, or send a
+                reset email.
+              } @else {
+                Send a reset email to the address on this account.
+              }
+            </p>
+            @if (canChangeOwnPassword() || canSetOthersPassword()) {
+              <div class="fields-grid-2">
+                @if (canChangeOwnPassword()) {
+                  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                    <mat-label>Current password</mat-label>
+                    <input
+                      matInput
+                      [type]="hideCurrentPassword() ? 'password' : 'text'"
+                      [(ngModel)]="passwordCurrent"
+                      autocomplete="current-password"
+                      [disabled]="passwordBusy()"
+                    />
+                    <button
+                      mat-icon-button
+                      matSuffix
+                      type="button"
+                      (click)="hideCurrentPassword.set(!hideCurrentPassword())"
+                      [attr.aria-label]="
+                        hideCurrentPassword() ? 'Show password' : 'Hide password'
+                      "
+                    >
+                      <mat-icon>{{
+                        hideCurrentPassword() ? 'visibility' : 'visibility_off'
+                      }}</mat-icon>
+                    </button>
+                  </mat-form-field>
+                }
+                <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                  <mat-label>New password</mat-label>
+                  <input
+                    matInput
+                    [type]="hideNewPassword() ? 'password' : 'text'"
+                    [(ngModel)]="passwordNew"
+                    autocomplete="new-password"
+                    [disabled]="passwordBusy()"
+                  />
+                  <button
+                    mat-icon-button
+                    matSuffix
+                    type="button"
+                    (click)="hideNewPassword.set(!hideNewPassword())"
+                    [attr.aria-label]="
+                      hideNewPassword() ? 'Show password' : 'Hide password'
+                    "
+                  >
+                    <mat-icon>{{
+                      hideNewPassword() ? 'visibility' : 'visibility_off'
+                    }}</mat-icon>
+                  </button>
+                </mat-form-field>
+                <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                  <mat-label>Confirm new password</mat-label>
+                  <input
+                    matInput
+                    [type]="hideNewPassword() ? 'password' : 'text'"
+                    [(ngModel)]="passwordConfirm"
+                    autocomplete="new-password"
+                    [disabled]="passwordBusy()"
+                  />
+                </mat-form-field>
+              </div>
+              @if (passwordMismatch()) {
+                <p class="account-hint highlight">
+                  New password and confirmation do not match.
+                </p>
+              }
+            }
+            <div class="account-actions">
+              @if (canChangeOwnPassword()) {
+                <button
+                  mat-stroked-button
+                  type="button"
+                  [disabled]="passwordBusy() || userService.loading()"
+                  (click)="onChangeOwnPassword()"
+                >
+                  Update password now
+                </button>
+              }
+              @if (canSetOthersPassword()) {
+                <button
+                  mat-stroked-button
+                  type="button"
+                  [disabled]="passwordBusy() || userService.loading()"
+                  (click)="onSetOthersPassword()"
+                >
+                  Set password now
+                </button>
+              }
+              @if (canSendPasswordReset()) {
+                <button
+                  mat-stroked-button
+                  type="button"
+                  [disabled]="passwordBusy() || userService.loading()"
+                  (click)="onSendPasswordReset()"
+                >
+                  Send reset email
+                </button>
+              }
+            </div>
+          </div>
         </section>
       }
 

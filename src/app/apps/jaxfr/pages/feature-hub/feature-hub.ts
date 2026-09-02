@@ -24,7 +24,7 @@ export class FeatureHub implements OnInit, OnDestroy {
   ngOnInit() {
     const hubKey = this.route.snapshot.data['hub'] as string | undefined;
 
-    if (hubKey === 'user' && !this.auth.isSuperAdmin()) {
+    if (hubKey === 'user' && !this.auth.isAdmin()) {
       const myId = this.auth.userProfile()?.user_id;
       void this.router.navigate(myId ? ['/users/edit', myId] : ['/welcome'], {
         replaceUrl: true,

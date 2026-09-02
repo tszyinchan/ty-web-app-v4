@@ -31,7 +31,7 @@ export class UserGroupList implements OnInit, OnDestroy {
   readonly RecordStatus = RecordStatus;
 
   ngOnInit() {
-    if (!this.auth.isSuperAdmin()) {
+    if (!this.auth.isAdmin()) {
       const myId = this.auth.userProfile()?.user_id;
       void this.router.navigate(myId ? ['/users/edit', myId] : ['/welcome'], {
         replaceUrl: true,

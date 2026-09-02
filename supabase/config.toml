@@ -8,3 +8,9 @@ verify_jwt = false
 
 [functions.register-with-invite]
 verify_jwt = false
+
+[functions.set-user-password]
+verify_jwt = false
+
+[functions.send-password-reset]
+verify_jwt = false

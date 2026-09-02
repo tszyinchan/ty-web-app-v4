@@ -88,7 +88,7 @@ export class UserService {
           this.subscribeToDirectory();
           this.subscribeToGroups();
           void this.fetchGroups();
-          if (this.authService.isSuperAdmin()) {
+          if (this.authService.isAdmin()) {
             void this.fetchReactivationRequests();
           }
         } else {
@@ -191,7 +191,7 @@ export class UserService {
   async fetchUserById(userId: string): Promise<TyappUser | null> {
     this.loading.set(true);
     try {
-      const query = this.authService.isSuperAdmin()
+      const query = this.authService.isAdmin()
         ? this.supabase.from('tyapp_user').select('*').eq('user_id', userId)
         : this.supabase
             .from('tyapp_user')
@@ -220,15 +220,28 @@ export class UserService {
     userId: string,
     updates: Partial<TyappUser>,
   ): Promise<boolean> {
-    if (!this.authService.isSuperAdmin()) {
-      if (userId !== this.authService.userProfile()?.user_id) {
+    const me = this.authService.userProfile()?.user_id;
+    const target = this.users().find((item) => item.user_id === userId);
+    const canManage = this.authService.canManageUserRole(target?.role ?? 0);
+
+    if (userId !== me && !canManage) {
+      this.notification.handleError(
+        'Update Error',
+        'You can only edit your own profile',
+      );
+      return false;
+    }
+
+    if (!this.authService.isAdmin()) {
+      updates = this.selfProfileUpdates(updates);
+    } else if (!this.authService.isSuperAdmin()) {
+      if ((updates.role ?? 0) >= USER_ROLES.SUPER_ADMIN) {
         this.notification.handleError(
           'Update Error',
-          'You can only edit your own profile',
+          'Only a super admin can assign the super admin role',
         );
         return false;
       }
-      updates = this.selfProfileUpdates(updates);
     }
 
     this.loading.set(true);
@@ -276,7 +289,7 @@ export class UserService {
   }
 
   async fetchReactivationRequests(): Promise<void> {
-    if (!this.authService.isSuperAdmin()) {
+    if (!this.authService.isAdmin()) {
       this.reactivationRequests.set([]);
       return;
     }
@@ -489,10 +502,10 @@ export class UserService {
     group: Partial<UserGroup>,
     memberUserIds: string[],
   ): Promise<UserGroup | null> {
-    if (!this.authService.isSuperAdmin()) {
+    if (!this.authService.isAdmin()) {
       this.notification.handleError(
         'Save Group Failed',
-        'Only a super admin can manage groups',
+        'Only an admin can manage groups',
       );
       return null;
     }
@@ -570,10 +583,10 @@ export class UserService {
   }
 
   async deleteGroup(groupId: string): Promise<boolean> {
-    if (!this.authService.isSuperAdmin()) {
+    if (!this.authService.isAdmin()) {
       this.notification.handleError(
         'Delete Group Failed',
-        'Only a super admin can manage groups',
+        'Only an admin can manage groups',
       );
       return false;
     }
@@ -676,10 +689,10 @@ export class UserService {
   }
 
   async saveInvitation(invite: Partial<Invitation>): Promise<Invitation | null> {
-    if (!this.authService.isSuperAdmin()) {
+    if (!this.authService.isAdmin()) {
       this.notification.handleError(
         'Save Invite Failed',
-        'Only a super admin can manage invitations',
+        'Only an admin can manage invitations',
       );
       return null;
     }
@@ -763,10 +776,10 @@ export class UserService {
   }
 
   async deleteInvitation(inviteId: string): Promise<boolean> {
-    if (!this.authService.isSuperAdmin()) {
+    if (!this.authService.isAdmin()) {
       this.notification.handleError(
         'Delete Invite Failed',
-        'Only a super admin can manage invitations',
+        'Only an admin can manage invitations',
       );
       return false;
     }

@@ -32,6 +32,7 @@ import { AccessService } from '../../../../core/services/access.service';
 import { AppRegistryService } from '../../../../core/services/app-registry.service';
 import { AuthService } from '../../../../core/services/auth.service';
 import { HeaderService } from '../../../../core/services/header.service';
+import { NotificationService } from '../../../../core/services/notification.service';
 import { exportToCsv } from '../../../../core/utils/csv-export.util';
 import { UserService } from './user.service';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -80,17 +81,13 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
   private access = inject(AccessService);
   private auth = inject(AuthService);
   private headerService = inject(HeaderService);
+  private notification = inject(NotificationService);
   private zone = inject(NgZone);
 
   private displayNamePipe = inject(DisplayNamePipe);
   private roleLabelPipe = inject(RoleLabelPipe);
   private displayNameModePipe = inject(DisplayNameModePipe);
 
-  readonly availableRoles = [
-    USER_ROLES.USER,
-    USER_ROLES.ADMIN,
-    USER_ROLES.SUPER_ADMIN,
-  ];
   readonly availableModes = [
     NameDisplayMode.LegalFirstMiddleLast,
     NameDisplayMode.LegalLastMiddleFirst,
@@ -98,7 +95,15 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
     NameDisplayMode.PreferredLastMiddleFirst,
     NameDisplayMode.CustomizedOnly,
   ];
-  readonly canManageUsers = this.auth.isSuperAdmin;
+  readonly MIN_PASSWORD_LENGTH = 6;
+  readonly canManageUsers = this.auth.isAdmin;
+
+  passwordCurrent = '';
+  passwordNew = '';
+  passwordConfirm = '';
+  hideCurrentPassword = signal(true);
+  hideNewPassword = signal(true);
+  passwordBusy = signal(false);
 
   user = signal<TyappUser | null>(null);
   isSaving = signal(false);
@@ -136,6 +141,23 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
   isSelf = computed(
     () => this.user()?.user_id === this.auth.userProfile()?.user_id,
   );
+  canManageTarget = computed(() => {
+    const u = this.user();
+    return !!u && this.auth.canManageUserRole(u.role);
+  });
+  canEditProfile = computed(
+    () => !this.isDeleted() && (this.isSelf() || this.canManageTarget()),
+  );
+  assignableRoles = computed(() => {
+    const roles: number[] = [USER_ROLES.USER, USER_ROLES.ADMIN];
+    if (
+      this.auth.isSuperAdmin() ||
+      (this.user()?.role ?? 0) >= USER_ROLES.SUPER_ADMIN
+    ) {
+      roles.push(USER_ROLES.SUPER_ADMIN);
+    }
+    return roles;
+  });
   isLastSuperAdmin = computed(() => {
     const u = this.user();
     if (!u || u.deleted_at || u.role < USER_ROLES.SUPER_ADMIN) return false;
@@ -157,6 +179,7 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
       this.isSaving() ||
       !this.user() ||
       this.isDeleted() ||
+      !this.canEditProfile() ||
       !this.hasUsableName(this.user()) ||
       (!!this.user()?.user_id && !this.isDirty()),
   );
@@ -169,16 +192,16 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
       return;
     }
 
-    if (!this.auth.isSuperAdmin() && id !== myId) {
+    if (!this.auth.isAdmin() && id !== myId) {
       void this.router.navigate(['/users/edit', myId], { replaceUrl: true });
       return;
     }
 
-    const canManage = this.auth.isSuperAdmin();
+    const canBrowseDirectory = this.auth.isAdmin();
 
     void this.userService.fetchAllUsers();
 
-    if (canManage) {
+    if (canBrowseDirectory) {
       await Promise.all([
         this.appRegistry.fetchAllApps(),
         this.featureService.fetchAllFeatures(),
@@ -187,7 +210,7 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
     }
 
     this.headerService.setConfig({
-      backLink: canManage ? '/users/list' : '/welcome',
+      backLink: canBrowseDirectory ? '/users/list' : '/welcome',
       syncStatus: this.syncStatus,
       actions: [
         {
@@ -214,7 +237,7 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
 
     const [freshUser, grants] = await Promise.all([
       this.userService.fetchUserById(id),
-      canManage
+      canBrowseDirectory
         ? this.access.fetchAccessForUser(id)
         : Promise.resolve({ appIds: [] as string[], featureIds: [] as string[] }),
     ]);
@@ -225,7 +248,7 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
       } else if (cachedUser) {
         this.setUserAndAccess(cachedUser, grants.appIds, grants.featureIds);
       } else {
-        this.router.navigate(canManage ? ['/users/list'] : ['/welcome']);
+        this.router.navigate(canBrowseDirectory ? ['/users/list'] : ['/welcome']);
       }
     });
   }
@@ -244,10 +267,14 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
 
   isAccessLocked(): boolean {
     return (
-      !this.auth.isSuperAdmin() ||
       this.isDeleted() ||
+      !this.canManageTarget() ||
       (this.user()?.role ?? 0) >= USER_ROLES.SUPER_ADMIN
     );
+  }
+
+  isRoleLocked(): boolean {
+    return this.isDeleted() || !this.canManageTarget();
   }
 
   hasUsableName(user: TyappUser | null): boolean {
@@ -261,7 +288,7 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
   }
 
   canActivate(): boolean {
-    return this.auth.isSuperAdmin() && this.isInactive();
+    return this.canManageTarget() && this.isInactive();
   }
 
   canDeactivate(): boolean {
@@ -269,7 +296,7 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
       !this.isDeleted() &&
       !this.isInactive() &&
       !this.isLastSuperAdmin() &&
-      (this.auth.isSuperAdmin() || this.isSelf())
+      (this.canManageTarget() || this.isSelf())
     );
   }
 
@@ -283,6 +310,18 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
 
   canRestore(): boolean {
     return this.auth.isSuperAdmin() && this.isDeleted();
+  }
+
+  canChangeOwnPassword(): boolean {
+    return this.isSelf() && !this.isDeleted();
+  }
+
+  canSetOthersPassword(): boolean {
+    return this.auth.isSuperAdmin() && !this.isSelf() && !this.isDeleted();
+  }
+
+  canSendPasswordReset(): boolean {
+    return this.canManageTarget() && !this.isDeleted();
   }
 
   featuresForApp(appId: string): AppFeature[] {
@@ -375,7 +414,7 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
     if (current && original) {
       const isBaseDirty = JSON.stringify(current) !== original;
       const isAccessDirty =
-        this.auth.isSuperAdmin() &&
+        this.canManageTarget() &&
         this.accessSnapshot() !== this.originalAccessStr;
 
       const currentlyDirty = isBaseDirty || isAccessDirty;
@@ -392,8 +431,19 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
 
   async onSave() {
     const data = this.user();
-    if (!data || this.isSaving() || this.isDeleted() || !this.hasUsableName(data))
+    if (!data || this.isSaving() || !this.canEditProfile() || !this.hasUsableName(data))
       return;
+
+    if (
+      !this.auth.isSuperAdmin() &&
+      data.role >= USER_ROLES.SUPER_ADMIN
+    ) {
+      this.notification.handleError(
+        'Update Error',
+        'Only a super admin can assign the super admin role',
+      );
+      return;
+    }
 
     data.legal_first_name = data.legal_first_name?.trim() || null;
     data.legal_middle_name = data.legal_middle_name?.trim() || null;
@@ -403,7 +453,7 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
 
     this.isSaving.set(true);
 
-    const canManage = this.auth.isSuperAdmin();
+    const canManage = this.canManageTarget();
     let success: boolean;
 
     if (canManage) {
@@ -587,6 +637,103 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
     this.zone.run(() => {
       this.setUserAndAccess(saved, grants.appIds, grants.featureIds);
     });
+  }
+
+  async onChangeOwnPassword() {
+    if (!this.canChangeOwnPassword() || this.passwordBusy()) return;
+    const current = this.passwordCurrent;
+    const next = this.passwordNew;
+    const mismatch = this.passwordMismatch();
+    if (!current || !next || mismatch || next.length < this.MIN_PASSWORD_LENGTH) {
+      this.notification.handleError(
+        'Change Password Failed',
+        mismatch
+          ? 'New password and confirmation do not match'
+          : 'Fill current password and a new password of at least 6 characters',
+      );
+      return;
+    }
+
+    this.passwordBusy.set(true);
+    try {
+      await this.auth.changeOwnPassword(current, next);
+      this.clearPasswordFields();
+      this.notification.showSuccess('Password updated');
+    } catch (error: unknown) {
+      this.notification.handleError('Change Password Failed', error);
+    } finally {
+      this.zone.run(() => this.passwordBusy.set(false));
+    }
+  }
+
+  async onSetOthersPassword() {
+    const u = this.user();
+    if (!u || !this.canSetOthersPassword() || this.passwordBusy()) return;
+    const next = this.passwordNew;
+    const mismatch = this.passwordMismatch();
+    if (!next || mismatch || next.length < this.MIN_PASSWORD_LENGTH) {
+      this.notification.handleError(
+        'Set Password Failed',
+        mismatch
+          ? 'New password and confirmation do not match'
+          : 'Enter a new password of at least 6 characters',
+      );
+      return;
+    }
+    if (
+      !confirm(
+        'Set a new password for this person? They will use it the next time they sign in.',
+      )
+    ) {
+      return;
+    }
+
+    this.passwordBusy.set(true);
+    try {
+      await this.auth.setUserPassword(u.user_id, next);
+      this.clearPasswordFields();
+      this.notification.showSuccess('Password updated');
+    } catch (error: unknown) {
+      this.notification.handleError('Set Password Failed', error);
+    } finally {
+      this.zone.run(() => this.passwordBusy.set(false));
+    }
+  }
+
+  async onSendPasswordReset() {
+    const u = this.user();
+    if (!u || !this.canSendPasswordReset() || this.passwordBusy()) return;
+    if (
+      !confirm(
+        'Send a password reset email to this account? They will use the link to choose a new password.',
+      )
+    ) {
+      return;
+    }
+
+    this.passwordBusy.set(true);
+    try {
+      await this.auth.sendPasswordReset(u.user_id);
+      this.notification.showSuccess('Reset email sent');
+    } catch (error: unknown) {
+      this.notification.handleError('Send Reset Failed', error);
+    } finally {
+      this.zone.run(() => this.passwordBusy.set(false));
+    }
+  }
+
+  passwordMismatch(): boolean {
+    return (
+      !!this.passwordNew &&
+      !!this.passwordConfirm &&
+      this.passwordNew !== this.passwordConfirm
+    );
+  }
+
+  private clearPasswordFields() {
+    this.passwordCurrent = '';
+    this.passwordNew = '';
+    this.passwordConfirm = '';
   }
 
   private applyLifecycleUser(saved: TyappUser) {

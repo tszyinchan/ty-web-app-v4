@@ -20,6 +20,14 @@ export class AuthService {
   );
   isAdmin = computed(() => (this.userProfile()?.role ?? 0) >= USER_ROLES.ADMIN);
   isAuthenticated = computed(() => !!this.userProfile());
+  private recoveryPending = signal(false);
+  readonly isPasswordRecovery = this.recoveryPending.asReadonly();
+
+  canManageUserRole(role: number): boolean {
+    if (this.isSuperAdmin()) return true;
+    if (!this.isAdmin()) return false;
+    return role < USER_ROLES.SUPER_ADMIN;
+  }
 
   async init(): Promise<void> {
     const {
@@ -38,17 +46,20 @@ export class AuthService {
     this.supabase.auth.onAuthStateChange((event, session) => {
       this.zone.run(async () => {
         if (
-          (event === 'SIGNED_IN' || event === 'USER_UPDATED') &&
+          (event === 'SIGNED_IN' ||
+            event === 'USER_UPDATED' ||
+            event === 'PASSWORD_RECOVERY') &&
           session?.user
         ) {
           await this.loadActiveProfile(session.user.id);
+          if (event === 'PASSWORD_RECOVERY') {
+            this.recoveryPending.set(true);
+          }
         } else if (event === 'SIGNED_OUT') {
           clearActiveUserPreferenceCache();
           this._userProfile.set(null);
-          if (
-            !window.location.pathname.includes('/login') &&
-            !window.location.pathname.includes('/register')
-          ) {
+          this.recoveryPending.set(false);
+          if (!isPublicAuthPath(window.location.pathname)) {
             window.location.href = '/login';
           }
         }
@@ -133,6 +144,108 @@ export class AuthService {
     await this.supabase.auth.signOut();
   }
 
+  async changeOwnPassword(
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<void> {
+    const { data: sessionData, error: sessionError } =
+      await this.supabase.auth.getUser();
+    const email = sessionData.user?.email;
+    if (sessionError || !email) {
+      throw new Error('You are not signed in');
+    }
+
+    const { error: checkError } = await this.supabase.auth.signInWithPassword({
+      email,
+      password: currentPassword,
+    });
+    if (checkError) {
+      throw new Error('Current password is incorrect');
+    }
+
+    const { error } = await this.supabase.auth.updateUser({
+      password: newPassword,
+    });
+    if (error) throw mapAuthPasswordError(error);
+  }
+
+  async setUserPassword(userId: string, newPassword: string): Promise<void> {
+    const { data, error } = await this.supabase.functions.invoke(
+      'set-user-password',
+      { body: { user_id: userId, password: newPassword } },
+    );
+
+    if (error) {
+      throw new Error(await messageFromPasswordFailure(error, data));
+    }
+    if (data && typeof data === 'object' && 'error' in data) {
+      throw new Error(
+        mapPasswordErrorCode(String((data as { error: unknown }).error)),
+      );
+    }
+  }
+
+  async sendPasswordReset(userId: string): Promise<void> {
+    const { data, error } = await this.supabase.functions.invoke(
+      'send-password-reset',
+      {
+        body: {
+          user_id: userId,
+          redirect_to: `${window.location.origin}/reset-password`,
+        },
+      },
+    );
+
+    if (error) {
+      throw new Error(await messageFromPasswordFailure(error, data));
+    }
+    if (data && typeof data === 'object' && 'error' in data) {
+      throw new Error(
+        mapPasswordErrorCode(String((data as { error: unknown }).error)),
+      );
+    }
+  }
+
+  async completePasswordReset(newPassword: string): Promise<void> {
+    const { error } = await this.supabase.auth.updateUser({
+      password: newPassword,
+    });
+    if (error) throw mapAuthPasswordError(error);
+    this.recoveryPending.set(false);
+  }
+
+  async waitForRecoverySession(timeoutMs = 4000): Promise<boolean> {
+    if (isRecoveryUrl()) this.recoveryPending.set(true);
+    if (this.recoveryPending()) {
+      const existing = await this.supabase.auth.getSession();
+      if (existing.data.session?.user) return true;
+    }
+
+    const existing = await this.supabase.auth.getSession();
+    if (existing.data.session?.user && this.recoveryPending()) return true;
+
+    return new Promise((resolve) => {
+      const { data: sub } = this.supabase.auth.onAuthStateChange(
+        (event, session) => {
+          if (event === 'PASSWORD_RECOVERY') {
+            this.recoveryPending.set(true);
+          }
+          if (session?.user && (event === 'PASSWORD_RECOVERY' || this.recoveryPending())) {
+            window.clearTimeout(timer);
+            sub.subscription.unsubscribe();
+            resolve(true);
+          }
+        },
+      );
+      const timer = window.setTimeout(() => {
+        sub.subscription.unsubscribe();
+        void this.supabase.auth.getSession().then(({ data }) => {
+          resolve(!!data.session?.user && this.recoveryPending());
+        });
+      }, timeoutMs);
+    });
+  }
+
   private async requestReactivationBestEffort(): Promise<void> {
     try {
       await this.supabase.rpc('tyapp_user_request_reactivation');
@@ -152,11 +265,79 @@ const EMAIL_TAKEN_ERROR =
   'This email is already registered. Try signing in.';
 const WEAK_PASSWORD_ERROR =
   'That password is too easy to guess. Choose a longer, unique password.';
+const GENERIC_PASSWORD_ERROR = 'Could not update the password. Try again.';
 
 function mapRegisterErrorCode(code: string): string {
   if (code === 'email_taken') return EMAIL_TAKEN_ERROR;
   if (code === 'weak_password') return WEAK_PASSWORD_ERROR;
   return GENERIC_REGISTER_ERROR;
+}
+
+function isPublicAuthPath(pathname: string): boolean {
+  return (
+    pathname.includes('/login') ||
+    pathname.includes('/register') ||
+    pathname.includes('/reset-password')
+  );
+}
+
+function isRecoveryUrl(): boolean {
+  const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+  const query = new URLSearchParams(window.location.search);
+  return (
+    hash.get('type') === 'recovery' ||
+    query.get('type') === 'recovery' ||
+    !!query.get('code')
+  );
+}
+
+function mapPasswordErrorCode(code: string): string {
+  if (code === 'weak_password') return WEAK_PASSWORD_ERROR;
+  if (code === 'forbidden' || code === 'unauthorized') {
+    return 'You do not have permission to change this password';
+  }
+  if (code === 'user_unavailable') {
+    return 'This account cannot have its password changed';
+  }
+  return GENERIC_PASSWORD_ERROR;
+}
+
+function mapAuthPasswordError(error: { message?: string }): Error {
+  const message = (error.message ?? '').toLowerCase();
+  if (
+    message.includes('leaked') ||
+    message.includes('pwned') ||
+    message.includes('weak')
+  ) {
+    return new Error(WEAK_PASSWORD_ERROR);
+  }
+  return new Error(error.message || GENERIC_PASSWORD_ERROR);
+}
+
+async function messageFromPasswordFailure(
+  error: unknown,
+  data: unknown,
+): Promise<string> {
+  if (data && typeof data === 'object' && 'error' in data) {
+    return mapPasswordErrorCode(String((data as { error: unknown }).error));
+  }
+
+  if (error && typeof error === 'object' && 'context' in error) {
+    const ctx = (error as { context: unknown }).context;
+    if (ctx && typeof ctx === 'object' && 'json' in ctx) {
+      const json = (ctx as { json: unknown }).json;
+      if (typeof json === 'function') {
+        try {
+          const body = (await json.call(ctx)) as { error?: unknown };
+          if (body?.error) return mapPasswordErrorCode(String(body.error));
+        } catch {
+          return GENERIC_PASSWORD_ERROR;
+        }
+      }
+    }
+  }
+
+  return GENERIC_PASSWORD_ERROR;
 }
 
 async function messageFromRegisterFailure(

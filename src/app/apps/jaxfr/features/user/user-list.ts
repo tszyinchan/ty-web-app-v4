@@ -46,7 +46,7 @@ export class UserList implements OnInit, OnDestroy {
   );
 
   ngOnInit() {
-    if (!this.auth.isSuperAdmin()) {
+    if (!this.auth.isAdmin()) {
       const myId = this.auth.userProfile()?.user_id;
       void this.router.navigate(myId ? ['/users/edit', myId] : ['/welcome'], {
         replaceUrl: true,
