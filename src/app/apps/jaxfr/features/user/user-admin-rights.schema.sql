@@ -309,4 +309,29 @@ BEGIN
 END;
 $$;
 
+-- Login email lives in auth.users, not tyapp_user. Self can read it from
+-- the session; Admin+ may read another account's via this RPC.
+CREATE OR REPLACE FUNCTION public.tyapp_user_auth_email(p_user_id uuid)
+RETURNS text
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT CASE
+    WHEN p_user_id IS NULL THEN NULL
+    WHEN auth.uid() IS NOT DISTINCT FROM p_user_id
+      OR public.tyapp_is_admin()
+    THEN (
+      SELECT u.email::text
+      FROM auth.users AS u
+      WHERE u.id = p_user_id
+    )
+    ELSE NULL
+  END;
+$$;
+
+REVOKE ALL ON FUNCTION public.tyapp_user_auth_email(uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.tyapp_user_auth_email(uuid) TO authenticated;
+
 NOTIFY pgrst, 'reload schema';

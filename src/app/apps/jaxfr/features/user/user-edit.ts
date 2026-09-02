@@ -141,6 +141,10 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
   isSelf = computed(
     () => this.user()?.user_id === this.auth.userProfile()?.user_id,
   );
+  readonly canViewSignInEmail = computed(
+    () => this.isSelf() || this.canManageUsers(),
+  );
+  signInEmail = signal<string | null>(null);
   canManageTarget = computed(() => {
     const u = this.user();
     return !!u && this.auth.canManageUserRole(u.role);
@@ -235,14 +239,24 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
       this.originalDataStr.set(JSON.stringify(cachedUser));
     }
 
-    const [freshUser, grants] = await Promise.all([
+    if (id === myId) {
+      this.signInEmail.set(this.auth.authEmail());
+    }
+
+    const [freshUser, grants, authEmail] = await Promise.all([
       this.userService.fetchUserById(id),
       canBrowseDirectory
         ? this.access.fetchAccessForUser(id)
         : Promise.resolve({ appIds: [] as string[], featureIds: [] as string[] }),
+      canBrowseDirectory
+        ? this.userService.fetchAuthEmail(id)
+        : Promise.resolve(null),
     ]);
 
     this.zone.run(() => {
+      this.signInEmail.set(
+        authEmail ?? (id === myId ? this.auth.authEmail() : null),
+      );
       if (freshUser) {
         this.setUserAndAccess(freshUser, grants.appIds, grants.featureIds);
       } else if (cachedUser) {

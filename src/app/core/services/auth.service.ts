@@ -14,6 +14,8 @@ export class AuthService {
 
   private _userProfile = signal<TyappUser | null>(null);
   public userProfile = this._userProfile.asReadonly();
+  private _authEmail = signal<string | null>(null);
+  readonly authEmail = this._authEmail.asReadonly();
 
   isSuperAdmin = computed(
     () => (this.userProfile()?.role ?? 0) >= USER_ROLES.SUPER_ADMIN,
@@ -34,6 +36,7 @@ export class AuthService {
       data: { session },
     } = await this.supabase.auth.getSession();
     if (session?.user) {
+      this.setAuthEmail(session.user.email);
       const state = await this.loadActiveProfile(session.user.id);
       if (state === 'inactive') {
         await this.requestReactivationBestEffort();
@@ -51,6 +54,7 @@ export class AuthService {
             event === 'PASSWORD_RECOVERY') &&
           session?.user
         ) {
+          this.setAuthEmail(session.user.email);
           await this.loadActiveProfile(session.user.id);
           if (event === 'PASSWORD_RECOVERY') {
             this.recoveryPending.set(true);
@@ -58,6 +62,7 @@ export class AuthService {
         } else if (event === 'SIGNED_OUT') {
           clearActiveUserPreferenceCache();
           this._userProfile.set(null);
+          this._authEmail.set(null);
           this.recoveryPending.set(false);
           if (!isPublicAuthPath(window.location.pathname)) {
             window.location.href = '/login';
@@ -91,6 +96,11 @@ export class AuthService {
     return 'ok';
   }
 
+  private setAuthEmail(email: string | undefined | null): void {
+    const trimmed = email?.trim() ?? '';
+    this._authEmail.set(trimmed || null);
+  }
+
   async login(email: string, pass: string) {
     const { data, error } = await this.supabase.auth.signInWithPassword({
       email,
@@ -102,7 +112,10 @@ export class AuthService {
     if (!userId) throw new Error(AUTH_ACCOUNT_REJECTED);
 
     const state = await this.loadActiveProfile(userId);
-    if (state === 'ok') return;
+    if (state === 'ok') {
+      this.setAuthEmail(data.session?.user.email);
+      return;
+    }
 
     if (state === 'inactive') {
       await this.requestReactivationBestEffort();

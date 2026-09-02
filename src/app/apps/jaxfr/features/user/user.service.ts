@@ -188,6 +188,21 @@ export class UserService {
     return request;
   }
 
+  async fetchAuthEmail(userId: string): Promise<string | null> {
+    try {
+      const { data, error } = await this.supabase.rpc(
+        'tyapp_user_auth_email',
+        { p_user_id: userId },
+      );
+      if (error) throw error;
+      const email = typeof data === 'string' ? data.trim() : '';
+      return email || null;
+    } catch (error: unknown) {
+      this.notification.handleError('Fetch Email Failed', error);
+      return null;
+    }
+  }
+
   async fetchUserById(userId: string): Promise<TyappUser | null> {
     this.loading.set(true);
     try {

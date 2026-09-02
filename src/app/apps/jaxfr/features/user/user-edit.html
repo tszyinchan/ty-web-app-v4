@@ -69,6 +69,27 @@
         </p>
       </section>
 
+      @if (canViewSignInEmail()) {
+        <section class="form-group">
+          <h3 class="group-header">Sign-in email</h3>
+          <mat-form-field
+            appearance="outline"
+            class="full-width"
+            subscriptSizing="dynamic"
+          >
+            <mat-label>Email</mat-label>
+            <input matInput [value]="signInEmail() ?? ''" disabled />
+          </mat-form-field>
+          <p class="account-hint">
+            @if (isSelf()) {
+              Used to sign in. It cannot be changed here.
+            } @else {
+              Login address for this account. It cannot be changed here.
+            }
+          </p>
+        </section>
+      }
+
       @if (canManageUsers()) {
         <section class="form-group">
           <h3 class="group-header">System Access & Admin</h3>
