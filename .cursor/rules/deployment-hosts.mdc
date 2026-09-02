@@ -1,0 +1,28 @@
+---
+description: Production hostnames for Jaxfr and sibling apps on tszyin.com
+alwaysApply: true
+---
+
+# Production hosts
+
+Apex is `tszyin.com`. Apps are **subdomains of that host**. Jaxfr is **not** `jaxfr.*`.
+
+| App (`SUBDOMAINS`) | Production | Local (default `ng serve`) |
+|---|---|---|
+| Jaxfr (`jaxfr`, default) | `https://app.tszyin.com` | `http://localhost:4200` |
+| Filelink (`filelink`) | `https://filelink.tszyin.com` | hostname starting with `filelink` |
+| Share (`share`) | `https://share.tszyin.com` | hostname starting with `share` |
+| Time (`time`) | `https://time.tszyin.com` | hostname starting with `time` |
+
+`getCurrentSubdomain()` returns Filelink / Share / Time only when `hostname.startsWith` that prefix; **everything else is Jaxfr** (including `app.tszyin.com` and `localhost`).
+
+Password reset (`/reset-password`) lives on **Jaxfr only**. After the email link, Auth verifies then redirects here. `localhost:3000` is the Supabase Dashboard default Site URL — not this app.
+
+Authentication → URL Configuration:
+
+- **Site URL:** `https://app.tszyin.com` (not `http://localhost:3000`)
+- **Redirect URLs** must include:
+  - `http://localhost:4200/reset-password`
+  - `https://app.tszyin.com/reset-password`
+
+`send-password-reset` allowlist must match those two. Do not allowlist `jaxfr.` as if it were the production host. Share public URLs are `https://share.tszyin.com/<accessKey>/<moduleId>`.

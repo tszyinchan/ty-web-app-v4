@@ -228,6 +228,7 @@ export class AuthService {
   }
 
   async waitForRecoverySession(timeoutMs = 4000): Promise<boolean> {
+    await this.consumeAuthRedirectFromUrl();
     if (isRecoveryUrl()) this.recoveryPending.set(true);
     if (this.recoveryPending()) {
       const existing = await this.supabase.auth.getSession();
@@ -257,6 +258,37 @@ export class AuthService {
         });
       }, timeoutMs);
     });
+  }
+
+  /**
+   * Client has detectSessionInUrl: false (avoids other routes eating a
+   * leftover hash). Recovery links still land with ?code= or #access_token.
+   */
+  private async consumeAuthRedirectFromUrl(): Promise<void> {
+    const query = new URLSearchParams(window.location.search);
+    const code = query.get('code');
+    if (code) {
+      const { error } = await this.supabase.auth.exchangeCodeForSession(code);
+      if (!error) {
+        this.recoveryPending.set(true);
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+      return;
+    }
+
+    const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+    const accessToken = hash.get('access_token');
+    const refreshToken = hash.get('refresh_token');
+    if (hash.get('type') === 'recovery' && accessToken && refreshToken) {
+      const { error } = await this.supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      });
+      if (!error) {
+        this.recoveryPending.set(true);
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+    }
   }
 
   private async requestReactivationBestEffort(): Promise<void> {

@@ -40,16 +40,18 @@ function isAllowedRedirect(url: string): boolean {
     const parsed = new URL(url);
     if (parsed.pathname !== '/reset-password') return false;
     if (parsed.search || parsed.hash) return false;
-    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-      return false;
-    }
     if (
+      parsed.protocol === 'http:' &&
       (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1') &&
       parsed.port === '4200'
     ) {
       return true;
     }
-    if (parsed.hostname === 'jaxfr' || parsed.hostname.startsWith('jaxfr.')) {
+    // Production Jaxfr is app.tszyin.com — not jaxfr.*
+    if (
+      parsed.protocol === 'https:' &&
+      parsed.hostname === 'app.tszyin.com'
+    ) {
       return true;
     }
     return false;
