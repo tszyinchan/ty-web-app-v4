@@ -10,7 +10,7 @@ This is how Jaxfr is tested. Do **not** add `.spec.ts` / Playwright / Cypress fi
 After any change that affects UI, layout, routing, client state, or data behavior:
 
 1. **Invent scenarios** covering: the main path, empty/error/edge states, and other screens that share the same state or components.
-2. **Run them** in the Cursor browser like a user (click, type, submit, navigate). A screenshot is not verification.
+2. **Run them** in the Cursor browser like a user (click, type, submit, navigate). A screenshot is not verification. The pane must be **visible** to the user — follow `.cursor/rules/browser-must-be-visible.mdc`. Do not test in a hidden tab.
 
 ### Login (Jaxfr is auth-gated)
 
@@ -28,6 +28,16 @@ Cursor tests as a **USER** test account, never as the owner's Super Admin.
 - Invent the Super Admin / Admin cases anyway (invite codes, deactivate/delete user, User list for others, etc.).
 - **Do not skip them silently.** Put each one in the 驗證報告 with 結果 = `Needs Super Admin` (or `Needs Admin`) and one line of what the user should click.
 - Never mark those cases Pass. Never use the owner's Super Admin password.
+- If the feature's `*.regression.md` (or the change itself) has **no** Super Admin-only behaviour, do not invent those rows.
+
+### Feature regression playbooks (separate from the above)
+
+When the user asks to run regression, or you finish a behaviour change on a feature that has a script:
+
+- Script path and run order: `.cursor/regression/index.md`. Feature script lives beside the code (`*.regression.md`).
+- Updating the script is part of finishing a behaviour change. An outdated playbook means the change is not done.
+- A **playbook run** that hits Fail: flag it, write the run file under `.cursor/regression/runs/`, **ask the user before changing application code**. Do not "fix while testing."
+- A **change you just made** that fails your own verification: still fix it and re-run (that is this file's usual rule). The "ask first" rule is for stored playbooks and unexpected Fail, not for the bug you introduced this turn.
 
 3. **Put a 驗證報告 in the reply** (Traditional Chinese) **before** the commit-or-keep question. Do not say the work is done while any case is Fail. `Needs Super Admin` is not Fail — it is a handoff. Fix real Fails, re-run, update the table.
 4. Run `npm run lint` on touched files when practical; include whether it passed.

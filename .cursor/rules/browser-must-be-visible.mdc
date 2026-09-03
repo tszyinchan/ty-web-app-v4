@@ -1,0 +1,27 @@
+---
+description: Cursor browser must be visible to the user whenever the agent clicks or types in the app
+alwaysApply: true
+---
+
+# Browser must be visible
+
+The user must watch **the same tab you are driving**. Proof: their **Jaxfr:4200** (editor Browser tab) follows your clicks.
+
+**Take Control** is not a setting they can turn on. After `browser_lock`, it often appears only when they **hover the browser pane**. Missing overlay is OK if the page is changing.
+
+## Do this first
+
+1. User runs `ng s` in a visible terminal.
+2. `browser_tabs` list. Open with `position: "active"` (`browser_navigate`). Never `open_resource` on an `http://` URL.
+3. `browser_lock`. Handshake: click Library (or similar). Continue only if their tab follows.
+4. Watch **Jaxfr:4200**, not an empty tab named `browser`, not Chrome.
+
+## Never
+
+- Omit `position` (hidden tab).
+- After `Timed out waiting for glass browser view`, keep going hidden.
+- Test while their visible tab does not follow clicks.
+
+## Recovery
+
+Cursor restart is OK if panes split. After restart, open again with `position: "active"` + lock + handshake. Session cookie may still be logged in.

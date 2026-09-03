@@ -18,6 +18,9 @@ yarn-error.log
 # Cursor agent test logins (never commit; copy from test-credentials.example.json)
 .cursor/test-credentials.local.json
 
+# Cursor agent regression run reports (scripts live in each feature folder)
+.cursor/regression/runs/
+
 
 # IDEs and editors
 .idea/
