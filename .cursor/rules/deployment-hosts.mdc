@@ -16,12 +16,16 @@ Apex is `tszyin.com`. Apps are **subdomains of that host**. Jaxfr is **not** `ja
 
 `getCurrentSubdomain()` returns Filelink / Share / Time only when `hostname.startsWith` that prefix; **everything else is Jaxfr** (including `app.tszyin.com` and `localhost`).
 
-Password reset (`/reset-password`) lives on **Jaxfr only**. After the email link, Auth verifies then redirects here. `localhost:3000` is the Supabase Dashboard default Site URL — not this app.
+Password reset (`/reset-password`) lives on **Jaxfr only**. Do **not** use `{{ .ConfirmationURL }}` in the Reset Password email — that hits `/auth/v1/verify` and then Auth's **Site URL**. A leftover `http://localhost:3000` Site URL produces exactly that redirect (and scanners prefetching `/verify` burn the one-time token → `otp_expired`).
 
-Authentication → URL Configuration:
+Email template button href (production):
+
+`https://app.tszyin.com/reset-password?token_hash={{ .TokenHash }}&type=recovery`
+
+Authentication → URL Configuration (still set these; Site URL is used elsewhere):
 
 - **Site URL:** `https://app.tszyin.com` (not `http://localhost:3000`)
-- **Redirect URLs** must include:
+- **Redirect URLs:**
   - `http://localhost:4200/reset-password`
   - `https://app.tszyin.com/reset-password`
 

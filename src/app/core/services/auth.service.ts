@@ -229,14 +229,10 @@ export class AuthService {
 
   async waitForRecoverySession(timeoutMs = 4000): Promise<boolean> {
     await this.consumeAuthRedirectFromUrl();
-    if (isRecoveryUrl()) this.recoveryPending.set(true);
-    if (this.recoveryPending()) {
-      const existing = await this.supabase.auth.getSession();
-      if (existing.data.session?.user) return true;
-    }
+    if (!this.recoveryPending()) return false;
 
     const existing = await this.supabase.auth.getSession();
-    if (existing.data.session?.user && this.recoveryPending()) return true;
+    if (existing.data.session?.user) return true;
 
     return new Promise((resolve) => {
       const { data: sub } = this.supabase.auth.onAuthStateChange(
@@ -262,10 +258,26 @@ export class AuthService {
 
   /**
    * Client has detectSessionInUrl: false (avoids other routes eating a
-   * leftover hash). Recovery links still land with ?code= or #access_token.
+   * leftover hash). Recovery links still land with ?code=, ?token_hash=,
+   * or #access_token. Prefer token_hash in the email template so the
+   * click never goes through /auth/v1/verify (Site URL / prefetch).
    */
   private async consumeAuthRedirectFromUrl(): Promise<void> {
     const query = new URLSearchParams(window.location.search);
+    const tokenHash = query.get('token_hash');
+    const otpType = query.get('type');
+    if (tokenHash && otpType === 'recovery') {
+      const { error } = await this.supabase.auth.verifyOtp({
+        token_hash: tokenHash,
+        type: 'recovery',
+      });
+      if (!error) {
+        this.recoveryPending.set(true);
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+      return;
+    }
+
     const code = query.get('code');
     if (code) {
       const { error } = await this.supabase.auth.exchangeCodeForSession(code);
@@ -323,16 +335,6 @@ function isPublicAuthPath(pathname: string): boolean {
     pathname.includes('/login') ||
     pathname.includes('/register') ||
     pathname.includes('/reset-password')
-  );
-}
-
-function isRecoveryUrl(): boolean {
-  const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
-  const query = new URLSearchParams(window.location.search);
-  return (
-    hash.get('type') === 'recovery' ||
-    query.get('type') === 'recovery' ||
-    !!query.get('code')
   );
 }
 
