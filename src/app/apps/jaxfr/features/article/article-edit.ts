@@ -292,7 +292,7 @@ export class ArticleEdit implements OnInit, OnDestroy, DoCheck {
     this.headerService.clear();
   }
 
-  extractArticleData() {
+  extractArticleData1() {
     const text = this.rawArticleText();
     if (!text || !text.trim()) return;
 
@@ -362,6 +362,92 @@ export class ArticleEdit implements OnInit, OnDestroy, DoCheck {
     this.rawArticleText.set('');
     this.notification.showSuccess(
       'Text extracted and auto-filled successfully!',
+    );
+  }
+
+  extractArticleData2() {
+    const text = this.rawArticleText();
+    if (!text || !text.trim()) return;
+
+    let publish_date: Date | null = null;
+    let author = '';
+    let platform = '未知';
+    let title = '';
+    let content = '';
+    let url_link = '';
+
+    const lines = text
+      .split('\n')
+      .map((l) => l.trim())
+      .filter((l) => l.length > 0);
+    if (lines.length === 0) return;
+
+    title = lines[0];
+
+    const dateMatch = text.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/);
+    if (dateMatch) {
+      const YYYY = parseInt(dateMatch[1], 10);
+      const MM = parseInt(dateMatch[2], 10) - 1;
+      const DD = parseInt(dateMatch[3], 10);
+      publish_date = new Date(YYYY, MM, DD);
+    }
+
+    const urlMatch = text.match(/(https:\/\/\S+)/);
+    if (urlMatch) {
+      url_link = urlMatch[1];
+    }
+
+    if (text.includes('明報')) {
+      platform = '明報';
+    }
+
+    const authorMatch = text.match(/\n文[˙・]([^\n]+)/);
+    if (authorMatch) {
+      author = authorMatch[1].trim();
+    }
+
+    const contentStart = text.indexOf('【明報專訊】');
+    if (contentStart !== -1) {
+      content = text.substring(contentStart + '【明報專訊】'.length);
+    } else {
+      const prevnextStart = text.indexOf('prevnext');
+      if (prevnextStart !== -1) {
+        content = text.substring(prevnextStart + 'prevnext'.length);
+      } else {
+        content = text;
+      }
+    }
+
+    const footerMatch = content.match(
+      /\n(文[˙・]|編輯[˙・]|fb[﹕:]|原文網址：)/,
+    );
+    if (footerMatch !== null && footerMatch.index !== undefined) {
+      content = content.substring(0, footerMatch.index).trim();
+    } else {
+      content = content.trim();
+    }
+
+    if (!title && content) {
+      title = content.slice(0, 10);
+    }
+
+    this.item.update((current) => {
+      if (!current) return current;
+      return {
+        ...current,
+        publish_date: publish_date || current.publish_date,
+        author: author || current.author,
+        platform: platform || current.platform,
+        title: title || current.title,
+        content: content || current.content,
+        url_link: url_link || current.url_link,
+        status: RecordStatus.Active,
+      };
+    });
+
+    this.rawArticleText.set('');
+    this.notification.showSuccess(
+      'News data extracted and auto-filled successfully!',
     );
   }
 }
