@@ -294,14 +294,27 @@ export class ArticleEdit implements OnInit, OnDestroy, DoCheck {
 
   extractArticleData() {
     const text = this.rawArticleText();
-    if (!text.trim()) return;
+    if (!text || !text.trim()) return;
 
     let publish_date: Date | null = null;
     let author = '';
-    let platform = '';
+    let platform = '未知';
     let title = '';
     let content = '';
     let url_link = '';
+
+    const lines = text
+      .split('\n')
+      .map((l) => l.trim())
+      .filter((l) => l.length > 0);
+    if (lines.length === 0) return;
+
+    const firstLine = lines[0];
+    const titleParts = firstLine.split('/');
+    title = titleParts[0].trim();
+    if (titleParts.length > 1) {
+      author = titleParts[1].trim();
+    }
 
     const dateMatch = text.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/);
     if (dateMatch) {
@@ -311,43 +324,14 @@ export class ArticleEdit implements OnInit, OnDestroy, DoCheck {
       publish_date = new Date(YYYY, MM, DD);
     }
 
-    const lines = text
-      .split('\n')
-      .map((l) => l.trim())
-      .filter((l) => l.length > 0);
-    const dateLineIdx = lines.findIndex((l) =>
-      /\d{4}年\d{1,2}月\d{1,2}日/.test(l),
-    );
-
-    if (dateLineIdx !== -1) {
-      for (
-        let i = dateLineIdx + 1;
-        i < Math.min(lines.length, dateLineIdx + 5);
-        i++
-      ) {
-        if (
-          !/星期/.test(lines[i]) &&
-          !/\d{4}年\d{1,2}月\d{1,2}日/.test(lines[i]) &&
-          /^[\u4e00-\u9fa5]{2,6}$/.test(lines[i])
-        ) {
-          author = lines[i];
-          break;
-        }
-      }
-    }
-
-    const titleMatch = text.match(/^\s*([^\n/]+\/\s*[^\n]+)\s*$/m);
-    if (titleMatch) {
-      title = titleMatch[1].split(' / ')[0].trim();
-
-      if (!author) {
-        author = titleMatch[2].trim();
-      }
-    }
-
-    platform = text.includes('明報') ? '明報' : '未知';
     const urlMatch = text.match(/(https:\/\/\S+)/);
-    if (urlMatch) url_link = urlMatch[1];
+    if (urlMatch) {
+      url_link = urlMatch[1];
+    }
+
+    if (text.includes('明報')) {
+      platform = '明報';
+    }
 
     const contentStart = text.indexOf('【明報文章】');
     if (contentStart !== -1) {
@@ -357,7 +341,9 @@ export class ArticleEdit implements OnInit, OnDestroy, DoCheck {
       content = text;
     }
 
-    if (!title && content) title = content.slice(0, 10);
+    if (!title && content) {
+      title = content.slice(0, 10);
+    }
 
     this.item.update((current) => {
       if (!current) return current;
