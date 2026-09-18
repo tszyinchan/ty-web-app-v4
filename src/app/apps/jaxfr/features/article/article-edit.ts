@@ -253,7 +253,8 @@ export class ArticleEdit implements OnInit, OnDestroy, DoCheck {
     const data = this.item();
     if (!data || !this.currentId) return;
 
-    const formattedDate = data.publish_date instanceof Date
+    const formattedDate =
+      data.publish_date instanceof Date
         ? formatDate(data.publish_date)
         : String(data.publish_date || '');
 
@@ -338,6 +339,10 @@ export class ArticleEdit implements OnInit, OnDestroy, DoCheck {
     const titleMatch = text.match(/^\s*([^\n/]+\/\s*[^\n]+)\s*$/m);
     if (titleMatch) {
       title = titleMatch[1].split(' / ')[0].trim();
+
+      if (!author) {
+        author = titleMatch[2].trim();
+      }
     }
 
     platform = text.includes('明報') ? '明報' : '未知';
