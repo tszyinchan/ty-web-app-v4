@@ -39,7 +39,17 @@ export class AppToolbar {
   showMenuButton = input(false);
   menuButtonClick = output<void>();
 
+  // Defaults to jaxfr's own welcome screen; other apps (e.g. Filelink) pass
+  // their own root path so the home/brand link goes somewhere real.
+  homeLink = input('/welcome');
   showHomeButton = input(false);
+
+  // Optional leading brand logo + label slot (e.g. Filelink's 3D icon +
+  // "Filelink" name). Unset by default, so jaxfr's usage is unaffected.
+  // Takes priority over showHomeButton/showMenuButton when set.
+  brandIcon = input<string | undefined>(undefined);
+  brandLabel = input<string | undefined>(undefined);
+
   showSignOut = input(false);
   signOutClick = output<void>();
 

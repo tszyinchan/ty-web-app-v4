@@ -40,7 +40,7 @@
   display: block;
   text-decoration: none;
   color: inherit;
-  padding: 8px 16px;
+  padding: 12px 16px;
   border-bottom: 1px solid var(--app-border-subtle);
   transition: background 0.15s ease, border-color 0.15s ease;
 
@@ -79,14 +79,14 @@
   display: flex;
   align-items: center;
   font-size: 15px;
-  font-weight: 600;
+  font-weight: var(--app-weight-emphasis);
   color: var(--app-text-primary);
 }
 
 .sub-text {
   display: flex;
   align-items: center;
-  font-size: 13px;
+  font-size: 11px;
   color: var(--app-text-muted);
 }
 
@@ -98,7 +98,7 @@
   margin-right: 6px;
 
   &.folder-icon {
-    color: #fbc02d;
+    color: var(--app-icon-folder);
   }
   &.file-icon {
     color: var(--mat-sys-primary);

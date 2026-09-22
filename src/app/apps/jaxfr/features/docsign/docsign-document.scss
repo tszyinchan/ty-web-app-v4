@@ -3,12 +3,26 @@
 }
 
 .docsign-paper {
+  // The paper is a physical document — it stays white/near-white in every
+  // app theme and mode, not just in print. Overriding the semantic --app-*
+  // names locally (rather than only setting `background`) means nested
+  // markdown content below (tables, blockquotes, code) that reads those
+  // same variables also stays fixed instead of following the app theme.
+  --app-surface: var(--app-paper-bg);
+  --app-surface-raised: var(--app-paper-bg);
+  --app-page-bg: #f3f6f9;
+  --app-text-primary: var(--app-paper-text);
+  --app-text-secondary: var(--app-paper-text-secondary);
+  --app-text-muted: var(--app-paper-text-muted);
+  --app-border-subtle: var(--app-paper-border);
+  --app-link: var(--app-paper-link);
+  --app-accent: var(--app-paper-accent);
   position: relative;
   max-width: 800px;
   margin: 0 auto;
   padding: 40px;
-  background: var(--app-surface-raised);
-  color: var(--app-text-primary);
+  background: var(--app-paper-bg);
+  color: var(--app-paper-text);
   box-shadow: var(--app-panel-shadow);
   border-radius: var(--app-radius);
   box-sizing: border-box;
@@ -16,21 +30,12 @@
 }
 
 .docsign-paper.print-mode {
-  --app-surface: #fff;
-  --app-surface-raised: #fff;
-  --app-page-bg: #f3f6f9;
-  --app-text-primary: #1a1a1a;
-  --app-text-secondary: #3a4550;
-  --app-text-muted: #6a7a88;
-  --app-border-subtle: #c5d0d8;
-  --app-link: #0b63b6;
-  --app-accent: #1b5fa8;
+  // Colors are already fixed by the base rule above — only the
+  // print-specific layout diffs (no card chrome, full-bleed) remain here.
   box-shadow: none;
   border-radius: 0;
   max-width: none;
   padding: 0;
-  background: #fff;
-  color: #1a1a1a;
 }
 
 .docsign-paper.print-mode .paper-body {
@@ -357,18 +362,11 @@
 }
 
 @media print {
+  // Colors are already fixed by the base .docsign-paper rule — only the
+  // print-specific layout resets (full-bleed, no card chrome) remain here.
   .docsign-document-host,
   .docsign-paper,
   .docsign-paper.print-mode {
-    --app-surface: #fff;
-    --app-surface-raised: #fff;
-    --app-page-bg: #f3f6f9;
-    --app-text-primary: #1a1a1a;
-    --app-text-secondary: #3a4550;
-    --app-text-muted: #6a7a88;
-    --app-border-subtle: #c5d0d8;
-    --app-link: #0b63b6;
-    --app-accent: #1b5fa8;
     box-shadow: none;
     width: auto;
     max-width: none;
@@ -377,8 +375,6 @@
     overflow: visible;
     margin: 0;
     padding: 0;
-    background: #fff;
-    color: #1a1a1a;
   }
 
   .paper-body {

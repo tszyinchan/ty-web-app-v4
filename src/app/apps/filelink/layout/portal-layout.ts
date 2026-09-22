@@ -1,31 +1,25 @@
-import { Component, inject } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { MatToolbarModule } from '@angular/material/toolbar';
-import { MatIconModule } from '@angular/material/icon';
-import { MatButtonModule } from '@angular/material/button';
-import { MatMenuModule } from '@angular/material/menu';
-import { MatDividerModule } from '@angular/material/divider';
-import { DisplayNamePipe } from '../../../core/pipes/display-name.pipe';
 import { AuthService } from '../../../core/services/auth.service';
+import { ThemeService } from '../../../core/services/theme.service';
+import { AppToolbar } from '../../../core/components/app-toolbar/app-toolbar';
 
 @Component({
   selector: 'app-portal-layout',
   standalone: true,
-  imports: [
-    RouterOutlet,
-    MatToolbarModule,
-    MatIconModule,
-    MatButtonModule,
-    MatMenuModule,
-    MatDividerModule,
-    DisplayNamePipe,
-  ],
+  imports: [RouterOutlet, AppToolbar],
   templateUrl: './portal-layout.html',
   styleUrl: './portal-layout.scss',
 })
 export class PortalLayout {
   private auth = inject(AuthService);
-  userProfile = this.auth.userProfile;
+  private theme = inject(ThemeService);
+
+  // Same pattern as jaxfr's Layout: aero chrome only when the user has
+  // actually selected the Aero theme, never unconditionally.
+  readonly toolbarAppearance = computed(() =>
+    this.theme.visualTheme() === 'aero' ? 'aero' : 'default',
+  );
 
   async onSignOut() {
     await this.auth.logout();

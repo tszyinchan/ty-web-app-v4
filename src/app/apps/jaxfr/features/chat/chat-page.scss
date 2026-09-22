@@ -375,16 +375,20 @@
   max-width: 100%;
   padding: 8px 12px;
   border-radius: 12px;
-  border: 1px solid var(--app-border-subtle);
-  background: var(--app-surface-raised);
+  // Other people's messages: same "content card" token as article feed.
+  border: 1px solid var(--app-card-border);
+  background: var(--app-card-bg);
   overflow-wrap: anywhere;
   word-break: break-word;
   color: var(--app-text-primary);
 }
 
 .bubble-row.mine .bubble {
-  border-color: var(--app-tile-hover-border);
-  background: var(--app-tile-hover-bg);
+  // My own messages: dedicated accent-tinted token, distinct from hover
+  // states, so mine-vs-theirs is obvious in every theme.
+  border-color: var(--app-mine-border);
+  background: var(--app-mine-bg);
+  color: var(--app-mine-text);
 }
 
 .author {
@@ -470,8 +474,9 @@
   cursor: pointer;
 
   &.mine {
-    border-color: var(--app-accent);
-    background: var(--app-tile-hover-bg);
+    border-color: var(--app-mine-border);
+    background: var(--app-mine-bg);
+    color: var(--app-mine-text);
   }
 }
 

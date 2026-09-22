@@ -1,7 +1,16 @@
 <mat-toolbar class="dynamic-navbar" [class.aero]="appearance() === 'aero'">
   <div class="nav-slot">
-    @if (showHomeButton()) {
-      <a mat-icon-button routerLink="/welcome" title="Home">
+    @if (brandIcon() || brandLabel()) {
+      <a class="brand" [routerLink]="homeLink()">
+        @if (brandIcon()) {
+          <img [src]="brandIcon()" alt="" class="brand-mark" />
+        }
+        @if (brandLabel()) {
+          <span class="brand-label">{{ brandLabel() }}</span>
+        }
+      </a>
+    } @else if (showHomeButton()) {
+      <a mat-icon-button [routerLink]="homeLink()" title="Home">
         <mat-icon>home</mat-icon>
       </a>
     } @else if (showMenuButton()) {

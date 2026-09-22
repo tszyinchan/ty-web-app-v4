@@ -18,6 +18,21 @@
     align-items: center;
   }
 
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: inherit;
+    font: 600 16px / 1.2 var(--app-font);
+  }
+
+  .brand-mark {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+  }
+
   .sign-out-btn {
     flex-shrink: 0;
     color: var(--mat-sys-error);
@@ -174,6 +189,15 @@ mat-toolbar.dynamic-navbar.aero {
     font: var(--app-weight-emphasis) 16px / 1.2 var(--app-font);
     color: var(--app-text-primary);
     text-shadow: var(--app-chrome-title-shadow);
+  }
+
+  .brand {
+    color: var(--app-text-primary);
+    text-shadow: var(--app-chrome-title-shadow);
+  }
+
+  .brand-mark {
+    filter: var(--app-icon-filter);
   }
 
   .sync-status-indicator {

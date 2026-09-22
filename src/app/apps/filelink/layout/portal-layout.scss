@@ -8,44 +8,6 @@
   @include aero.body-surface;
 }
 
-mat-toolbar.portal-toolbar {
-  @include aero.chrome-surface;
-  color: var(--app-text-primary);
-  box-shadow: none;
-  z-index: 10;
-  --mat-toolbar-container-background-color: transparent;
-  --mat-toolbar-container-text-color: var(--app-text-primary);
-
-  .toolbar-content {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-    max-width: 800px;
-    margin: 0 auto;
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font: 600 16px / 1.2 var(--app-font);
-      color: var(--app-text-primary);
-      text-shadow: var(--app-chrome-title-shadow);
-    }
-
-    .brand-mark {
-      width: 28px;
-      height: 28px;
-      object-fit: contain;
-      filter: var(--app-icon-filter);
-    }
-
-    .user-btn {
-      color: var(--app-text-primary);
-    }
-  }
-}
-
 .portal-main {
   flex: 1;
   overflow-y: auto;

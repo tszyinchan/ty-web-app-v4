@@ -1,5 +1,3 @@
-@use "./aero" as aero;
-
 // Shared "feed" card layout used by article-feed and fit-thread (read-only card lists).
 .feed-container {
   max-width: 680px;
@@ -12,8 +10,12 @@
 }
 
 mat-card.feed-card {
+  // --app-card-bg/--app-card-border (not --app-surface-raised) — this is a
+  // repeated content card, same token family as chat bubbles.
+  background: var(--app-card-bg);
+  border: 1px solid var(--app-card-border);
+  border-radius: var(--app-radius);
   box-shadow: var(--app-panel-shadow);
-  @include aero.panel-surface;
 }
 
 mat-card-header.custom-header {
