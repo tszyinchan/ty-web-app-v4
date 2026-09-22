@@ -1,0 +1,20 @@
+---
+description: Checklist when adding a Jaxfr feature that appears on Welcome launcher
+globs:
+  - src/app/apps/jaxfr/pages/welcome/**
+  - src/app/apps/jaxfr/features/**/*
+  - public/icons/3d/**
+alwaysApply: false
+---
+
+# New feature → Welcome launcher
+
+When adding (or shipping) a feature that should appear on `/welcome`:
+
+1. **Catalog (DB):** Insert/update `tyapp_app_feature` (`name`, `route`, `icon`, `show_in_launcher`, Active, parent app). `name` is the join key with code.
+2. **Registry:** Update [`launcher.registry.ts`](src/app/apps/jaxfr/pages/welcome/launcher.registry.ts) in the **same commit** as the feature route/module: `image`, `group` (`features` | `settings`), `shipped: true`. If the DB row exists before this build ships, use `shipped: false` (Coming soon) until the module lands.
+3. **3D icon:** Prefer Fluent Emoji **3D** PNG (transparent) under `public/icons/3d/`. Pick art that reads on **light and dark** Welcome surfaces — avoid near-black silhouettes. One asset for both themes; do not add `*-dark.png` unless a tile fails both modes. Spot-check Welcome in light and dark (or Dev HUD).
+4. **Super Admin:** Promoting a user to Super Admin changes **role only**. Do **not** INSERT all app/feature grants. SA bypasses grants; Welcome still needs the **catalog** row. Do not resurrect tiles with `FALLBACK_TILES`-style hardcodes.
+5. **Grants (USER/Admin):** Invite or User edit checkboxes use `tyapp_user_feature_access`. `ACCESS_FEATURE_NAMES` in user/invitation edit is only a grant-UI fallback list — not the Welcome registry.
+
+Hide unfinished work with `show_in_launcher = false` (or Inactive). Coming soon = catalog visible + `shipped: false` in registry.

@@ -1,5 +1,36 @@
 Fluent Emoji 3D icons from https://github.com/microsoft/fluentui-emoji
 License: MIT (Microsoft)
-Downloaded 3D PNG renders for Jaxfr Welcome launcher only.
-Doc Sign uses Fountain pen (assets/Fountain pen/3D).
-Daily Log uses Clipboard (assets/Clipboard/3D).
+Used on Jaxfr Welcome launcher and Feature Hub tiles.
+
+Welcome / feature tiles:
+- work.png ← Office building
+- article.png ← Newspaper / document asset
+- fit.png ← Running shoe
+- checklist.png ← Clipboard (Daily Log)
+- filelink.png ← Link
+- web.png ← Globe (Tyweb Control)
+- chat.png ← Speech balloon
+- docsign.png ← Fountain pen
+- kitchen.png ← Pot of food (525 / YYEMS)
+- settings.png ← Gear
+- user.png ← Man standing (person)
+- development.png ← Laptop
+
+Feature Hub (unique where it mattered):
+- calendar.png ← Attendance / archive monthly
+- clock.png ← Schedule (Alarm clock)
+- badge.png ← Employment (Identification card)
+- apps.png ← Package (Dev Apps)
+- features.png ← Card index dividers (App Features)
+- analytics.png ← App Logs / archive analytics
+- groups.png ← Handshake
+- mail.png ← Love letter (Invites)
+- fridge.png ← Beverage box
+- house.png ← House (525 Home)
+- payments.png ← Credit card (Bills / wealth)
+- cart.png ← Shopping cart (Items)
+- store.png ← Convenience store (Vendors)
+- savings.png ← Wallets / wealth snapshots
+
+Prefer mid luminance ~0.45–0.85 for light and dark Welcome.
+See .cursor/rules/new-feature-launcher.mdc.

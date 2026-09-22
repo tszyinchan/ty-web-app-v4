@@ -5,23 +5,29 @@
   height: 100%;
 }
 
+.aero-chrome {
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+
 .chrome-logo {
   display: block;
   height: 28px;
   width: auto;
   max-width: 160px;
+  flex-shrink: 0;
+  order: 0;
 }
 
-.welcome-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 28px;
-}
-
-.welcome-meta-block {
+.chrome-meta {
   min-width: 0;
+  flex: 1;
+  order: 1;
+}
+
+.chrome-sign-out {
+  flex-shrink: 0;
+  order: 2;
 }
 
 .welcome-meta {
@@ -30,8 +36,15 @@
   color: var(--app-text-secondary);
 }
 
-.welcome-meta-block .welcome-meta:first-child {
+.chrome-meta .welcome-meta:first-child {
   margin-top: 0;
+}
+
+.chrome-user {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 36vw;
 }
 
 .welcome-wait {
@@ -61,9 +74,19 @@
   align-items: center;
 }
 
-.cp-item:hover {
+.cp-item:hover:not(.coming-soon) {
   background: var(--app-tile-hover-bg);
   border-color: var(--app-tile-hover-border);
+}
+
+.cp-item.coming-soon {
+  opacity: 0.72;
+  cursor: default;
+}
+
+.cp-item.coming-soon .cp-icon img,
+.cp-item.coming-soon .cp-icon mat-icon {
+  filter: grayscale(1);
 }
 
 .cp-icon {
@@ -106,18 +129,23 @@
 .cp-title {
   font-size: 15px;
   font-weight: var(--app-weight-emphasis);
-  color: var(--app-text-accent);
+  color: var(--app-text-primary);
   text-decoration: none;
 }
 
-.cp-title::after {
+a.cp-title::after {
   content: "";
   position: absolute;
   inset: 0;
 }
 
-.cp-item:hover .cp-title {
+.cp-item:hover:not(.coming-soon) a.cp-title {
   text-decoration: underline;
+}
+
+.cp-soon {
+  font-size: 12px;
+  color: var(--app-text-muted);
 }
 
 .cp-links {
@@ -160,6 +188,7 @@
   font: var(--app-weight-emphasis) 13px var(--app-font);
   color: var(--app-text-secondary);
   text-align: left;
+  cursor: pointer;
 }
 
 .explorer-chevron {
@@ -228,17 +257,35 @@
   overflow: hidden;
 }
 
+.welcome-launcher.launcher-mode-compact .cp-soon {
+  text-align: center;
+}
+
 :host.launcher-narrow {
   .aero-chrome {
     padding: 8px 12px;
   }
 
-  .aero-body {
-    padding: 16px 12px 24px;
+  .chrome-logo {
+    order: 0;
   }
 
-  .welcome-head {
-    margin-bottom: 16px;
+  .chrome-sign-out {
+    order: 1;
+    margin-left: auto;
+  }
+
+  .chrome-meta {
+    flex: 1 1 100%;
+    order: 2;
+  }
+
+  .chrome-user {
+    max-width: 100%;
+  }
+
+  .aero-body {
+    padding: 16px 12px 24px;
   }
 
   .welcome-launcher.launcher-mode-detailed .cp-grid {

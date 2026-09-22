@@ -1,8 +1,14 @@
 <div class="aero-stage">
   <div class="aero-frame">
     <header class="aero-chrome">
-      <img src="logo.svg" alt="Jaxfr" class="chrome-logo" />
-      <button class="gloss-btn" type="button" (click)="onSignOut()">
+      <img [src]="chromeLogoSrc()" alt="Jaxfr" class="chrome-logo" />
+      <div class="chrome-meta">
+        <p class="welcome-meta">Version: {{ appVersion() }} ({{ versionDate }})</p>
+        @if (userProfile(); as user) {
+          <p class="welcome-meta chrome-user">Logged in as: {{ user | tyDisplayName }}</p>
+        }
+      </div>
+      <button class="gloss-btn chrome-sign-out" type="button" (click)="onSignOut()">
         Sign out
       </button>
     </header>
@@ -12,77 +18,142 @@
       [class.launcher-mode-compact]="launcherMode() === 'compact'"
       [class.launcher-mode-detailed]="launcherMode() === 'detailed'"
     >
-      <header class="welcome-head">
-        <div class="welcome-meta-block">
-          <p class="welcome-meta">Version: {{ appVersion() }} ({{ versionDate }})</p>
-          @if (userProfile(); as user) {
-            <p class="welcome-meta">Logged in as: {{ user | tyDisplayName }}</p>
-          }
-        </div>
-      </header>
-
       @if (loading()) {
         <p class="welcome-wait">Please wait...</p>
       } @else {
-        <section class="explorer-group">
-          <button
-            type="button"
-            class="explorer-heading"
-            [class.collapsed]="!featuresOpen()"
-            [attr.aria-expanded]="featuresOpen()"
-            (click)="toggleFeatures()"
-          >
-            <span class="explorer-chevron" aria-hidden="true"></span>
-            <span>Features ({{ categories().length }})</span>
-            <span class="explorer-rule"></span>
-          </button>
+        @if (featureTiles().length) {
+          <section class="explorer-group">
+            <button
+              type="button"
+              class="explorer-heading"
+              [class.collapsed]="!featuresOpen()"
+              [attr.aria-expanded]="featuresOpen()"
+              (click)="toggleFeatures()"
+            >
+              <span class="explorer-chevron" aria-hidden="true"></span>
+              <span>Features ({{ featureTiles().length }})</span>
+              <span class="explorer-rule"></span>
+            </button>
 
-          <div
-            class="explorer-panel"
-            [class.collapsed]="!featuresOpen()"
-            [inert]="!featuresOpen()"
-          >
-            <div class="explorer-panel-inner">
-              <div class="cp-grid">
-                @for (item of categories(); track item.route) {
-                  <article
-                    class="cp-item"
-                    [class.solo]="!item.links.length"
-                    [attr.aria-label]="tileLabel(item.name)"
-                  >
-                    <span
-                      class="cp-icon"
-                      [class]="'cp-icon ' + tileTone(item.name)"
+            <div
+              class="explorer-panel"
+              [class.collapsed]="!featuresOpen()"
+              [inert]="!featuresOpen()"
+            >
+              <div class="explorer-panel-inner">
+                <div class="cp-grid">
+                  @for (item of featureTiles(); track item.name) {
+                    <article
+                      class="cp-item"
+                      [class.solo]="!item.links.length"
+                      [class.coming-soon]="!item.shipped"
+                      [attr.aria-label]="tileLabel(item.name)"
                     >
-                      @if (item.image) {
-                        <img [src]="item.image" alt="" />
-                      } @else {
-                        <mat-icon>{{ item.icon }}</mat-icon>
-                      }
-                    </span>
-                    <div class="cp-text">
-                      <a
-                        class="cp-title"
-                        [routerLink]="item.route"
-                        [title]="tileLabel(item.name)"
-                      >{{ tileLabel(item.name) }}</a>
-                      @if (launcherMode() === 'detailed' && item.links.length) {
-                        <div class="cp-links">
-                          @for (link of item.links; track link.route; let last = $last) {
-                            <a class="cp-link" [routerLink]="link.route">{{ link.title }}</a>
-                            @if (!last) {
-                              <span class="cp-sep">|</span>
-                            }
+                      <span class="cp-icon">
+                        @if (item.image) {
+                          <img [src]="item.image" alt="" />
+                        } @else {
+                          <mat-icon>{{ item.icon }}</mat-icon>
+                        }
+                      </span>
+                      <div class="cp-text">
+                        @if (item.shipped) {
+                          <a
+                            class="cp-title"
+                            [routerLink]="item.route"
+                            [title]="tileLabel(item.name)"
+                          >{{ tileLabel(item.name) }}</a>
+                          @if (launcherMode() === 'detailed' && item.links.length) {
+                            <div class="cp-links">
+                              @for (link of item.links; track link.route; let last = $last) {
+                                <a class="cp-link" [routerLink]="link.route">{{ link.title }}</a>
+                                @if (!last) {
+                                  <span class="cp-sep">|</span>
+                                }
+                              }
+                            </div>
                           }
-                        </div>
-                      }
-                    </div>
-                  </article>
-                }
+                        } @else {
+                          <span class="cp-title" [title]="tileLabel(item.name)">
+                            {{ tileLabel(item.name) }}
+                          </span>
+                          <span class="cp-soon">Coming soon</span>
+                        }
+                      </div>
+                    </article>
+                  }
+                </div>
               </div>
             </div>
-          </div>
-        </section>
+          </section>
+        }
+
+        @if (settingsTiles().length) {
+          <section class="explorer-group">
+            <button
+              type="button"
+              class="explorer-heading"
+              [class.collapsed]="!settingsOpen()"
+              [attr.aria-expanded]="settingsOpen()"
+              (click)="toggleSettings()"
+            >
+              <span class="explorer-chevron" aria-hidden="true"></span>
+              <span>Settings ({{ settingsTiles().length }})</span>
+              <span class="explorer-rule"></span>
+            </button>
+
+            <div
+              class="explorer-panel"
+              [class.collapsed]="!settingsOpen()"
+              [inert]="!settingsOpen()"
+            >
+              <div class="explorer-panel-inner">
+                <div class="cp-grid">
+                  @for (item of settingsTiles(); track item.name) {
+                    <article
+                      class="cp-item"
+                      [class.solo]="!item.links.length"
+                      [class.coming-soon]="!item.shipped"
+                      [attr.aria-label]="tileLabel(item.name)"
+                    >
+                      <span class="cp-icon">
+                        @if (item.image) {
+                          <img [src]="item.image" alt="" />
+                        } @else {
+                          <mat-icon>{{ item.icon }}</mat-icon>
+                        }
+                      </span>
+                      <div class="cp-text">
+                        @if (item.shipped) {
+                          <a
+                            class="cp-title"
+                            [routerLink]="item.route"
+                            [title]="tileLabel(item.name)"
+                          >{{ tileLabel(item.name) }}</a>
+                          @if (launcherMode() === 'detailed' && item.links.length) {
+                            <div class="cp-links">
+                              @for (link of item.links; track link.route; let last = $last) {
+                                <a class="cp-link" [routerLink]="link.route">{{ link.title }}</a>
+                                @if (!last) {
+                                  <span class="cp-sep">|</span>
+                                }
+                              }
+                            </div>
+                          }
+                        } @else {
+                          <span class="cp-title" [title]="tileLabel(item.name)">
+                            {{ tileLabel(item.name) }}
+                          </span>
+                          <span class="cp-soon">Coming soon</span>
+                        }
+                      </div>
+                    </article>
+                  }
+                </div>
+              </div>
+            </div>
+          </section>
+        }
 
         @if (showArchive()) {
           <section class="explorer-group">

@@ -23,13 +23,13 @@ export const FEATURE_HUBS: Record<string, FeatureHubConfig> = {
       {
         title: 'Schedule',
         icon: 'calendar_month',
-        image: '/icons/3d/work.png',
+        image: '/icons/3d/clock.png',
         route: '/work/schedule/list',
       },
       {
         title: 'Employment',
         icon: 'badge',
-        image: '/icons/3d/user.png',
+        image: '/icons/3d/badge.png',
         route: '/work/employment/list',
       },
     ],
@@ -40,13 +40,13 @@ export const FEATURE_HUBS: Record<string, FeatureHubConfig> = {
       {
         title: 'Apps',
         icon: 'apps',
-        image: '/icons/3d/development.png',
+        image: '/icons/3d/apps.png',
         route: '/development/app/list',
       },
       {
         title: 'App Features',
         icon: 'category',
-        image: '/icons/3d/settings.png',
+        image: '/icons/3d/features.png',
         route: '/development/feature/list',
       },
       {
@@ -69,13 +69,13 @@ export const FEATURE_HUBS: Record<string, FeatureHubConfig> = {
       {
         title: 'Groups',
         icon: 'groups',
-        image: '/icons/3d/user.png',
+        image: '/icons/3d/groups.png',
         route: '/users/groups/list',
       },
       {
         title: 'Invites',
         icon: 'mail_outline',
-        image: '/icons/3d/user.png',
+        image: '/icons/3d/mail.png',
         route: '/users/invites/list',
       },
     ],
@@ -86,13 +86,13 @@ export const FEATURE_HUBS: Record<string, FeatureHubConfig> = {
       {
         title: 'Fridge',
         icon: 'kitchen',
-        image: '/icons/3d/checklist.png',
+        image: '/icons/3d/fridge.png',
         route: '/yyems/fridge',
       },
       {
         title: 'Home',
         icon: 'restaurant',
-        image: '/icons/3d/calendar.png',
+        image: '/icons/3d/house.png',
         route: '/yyems/home',
       },
       {
@@ -104,13 +104,13 @@ export const FEATURE_HUBS: Record<string, FeatureHubConfig> = {
       {
         title: 'Items',
         icon: 'shopping_basket',
-        image: '/icons/3d/checklist.png',
+        image: '/icons/3d/cart.png',
         route: '/yyems/items/list',
       },
       {
         title: 'Vendors',
         icon: 'storefront',
-        image: '/icons/3d/work.png',
+        image: '/icons/3d/store.png',
         route: '/yyems/vendors/list',
       },
       {

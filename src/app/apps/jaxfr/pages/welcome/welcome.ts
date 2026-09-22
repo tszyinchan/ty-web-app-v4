@@ -12,11 +12,20 @@ import { AppRegistryService } from '../../../../core/services/app-registry.servi
 import { AuthService } from '../../../../core/services/auth.service';
 import { HeaderService } from '../../../../core/services/header.service';
 import { PresenceService } from '../../../../core/services/presence.service';
+import { ThemeService } from '../../../../core/services/theme.service';
 import { ViewportService } from '../../../../core/services/viewport.service';
 import { UserPreferenceService } from '../../features/settings/user-preference.service';
 import { FeatureHubLink, FEATURE_HUBS } from '../feature-hub/feature-hub.config';
 import { AppFeature } from '../../features/development/app-feature/app-feature.model';
 import { AppFeatureService } from '../../features/development/app-feature/app-feature.service';
+import {
+  ARCHIVE_IMAGES,
+  HUB_ROUTES,
+  isLauncherShipped,
+  launcherGroup,
+  launcherImage,
+  launcherLabel,
+} from './launcher.registry';
 
 interface WelcomeCategory {
   name: string;
@@ -26,6 +35,7 @@ interface WelcomeCategory {
   appOrder: number;
   order: number;
   links: FeatureHubLink[];
+  shipped: boolean;
 }
 
 interface WelcomeArchiveItem {
@@ -33,68 +43,6 @@ interface WelcomeArchiveItem {
   route: string;
   image: string | null;
 }
-
-const CATEGORY_IMAGES: Record<string, string> = {
-  Work: '/icons/3d/work.png',
-  Article: '/icons/3d/article.png',
-  Fit: '/icons/3d/fit.png',
-  'Daily Log': '/icons/3d/checklist.png',
-  Filelink: '/icons/3d/filelink.png',
-  'Tyweb Control': '/icons/3d/web.png',
-  Chat: '/icons/3d/chat.png',
-  'Doc Sign': '/icons/3d/docsign.png',
-  Settings: '/icons/3d/settings.png',
-  User: '/icons/3d/user.png',
-  Development: '/icons/3d/development.png',
-  YYEMS: '/icons/3d/payments.png',
-};
-
-const CATEGORY_LABELS: Record<string, string> = {
-  YYEMS: '525',
-};
-
-const ARCHIVE_IMAGES: Record<string, string> = {
-  analytics: '/icons/3d/analytics.png',
-  calendar_view_month: '/icons/3d/calendar.png',
-  payments: '/icons/3d/payments.png',
-  savings: '/icons/3d/savings.png',
-};
-
-const TILE_TONES: Record<string, string> = {
-  Work: 'blue',
-  Article: 'gold',
-  Fit: 'green',
-  'Daily Log': 'green',
-  Filelink: 'teal',
-  'Tyweb Control': 'teal',
-  Chat: 'purple',
-  'Doc Sign': 'blue',
-  Settings: 'slate',
-  User: 'orange',
-  Development: 'red',
-  YYEMS: 'gold',
-};
-
-const HUB_ROUTES: Record<string, string> = {
-  Work: '/work',
-  Development: '/development',
-  User: '/users',
-  YYEMS: '/yyems',
-  'Daily Log': '/daily-log',
-};
-
-const FALLBACK_TILES: { name: string; icon: string; route: string }[] = [
-  { name: 'Work', icon: 'work', route: '/work' },
-  { name: 'Article', icon: 'article', route: '/article/feed' },
-  { name: 'Fit', icon: 'fitness_center', route: '/fit/list' },
-  { name: 'Filelink', icon: 'link', route: '/filelink/list' },
-  { name: 'Tyweb Control', icon: 'web', route: '/tyweb' },
-  { name: 'Chat', icon: 'chat', route: '/chat' },
-  { name: 'Settings', icon: 'settings', route: '/settings' },
-  { name: 'User', icon: 'people_outline', route: '/users' },
-  { name: 'Development', icon: 'code', route: '/development' },
-  { name: 'YYEMS', icon: 'kitchen', route: '/yyems' },
-];
 
 const LAST_ORDER = Number.MAX_SAFE_INTEGER;
 
@@ -140,10 +88,14 @@ export class Welcome implements OnInit, OnDestroy {
   private readonly presence = inject(PresenceService);
   private readonly prefs = inject(UserPreferenceService);
   private readonly viewport = inject(ViewportService);
+  private readonly theme = inject(ThemeService);
 
   readonly versionDate = APP_CONFIG.versionDate;
   readonly userProfile = this.auth.userProfile;
   readonly isNarrow = this.viewport.isNarrow;
+  readonly chromeLogoSrc = computed(() =>
+    this.theme.resolvedColorMode() === 'dark' ? 'logo-dark.svg' : 'logo.svg',
+  );
   readonly launcherMode = computed(() =>
     resolveWelcomeLauncherMode(
       this.prefs.welcomeLauncherMode(),
@@ -158,6 +110,7 @@ export class Welcome implements OnInit, OnDestroy {
 
   readonly showArchive = this.auth.isSuperAdmin;
   readonly featuresOpen = signal(true);
+  readonly settingsOpen = signal(true);
   readonly archiveOpen = signal(true);
 
   readonly archiveItems = computed<WelcomeArchiveItem[]>(() => {
@@ -177,9 +130,8 @@ export class Welcome implements OnInit, OnDestroy {
     this.access.myFeatureIds();
     const catalog = this.features.features();
     const apps = this.apps.apps();
-    const isSuperAdmin = this.auth.isSuperAdmin();
 
-    const featureTiles = catalog
+    return catalog
       .filter((feature) => {
         if (feature.name === 'Archive') return false;
         if (!feature.show_in_launcher) return false;
@@ -189,43 +141,29 @@ export class Welcome implements OnInit, OnDestroy {
         if (feature.name === 'User' && this.auth.isAdmin()) return true;
         return this.access.hasFeature(feature.tb_tyapp_ap_ftr_id);
       })
-      .map((feature) => this.toCategory(feature, apps));
-
-    const shown = new Set(featureTiles.map((tile) => tile.name));
-    const fallbackTiles = FALLBACK_TILES.flatMap((tile) => {
-      if (shown.has(tile.name)) return [];
-      const feature = catalog.find((row) => row.name === tile.name);
-      const parent = this.parentApp(tile.name, feature, apps);
-      if (!parent || !this.access.isAppActive(parent.tb_tyapp_app_id)) {
-        return [];
-      }
-      const resolved = {
-        ...tile,
-        route: this.featureHubRoute(tile.name, tile.route),
-      };
-      if (isSuperAdmin || (tile.name === 'User' && this.auth.isAdmin())) {
-        return [this.withLinks({ ...resolved, ...this.orderOf(feature, apps) })];
-      }
-      if (!feature || !this.access.hasFeature(feature.tb_tyapp_ap_ftr_id)) {
-        return [];
-      }
-      return [this.withLinks({ ...resolved, ...this.orderOf(feature, apps) })];
-    });
-
-    const categories = [...featureTiles, ...fallbackTiles].sort((a, b) => {
-      const appDiff = a.appOrder - b.appOrder;
-      if (appDiff !== 0) return appDiff;
-      return a.order - b.order;
-    });
-    return categories;
+      .map((feature) => this.toCategory(feature, apps))
+      .sort((a, b) => {
+        const appDiff = a.appOrder - b.appOrder;
+        if (appDiff !== 0) return appDiff;
+        return a.order - b.order;
+      });
   });
+
+  readonly featureTiles = computed(() =>
+    this.categories().filter((tile) => launcherGroup(tile.name) === 'features'),
+  );
+
+  readonly settingsTiles = computed(() =>
+    this.categories().filter((tile) => launcherGroup(tile.name) === 'settings'),
+  );
 
   private toCategory(feature: AppFeature, apps: TyappApp[]): WelcomeCategory {
     return this.withLinks({
       name: feature.name,
       icon: feature.icon as string,
-      image: CATEGORY_IMAGES[feature.name] ?? null,
+      image: launcherImage(feature.name),
       route: this.featureHubRoute(feature.name, feature.route as string),
+      shipped: isLauncherShipped(feature.name),
       ...this.orderOf(feature, apps),
     });
   }
@@ -245,36 +183,14 @@ export class Welcome implements OnInit, OnDestroy {
     const links = this.linksFor(tile.name);
     return {
       ...tile,
-      image: tile.image ?? CATEGORY_IMAGES[tile.name] ?? null,
-      links: links.length > 1 ? links : [],
+      image: tile.image ?? launcherImage(tile.name),
+      links: tile.shipped && links.length > 1 ? links : [],
     };
   }
 
   private linksFor(name: string): FeatureHubLink[] {
     if (name === 'User' && !this.auth.isAdmin()) return [];
     return CATEGORY_LINKS[name] ?? [];
-  }
-
-  toggleFeatures() {
-    this.featuresOpen.update((open) => !open);
-  }
-
-  toggleArchive() {
-    this.archiveOpen.update((open) => !open);
-  }
-
-  private parentApp(
-    tileName: string,
-    feature: AppFeature | undefined,
-    apps: TyappApp[],
-  ): TyappApp | undefined {
-    if (feature) {
-      return apps.find((row) => row.tb_tyapp_app_id === feature.app_id);
-    }
-    return (
-      apps.find((row) => row.name === tileName) ??
-      apps.find((row) => row.name === 'Jaxfr')
-    );
   }
 
   private orderOf(feature: AppFeature | undefined, apps: TyappApp[]) {
@@ -285,12 +201,20 @@ export class Welcome implements OnInit, OnDestroy {
     };
   }
 
-  tileTone(name: string): string {
-    return TILE_TONES[name] ?? 'blue';
+  toggleFeatures() {
+    this.featuresOpen.update((open) => !open);
+  }
+
+  toggleSettings() {
+    this.settingsOpen.update((open) => !open);
+  }
+
+  toggleArchive() {
+    this.archiveOpen.update((open) => !open);
   }
 
   tileLabel(name: string): string {
-    return CATEGORY_LABELS[name] ?? name;
+    return launcherLabel(name);
   }
 
   async onSignOut() {
