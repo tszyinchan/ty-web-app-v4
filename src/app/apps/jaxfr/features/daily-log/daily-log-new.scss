@@ -55,7 +55,7 @@
   color: var(--dl-ink);
   text-align: left;
   cursor: pointer;
-  font: 400 16px/1.3 var(--app-font);
+  font: 400 16px/1.3 var(--app-paper-font);
 
   &:disabled {
     cursor: default;
@@ -85,7 +85,7 @@
   color: var(--dl-ink);
   border-radius: 8px;
   cursor: pointer;
-  font: 15px var(--app-font);
+  font: 15px var(--app-paper-font);
 }
 
 .colour-chip {

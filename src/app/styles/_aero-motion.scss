@@ -1,3 +1,26 @@
+// Smooth deceleration curve (iOS-like "ease-out-quint") shared by every
+// entrance animation below, instead of the generic browser `ease-out`.
+$aero-ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+// Opacity-only fade for whole-page/section entrances. Deliberately has NO
+// transform: it wraps content that itself contains individually staggered
+// items (see aero-enter below), so if this outer wrapper also translated on
+// the Y axis at the same time, the page and its list items would be moving
+// independently during the first ~200ms — that double motion is what read as
+// "janky" rather than smooth. Keeping the outer layer to opacity only removes
+// that stacking while still avoiding an abrupt pop-in.
+@keyframes aero-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+// Fade + gentle rise, used for individual list/feed/tile items so a page full
+// of them feels like it's growing in rather than snapping into place.
 @keyframes aero-fade-up {
   from {
     opacity: 0;
@@ -10,11 +33,15 @@
   }
 }
 
-@mixin aero-enter($duration: 180ms) {
-  animation: aero-fade-up $duration ease-out both;
+@mixin aero-fade($duration: 220ms) {
+  animation: aero-fade-in $duration $aero-ease both;
 }
 
-@mixin aero-stagger-children($child, $max: 12, $step: 30ms) {
+@mixin aero-enter($duration: 170ms) {
+  animation: aero-fade-up $duration $aero-ease both;
+}
+
+@mixin aero-stagger-children($child, $max: 10, $step: 22ms) {
   #{$child} {
     @include aero-enter;
   }
@@ -31,30 +58,31 @@
 }
 
 html.theme-aero {
+  // Whole-page entrance: opacity only (see aero-fade-in comment above).
   app-layout .page-container > *:not(router-outlet),
   app-portal-layout .portal-main > *:not(router-outlet) {
-    @include aero-enter(180ms);
+    @include aero-fade(220ms);
   }
 
   .list-container > .item-link,
   .list-container > .week-group .item-link {
-    @include aero-enter(160ms);
+    @include aero-enter(170ms);
     transition:
       background 0.15s ease,
       border-color 0.15s ease,
       box-shadow 0.12s ease;
   }
 
-  @for $i from 1 through 12 {
+  @for $i from 1 through 10 {
     .list-container > .item-link:nth-child(#{$i}),
     .list-container > .week-group:nth-child(#{$i}) .item-link {
-      animation-delay: #{($i - 1) * 25ms};
+      animation-delay: #{($i - 1) * 22ms};
     }
   }
 
-  .list-container > .item-link:nth-child(n + 13),
-  .list-container > .week-group:nth-child(n + 13) .item-link {
-    animation-delay: 275ms;
+  .list-container > .item-link:nth-child(n + 11),
+  .list-container > .week-group:nth-child(n + 11) .item-link {
+    animation-delay: 198ms;
   }
 
   .list-container .item-link:active {
@@ -65,18 +93,18 @@ html.theme-aero {
     @include aero-enter(180ms);
   }
 
-  @for $i from 1 through 12 {
+  @for $i from 1 through 10 {
     .feed-container > .feed-card:nth-child(#{$i}) {
-      animation-delay: #{($i - 1) * 30ms};
+      animation-delay: #{($i - 1) * 26ms};
     }
   }
 
-  .feed-container > .feed-card:nth-child(n + 13) {
-    animation-delay: 330ms;
+  .feed-container > .feed-card:nth-child(n + 11) {
+    animation-delay: 234ms;
   }
 
   .cp-grid {
-    @include aero-stagger-children("> .cp-item", 12, 30ms);
+    @include aero-stagger-children("> .cp-item", 10, 22ms);
   }
 
   .cp-item {
@@ -92,7 +120,7 @@ html.theme-aero {
   }
 
   .launcher-grid {
-    @include aero-stagger-children("> .launcher-tile", 12, 30ms);
+    @include aero-stagger-children("> .launcher-tile", 10, 22ms);
   }
 
   .launcher-tile {
