@@ -2,25 +2,13 @@
 // entrance animation below, instead of the generic browser `ease-out`.
 $aero-ease: cubic-bezier(0.22, 1, 0.36, 1);
 
-// Opacity-only fade for whole-page/section entrances. Deliberately has NO
-// transform: it wraps content that itself contains individually staggered
-// items (see aero-enter below), so if this outer wrapper also translated on
-// the Y axis at the same time, the page and its list items would be moving
-// independently during the first ~200ms — that double motion is what read as
-// "janky" rather than smooth. Keeping the outer layer to opacity only removes
-// that stacking while still avoiding an abrupt pop-in.
-@keyframes aero-fade-in {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 1;
-  }
-}
-
-// Fade + gentle rise, used for individual list/feed/tile items so a page full
-// of them feels like it's growing in rather than snapping into place.
+// Whole-page entrance is now handled by the native View Transitions API
+// (see _page-transition.scss + withViewTransitions() in app.config.ts) —
+// that crossfade already covers "does this page appear smoothly", so this
+// file only needs the fade + gentle rise for individual list/feed/tile items
+// so a page full of them feels like it's growing in rather than snapping
+// into place. Giving both the page and its items their own opacity/transform
+// animation at the same time was the original "janky" double-motion bug.
 @keyframes aero-fade-up {
   from {
     opacity: 0;
@@ -31,10 +19,6 @@ $aero-ease: cubic-bezier(0.22, 1, 0.36, 1);
     opacity: 1;
     transform: translateY(0);
   }
-}
-
-@mixin aero-fade($duration: 220ms) {
-  animation: aero-fade-in $duration $aero-ease both;
 }
 
 @mixin aero-enter($duration: 170ms) {
@@ -58,12 +42,6 @@ $aero-ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 html.theme-aero {
-  // Whole-page entrance: opacity only (see aero-fade-in comment above).
-  app-layout .page-container > *:not(router-outlet),
-  app-portal-layout .portal-main > *:not(router-outlet) {
-    @include aero-fade(220ms);
-  }
-
   .list-container > .item-link,
   .list-container > .week-group .item-link {
     @include aero-enter(170ms);
@@ -145,8 +123,6 @@ html.theme-aero {
 
 @media (prefers-reduced-motion: reduce) {
   html.theme-aero {
-    app-layout .page-container > *:not(router-outlet),
-    app-portal-layout .portal-main > *:not(router-outlet),
     .list-container > .item-link,
     .list-container > .week-group .item-link,
     .feed-container > .feed-card,

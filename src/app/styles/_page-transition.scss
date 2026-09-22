@@ -1,0 +1,43 @@
+// Route-change transitions, powered by the native browser View Transitions
+// API (see withViewTransitions() in app.config.ts). No @angular/animations
+// involved — Angular just wraps navigation in document.startViewTransition(),
+// and these rules style the before/after snapshot pair the browser produces.
+//
+// Only the swapped content region gets a name (and therefore participates in
+// the transition) — never the whole document — so the persistent toolbar/nav
+// chrome never flashes or crossfades on navigation, in either theme.
+app-layout .page-container,
+app-portal-layout .portal-main {
+  view-transition-name: page-content;
+}
+
+// Aero: soft crossfade, same easing family as the rest of Aero's motion
+// (see $aero-ease in _aero-motion.scss — duplicated here as this file has no
+// other Aero dependency and pulling in the whole partial for one constant
+// isn't worth the coupling).
+html.theme-aero {
+  &::view-transition-old(page-content),
+  &::view-transition-new(page-content) {
+    animation-duration: 200ms;
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+}
+
+// Material: stays "simpler" by design (see .cursorrules discussion) — zero
+// out the browser's default ~250ms crossfade so navigation is instant, with
+// no jarring half-second grey flash either.
+html.theme-material {
+  &::view-transition-old(page-content),
+  &::view-transition-new(page-content) {
+    animation-duration: 0s;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.theme-aero {
+    &::view-transition-old(page-content),
+    &::view-transition-new(page-content) {
+      animation-duration: 0s;
+    }
+  }
+}

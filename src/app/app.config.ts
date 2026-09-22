@@ -6,7 +6,7 @@ import {
   provideAppInitializer,
   inject,
 } from '@angular/core';
-import { provideRouter } from '@angular/router';
+import { provideRouter, withViewTransitions } from '@angular/router';
 import { routes } from './app.routes';
 import { SUBDOMAINS } from './app.constants';
 import { AuthService } from './core/services/auth.service';
@@ -23,7 +23,13 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideZoneChangeDetection({ eventCoalescing: true }),
-    provideRouter(routes),
+    // Native browser View Transitions API — no @angular/animations needed.
+    // The visible crossfade is styled per-theme (Aero only) in
+    // src/app/styles/_page-transition.scss; Angular just needs to wrap
+    // navigations in document.startViewTransition() here. Browsers without
+    // support (Firefox, older Safari) silently fall back to a normal
+    // instant navigation — no error, no polyfill required.
+    provideRouter(routes, withViewTransitions()),
     provideNativeDateAdapter(),
     {
       provide: DATE_PIPE_DEFAULT_OPTIONS,
