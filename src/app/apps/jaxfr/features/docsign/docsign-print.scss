@@ -3,7 +3,8 @@
   margin: 0;
   padding: 16px 24px 48px;
   overflow: visible;
-  background: #fff;
+  background: var(--app-paper-bg);
+  font-family: var(--app-paper-font);
 }
 
 .print-actions {
@@ -16,7 +17,7 @@
 .print-sheet {
   width: 100%;
   border-collapse: collapse;
-  background: #fff;
+  background: var(--app-paper-bg);
 }
 
 .print-sheet th,
@@ -26,7 +27,7 @@
   font-weight: 400;
   text-align: left;
   vertical-align: top;
-  background: #fff;
+  background: var(--app-paper-bg);
 }
 
 .print-sheet thead,
@@ -43,7 +44,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  font-family: Roboto, "Helvetica Neue", sans-serif;
+  font-family: var(--app-paper-font);
   font-size: 10px;
   line-height: 1.4;
   color: #5a6a78;
@@ -99,13 +100,13 @@
     margin: 0;
     padding: 0;
     overflow: visible;
-    background: #fff;
+    background: var(--app-paper-bg);
   }
 
   .print-sheet,
   .print-sheet th,
   .print-sheet td {
-    background: #fff;
+    background: var(--app-paper-bg);
   }
 
   .print-sheet thead {
@@ -126,7 +127,7 @@
   }
 
   .print-running {
-    font-family: Roboto, "Helvetica Neue", sans-serif;
+    font-family: var(--app-paper-font);
     font-size: 8pt;
   }
 

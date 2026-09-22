@@ -81,6 +81,8 @@ html {
 
   // "Paper" — Doc Sign's document surface (and its signature previews)
   // must always read as a physical white page, regardless of app theme.
+  // Font is fixed for the same reason as the colors above: the document's
+  // typeface shouldn't change just because the user picked Aero vs Material.
   --app-paper-bg: #fff;
   --app-paper-text: #1a1a1a;
   --app-paper-text-secondary: #3a4550;
@@ -88,6 +90,7 @@ html {
   --app-paper-border: #c5d0d8;
   --app-paper-link: #0b63b6;
   --app-paper-accent: #1b5fa8;
+  --app-paper-font: Arial, Helvetica, sans-serif;
 
   // Folder icon accent (Filelink) — an intentional warm constant, not a
   // theme color, so it doesn't wash out against either theme's surfaces.
