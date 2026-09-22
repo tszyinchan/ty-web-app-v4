@@ -1,6 +1,7 @@
 /**
  * Welcome launcher registry. Keys must match `tyapp_app_feature.name`.
  * Update `shipped` in the same commit as the feature route/module.
+ * Prefer matching display text in DB `name`; use `label` only for rare exceptions.
  */
 export type LauncherGroup = 'features' | 'settings';
 
@@ -22,11 +23,10 @@ export const LAUNCHER_REGISTRY: Record<string, LauncherRegistryEntry> = {
     group: 'features',
     shipped: true,
   },
-  Fit: {
+  Workout: {
     image: '/icons/3d/fit.png',
     group: 'features',
     shipped: true,
-    label: 'Workout',
   },
   'Daily Log': {
     image: '/icons/3d/checklist.png',
@@ -38,39 +38,35 @@ export const LAUNCHER_REGISTRY: Record<string, LauncherRegistryEntry> = {
     group: 'features',
     shipped: true,
   },
-  'Tyweb Control': {
+  Tyweb: {
     image: '/icons/3d/web.png',
     group: 'features',
     shipped: true,
-    label: 'Tyweb',
   },
   Chat: {
     image: '/icons/3d/chat.png',
     group: 'features',
     shipped: true,
   },
-  'Doc Sign': {
+  DocSign: {
     image: '/icons/3d/docsign.png',
     group: 'features',
     shipped: true,
-    label: 'DocSign',
   },
-  YYEMS: {
+  yyHome: {
     image: '/icons/3d/kitchen.png',
     group: 'features',
     shipped: true,
-    label: 'yyHome',
   },
   Settings: {
     image: '/icons/3d/settings.png',
     group: 'settings',
     shipped: true,
   },
-  User: {
+  Users: {
     image: '/icons/3d/user.png',
     group: 'settings',
     shipped: true,
-    label: 'Users',
   },
   Development: {
     image: '/icons/3d/development.png',
@@ -89,8 +85,8 @@ export const ARCHIVE_IMAGES: Record<string, string> = {
 export const HUB_ROUTES: Record<string, string> = {
   Work: '/work',
   Development: '/development',
-  User: '/users',
-  YYEMS: '/yyems',
+  Users: '/users',
+  yyHome: '/yyems',
   'Daily Log': '/daily-log',
 };
 

@@ -38,12 +38,12 @@ import { UserService } from './user.service';
 const ACCESS_FEATURE_NAMES = new Set([
   'Work',
   'Article',
-  'Fit',
+  'Workout',
   'Filelink',
-  'Tyweb Control',
+  'Tyweb',
   'Chat',
   'Settings',
-  'User',
+  'Users',
   'Development',
 ]);
 

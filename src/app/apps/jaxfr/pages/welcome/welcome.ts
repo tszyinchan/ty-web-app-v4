@@ -51,18 +51,17 @@ const hubLinks = (hub: string): FeatureHubLink[] => FEATURE_HUBS[hub]?.links ?? 
 const CATEGORY_LINKS: Record<string, FeatureHubLink[]> = {
   Work: hubLinks('work'),
   Development: hubLinks('development'),
-  User: hubLinks('user'),
-  YYEMS: hubLinks('yyems'),
+  Users: hubLinks('user'),
   Article: [
     { title: 'Feed', icon: 'dynamic_feed', route: '/article/feed' },
     { title: 'Articles', icon: 'list', route: '/article/list' },
   ],
-  Fit: [
+  Workout: [
     { title: 'Sessions', icon: 'fitness_center', route: '/fit/list' },
     { title: 'Feed', icon: 'forum', route: '/fit/thread' },
     { title: 'Routines', icon: 'view_list', route: '/fit/patterns' },
   ],
-  'Doc Sign': [
+  DocSign: [
     { title: 'Documents', icon: 'list', route: '/docsign/list' },
     { title: 'Prints', icon: 'print', route: '/docsign/prints' },
     { title: 'Signature', icon: 'draw', route: '/docsign/signature' },
@@ -138,7 +137,7 @@ export class Welcome implements OnInit, OnDestroy {
         if (feature.status !== RecordStatus.Active) return false;
         if (!feature.route || !feature.icon) return false;
         if (!this.access.isAppActive(feature.app_id)) return false;
-        if (feature.name === 'User' && this.auth.isAdmin()) return true;
+        if (feature.name === 'Users' && this.auth.isAdmin()) return true;
         return this.access.hasFeature(feature.tb_tyapp_ap_ftr_id);
       })
       .map((feature) => this.toCategory(feature, apps))
@@ -169,7 +168,7 @@ export class Welcome implements OnInit, OnDestroy {
   }
 
   private featureHubRoute(featureName: string, fallbackRoute: string): string {
-    if (featureName === 'User' && !this.auth.isAdmin()) {
+    if (featureName === 'Users' && !this.auth.isAdmin()) {
       const myId = this.auth.userProfile()?.user_id;
       if (myId) return `/users/edit/${myId}`;
     }
@@ -189,7 +188,7 @@ export class Welcome implements OnInit, OnDestroy {
   }
 
   private linksFor(name: string): FeatureHubLink[] {
-    if (name === 'User' && !this.auth.isAdmin()) return [];
+    if (name === 'Users' && !this.auth.isAdmin()) return [];
     return CATEGORY_LINKS[name] ?? [];
   }
 

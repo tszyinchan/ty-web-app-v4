@@ -44,7 +44,7 @@ const JAXFR_ROUTES: Routes = [
       {
         path: 'users',
         canActivate: [featureAccessGuard],
-        data: { featureName: 'User' },
+        data: { featureName: 'Users' },
         loadChildren: () =>
           import('./apps/jaxfr/features/user/user.routes').then(
             (m) => m.USER_ROUTES,
@@ -163,7 +163,7 @@ const JAXFR_ROUTES: Routes = [
       {
         path: 'yyems',
         canActivate: [featureAccessGuard],
-        data: { featureName: 'YYEMS' },
+        data: { featureName: 'yyHome' },
         loadChildren: () =>
           import('./apps/jaxfr/features/yyems/yyems.routes').then(
             (m) => m.YYEMS_ROUTES,
@@ -172,7 +172,7 @@ const JAXFR_ROUTES: Routes = [
       {
         path: 'fit',
         canActivate: [featureAccessGuard],
-        data: { featureName: 'Fit' },
+        data: { featureName: 'Workout' },
         loadChildren: () =>
           import('./apps/jaxfr/features/fit/fit.routes').then(
             (m) => m.FIT_ROUTES,
@@ -199,7 +199,7 @@ const JAXFR_ROUTES: Routes = [
       {
         path: 'tyweb',
         canActivate: [featureAccessGuard],
-        data: { featureName: 'Tyweb Control' },
+        data: { featureName: 'Tyweb' },
         loadChildren: () =>
           import('./apps/jaxfr/features/tyweb/tyweb.routes').then(
             (m) => m.TYWEB_V5_ROUTES,
@@ -217,7 +217,7 @@ const JAXFR_ROUTES: Routes = [
       {
         path: 'docsign',
         canActivate: [featureAccessGuard],
-        data: { featureName: 'Doc Sign' },
+        data: { featureName: 'DocSign' },
         loadChildren: () =>
           import('./apps/jaxfr/features/docsign/docsign.routes').then(
             (m) => m.DOCSIGN_ROUTES,

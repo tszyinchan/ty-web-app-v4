@@ -41,12 +41,12 @@ import { RecordStatus } from '../../../../core/models/status.enum';
 const ACCESS_FEATURE_NAMES = new Set([
   'Work',
   'Article',
-  'Fit',
+  'Workout',
   'Filelink',
-  'Tyweb Control',
+  'Tyweb',
   'Chat',
   'Settings',
-  'User',
+  'Users',
   'Development',
 ]);
 

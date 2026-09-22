@@ -27,7 +27,7 @@ export const featureAccessGuard: CanActivateFn = async (route) => {
     return true;
   }
 
-  if (featureName === 'User' && auth.isAdmin()) {
+  if (featureName === 'Users' && auth.isAdmin()) {
     return true;
   }
 
