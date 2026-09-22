@@ -74,7 +74,7 @@ export class YyemsHome implements OnInit, OnDestroy {
 
     this.header.setConfig({
       backLink: '/yyems',
-      title: 'Home',
+      title: 'Kitchen',
       actions: [
         {
           label: 'Today',

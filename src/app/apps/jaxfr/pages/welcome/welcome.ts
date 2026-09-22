@@ -55,16 +55,16 @@ const CATEGORY_LINKS: Record<string, FeatureHubLink[]> = {
   YYEMS: hubLinks('yyems'),
   Article: [
     { title: 'Feed', icon: 'dynamic_feed', route: '/article/feed' },
-    { title: 'List', icon: 'list', route: '/article/list' },
+    { title: 'Articles', icon: 'list', route: '/article/list' },
   ],
   Fit: [
     { title: 'Sessions', icon: 'fitness_center', route: '/fit/list' },
-    { title: 'Thread', icon: 'forum', route: '/fit/thread' },
-    { title: 'Patterns', icon: 'view_list', route: '/fit/patterns' },
+    { title: 'Feed', icon: 'forum', route: '/fit/thread' },
+    { title: 'Routines', icon: 'view_list', route: '/fit/patterns' },
   ],
   'Doc Sign': [
-    { title: 'Sign list', icon: 'list', route: '/docsign/list' },
-    { title: 'Print log', icon: 'print', route: '/docsign/prints' },
+    { title: 'Documents', icon: 'list', route: '/docsign/list' },
+    { title: 'Prints', icon: 'print', route: '/docsign/prints' },
     { title: 'Signature', icon: 'draw', route: '/docsign/signature' },
   ],
 };

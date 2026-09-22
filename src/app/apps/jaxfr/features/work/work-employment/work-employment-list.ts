@@ -57,7 +57,7 @@ export class WorkEmploymentList implements OnInit, OnDestroy {
     );
 
     this.headerService.setConfig({
-      title: 'Employment',
+      title: 'Jobs',
       backLink: '/work',
       actions: [
         {
@@ -75,7 +75,7 @@ export class WorkEmploymentList implements OnInit, OnDestroy {
           onClick: () => this.onExport(),
         },
         {
-          label: 'New Employment',
+          label: 'New Job',
           icon: 'add',
           type: 'primary',
           disabled: isLoading,

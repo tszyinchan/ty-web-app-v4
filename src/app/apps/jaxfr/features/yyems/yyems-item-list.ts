@@ -67,7 +67,7 @@ export class YyemsItemList implements OnInit, OnDestroy {
     const isLoading = computed(() => this.yyems.dictsLoading());
     this.header.setConfig({
       backLink: '/yyems',
-      title: 'Items',
+      title: 'Products',
       actions: [
         {
           label: 'New Item',

@@ -27,7 +27,7 @@ export const FEATURE_HUBS: Record<string, FeatureHubConfig> = {
         route: '/work/schedule/list',
       },
       {
-        title: 'Employment',
+        title: 'Jobs',
         icon: 'badge',
         image: '/icons/3d/badge.png',
         route: '/work/employment/list',
@@ -44,13 +44,13 @@ export const FEATURE_HUBS: Record<string, FeatureHubConfig> = {
         route: '/development/app/list',
       },
       {
-        title: 'App Features',
+        title: 'Features',
         icon: 'category',
         image: '/icons/3d/features.png',
         route: '/development/feature/list',
       },
       {
-        title: 'App Logs',
+        title: 'Logs',
         icon: 'history',
         image: '/icons/3d/analytics.png',
         route: '/development/log/list',
@@ -58,7 +58,7 @@ export const FEATURE_HUBS: Record<string, FeatureHubConfig> = {
     ],
   },
   user: {
-    title: 'User',
+    title: 'Users',
     links: [
       {
         title: 'Users',
@@ -81,7 +81,7 @@ export const FEATURE_HUBS: Record<string, FeatureHubConfig> = {
     ],
   },
   yyems: {
-    title: '525',
+    title: 'yyHome',
     links: [
       {
         title: 'Fridge',
@@ -90,7 +90,7 @@ export const FEATURE_HUBS: Record<string, FeatureHubConfig> = {
         route: '/yyems/fridge',
       },
       {
-        title: 'Home',
+        title: 'Kitchen',
         icon: 'restaurant',
         image: '/icons/3d/house.png',
         route: '/yyems/home',
@@ -102,7 +102,7 @@ export const FEATURE_HUBS: Record<string, FeatureHubConfig> = {
         route: '/yyems/bills/list',
       },
       {
-        title: 'Items',
+        title: 'Products',
         icon: 'shopping_basket',
         image: '/icons/3d/cart.png',
         route: '/yyems/items/list',

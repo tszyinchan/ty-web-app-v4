@@ -3,7 +3,7 @@ export const APP_CONFIG = {
   version: {
     major: 4,
     minor: 87,
-    patch: 11,
+    patch: 12,
   },
   versionDate: '2026-09-22',
 };

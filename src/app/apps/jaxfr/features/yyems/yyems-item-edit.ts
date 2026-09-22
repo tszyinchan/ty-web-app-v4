@@ -120,7 +120,7 @@ export class YyemsItemEdit implements OnInit, OnDestroy, DoCheck {
     });
     this.header.setConfig({
       backLink: '/yyems/items/list',
-      title: this.currentId ? 'Edit item' : 'New item',
+      title: this.currentId ? 'Edit product' : 'New product',
       syncStatus: this.syncStatus,
       actions,
     });

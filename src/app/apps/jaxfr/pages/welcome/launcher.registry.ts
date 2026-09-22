@@ -26,6 +26,7 @@ export const LAUNCHER_REGISTRY: Record<string, LauncherRegistryEntry> = {
     image: '/icons/3d/fit.png',
     group: 'features',
     shipped: true,
+    label: 'Workout',
   },
   'Daily Log': {
     image: '/icons/3d/checklist.png',
@@ -41,6 +42,7 @@ export const LAUNCHER_REGISTRY: Record<string, LauncherRegistryEntry> = {
     image: '/icons/3d/web.png',
     group: 'features',
     shipped: true,
+    label: 'Tyweb',
   },
   Chat: {
     image: '/icons/3d/chat.png',
@@ -51,12 +53,13 @@ export const LAUNCHER_REGISTRY: Record<string, LauncherRegistryEntry> = {
     image: '/icons/3d/docsign.png',
     group: 'features',
     shipped: true,
+    label: 'DocSign',
   },
   YYEMS: {
     image: '/icons/3d/kitchen.png',
     group: 'features',
     shipped: true,
-    label: '525',
+    label: 'yyHome',
   },
   Settings: {
     image: '/icons/3d/settings.png',
@@ -67,6 +70,7 @@ export const LAUNCHER_REGISTRY: Record<string, LauncherRegistryEntry> = {
     image: '/icons/3d/user.png',
     group: 'settings',
     shipped: true,
+    label: 'Users',
   },
   Development: {
     image: '/icons/3d/development.png',

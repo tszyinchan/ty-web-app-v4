@@ -102,7 +102,7 @@ export class TywebEdit implements OnInit, OnDestroy, DoCheck {
     ];
 
     this.headerService.setConfig({
-      title: 'Tyweb Control',
+      title: 'Tyweb',
       backLink: '/welcome',
       syncStatus: this.syncStatus,
       actions,
