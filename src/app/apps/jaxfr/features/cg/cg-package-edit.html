@@ -1,4 +1,4 @@
-<div class="cg-panel" [class.mono]="isMono()">
+<div class="cg-panel">
   @if (item(); as pkg) {
     <header class="cg-bar">
       <div class="cg-program">
@@ -33,6 +33,7 @@
                 [visible]="layer.visible"
                 [durationMs]="packageDurationMs()"
                 [sortOrder]="layer.sort_order"
+                [mono]="isMono()"
               />
             }
           </app-cg-stage>
@@ -171,6 +172,7 @@
                   [payload]="payloadSnapshot(layer)"
                   [visible]="true"
                   [sortOrder]="layer.sort_order"
+                  [mono]="isMono()"
                 />
               </app-cg-stage>
             </div>

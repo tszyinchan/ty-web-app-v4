@@ -22,7 +22,6 @@ import { CgService } from '../../core/domains/cg/cg.service';
 import { normalizeDurationMs, normalizeLook } from '../../core/domains/cg/cg.util';
 
 const OVERLAY_HTML_CLASS = 'cg-overlay-on';
-const OVERLAY_MONO_CLASS = 'cg-look-mono';
 
 @Component({
   selector: 'app-cg-overlay',
@@ -41,6 +40,7 @@ export class CgOverlay implements OnInit, OnDestroy {
   readonly stagedLayers = signal<CgLayer[]>([]);
   readonly durationMs = signal(CG_DEFAULT_DURATION_MS);
   readonly look = signal(CgPackageLook.Color);
+  readonly Mono = CgPackageLook.Mono;
 
   private pollId = 0;
   private fadeId = 0;
@@ -62,7 +62,6 @@ export class CgOverlay implements OnInit, OnDestroy {
     window.clearInterval(this.pollId);
     window.clearTimeout(this.fadeId);
     this.document.documentElement.classList.remove(OVERLAY_HTML_CLASS);
-    this.document.documentElement.classList.remove(OVERLAY_MONO_CLASS);
   }
 
   private async refresh(): Promise<void> {
@@ -82,10 +81,6 @@ export class CgOverlay implements OnInit, OnDestroy {
 
   private setLook(look: CgPackageLook): void {
     this.look.set(look);
-    this.document.documentElement.classList.toggle(
-      OVERLAY_MONO_CLASS,
-      look === CgPackageLook.Mono,
-    );
   }
 
   private applyIncoming(

@@ -25,15 +25,23 @@ import { CgLayerPayload, CgLayout } from './cg.model';
       inset: 0;
       pointer-events: none;
       opacity: 1;
-      transition: opacity var(--cg-duration-ms, 400ms) ease;
+      filter: none;
+      transition:
+        opacity var(--cg-duration-ms, 400ms) ease,
+        filter var(--cg-duration-ms, 400ms) ease;
     }
 
     :host.off {
       opacity: 0;
     }
+
+    :host.mono {
+      filter: grayscale(1);
+    }
   `,
   host: {
     '[class.off]': '!visible()',
+    '[class.mono]': 'mono()',
     '[style.--cg-duration-ms]': 'durationMs() + "ms"',
     '[style.z-index]': 'sortOrder()',
   },
@@ -46,4 +54,5 @@ export class CgLayerView {
   readonly visible = input(true);
   readonly durationMs = input(CG_DEFAULT_DURATION_MS);
   readonly sortOrder = input(0);
+  readonly mono = input(false);
 }

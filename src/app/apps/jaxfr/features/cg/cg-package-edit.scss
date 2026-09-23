@@ -386,8 +386,3 @@
   line-height: 1.45;
   color: var(--app-text-muted);
 }
-
-.cg-panel.mono .cg-program-frame app-cg-stage,
-.cg-panel.mono .cg-tile-stage app-cg-stage {
-  filter: grayscale(1);
-}

@@ -69,7 +69,7 @@
 | B7 | `PKG_A` 加第二層 Logo，兩層都 On，Save。再開 overlay。然後只 Off 其中一層，Save | overlay 裡那一層淡出；另一層 Logo **一直在、不眨眼** |
 | B8 | `PKG_A` 改 Appear = **Cut**（或 Fade ms = `0`），Save。再開 overlay，On/Off 一層再 Save | overlay **瞬間**切，沒有 400ms fade。改回 Fade 400、Save，之後又是淡入淡出 |
 | B9 | `PKG_A` 兩層 Logo。拖第二層到第一格，看 Panel Stage：後拖到前面的那層應蓋在上面。Save，overlay 順序一樣 | 沒 Save 前 overlay 不變。數字 1 = 最後面 |
-| B10 | Panel 改 Look = **B&W**。Panel Stage 變灰。Save，overlay 也灰。改回 Color、Save | overlay 恢復彩色。Layer Output 跟 Package 同一個 look |
+| B10 | Panel 改 Look = **B&W**。Panel Stage 用 Package ms **淡成灰**，已 On 的 layer **z-order 不變**。Save，overlay 同樣淡灰。改回 Color、Save | overlay 淡回彩色。Layer Output 跟 Package 同一個 look |
 
 ### C — Package Output 是預設；Layer Output 也能開
 
