@@ -22,6 +22,7 @@ export const DOCSIGN_ZOOM_MIN = 25;
 export const DOCSIGN_ZOOM_MAX = 300;
 export const DOCSIGN_ZOOM_STEP = 5;
 export const DOCSIGN_ZOOM_PRESETS = [25, 50, 75, 100, 125, 150, 200, 300] as const;
+export const DOCSIGN_ZOOM_PRESETS_NARROW = [50, 100, 200] as const;
 export type DocsignZoomChoice = number | 'fit';
 
 export const DOCSIGN_ZOOM_STORAGE_KEY = 'jaxfr-docsign-paper-zoom';

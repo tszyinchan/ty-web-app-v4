@@ -4,6 +4,7 @@
 }
 
 .docsign-workspace {
+  --docsign-drawer-w: 520px;
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -16,6 +17,7 @@
   justify-content: space-between;
   gap: 12px;
   flex-shrink: 0;
+  min-width: 0;
   padding: 8px 16px;
   border-bottom: 1px solid var(--app-border-subtle);
   background: var(--app-page-bg);
@@ -46,9 +48,16 @@
 .zoom-controls {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   justify-content: flex-end;
   gap: 4px;
+  min-width: 0;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+
+.zoom-controls > * {
+  flex: 0 0 auto;
 }
 
 .zoom-slider-label {
@@ -128,17 +137,20 @@
 }
 
 .docsign-workspace.details-open .details-drawer {
-  flex-basis: 380px;
-  width: 380px;
+  flex-basis: var(--docsign-drawer-w);
+  width: var(--docsign-drawer-w);
   border-right-color: var(--app-border-subtle);
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .details-drawer-inner {
   box-sizing: border-box;
-  width: 380px;
-  min-height: 100%;
+  width: 100%;
+  min-height: 0;
+  height: auto;
   padding: 16px 16px 32px;
-  overflow-y: auto;
+  overflow: visible;
 }
 
 .desk {
@@ -147,6 +159,7 @@
   min-height: 0;
   overflow: auto;
   background: #c5cdd3;
+  touch-action: pan-x pan-y;
 }
 
 .desk-center {
@@ -245,11 +258,14 @@
 
 .md-toolbar {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   padding: 2px 4px;
   border-bottom: 1px solid var(--app-border-subtle);
   background: var(--app-surface-raised);
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
 }
 
 .md-toolbar button.mat-mdc-icon-button {
@@ -257,6 +273,11 @@
   width: 36px;
   height: 36px;
   padding: 0;
+}
+
+.md-toolbar button.mat-mdc-icon-button,
+.md-toolbar-sep {
+  flex: 0 0 auto;
 }
 
 .md-toolbar-sep {
@@ -311,6 +332,8 @@
     flex-basis: auto;
     width: 100%;
     border-right: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
     transform: translateY(16px);
     opacity: 0;
     pointer-events: none;
@@ -326,7 +349,10 @@
   .details-drawer-inner {
     width: 100%;
     max-width: none;
-    padding: 16px 16px 32px;
+    min-height: 0;
+    height: auto;
+    overflow: visible;
+    padding: 16px 16px 48px;
   }
 
   .docsign-workspace.details-open .desk {

@@ -50,7 +50,9 @@
   padding: 18mm;
   background: var(--app-paper-bg);
   color: var(--app-paper-text);
-  font-family: var(--app-paper-font);
+  font-family: Roboto, Arial, Helvetica, sans-serif;
+  text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
   box-shadow: var(--app-panel-shadow);
   border-radius: 0;
   box-sizing: border-box;

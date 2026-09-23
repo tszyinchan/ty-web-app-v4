@@ -38,36 +38,40 @@
         </div>
       </div>
       <div class="zoom-controls">
-        <button
-          type="button"
-          class="zoom-btn"
-          (click)="nudgeZoom(-1)"
-          aria-label="Zoom out"
-        >
-          −
-        </button>
-        <label class="zoom-slider-label">
-          <span class="visually-hidden">Zoom</span>
-          <input
-            class="zoom-slider"
-            type="range"
-            [min]="zoomMin"
-            [max]="zoomMax"
-            [step]="zoomStep"
-            [value]="zoomPercent()"
-            (input)="onZoomSlider($event)"
-          />
-        </label>
-        <span class="zoom-readout">{{ zoomPercent() }}%</span>
-        <button
-          type="button"
-          class="zoom-btn"
-          (click)="nudgeZoom(1)"
-          aria-label="Zoom in"
-        >
-          +
-        </button>
-        @for (preset of zoomPresets; track preset) {
+        @if (!isNarrowViewport()) {
+          <button
+            type="button"
+            class="zoom-btn"
+            (click)="nudgeZoom(-1)"
+            aria-label="Zoom out"
+          >
+            −
+          </button>
+          <label class="zoom-slider-label">
+            <span class="visually-hidden">Zoom</span>
+            <input
+              class="zoom-slider"
+              type="range"
+              [min]="zoomMin"
+              [max]="zoomMax"
+              [step]="zoomStep"
+              [value]="zoomPercent()"
+              (input)="onZoomSlider($event)"
+            />
+          </label>
+          <span class="zoom-readout">{{ zoomPercent() }}%</span>
+          <button
+            type="button"
+            class="zoom-btn"
+            (click)="nudgeZoom(1)"
+            aria-label="Zoom in"
+          >
+            +
+          </button>
+        } @else {
+          <span class="zoom-readout">{{ zoomPercent() }}%</span>
+        }
+        @for (preset of visibleZoomPresets(); track preset) {
           <button
             type="button"
             class="zoom-btn"
@@ -219,7 +223,11 @@
           <section class="form-group">
             <h3 class="group-header">Body</h3>
             <div class="md-editor">
-              <div class="md-toolbar" (mousedown)="$event.preventDefault()">
+              <div
+                class="md-toolbar"
+                (mousedown)="keepBodyFocus($event)"
+                (wheel)="onMdToolbarWheel($event)"
+              >
                 <button
                   mat-icon-button
                   type="button"

@@ -49,7 +49,7 @@
 | # | 操作 | 預期 |
 |---|---|---|
 | A1 | Welcome 或 `/docsign/list` 點 **New Document** | 進入 `/docsign/new`。中間灰色桌面上有一張白紙。**沒有** Details / Paper 兩個 toggle |
-| A2 | 桌面寬時看左側 | 有 Details 抽屜（Title / Date / Signers / Body Markdown）。紙仍在右側可見 |
+| A2 | 桌面寬時看左側 | 有 Details 抽屜（約 520px，Title / Date / Signers / Body Markdown）。紙仍在右側可見。不是一條窄欄加獨立細捲軸 |
 | A3 | 點工具列 **Hide details** | 抽屜收起，紙仍在，桌面變寬 |
 | A4 | 點 **Details** | 抽屜回來 |
 
@@ -79,6 +79,12 @@
 | D1 | 視窗縮到 ≤1100px（或 DevTools 手機寬） | 紙在桌面上。工具列是 **Edit**（不是 Details/Paper 對切） |
 | D2 | 點 **Edit** | 表單佔滿畫面（給虛擬鍵盤空間），紙暫時看不見。按鈕變成 **Paper** |
 | D3 | 點 **Paper** | 回到紙張桌面，Edit 還在 |
+| D4 | 再點 **Edit**，把 Body 填長，往下拉 | 整張編輯畫面可以垂直捲到 Title、Signers、Body。不是卡在上面一段 |
+| D5 | 桌面與手機：看 Markdown 工具列 | 桌面 520px 抽屜通常一列就放下。放不下或手機窄時，拖捲軸／滾輪可滑到 Table / 分隔線，不是只看到條、拖不動 |
+| D6 | 回到 **Paper**，雙指捏紙 | 紙跟著放大縮小（25–300%），不是整頁瀏覽器 zoom。桌面用完整工具列也可 |
+| D7 | 手機寬度看 Paper 的 zoom 列 | 只有目前 %、**50% / 100% / 200% / Fit**。沒有拉桿、沒有 −/+、沒有 25/75/125/150/300 按鈕 |
+
+（D6 真機雙指。Cursor browser 做不到就標 Blocked，寫「請用手機捏紙」。）
 
 ### F — 真分頁：長文切成多張 297mm A4
 

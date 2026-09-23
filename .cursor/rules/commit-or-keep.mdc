@@ -15,7 +15,8 @@ Ask in Traditional Chinese, in this shape:
 
 ## If they say push now
 
-- Bump `APP_CONFIG` once, commit with `VerX.X.X-<description>`, then push immediately (see `.cursorrules` §9).
+- Follow `.cursor/rules/app-version-on-commit.mdc`: `git fetch origin` and read the latest `APP_CONFIG` from remote + HEAD + working tree. Never bump from a version remembered in chat.
+- Bump `APP_CONFIG` once from that latest number, commit with `VerX.X.X-<description>`, then push immediately (see `.cursorrules` §9).
 - Do not wait to accumulate another batch.
 
 ## If they say keep it

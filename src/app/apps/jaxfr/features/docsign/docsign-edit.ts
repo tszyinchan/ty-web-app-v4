@@ -46,6 +46,7 @@ import {
   DOCSIGN_ZOOM_MAX,
   DOCSIGN_ZOOM_MIN,
   DOCSIGN_ZOOM_PRESETS,
+  DOCSIGN_ZOOM_PRESETS_NARROW,
   DOCSIGN_ZOOM_STEP,
   type DocsignZoomChoice,
 } from './docsign.constants';
@@ -100,7 +101,6 @@ export class DocsignEdit implements OnInit, OnDestroy, DoCheck {
   public authService = inject(AuthService);
 
   readonly separatorKeysCodes = [ENTER, COMMA] as const;
-  readonly zoomPresets = DOCSIGN_ZOOM_PRESETS;
   readonly zoomMin = DOCSIGN_ZOOM_MIN;
   readonly zoomMax = DOCSIGN_ZOOM_MAX;
   readonly zoomStep = DOCSIGN_ZOOM_STEP;
@@ -230,6 +230,14 @@ export class DocsignEdit implements OnInit, OnDestroy, DoCheck {
     return narrow ? 'Paper' : 'Hide details';
   });
 
+  readonly isNarrowViewport = computed(() =>
+    isDocsignNarrowViewport(this.viewportWidth()),
+  );
+
+  readonly visibleZoomPresets = computed(() =>
+    this.isNarrowViewport() ? DOCSIGN_ZOOM_PRESETS_NARROW : DOCSIGN_ZOOM_PRESETS,
+  );
+
   zoomScale = computed(() => {
     const choice = this.zoomChoice();
     if (choice !== 'fit') return choice / 100;
@@ -334,10 +342,10 @@ export class DocsignEdit implements OnInit, OnDestroy, DoCheck {
     this.detailsOpen.set(false);
   }
 
-  setZoom(choice: DocsignZoomChoice) {
+  setZoom(choice: DocsignZoomChoice, persist = true) {
     const next = choice === 'fit' ? 'fit' : clampDocsignZoomPercent(choice);
     this.zoomChoice.set(next);
-    writeDocsignZoom(next);
+    if (persist) writeDocsignZoom(next);
   }
 
   onZoomSlider(event: Event) {
@@ -634,6 +642,7 @@ export class DocsignEdit implements OnInit, OnDestroy, DoCheck {
   ngOnDestroy() {
     this.deskObserver?.disconnect();
     this.paperObserver?.disconnect();
+    this.unbindDeskGestures();
     if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
     void this.releaseClaim();
     this.headerService.clear();
@@ -645,6 +654,7 @@ export class DocsignEdit implements OnInit, OnDestroy, DoCheck {
 
     if (desk && desk !== this.observedDesk) {
       this.deskObserver?.disconnect();
+      this.unbindDeskGestures();
       this.observedDesk = desk;
       this.deskObserver = new ResizeObserver((entries) => {
         const width = entries[0]?.contentRect.width ?? desk.clientWidth;
@@ -652,6 +662,7 @@ export class DocsignEdit implements OnInit, OnDestroy, DoCheck {
       });
       this.deskObserver.observe(desk);
       this.deskWidthPx.set(desk.clientWidth);
+      this.bindDeskGestures(desk);
     }
 
     if (paper && paper !== this.observedPaper) {
@@ -672,6 +683,71 @@ export class DocsignEdit implements OnInit, OnDestroy, DoCheck {
 
   private observedDesk: HTMLElement | null = null;
   private observedPaper: HTMLElement | null = null;
+  private gestureDesk: HTMLElement | null = null;
+  private pinchStartDistance = 0;
+  private pinchStartPercent = 100;
+
+  private bindDeskGestures(desk: HTMLElement) {
+    this.gestureDesk = desk;
+    desk.addEventListener('touchstart', this.onDeskTouchStart, {
+      passive: true,
+    });
+    desk.addEventListener('touchmove', this.onDeskTouchMove, {
+      passive: false,
+    });
+    desk.addEventListener('touchend', this.onDeskTouchEnd, { passive: true });
+    desk.addEventListener('touchcancel', this.onDeskTouchEnd, {
+      passive: true,
+    });
+  }
+
+  private unbindDeskGestures() {
+    const desk = this.gestureDesk;
+    if (!desk) return;
+    desk.removeEventListener('touchstart', this.onDeskTouchStart);
+    desk.removeEventListener('touchmove', this.onDeskTouchMove);
+    desk.removeEventListener('touchend', this.onDeskTouchEnd);
+    desk.removeEventListener('touchcancel', this.onDeskTouchEnd);
+    this.gestureDesk = null;
+    this.pinchStartDistance = 0;
+  }
+
+  private onDeskTouchStart = (event: TouchEvent) => {
+    if (event.touches.length !== 2) return;
+    this.pinchStartDistance = touchSpan(event.touches);
+    this.pinchStartPercent = this.zoomPercent();
+  };
+
+  private onDeskTouchMove = (event: TouchEvent) => {
+    if (event.touches.length !== 2 || this.pinchStartDistance <= 0) return;
+    event.preventDefault();
+    const span = touchSpan(event.touches);
+    const next = this.pinchStartPercent * (span / this.pinchStartDistance);
+    const mid = touchMidpoint(event.touches);
+    this.zone.run(() => this.applyPinchZoom(next, mid.x, mid.y));
+  };
+
+  private onDeskTouchEnd = (event: TouchEvent) => {
+    if (event.touches.length >= 2) return;
+    if (this.pinchStartDistance > 0) {
+      writeDocsignZoom(this.zoomChoice());
+    }
+    this.pinchStartDistance = 0;
+  };
+
+  private applyPinchZoom(nextPercent: number, clientX: number, clientY: number) {
+    const desk = this.deskEl()?.nativeElement;
+    const oldScale = this.zoomScale();
+    this.setZoom(nextPercent, false);
+    const newScale = this.zoomScale();
+    if (!desk || oldScale <= 0 || newScale === oldScale) return;
+    const ratio = newScale / oldScale;
+    const box = desk.getBoundingClientRect();
+    const midX = clientX - box.left;
+    const midY = clientY - box.top;
+    desk.scrollLeft = (desk.scrollLeft + midX) * ratio - midX;
+    desk.scrollTop = (desk.scrollTop + midY) * ratio - midY;
+  }
 
   private async openExclusive(id: string): Promise<boolean> {
     const fresh = await this.docsignService.fetchDocumentById(id);
@@ -823,6 +899,22 @@ export class DocsignEdit implements OnInit, OnDestroy, DoCheck {
     );
   }
 
+  keepBodyFocus(event: MouseEvent): void {
+    const target = event.target;
+    if (target instanceof Element && target.closest('button')) {
+      event.preventDefault();
+    }
+  }
+
+  onMdToolbarWheel(event: WheelEvent): void {
+    const bar = event.currentTarget;
+    if (!(bar instanceof HTMLElement)) return;
+    if (bar.scrollWidth <= bar.clientWidth + 1) return;
+    if (Math.abs(event.deltaX) >= Math.abs(event.deltaY)) return;
+    event.preventDefault();
+    bar.scrollLeft += event.deltaY;
+  }
+
   formatCode() {
     this.applyBodyEdit((source, start, end) =>
       wrapMarkdownSelection(source, start, end, '`', '`'),
@@ -904,4 +996,21 @@ export class DocsignEdit implements OnInit, OnDestroy, DoCheck {
     const date = (value ?? '').trim();
     return date ? date : null;
   }
+}
+
+function touchSpan(touches: TouchList): number {
+  const a = touches.item(0);
+  const b = touches.item(1);
+  if (!a || !b) return 0;
+  return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+}
+
+function touchMidpoint(touches: TouchList): { x: number; y: number } {
+  const a = touches.item(0);
+  const b = touches.item(1);
+  if (!a || !b) return { x: 0, y: 0 };
+  return {
+    x: (a.clientX + b.clientX) / 2,
+    y: (a.clientY + b.clientY) / 2,
+  };
 }
