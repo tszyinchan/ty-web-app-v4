@@ -78,7 +78,7 @@ This project previously over-invested in "industrial-grade" architecture (separa
 
 # 10. Exclusions
 - **IGNORE Archive Folder:** DO NOT review, audit, refactor, or draw context from any files within `src/app/apps/jaxfr/archive/`. Treat this folder as deprecated and non-existent.
-- **Known Accepted Risk — YY525 Finance Token:** `YY525_SOURCE.TOKEN` in `app.constants.ts` is a hardcoded GAS token consumed only by the archived `archive/features/yy525/yy525-data.service.ts` (still routed at `/archive/yy525`). This is the same class of exposure fixed for the Wash Log token, but the user has explicitly decided (2026-08-12) to leave it as-is for now. Do NOT re-flag this in future audits unless the user asks to revisit it.
+- **Known Accepted Risk — YY525 Finance Token:** `YY525_SOURCE.TOKEN` in `app.constants.ts` is a hardcoded GAS token consumed only by the archived `archive/features/yy525/yy525-data.service.ts` (still routed at `/archive/yy525`). Leave it until yyHome is production-stable, then delete the archive module **and** this token (user 2026-09-22). Do NOT re-flag in audits before that. See `.cursor/rules/yyhome.mdc`.
 
 # 11. Share Subdomain Pattern (No-Login Public Modules)
 - **Hosts:** see `.cursor/rules/deployment-hosts.mdc`. Production Share is `https://share.tszyin.com` (same apex as Jaxfr `app.tszyin.com`, Filelink, Time).
@@ -105,3 +105,4 @@ These exist so future sessions copy the real code, not a generic CRUD template.
 - **Regression playbooks:** Index at `.cursor/regression/index.md`. Scripts stay in the feature folder (`*.regression.md`). Run reports go to gitignored `.cursor/regression/runs/`. Fail during a playbook run → ask the user; do not start fixing code on your own. The Cursor browser pane must stay visible for the whole run.
 - **Production hosts:** Jaxfr is `https://app.tszyin.com` (local `http://localhost:4200`), not `jaxfr.*`. Filelink / Share / Time are `https://{filelink|share|time}.tszyin.com`. Password reset allowlists must include `https://app.tszyin.com/reset-password`. See `.cursor/rules/deployment-hosts.mdc`.
 - **Agent test logins:** Copy `.cursor/test-credentials.example.json` → gitignored `.cursor/test-credentials.local.json`. USER accounts only. Never put these credentials in `environment.ts` or `app.constants.ts`.
+- **yyHome:** Live code is still `yyems` / `tyapp_yyems_*` until Phase D rename. After production is stable, remove `tyapp_user.appsheet_525_user_id` and archive YY525. Full naming + retirement: `.cursor/rules/yyhome.mdc`.

@@ -1,0 +1,22 @@
+---
+description: yyHome cutover naming and leftover AppSheet/YY525 retirement
+alwaysApply: true
+---
+
+# yyHome
+
+Display name is `yyHome`. Live code is still `features/yyems/`, route `/yyems`, tables `tyapp_yyems_*` until **Phase D**. Do **not** rename tables, PKs, files, or routes during page-by-page UI review.
+
+## After production is stable (user must say so)
+
+Then remove the AppSheet leftovers — do not do this during first cutover or UI tuning:
+
+1. Stop reading `tyapp_user.appsheet_525_user_id` (`cty` / `frd` lookup only). Import and ownership must use real `tyapp_user.user_id`.
+2. Drop that column (and any import mapper that still keys on it).
+3. Delete archived YY525: `src/app/apps/jaxfr/archive/features/yy525/`, `/archive/yy525` routes, and `YY525_SOURCE` in `app.constants.ts` (including the hardcoded GAS token).
+
+Until the user explicitly starts that cleanup: do **not** expand use of `appsheet_525_user_id`, do **not** revive archive YY525, and do **not** re-flag the YY525 token in audits (still an accepted risk until retirement).
+
+## Phase D naming (execute only at wipe + rebuild + import)
+
+Tables `tyapp_yyhome_*`. PKs `tb_tyapp_yh<entity>_id` (bill `yhm`, item cat `yhic`, item `yhit`, vendor cat `yhvc`, vendor `yhvd`, FA `yhfa`, wallet `yhwl`, fx `yhfx`, price `yhpr`, buy `yhby`, eat `yhet`, file `yhfl`). Buy→bill FK is `yyhome_id`. Currency PK stays `code`.
