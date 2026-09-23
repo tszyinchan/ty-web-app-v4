@@ -232,6 +232,7 @@ def main() -> int:
                 "tyapp_yyems_file",
                 "tyapp_yyems_buy",
                 "tyapp_yyems_price",
+                "tyapp_yyems_bill_share",
                 "tyapp_yyems",
                 "tyapp_yyems_wallet",
                 "tyapp_yyems_financial_account",
@@ -419,6 +420,7 @@ def main() -> int:
         )
 
     bill_payload: list[dict[str, Any]] = []
+    share_payload: list[dict[str, Any]] = []
     for row in bills:
         lid = as_text(row.get("YYEMS ID"))
         vendor = as_text(row.get("Vendor ID"))
@@ -466,6 +468,14 @@ def main() -> int:
                 "created_by": created_by_from_email(row.get("email_address")),
             }
         )
+        owner_id = person_user(own)
+        if owner_id:
+            share_payload.append({"yyems_id": pk, "user_id": owner_id, "share": 1})
+        else:
+            for code in ("cty", "frd"):
+                hid = party_user.get(code)
+                if hid:
+                    share_payload.append({"yyems_id": pk, "user_id": hid, "share": 0.5})
 
     price_payload: list[dict[str, Any]] = []
     for row in prices:
@@ -642,6 +652,7 @@ def main() -> int:
         "wallet": wallet_payload,
         "fx": fx_payload,
         "bill": bill_payload,
+        "share": share_payload,
         "price": price_payload,
         "buy": buy_payload,
         "eat": eat_payload,
@@ -669,6 +680,7 @@ def main() -> int:
     insert_all("tyapp_yyems_wallet", wallet_payload)
     insert_all("tyapp_yyems_fx_rate", fx_payload)
     insert_all("tyapp_yyems", bill_payload)
+    insert_all("tyapp_yyems_bill_share", share_payload)
     insert_all("tyapp_yyems_price", price_payload)
     insert_all("tyapp_yyems_buy", buy_payload)
     insert_all("tyapp_yyems_eat", eat_payload)

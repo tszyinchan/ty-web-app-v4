@@ -52,65 +52,112 @@
           <span class="ledger-label">Amount</span>
           <div class="ledger-amount-stack">
             <div class="ledger-amount-line">
-              <select class="ledger-control ledger-currency" [(ngModel)]="bill.currency">
-                @for (c of yyems.currencies(); track c.code) {
-                  <option [value]="c.code">{{ c.code }}</option>
-                }
-              </select>
+              <div>
+                <input
+                  class="ledger-control ledger-currency"
+                  matInput
+                  name="billCurrency"
+                  [matAutocomplete]="currencyAuto"
+                  [ngModel]="bill.currency"
+                  (ngModelChange)="onCurrencyQuery(bill, $event)"
+                  autocomplete="off"
+                  required
+                />
+                <mat-autocomplete #currencyAuto="matAutocomplete">
+                  @for (c of currencyChoices(bill.currency); track c.code) {
+                    <mat-option [value]="c.code">{{ c.code }}</mat-option>
+                  }
+                </mat-autocomplete>
+              </div>
               <input
                 class="ledger-control ledger-number"
+                name="billAmount"
                 type="number"
                 step="0.01"
                 [(ngModel)]="bill.amount"
                 required
               />
             </div>
-            <div class="ledger-amount-line">
-              <span class="ledger-wallet-cur">{{ walletCurrency(bill) || 'Wallet' }}</span>
-              <input
-                class="ledger-control ledger-number"
-                type="number"
-                step="0.01"
-                [(ngModel)]="bill.wallet_amount"
-                placeholder="if FX"
-              />
-            </div>
-            @if (fxRateLabel(bill); as rate) {
-              <span class="ledger-fx">{{ rate }}</span>
+            @if (showPaidLine(bill)) {
+              <div class="ledger-amount-line">
+                <span class="ledger-wallet-cur">{{ walletCurrency(bill) }}</span>
+                <input
+                  class="ledger-control ledger-number"
+                  name="walletAmount"
+                  type="number"
+                  step="0.01"
+                  [(ngModel)]="bill.wallet_amount"
+                  placeholder="paid"
+                />
+              </div>
+              @if (fxRateLabel(bill); as rate) {
+                <span class="ledger-fx">{{ rate }}</span>
+              }
             }
           </div>
         </div>
 
         <div class="ledger-row">
           <span class="ledger-label">Vendor</span>
-          <select class="ledger-control" [(ngModel)]="bill.vendor_id" required>
-            <option value="" disabled>Select vendor</option>
-            @for (v of yyems.vendors(); track v.tb_tyapp_yvd_id) {
-              <option [value]="v.tb_tyapp_yvd_id">{{ v.name }}</option>
-            }
-          </select>
+          <div>
+            <input
+              class="ledger-control"
+              matInput
+              name="vendorLabel"
+              [matAutocomplete]="vendorAuto"
+              [ngModel]="vendorQuery()"
+              (ngModelChange)="onVendorQuery(bill, $event)"
+              autocomplete="off"
+              required
+            />
+            <mat-autocomplete #vendorAuto="matAutocomplete">
+              @for (v of vendorChoices(vendorQuery()); track v.tb_tyapp_yvd_id) {
+                <mat-option [value]="v.name">{{ v.name }}</mat-option>
+              }
+            </mat-autocomplete>
+          </div>
         </div>
 
         <div class="ledger-row">
           <span class="ledger-label">Wallet</span>
-          <select class="ledger-control" [(ngModel)]="bill.wallet_id" required>
-            <option value="" disabled>Select wallet</option>
-            @for (w of yyems.wallets(); track w.tb_tyapp_ywl_id) {
-              <option [value]="w.tb_tyapp_ywl_id">{{ w.name }}</option>
-            }
-          </select>
+          <div>
+            <input
+              class="ledger-control"
+              matInput
+              name="walletLabel"
+              [matAutocomplete]="walletAuto"
+              [ngModel]="walletQuery()"
+              (ngModelChange)="onWalletQuery(bill, $event)"
+              autocomplete="off"
+              required
+            />
+            <mat-autocomplete #walletAuto="matAutocomplete">
+              @for (w of walletChoices(walletQuery()); track w.tb_tyapp_ywl_id) {
+                <mat-option [value]="w.name">{{ w.name }}</mat-option>
+              }
+            </mat-autocomplete>
+          </div>
         </div>
 
-        <div class="ledger-row">
-          <span class="ledger-label">Ownership</span>
-          <select class="ledger-control" [(ngModel)]="bill.ownership_key">
-            <option [value]="YYEMS_OWNERSHIP_SHARED">Shared 50/50</option>
-            @for (u of householdUsers(); track u.user_id) {
-              <option [value]="u.user_id">
-                {{ u | tyDisplayName }}
-              </option>
-            }
-          </select>
+        <div class="owner-toggle">
+          @for (u of householdUsers(); track u.user_id) {
+            <button
+              type="button"
+              [class.active]="bill.ownership_key === u.user_id"
+              [attr.aria-pressed]="bill.ownership_key === u.user_id"
+              (click)="setOwner(bill, u.user_id)"
+            >
+              {{ u | tyDisplayName }}
+            </button>
+          }
+          <button
+            type="button"
+            [class.active]="bill.ownership_key === YYEMS_OWNERSHIP_SHARED"
+            [attr.aria-pressed]="bill.ownership_key === YYEMS_OWNERSHIP_SHARED"
+            (click)="setOwner(bill, YYEMS_OWNERSHIP_SHARED)"
+          >
+            Both
+          </button>
         </div>
 
         <div class="ledger-row">

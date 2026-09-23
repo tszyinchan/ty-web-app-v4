@@ -10,9 +10,11 @@ import {
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 
 import { RecordStatus } from '../../../../core/models/status.enum';
@@ -36,7 +38,7 @@ import {
   YyemsLocationTz,
 } from './yyems.model';
 import { YyemsService } from './yyems.service';
-import { itemLabel, ownershipKey, ownershipUserIdFromKey } from './yyems.util';
+import { itemLabel, ownershipKey, ownershipKeyFromShares, ownershipUserIdFromKey, sortByOrderThenName } from './yyems.util';
 
 interface BillForm {
   tb_tyapp_yym_id?: string;
@@ -66,6 +68,8 @@ interface BillForm {
     MatButtonModule,
     MatIconModule,
     MatCheckboxModule,
+    MatAutocompleteModule,
+    MatInputModule,
     DisplayNamePipe,
   ],
   templateUrl: './yyems-bill-edit.html',
@@ -86,13 +90,23 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
   currentId: string | null = null;
   item = signal<BillForm | null>(null);
   buys = signal<YyemsBuyEmbed[]>([]);
+  vendorQuery = signal('');
+  walletQuery = signal('');
   originalDataStr = signal('');
   isDirty = signal(false);
   isSaveDisabled = signal(true);
 
   householdUsers = computed(() =>
-    this.users.users().filter((u) => !!u.appsheet_525_user_id),
+    this.users
+      .users()
+      .filter((u) => !!u.appsheet_525_user_id)
+      .sort((a, b) =>
+        (a.appsheet_525_user_id ?? '').localeCompare(b.appsheet_525_user_id ?? ''),
+      ),
   );
+
+  sortedVendors = computed(() => sortByOrderThenName(this.yyems.vendors()));
+  sortedWallets = computed(() => sortByOrderThenName(this.yyems.wallets()));
 
   syncStatus = computed<'loading' | 'up-to-date' | 'unsaved' | 'none'>(() => {
     if (this.yyems.busy()) return 'loading';
@@ -122,8 +136,10 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
       !current.vendor_id ||
       !current.wallet_id ||
       !current.occurred_local ||
+      !this.knownCurrency(current.currency) ||
       current.amount === null ||
-      current.amount === undefined;
+      current.amount === undefined ||
+      !this.shareRows(current);
     if (this.isSaveDisabled() !== disabled) this.isSaveDisabled.set(disabled);
   }
 
@@ -141,6 +157,12 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
         return;
       }
       this.item.set(this.toForm(bill));
+      const shares = await this.yyems.fetchBillShares(this.currentId);
+      const shareKey = shares ? ownershipKeyFromShares(shares) : null;
+      if (shareKey) {
+        this.item.update((cur) => (cur ? { ...cur, ownership_key: shareKey } : cur));
+      }
+      this.syncLookupLabels(this.item());
       this.buys.set(await this.yyems.fetchBuysForBill(this.currentId));
     } else {
       const now = new Date();
@@ -162,6 +184,8 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
         period_start: '',
         period_end: '',
       });
+      this.vendorQuery.set('');
+      this.walletQuery.set('');
     }
     this.originalDataStr.set(JSON.stringify(this.item()));
 
@@ -229,18 +253,22 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
       remark: form.remark.trim() || null,
       description: form.description.trim() || null,
       reconciled: form.reconciled,
-      wallet_amount: form.wallet_amount,
+      wallet_amount: this.showPaidLine(form) ? form.wallet_amount : null,
       period_start: form.period_start || null,
       period_end: form.period_end || null,
       created_by: userId,
       status: RecordStatus.Active,
     };
+    const shares = this.shareRows(form);
+    if (!shares) return;
     const saved = await this.yyems.saveBill(payload);
     if (!saved) return;
+    const sharesOk = await this.yyems.replaceBillShares(saved.tb_tyapp_yym_id, shares);
     this.currentId = saved.tb_tyapp_yym_id;
     this.item.update((cur) =>
       cur ? { ...cur, tb_tyapp_yym_id: saved.tb_tyapp_yym_id } : cur,
     );
+    if (!sharesOk) return;
     this.originalDataStr.set(JSON.stringify(this.item()));
     this.isDirty.set(false);
     void this.router.navigate(['/yyems/bills/edit', saved.tb_tyapp_yym_id], {
@@ -266,6 +294,99 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
 
   setFlow(bill: BillForm, flow: YyemsInOrOut) {
     bill.in_or_out = flow;
+  }
+
+  setOwner(bill: BillForm, key: string) {
+    bill.ownership_key = key;
+  }
+
+  knownCurrency(code: string): boolean {
+    return this.yyems.currencies().some((row) => row.code === code);
+  }
+
+  currencyChoices(query: string) {
+    const rows = [...this.yyems.currencies()].sort((a, b) =>
+      a.code.localeCompare(b.code),
+    );
+    return this.filterChoices(rows, query, (row) => row.code, (row) => row.code);
+  }
+
+  vendorChoices(query: string) {
+    return this.filterChoices(
+      this.sortedVendors(),
+      query,
+      (row) => row.name,
+      (row) => `${row.name} ${row.name_short ?? ''}`,
+    );
+  }
+
+  walletChoices(query: string) {
+    return this.filterChoices(
+      this.sortedWallets(),
+      query,
+      (row) => row.name,
+      (row) => row.name,
+    );
+  }
+
+  onVendorQuery(bill: BillForm, text: string) {
+    this.vendorQuery.set(text);
+    const hit = this.sortedVendors().find(
+      (row) => row.name.toLowerCase() === text.trim().toLowerCase(),
+    );
+    bill.vendor_id = hit?.tb_tyapp_yvd_id ?? '';
+  }
+
+  onWalletQuery(bill: BillForm, text: string) {
+    this.walletQuery.set(text);
+    const hit = this.sortedWallets().find(
+      (row) => row.name.toLowerCase() === text.trim().toLowerCase(),
+    );
+    bill.wallet_id = hit?.tb_tyapp_ywl_id ?? '';
+  }
+
+  onCurrencyQuery(bill: BillForm, text: string) {
+    const code = text.trim().toUpperCase();
+    bill.currency = this.knownCurrency(code) ? code : text.trim();
+  }
+
+  showPaidLine(bill: BillForm): boolean {
+    const walletCode = this.walletCurrency(bill);
+    return !!walletCode && walletCode !== bill.currency;
+  }
+
+  private shareRows(
+    form: BillForm,
+  ): { user_id: string; share: number }[] | null {
+    if (form.ownership_key === YYEMS_OWNERSHIP_SHARED) {
+      const people = this.householdUsers();
+      if (people.length !== 2) return null;
+      return people.map((user) => ({ user_id: user.user_id, share: 0.5 }));
+    }
+    if (!form.ownership_key) return null;
+    return [{ user_id: form.ownership_key, share: 1 }];
+  }
+
+  private syncLookupLabels(form: BillForm | null) {
+    if (!form) return;
+    const vendor = this.yyems.vendors().find((row) => row.tb_tyapp_yvd_id === form.vendor_id);
+    const wallet = this.yyems.wallets().find((row) => row.tb_tyapp_ywl_id === form.wallet_id);
+    this.vendorQuery.set(vendor?.name ?? '');
+    this.walletQuery.set(wallet?.name ?? '');
+  }
+
+  private filterChoices<T>(
+    rows: readonly T[],
+    query: string,
+    exact: (row: T) => string,
+    haystack: (row: T) => string,
+  ): T[] {
+    const q = query.trim().toLowerCase();
+    const isExact = rows.some((row) => exact(row).toLowerCase() === q);
+    if (!q || isExact) return rows.slice(0, 60);
+    return rows
+      .filter((row) => haystack(row).toLowerCase().includes(q))
+      .slice(0, 60);
   }
 
   walletCurrency(bill: BillForm): string {

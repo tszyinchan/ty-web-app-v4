@@ -7,6 +7,7 @@ import {
   YYEMS_MEAL,
   YYEMS_OWNERSHIP_SHARED,
   YyemsBillEmbed,
+  YyemsBillShare,
   YyemsEat,
   YyemsEatAmount,
   YyemsEatenOther,
@@ -52,7 +53,7 @@ export function ownershipLabel(
   ownershipUserId: string | null,
   users: readonly TyappUser[],
 ): string {
-  if (!ownershipUserId) return 'Shared';
+  if (!ownershipUserId) return 'Both';
   const user = users.find((u) => u.user_id === ownershipUserId);
   if (!user) return '—';
   return formatUserDisplayName(user);
@@ -65,6 +66,27 @@ export function ownershipKey(ownershipUserId: string | null): string {
 export function ownershipUserIdFromKey(key: string | null | undefined): string | null {
   if (!key || key === YYEMS_OWNERSHIP_SHARED) return null;
   return key;
+}
+
+/** Map locked share rows back to the Yin / Yiu / Both control. */
+export function ownershipKeyFromShares(
+  rows: readonly Pick<YyemsBillShare, 'user_id' | 'share'>[],
+): string | null {
+  if (rows.length === 1 && Number(rows[0].share) === 1) return rows[0].user_id;
+  const halves = rows.filter((row) => Math.abs(Number(row.share) - 0.5) < 0.001);
+  if (rows.length >= 2 && halves.length === rows.length) return YYEMS_OWNERSHIP_SHARED;
+  return null;
+}
+
+export function sortByOrderThenName<T extends { sort_order: number | null; name: string }>(
+  rows: readonly T[],
+): T[] {
+  return [...rows].sort((a, b) => {
+    const aOrder = a.sort_order ?? Number.MAX_SAFE_INTEGER;
+    const bOrder = b.sort_order ?? Number.MAX_SAFE_INTEGER;
+    if (aOrder !== bOrder) return aOrder - bOrder;
+    return a.name.localeCompare(b.name);
+  });
 }
 
 export function fridgeSearchHaystack(row: YyemsFridgeRow): string {

@@ -18,6 +18,11 @@
           <input matInput [(ngModel)]="w.name" required />
         </mat-form-field>
         <mat-form-field appearance="outline" class="full-width mt-16" subscriptSizing="dynamic">
+          <mat-label>Sort order</mat-label>
+          <input matInput type="number" [(ngModel)]="w.sort_order" />
+        </mat-form-field>
+        <p class="text-muted mt-8">Lower numbers show first when picking a wallet on a bill.</p>
+        <mat-form-field appearance="outline" class="full-width mt-16" subscriptSizing="dynamic">
           <mat-label>Remarks</mat-label>
           <textarea matInput rows="2" [(ngModel)]="w.remarks"></textarea>
         </mat-form-field>

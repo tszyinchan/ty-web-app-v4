@@ -20,3 +20,16 @@ Until the user explicitly starts that cleanup: do **not** expand use of `appshee
 ## Phase D naming (execute only at wipe + rebuild + import)
 
 Tables `tyapp_yyhome_*`. PKs `tb_tyapp_yh<entity>_id` (bill `yhm`, item cat `yhic`, item `yhit`, vendor cat `yhvc`, vendor `yhvd`, FA `yhfa`, wallet `yhwl`, fx `yhfx`, price `yhpr`, buy `yhby`, eat `yhet`, file `yhfl`). Buy→bill FK is `yyhome_id`. Currency PK stays `code`.
+
+## Who paid vs who bears (do not invent a Both user)
+
+Two independent facts on a bill:
+
+- **Paid by** = wallet → financial account `owner_user_id` (`NULL` = joint pot, not “the couple”).
+- **Borne by** = `tyapp_yyems_bill_share` rows locked when the bill is saved (`yyems_id`, `user_id`, `share`). UI stays Yin / Yiu / Both. Do **not** store Both as a fake user. `ownership_user_id` on the bill stays in sync for the list (`NULL` = Both) until Phase D drops it.
+
+At rebuild, rename the table to `tyapp_yyhome_bill_share` and the PK to `tb_tyapp_yhbs_id`. Both inserts two rows (0.5 / 0.5) for the two users chosen **that day**. One person inserts one row (1.0). Never re-read “current household” to interpret an old bill. Excel `Ownership`: `cty` / `frd` → 1.0 for that user; `yyems` or blank → 0.5 / 0.5.
+
+Settlement amount = `wallet_amount` if set, else `amount`. For each person: `net = paid_share − borne_share`. Positive net means the other person owes them. Joint wallet pays as 50/50. Yin-owned + Yiu-wallet nets to “Yin owes Yiu the full amount”.
+
+If the household splits: deactivate the other user’s yyHome grant, stop using joint wallets, new bills are 100% one person. Do not edit historical share rows to match the new situation.

@@ -3,14 +3,16 @@
   max-width: 720px;
 }
 
-.kind-toggle {
+.kind-toggle,
+.owner-toggle {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   gap: 8px;
   margin-bottom: 8px;
 }
 
-.kind-toggle button {
+.kind-toggle button,
+.owner-toggle button {
   font: var(--app-weight-emphasis) 14px var(--app-font);
   color: var(--app-text-secondary);
   background: var(--app-input-bg);
@@ -37,6 +39,15 @@
     color: var(--app-text-muted);
     border-color: var(--app-text-muted);
   }
+}
+
+.owner-toggle {
+  margin-top: 12px;
+}
+
+.owner-toggle button.active {
+  color: var(--app-text-primary);
+  border-color: var(--app-accent);
 }
 
 .ledger-row,

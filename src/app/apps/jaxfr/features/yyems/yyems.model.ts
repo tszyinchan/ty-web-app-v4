@@ -307,8 +307,16 @@ export interface YyemsFile {
   deleted_at: string | null;
 }
 
-/** Form value for shared 50/50 bill ownership (maps to ownership_user_id null). */
+/** Form value for shared 50/50 bill ownership (maps to two 0.5 share rows). */
 export const YYEMS_OWNERSHIP_SHARED = 'shared';
+
+export interface YyemsBillShare {
+  tb_tyapp_ybs_id: string;
+  tb_tyapp_ybs_seq_no: number;
+  yyems_id: string;
+  user_id: string;
+  share: number;
+}
 
 export const YYEMS_MAIN_MEALS: readonly YyemsMeal[] = [
   YYEMS_MEAL.Breakfast,
