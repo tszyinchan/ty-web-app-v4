@@ -2,13 +2,15 @@ import { Injectable, NgZone, inject, signal } from '@angular/core';
 import { RecordStatus } from '../../models/status.enum';
 import { NotificationService } from '../../services/notification.service';
 import { SupabaseService } from '../../services/supabase.service';
-import { CgPackageRole } from './cg.constants';
+import { CG_DEFAULT_DURATION_MS, CgPackageRole } from './cg.constants';
 import { CgLayer, CgLayerDraft, CgPackage, CgPublicOutput } from './cg.model';
 import {
   createCgPublicToken,
   createEmptyLogoLayer,
   layerToDraft,
+  normalizeDurationMs,
   normalizeLayer,
+  normalizePackage,
   normalizePublicOutput,
 } from './cg.util';
 
@@ -50,7 +52,11 @@ export class CgService {
       if (layerResult.error) throw layerResult.error;
 
       this.zone.run(() => {
-        this.packages.set((packageResult.data ?? []) as CgPackage[]);
+        this.packages.set(
+          (packageResult.data ?? [])
+            .map((row) => normalizePackage(row))
+            .filter((pkg): pkg is CgPackage => pkg !== null),
+        );
         this.layers.set(
           (layerResult.data ?? [])
             .map((row) => normalizeLayer(row))
@@ -91,10 +97,13 @@ export class CgService {
         .map((row) => normalizeLayer(row))
         .filter((layer): layer is CgLayer => layer !== null);
 
+      const pkg = normalizePackage(packageResult.data);
+      if (!pkg) throw new Error('CG package row was incomplete');
+
       return this.zone.run(() => {
         this.loading.set(false);
         return {
-          package: packageResult.data as CgPackage,
+          package: pkg,
           layers,
         };
       });
@@ -131,6 +140,7 @@ export class CgService {
               name: packagePayload.name?.trim(),
               role: packagePayload.role,
               public_token: publicToken,
+              duration_ms: normalizeDurationMs(packagePayload.duration_ms),
               status: packagePayload.status,
             })
             .select()
@@ -140,6 +150,7 @@ export class CgService {
             .update({
               name: packagePayload.name?.trim(),
               role: packagePayload.role,
+              duration_ms: normalizeDurationMs(packagePayload.duration_ms),
               status: packagePayload.status,
               updated_at: new Date().toISOString(),
             })
@@ -150,7 +161,8 @@ export class CgService {
       const { data: savedPackage, error: packageError } = await packageQuery;
       if (packageError) throw packageError;
 
-      const saved = savedPackage as CgPackage;
+      const saved = normalizePackage(savedPackage);
+      if (!saved) throw new Error('Saved CG package row was incomplete');
       const packageId = saved.tb_tyapp_cgpk_id;
       const existing = isNew
         ? []
@@ -261,6 +273,7 @@ export class CgService {
       name: '',
       role: CgPackageRole.Channel,
       public_token: createCgPublicToken(),
+      duration_ms: CG_DEFAULT_DURATION_MS,
       status: RecordStatus.Active,
     };
     this.draftKey.set(null);

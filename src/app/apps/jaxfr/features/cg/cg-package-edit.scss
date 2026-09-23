@@ -54,6 +54,42 @@
   gap: 6px;
 }
 
+.cg-appear {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+}
+
+.cg-appear .cg-kicker {
+  flex: 0 0 100%;
+}
+
+.cg-duration {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.cg-duration span {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--app-text-muted);
+}
+
+.cg-duration input {
+  width: 88px;
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--app-input-border);
+  border-radius: 4px;
+  background: var(--app-input-bg);
+  color: var(--app-text-primary);
+  font: 13px var(--app-font);
+}
+
 .cg-role-btn,
 .cg-btn,
 .cg-chip {

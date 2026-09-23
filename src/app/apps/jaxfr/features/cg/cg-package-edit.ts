@@ -14,7 +14,10 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { CgLayerView } from '../../../../core/domains/cg/cg-layer-view';
 import { CgStage } from '../../../../core/domains/cg/cg-stage';
 import {
+  CG_CUT_DURATION_MS,
+  CG_DEFAULT_DURATION_MS,
   CG_ELEMENT_CATALOG,
+  CG_MAX_DURATION_MS,
   CG_PACKAGE_ROLE_OPTIONS,
   CgElementType,
   CgPackageRole,
@@ -26,7 +29,9 @@ import {
   buildCgOverlayUrl,
   createEmptyLogoLayer,
   elementLabel,
+  isCgCut,
   layerToDraft,
+  normalizeDurationMs,
   packageHasUnsavedIdentity,
 } from '../../../../core/domains/cg/cg.util';
 import {
@@ -54,6 +59,8 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
   readonly catalog = CG_ELEMENT_CATALOG;
   readonly roleOptions = CG_PACKAGE_ROLE_OPTIONS;
   readonly backdrops = CgPreviewBackdrop;
+  readonly cutMs = CG_CUT_DURATION_MS;
+  readonly maxDurationMs = CG_MAX_DURATION_MS;
   readonly returnUrl = '/cg/list';
 
   readonly item = this.cg.draftItem;
@@ -61,6 +68,7 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
   isDirty = signal(false);
   isSaveDisabled = signal(true);
   backdrop = signal(CgPreviewBackdrop.Studio);
+  private lastFadeMs = CG_DEFAULT_DURATION_MS;
 
   syncStatus = computed<'loading' | 'up-to-date' | 'unsaved' | 'none'>(() => {
     if (this.cg.loading()) return 'loading';
@@ -156,6 +164,37 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
     const pkg = this.item();
     if (!pkg) return;
     pkg.role = role;
+  }
+
+  isCut(): boolean {
+    return isCgCut(this.item()?.duration_ms);
+  }
+
+  packageDurationMs(): number {
+    return normalizeDurationMs(this.item()?.duration_ms);
+  }
+
+  setCut(): void {
+    const current = this.packageDurationMs();
+    if (current > this.cutMs) {
+      this.lastFadeMs = current;
+    }
+    this.setDurationMs(this.cutMs);
+  }
+
+  setFade(): void {
+    if (!this.isCut()) return;
+    this.setDurationMs(this.lastFadeMs);
+  }
+
+  onDurationMsChange(value: number | string): void {
+    this.setDurationMs(value);
+  }
+
+  private setDurationMs(value: unknown): void {
+    const pkg = this.item();
+    if (!pkg) return;
+    pkg.duration_ms = normalizeDurationMs(value);
   }
 
   packageOutputUrl(): string {

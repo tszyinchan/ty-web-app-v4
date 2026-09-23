@@ -30,6 +30,8 @@ export interface CgPackage {
   name: string;
   role: CgPackageRole;
   public_token: string;
+  /** `0` = cut. Default fade is `CG_DEFAULT_DURATION_MS`. */
+  duration_ms: number;
   status: RecordStatus;
   created_at?: string;
   updated_at?: string;
@@ -68,5 +70,6 @@ export interface CgPublicOutput {
   kind: CgOutputKind;
   packageName: string;
   packageRole: CgPackageRole;
+  durationMs: number;
   layers: CgLayer[];
 }

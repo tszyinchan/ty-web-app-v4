@@ -1,7 +1,10 @@
 import { SUBDOMAINS } from '../../../app.constants';
 import { RecordStatus } from '../../models/status.enum';
 import {
+  CG_CUT_DURATION_MS,
+  CG_DEFAULT_DURATION_MS,
   CG_ELEMENT_CATALOG,
+  CG_MAX_DURATION_MS,
   CG_SAMPLE_LOGO_URL,
   CgAnchor,
   CgElementDef,
@@ -85,6 +88,46 @@ export function isLogoPayload(payload: unknown): payload is CgLogoPayload {
     'imageUrl' in payload &&
     typeof (payload as { imageUrl: unknown }).imageUrl === 'string'
   );
+}
+
+export function normalizeDurationMs(raw: unknown): number {
+  const value = typeof raw === 'number' ? raw : Number(raw);
+  if (!Number.isFinite(value)) return CG_DEFAULT_DURATION_MS;
+  const rounded = Math.round(value);
+  if (rounded <= CG_CUT_DURATION_MS) return CG_CUT_DURATION_MS;
+  if (rounded > CG_MAX_DURATION_MS) return CG_MAX_DURATION_MS;
+  return rounded;
+}
+
+export function isCgCut(durationMs: unknown): boolean {
+  return normalizeDurationMs(durationMs) === CG_CUT_DURATION_MS;
+}
+
+export function normalizePackage(raw: unknown): CgPackage | null {
+  const value = asRecord(raw);
+  const id = asString(value['tb_tyapp_cgpk_id']);
+  const token = asString(value['public_token']);
+  if (!id || !token) return null;
+
+  return {
+    tb_tyapp_cgpk_id: id,
+    tb_tyapp_cgpk_seq_no:
+      toOptionalNumber(value['tb_tyapp_cgpk_seq_no']) ?? undefined,
+    name: asString(value['name']),
+    role:
+      value['role'] === CgPackageRole.Source
+        ? CgPackageRole.Source
+        : CgPackageRole.Channel,
+    public_token: token,
+    duration_ms: normalizeDurationMs(value['duration_ms']),
+    status:
+      value['status'] === RecordStatus.Inactive
+        ? RecordStatus.Inactive
+        : RecordStatus.Active,
+    created_at: asString(value['created_at']) || undefined,
+    updated_at: asString(value['updated_at']) || undefined,
+    deleted_at: asString(value['deleted_at']) || null,
+  };
 }
 
 export function normalizeLayout(raw: unknown): CgLayout {
@@ -192,6 +235,9 @@ export function normalizePublicOutput(raw: unknown): CgPublicOutput | null {
       value['package_role'] === CgPackageRole.Source
         ? CgPackageRole.Source
         : CgPackageRole.Channel,
+    durationMs: normalizeDurationMs(
+      value['durationMs'] ?? value['duration_ms'],
+    ),
     layers,
   };
 }

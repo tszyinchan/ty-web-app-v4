@@ -1,6 +1,6 @@
 import { Component, input } from '@angular/core';
 import { CgLogo } from './cg-logo';
-import { CgElementType } from './cg.constants';
+import { CG_DEFAULT_DURATION_MS, CgElementType } from './cg.constants';
 import { CgLayerPayload, CgLayout } from './cg.model';
 
 @Component({
@@ -25,7 +25,7 @@ import { CgLayerPayload, CgLayout } from './cg.model';
       inset: 0;
       pointer-events: none;
       opacity: 1;
-      transition: opacity 0.4s ease;
+      transition: opacity var(--cg-duration-ms, 400ms) ease;
     }
 
     :host.off {
@@ -34,6 +34,7 @@ import { CgLayerPayload, CgLayout } from './cg.model';
   `,
   host: {
     '[class.off]': '!visible()',
+    '[style.--cg-duration-ms]': 'durationMs() + "ms"',
   },
 })
 export class CgLayerView {
@@ -42,4 +43,5 @@ export class CgLayerView {
   readonly layout = input.required<CgLayout>();
   readonly payload = input.required<CgLayerPayload>();
   readonly visible = input(true);
+  readonly durationMs = input(CG_DEFAULT_DURATION_MS);
 }

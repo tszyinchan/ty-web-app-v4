@@ -30,6 +30,7 @@ import {
   isEmbeddedImageUrl,
   isLocalFilesystemPath,
   layerToDraft,
+  normalizeDurationMs,
   packageHasUnsavedIdentity,
   readImageFileAsDataUrl,
 } from '../../../../core/domains/cg/cg.util';
@@ -203,6 +204,10 @@ export class CgLayerEdit implements OnInit, OnDestroy, DoCheck {
 
   payloadSnapshot(layer: CgLayerDraft): CgLayerDraft['payload'] {
     return { ...layer.payload };
+  }
+
+  packageDurationMs(): number {
+    return normalizeDurationMs(this.cg.draftItem()?.duration_ms);
   }
 
   layerOutputUrl(layer: CgLayerDraft): string {

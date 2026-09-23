@@ -94,7 +94,10 @@ export const CG_ELEMENT_CATALOG: ReadonlyArray<CgElementDef> = [
 
 export const CG_OVERLAY_POLL_MS = 2000;
 
-export const CG_VISIBLE_FADE_MS = 400;
+/** Package Output: `0` = cut (instant). Default fade is 400ms. */
+export const CG_CUT_DURATION_MS = 0;
+export const CG_DEFAULT_DURATION_MS = 400;
+export const CG_MAX_DURATION_MS = 5000;
 
 export const DEFAULT_LOGO_LAYOUT = {
   x: 2.4,

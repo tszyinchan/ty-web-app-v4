@@ -12,11 +12,13 @@ import { ActivatedRoute } from '@angular/router';
 import { CgLayerView } from '../../core/domains/cg/cg-layer-view';
 import { CgStage } from '../../core/domains/cg/cg-stage';
 import {
+  CG_CUT_DURATION_MS,
+  CG_DEFAULT_DURATION_MS,
   CG_OVERLAY_POLL_MS,
-  CG_VISIBLE_FADE_MS,
 } from '../../core/domains/cg/cg.constants';
 import { CgLayer } from '../../core/domains/cg/cg.model';
 import { CgService } from '../../core/domains/cg/cg.service';
+import { normalizeDurationMs } from '../../core/domains/cg/cg.util';
 
 const OVERLAY_HTML_CLASS = 'cg-overlay-on';
 
@@ -35,6 +37,7 @@ export class CgOverlay implements OnInit, OnDestroy {
   private document = inject(DOCUMENT);
 
   readonly stagedLayers = signal<CgLayer[]>([]);
+  readonly durationMs = signal(CG_DEFAULT_DURATION_MS);
 
   private pollId = 0;
   private fadeId = 0;
@@ -60,15 +63,22 @@ export class CgOverlay implements OnInit, OnDestroy {
 
   private async refresh(): Promise<void> {
     if (!this.token) {
-      this.applyIncoming([], true);
+      this.durationMs.set(CG_DEFAULT_DURATION_MS);
+      this.applyIncoming([], true, CG_DEFAULT_DURATION_MS);
       return;
     }
     const live = await this.cg.fetchPublicOutput(this.token);
-    this.applyIncoming(live?.layers ?? [], this.firstPaint);
+    const durationMs = normalizeDurationMs(live?.durationMs);
+    this.durationMs.set(durationMs);
+    this.applyIncoming(live?.layers ?? [], this.firstPaint, durationMs);
     this.firstPaint = false;
   }
 
-  private applyIncoming(incoming: CgLayer[], instant: boolean): void {
+  private applyIncoming(
+    incoming: CgLayer[],
+    instant: boolean,
+    durationMs: number,
+  ): void {
     const hash = outputHash(incoming);
     if (hash === this.lastHash) return;
     this.lastHash = hash;
@@ -83,11 +93,12 @@ export class CgOverlay implements OnInit, OnDestroy {
     const fadeInIds = new Set<string>();
     const fadeOutIds = new Set<string>();
     const next: CgLayer[] = [];
+    const cut = durationMs <= CG_CUT_DURATION_MS;
 
     for (const layer of incoming) {
       const previous = currentById.get(layer.tb_tyapp_cgly_id);
       const stayOn = !!previous?.visible;
-      if (instant || stayOn) {
+      if (instant || stayOn || cut) {
         next.push({ ...layer, visible: true });
       } else {
         next.push({ ...layer, visible: false });
@@ -96,10 +107,10 @@ export class CgOverlay implements OnInit, OnDestroy {
     }
 
     for (const staged of current) {
-      if (!incomingById.has(staged.tb_tyapp_cgly_id)) {
-        next.push({ ...staged, visible: false });
-        fadeOutIds.add(staged.tb_tyapp_cgly_id);
-      }
+      if (incomingById.has(staged.tb_tyapp_cgly_id)) continue;
+      if (cut) continue;
+      next.push({ ...staged, visible: false });
+      fadeOutIds.add(staged.tb_tyapp_cgly_id);
     }
 
     this.stagedLayers.set(next);
@@ -124,7 +135,7 @@ export class CgOverlay implements OnInit, OnDestroy {
       this.stagedLayers.update((list) =>
         list.filter((layer) => !fadeOutIds.has(layer.tb_tyapp_cgly_id)),
       );
-    }, CG_VISIBLE_FADE_MS);
+    }, durationMs);
   }
 }
 

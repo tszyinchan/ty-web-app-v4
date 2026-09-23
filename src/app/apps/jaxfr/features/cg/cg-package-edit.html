@@ -31,6 +31,7 @@
                 [layout]="layoutSnapshot(layer)"
                 [payload]="payloadSnapshot(layer)"
                 [visible]="layer.visible"
+                [durationMs]="packageDurationMs()"
               />
             }
           </app-cg-stage>
@@ -53,6 +54,40 @@
             >
               {{ option.label }}
             </button>
+          }
+        </div>
+        <div class="cg-appear">
+          <span class="cg-kicker">Appear</span>
+          <div class="cg-roles">
+            <button
+              type="button"
+              class="cg-role-btn"
+              [class.on]="!isCut()"
+              (click)="setFade()"
+            >
+              Fade
+            </button>
+            <button
+              type="button"
+              class="cg-role-btn"
+              [class.on]="isCut()"
+              (click)="setCut()"
+            >
+              Cut
+            </button>
+          </div>
+          @if (!isCut()) {
+            <label class="cg-field cg-duration">
+              <span>ms</span>
+              <input
+                type="number"
+                [min]="cutMs"
+                [max]="maxDurationMs"
+                step="50"
+                [(ngModel)]="pkg.duration_ms"
+                (ngModelChange)="onDurationMsChange($event)"
+              />
+            </label>
           }
         </div>
         <div class="cg-output">

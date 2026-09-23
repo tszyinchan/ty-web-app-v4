@@ -37,6 +37,7 @@
 
 - [ ] `http://localhost:4200` 已開
 - [ ] 已在 Supabase 跑過 `supabase/sql/cg-v2.sql`（會 drop v1 的 `tyapp_cg_slot`）
+- [ ] 已在 Supabase 跑過 `supabase/sql/cg-package-duration.sql`（package `duration_ms` + Output RPC；**不要**再跑一次 v2）
 - [ ] `.cursor/test-credentials.local.json` 存在；用 **user-a** 登入成功
 - [ ] user-a 已有 CG feature grant（沒有則 Welcome 看不到，`/cg/list` 會被送回 Welcome）
 - [ ] `/cg/list` 沒有名稱以 `[TEST] CG` 開頭的 package；有的話先當 leftover 刪掉
@@ -50,7 +51,7 @@
 | # | 操作 | 預期 |
 |---|---|---|
 | A1 | Welcome 點 **CG**，或開 `/cg/list` | 進入 package 清單 |
-| A2 | 點 **New package**。Panel 已有一塊 Logo（sample PNG 在 Stage 左上）。Name = `PKG_A`，Role = Channel，Save | 頂列出現 Package Output URL；清單之後看得到 Channel |
+| A2 | 點 **New package**。Panel 已有一塊 Logo（sample PNG 在 Stage 左上）。Name = `PKG_A`，Role = Channel。Appear = **Fade** 400ms。Save | 頂列出現 Package Output URL；清單之後看得到 Channel |
 | A3 | 再 New，Name = `PKG_B`，Role = Source，Save | 兩個 package 並存；Role 標 Source |
 
 ### B — Panel On/Off，定位在 Stage 上
@@ -61,10 +62,11 @@
 | B1b | 在 Layer 頁點 **Choose local image**，選本機 PNG | Stage 換成該圖；欄位顯示 embedded 檔名，不是 `C:\\` 路徑 |
 | B2 | 改 X / Y / Width / Scale | Stage 裡的 logo 跟著動，不必重載 |
 | B3 | 切 **Alpha** / **Studio** | Alpha 是棋盤（只在後台）；Studio 是暗底。都不是綠幕 |
-| B4 | 回到 Panel，撥 Logo 的 On/Off toggle | tile 變淡但圖還在。頂列 **Panel Stage 預覽**淡出。Package Output **先不要變**（還沒 Save） |
-| B5 | Save | 成功。約 2 秒內 **只有這次有變的 layer** 淡入/淡出。已經 On 的 layer 維持原樣，不會整場閃一次。重整後位置、圖、On/Off 還在 |
+| B4 | 回到 Panel，撥 Logo 的 On/Off toggle | tile 變淡但圖還在。頂列 **Panel Stage 預覽**依 Package Appear 淡出或 cut。Package Output **先不要變**（還沒 Save） |
+| B5 | Save | 成功。約 2 秒內 **只有這次有變的 layer** 用 Package `duration_ms` 淡入/淡出（`0` = 瞬間 cut）。已經 On 的 layer 維持原樣，不會整場閃一次。重整後位置、圖、On/Off、Appear 還在 |
 | B6 | 點 catalog 裡灰色的 Clock / Title | 不能加（soon）。只有 Logo 能再加一層；加完進 Layer 設定頁 |
 | B7 | `PKG_A` 加第二層 Logo，兩層都 On，Save。再開 overlay。然後只 Off 其中一層，Save | overlay 裡那一層淡出；另一層 Logo **一直在、不眨眼** |
+| B8 | `PKG_A` 改 Appear = **Cut**（或 Fade ms = `0`），Save。再開 overlay，On/Off 一層再 Save | overlay **瞬間**切，沒有 400ms fade。改回 Fade 400、Save，之後又是淡入淡出 |
 
 ### C — Package Output 是預設；Layer Output 也能開
 

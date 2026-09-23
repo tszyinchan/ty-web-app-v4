@@ -18,6 +18,8 @@ create table public.tyapp_cg_package (
   name text not null,
   role text not null check (role in ('channel', 'source')),
   public_token text not null unique,
+  duration_ms integer not null default 400
+    check (duration_ms >= 0 and duration_ms <= 5000),
   status smallint not null default 1,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
@@ -111,6 +113,7 @@ begin
     'kind', 'layer',
     'packageName', p.name,
     'packageRole', p.role,
+    'durationMs', p.duration_ms,
     'layers', jsonb_build_array(to_jsonb(l))
   )
   into result
@@ -132,6 +135,7 @@ begin
     'kind', 'package',
     'packageName', p.name,
     'packageRole', p.role,
+    'durationMs', p.duration_ms,
     'layers', coalesce((
       select jsonb_agg(to_jsonb(l) order by l.sort_order)
       from public.tyapp_cg_layer l
