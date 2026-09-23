@@ -100,6 +100,24 @@ export class ChatService {
     }
   }
 
+  async listMessagesForExport(roomId: string): Promise<ChatMessage[] | null> {
+    try {
+      const { data, error } = await this.supabase
+        .from('tyapp_chat_message')
+        .select('*')
+        .eq('room_id', roomId)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+      return ((data as ChatMessage[]) || []).map((row) =>
+        this.normalizeMessage(row),
+      );
+    } catch (error: unknown) {
+      this.notification.handleError('Download Messages Failed', error);
+      return null;
+    }
+  }
+
   async fetchMessages(roomId: string): Promise<void> {
     this.loading.set(true);
     try {

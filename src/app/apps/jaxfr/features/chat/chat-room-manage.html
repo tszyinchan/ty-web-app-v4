@@ -37,6 +37,34 @@
       </section>
 
       <section class="form-group">
+        <h3 class="group-header">Download</h3>
+        <p class="download-hint">
+          Any member can save this room as a Markdown transcript or a JSON
+          backup. Import is not supported.
+        </p>
+        <div class="download-actions">
+          <button
+            mat-stroked-button
+            type="button"
+            [disabled]="exporting()"
+            (click)="onDownloadMarkdown()"
+          >
+            <mat-icon>download</mat-icon>
+            Download .md
+          </button>
+          <button
+            mat-stroked-button
+            type="button"
+            [disabled]="exporting()"
+            (click)="onDownloadJson()"
+          >
+            <mat-icon>download</mat-icon>
+            Download JSON
+          </button>
+        </div>
+      </section>
+
+      <section class="form-group">
         <h3 class="group-header">Members</h3>
         @if (isCreatorDeleted()) {
           <p class="room-lock-banner">

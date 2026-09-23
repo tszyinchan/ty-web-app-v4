@@ -22,8 +22,14 @@ import { map } from 'rxjs/operators';
 
 import { AuthService } from '../../../../core/services/auth.service';
 import { HeaderService } from '../../../../core/services/header.service';
+import { NotificationService } from '../../../../core/services/notification.service';
 import { HasUnsavedChanges } from '../../../../core/guards/unsaved-changes.guard';
+import { DisplayNamePipe } from '../../../../core/pipes/display-name.pipe';
 import { UserService } from '../user/user.service';
+import {
+  ChatExportFormat,
+  downloadChatExport,
+} from './chat-export.util';
 import { CHAT_ROOM_DESCRIPTION_MAX } from './chat.constants';
 import { ChatService } from './chat.service';
 
@@ -38,6 +44,7 @@ import { ChatService } from './chat.service';
     MatIconModule,
     MatInputModule,
   ],
+  providers: [DisplayNamePipe],
   templateUrl: './chat-room-manage.html',
   styleUrl: './chat-room-manage.scss',
 })
@@ -48,10 +55,13 @@ export class ChatRoomManage
   private router = inject(Router);
   private headerService = inject(HeaderService);
   private auth = inject(AuthService);
+  private displayName = inject(DisplayNamePipe);
+  private notification = inject(NotificationService);
 
   readonly chatService = inject(ChatService);
   readonly userService = inject(UserService);
   readonly descriptionMax = CHAT_ROOM_DESCRIPTION_MAX;
+  readonly exporting = signal(false);
 
   readonly roomId = toSignal(
     this.route.paramMap.pipe(map((params) => params.get('roomId'))),
@@ -192,6 +202,40 @@ export class ChatRoomManage
       this.originalDescription = this.description.trim();
       this.isDirty.set(false);
       await this.router.navigate(['/chat', room.tb_tyapp_chat_rm_id]);
+    }
+  }
+
+  onDownloadMarkdown() {
+    void this.downloadMessages('md');
+  }
+
+  onDownloadJson() {
+    void this.downloadMessages('json');
+  }
+
+  private async downloadMessages(format: ChatExportFormat) {
+    const room = this.room();
+    if (!room || this.exporting()) return;
+    this.exporting.set(true);
+    try {
+      const messages = await this.chatService.listMessagesForExport(
+        room.tb_tyapp_chat_rm_id,
+      );
+      if (!messages) return;
+      downloadChatExport(
+        room,
+        messages,
+        (userId) =>
+          this.displayName.transform(
+            this.userService.users().find((user) => user.user_id === userId),
+          ),
+        format,
+      );
+      this.notification.showSuccess(
+        format === 'md' ? 'Downloaded Markdown' : 'Downloaded JSON',
+      );
+    } finally {
+      this.exporting.set(false);
     }
   }
 
