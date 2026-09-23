@@ -40,6 +40,7 @@ import {
 import { YyemsService } from './yyems.service';
 import {
   BearerPercent,
+  billFxHint,
   equalBearerRows,
   itemLabel,
   percentsFromShares,
@@ -599,18 +600,25 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
     return account?.currency ?? '';
   }
 
-  fxRateLabel(bill: BillForm): string {
-    if (
-      bill.wallet_amount == null ||
-      bill.amount == null ||
-      bill.amount === 0
-    ) {
-      return '';
-    }
-    const rate = bill.wallet_amount / bill.amount;
-    return `Exchange rate: ${rate.toLocaleString('en-US', {
-      maximumFractionDigits: 4,
-    })}`;
+  fxHint(bill: BillForm): { text: string; off: boolean; suggest: number | null } | null {
+    const walletCurrency = this.walletCurrency(bill);
+    if (!walletCurrency || walletCurrency === bill.currency) return null;
+    const parsed = Number(bill.occurred_local.slice(0, 4));
+    const year = Number.isInteger(parsed) ? parsed : new Date().getFullYear();
+    return billFxHint({
+      rates: this.yyems.fxRates(),
+      year,
+      billCurrency: bill.currency,
+      walletCurrency,
+      amount: bill.amount,
+      walletAmount: bill.wallet_amount,
+    });
+  }
+
+  paidPlaceholder(bill: BillForm): string {
+    const hint = this.fxHint(bill);
+    if (!hint || hint.suggest == null) return 'paid';
+    return hint.suggest.toFixed(2);
   }
 
   ngOnDestroy() {

@@ -150,6 +150,109 @@ export function shareSplitHint(count: number): string {
   return `${count} people · split equally`;
 }
 
+/** Implied paid rate farther than this from the yearly reference is flagged. */
+const FX_REFERENCE_BAND = 0.05;
+
+export interface FxRatePoint {
+  currency: string;
+  year: number;
+  to_cad: number;
+}
+
+export interface BillFxHint {
+  text: string;
+  off: boolean;
+  suggest: number | null;
+}
+
+function fxToCad(
+  rates: readonly FxRatePoint[],
+  currency: string,
+  year: number,
+): { value: number; year: number } | null {
+  if (currency === 'CAD') return { value: 1, year };
+  let best: FxRatePoint | null = null;
+  for (const row of rates) {
+    if (row.currency !== currency || row.year > year) continue;
+    const value = Number(row.to_cad);
+    if (!Number.isFinite(value) || value <= 0) continue;
+    if (!best || row.year > best.year) best = row;
+  }
+  if (!best) return null;
+  return { value: Number(best.to_cad), year: best.year };
+}
+
+function formatFxRate(rate: number): string {
+  return rate.toLocaleString('en-US', { maximumFractionDigits: 4 });
+}
+
+function formatFxPair(bill: string, wallet: string, rate: number): string {
+  return `1 ${bill} = ${formatFxRate(rate)} ${wallet}`;
+}
+
+/**
+ * Paid line when the wallet currency differs from the bill.
+ * `to_cad` is CAD per 1 unit. The shown rate is wallet units per 1 bill unit.
+ */
+export function billFxHint(input: {
+  rates: readonly FxRatePoint[];
+  year: number;
+  billCurrency: string;
+  walletCurrency: string;
+  amount: number | null;
+  walletAmount: number | null;
+}): BillFxHint | null {
+  const billCurrency = input.billCurrency.trim();
+  const walletCurrency = input.walletCurrency.trim();
+  if (!billCurrency || !walletCurrency || billCurrency === walletCurrency) return null;
+
+  const billCad = fxToCad(input.rates, billCurrency, input.year);
+  const walletCad = fxToCad(input.rates, walletCurrency, input.year);
+  const ref =
+    billCad && walletCad && walletCad.value !== 0 ? billCad.value / walletCad.value : null;
+  const usedYear =
+    billCad && billCad.year !== input.year
+      ? billCad.year
+      : walletCad && walletCad.year !== input.year
+        ? walletCad.year
+        : null;
+
+  const amount = input.amount;
+  const paid = input.walletAmount;
+  const implied = amount != null && paid != null && amount !== 0 ? paid / amount : null;
+  const suggest =
+    ref != null && amount != null && amount !== 0
+      ? Math.round(amount * ref * 100) / 100
+      : null;
+
+  const refLabel =
+    ref == null
+      ? ''
+      : `ref ${formatFxPair(billCurrency, walletCurrency, ref)}${usedYear ? ` (${usedYear})` : ''}`;
+  const actualLabel =
+    implied == null ? '' : formatFxPair(billCurrency, walletCurrency, implied);
+  const refBeside =
+    ref == null
+      ? ''
+      : `ref ${formatFxRate(ref)}${usedYear ? ` (${usedYear})` : ''}`;
+
+  let text = '';
+  if (actualLabel && refBeside) text = `${actualLabel} · ${refBeside}`;
+  else if (refLabel && suggest != null) {
+    text = `${refLabel} · about ${walletCurrency} ${suggest.toFixed(2)}`;
+  } else if (refLabel) text = refLabel;
+  else if (actualLabel) text = actualLabel;
+  else return null;
+
+  const off =
+    implied != null &&
+    ref != null &&
+    ref !== 0 &&
+    Math.abs(implied - ref) / Math.abs(ref) > FX_REFERENCE_BAND;
+
+  return { text, off, suggest };
+}
+
 export function bearerNames(
   shares: readonly { user_id: string }[] | undefined,
   ownershipUserId: string | null,

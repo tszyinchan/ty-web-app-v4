@@ -14,6 +14,7 @@ import {
   YyemsEatAmount,
   YyemsEatEmbed,
   YyemsFinancialAccount,
+  YyemsFxRate,
   YyemsFridgeRow,
   YyemsFridgeRpcRow,
   YyemsItem,
@@ -63,6 +64,7 @@ export class YyemsService {
   financialAccounts = signal<YyemsFinancialAccount[]>([]);
   wallets = signal<YyemsWallet[]>([]);
   currencies = signal<YyemsCurrency[]>([]);
+  fxRates = signal<YyemsFxRate[]>([]);
 
   fridgeRows = signal<YyemsFridgeRow[]>([]);
   bills = signal<YyemsBillEmbed[]>([]);
@@ -86,6 +88,7 @@ export class YyemsService {
         financialAccounts,
         wallets,
         currencies,
+        fxRates,
       ] = await Promise.all([
         this.supabase
           .from('tyapp_yyems_item_category')
@@ -120,6 +123,11 @@ export class YyemsService {
           .order('sort_order', { ascending: true, nullsFirst: false })
           .order('name'),
         this.supabase.from('tyapp_yyems_currency').select('*'),
+        this.supabase
+          .from('tyapp_yyems_fx_rate')
+          .select('*')
+          .eq('status', RecordStatus.Active)
+          .is('deleted_at', null),
       ]);
       const firstError =
         itemCategories.error ||
@@ -128,7 +136,8 @@ export class YyemsService {
         vendors.error ||
         financialAccounts.error ||
         wallets.error ||
-        currencies.error;
+        currencies.error ||
+        fxRates.error;
       if (firstError) throw firstError;
 
       this.zone.run(() => {
@@ -143,6 +152,7 @@ export class YyemsService {
         );
         this.wallets.set((wallets.data as YyemsWallet[]) ?? []);
         this.currencies.set((currencies.data as YyemsCurrency[]) ?? []);
+        this.fxRates.set((fxRates.data as YyemsFxRate[]) ?? []);
         this.dictsLoaded = true;
         this.dictsLoading.set(false);
       });

@@ -272,6 +272,10 @@ select.ledger-control {
   text-align: right;
 }
 
+.ledger-fx-off {
+  color: var(--app-danger);
+}
+
 .home-empty {
   margin: 8px 0 0;
   font-size: 13px;

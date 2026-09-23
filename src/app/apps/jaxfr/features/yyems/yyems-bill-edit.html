@@ -88,11 +88,11 @@
                   type="number"
                   step="0.01"
                   [(ngModel)]="bill.wallet_amount"
-                  placeholder="paid"
+                  [placeholder]="paidPlaceholder(bill)"
                 />
               </div>
-              @if (fxRateLabel(bill); as rate) {
-                <span class="ledger-fx">{{ rate }}</span>
+              @if (fxHint(bill); as hint) {
+                <span class="ledger-fx" [class.ledger-fx-off]="hint.off">{{ hint.text }}</span>
               }
             }
           </div>
