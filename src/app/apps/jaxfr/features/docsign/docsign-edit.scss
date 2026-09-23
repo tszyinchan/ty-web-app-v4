@@ -1,22 +1,152 @@
-.split-workspace.docsign-workspace {
-  display: grid;
-  grid-template-columns: minmax(260px, 1fr) minmax(320px, 1.15fr);
-  gap: 16px;
-  align-items: start;
-  max-width: 1480px;
-  padding: 16px 20px 32px;
+:host {
+  display: block;
+  height: 100%;
 }
 
-.workspace-switch {
-  display: none;
+.docsign-workspace {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
 }
 
-.toggle-header .full-width-toggle {
+.desk-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-shrink: 0;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--app-border-subtle);
+  background: var(--app-page-bg);
+}
+
+.zoom-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.zoom-slider-label {
+  display: flex;
+  align-items: center;
+  width: 120px;
+}
+
+.zoom-slider {
   width: 100%;
+  margin: 0;
+  accent-color: var(--app-accent);
 }
 
-.toggle-header .full-width-toggle mat-button-toggle {
+.zoom-readout {
+  min-width: 3.2em;
+  font-size: 12px;
+  color: var(--app-text-secondary);
+  text-align: right;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.zoom-btn {
+  min-width: 36px;
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--app-border-subtle);
+  border-radius: 4px;
+  background: var(--app-surface-raised);
+  color: var(--app-text-secondary);
+  font-size: 12px;
+  line-height: 26px;
+  cursor: pointer;
+}
+
+.zoom-btn.active {
+  border-color: var(--app-accent);
+  color: var(--app-text-primary);
+  font-weight: 600;
+}
+
+.desk-body {
+  position: relative;
+  display: flex;
   flex: 1;
+  min-height: 0;
+}
+
+.details-drawer {
+  flex: 0 0 0;
+  width: 0;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border-right: 1px solid transparent;
+  background: var(--app-page-bg);
+  transition:
+    width 220ms ease,
+    flex-basis 220ms ease,
+    border-color 220ms ease;
+}
+
+.docsign-workspace.details-open .details-drawer {
+  flex-basis: 380px;
+  width: 380px;
+  border-right-color: var(--app-border-subtle);
+}
+
+.details-drawer-inner {
+  box-sizing: border-box;
+  width: 380px;
+  min-height: 100%;
+  padding: 16px 16px 32px;
+  overflow-y: auto;
+}
+
+.desk {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  background: #c5cdd3;
+}
+
+.desk-center {
+  display: flex;
+  justify-content: safe center;
+  align-items: safe center;
+  box-sizing: border-box;
+  min-width: 100%;
+  min-height: 100%;
+  padding: 24px;
+}
+
+.desk-stage {
+  flex: 0 0 auto;
+  width: var(--docsign-stage-w, 210mm);
+  height: var(--docsign-stage-h, 297mm);
+  transition: width 180ms ease, height 180ms ease;
+}
+
+.desk-scaler {
+  transform: scale(var(--docsign-zoom, 1));
+  transform-origin: top left;
+  transition: transform 180ms ease;
+}
+
+.paper-box {
+  width: 210mm;
 }
 
 .frozen-banner {
@@ -28,15 +158,6 @@
   font-size: 13px;
 }
 
-.form-scroll-area,
-.paper-pane {
-  min-width: 0;
-}
-
-.paper-pane {
-  padding: 8px 8px 32px 0;
-}
-
 .signer-list {
   display: flex;
   flex-direction: column;
@@ -46,7 +167,7 @@
 
 .signer-row {
   display: grid;
-  grid-template-columns: minmax(140px, 0.8fr) minmax(180px, 1.2fr);
+  grid-template-columns: minmax(120px, 0.8fr) minmax(140px, 1.2fr);
   gap: 12px;
   align-items: start;
 }
@@ -120,7 +241,7 @@
 .md-canvas {
   display: block;
   width: 100%;
-  min-height: 420px;
+  min-height: 280px;
   padding: 16px 18px;
   border: 0;
   resize: vertical;
@@ -146,36 +267,50 @@
 }
 
 @media (max-width: 1100px) {
-  .split-workspace.docsign-workspace {
-    grid-template-columns: 1fr;
-    padding: 12px;
-    gap: 12px;
+  .desk-toolbar {
+    padding: 8px 12px;
   }
 
-  .workspace-switch {
-    display: block;
-    position: sticky;
-    top: 0;
-    z-index: 20;
-    margin: -12px -12px 0;
-    padding: 12px 12px 8px;
-    background: var(--app-page-bg);
-  }
-
-  .split-workspace.docsign-workspace:not(.show-paper) .paper-pane {
+  .docsign-workspace.details-open .zoom-controls {
     display: none;
   }
 
-  .split-workspace.docsign-workspace.show-paper .form-scroll-area {
-    display: none;
+  .details-drawer,
+  .docsign-workspace.details-open .details-drawer {
+    position: absolute;
+    inset: 0;
+    z-index: 21;
+    flex-basis: auto;
+    width: 100%;
+    border-right: 0;
+    transform: translateY(16px);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 220ms ease, opacity 220ms ease;
   }
 
-  .paper-pane {
-    padding: 0 0 24px;
+  .docsign-workspace.details-open .details-drawer {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .details-drawer-inner {
+    width: 100%;
+    max-width: none;
+    padding: 16px 16px 32px;
+  }
+
+  .docsign-workspace.details-open .desk {
+    visibility: hidden;
+  }
+
+  .desk-center {
+    padding: 16px;
   }
 
   .md-canvas {
-    min-height: 240px;
+    min-height: 40dvh;
   }
 
   .signer-row {
@@ -188,25 +323,29 @@
 }
 
 @media print {
-  .workspace-switch,
-  .form-scroll-area,
-  .split-workspace.docsign-workspace.show-paper .form-scroll-area {
+  .desk-toolbar,
+  .details-drawer {
     display: none;
   }
 
-  .split-workspace.docsign-workspace,
-  .split-workspace.docsign-workspace.show-paper {
+  .docsign-workspace,
+  .desk-body,
+  .desk {
     display: block;
+    height: auto;
+    overflow: visible;
+    background: #fff;
     padding: 0;
-    max-width: none;
   }
 
-  .paper-pane,
-  .split-workspace.docsign-workspace:not(.show-paper) .paper-pane,
-  .split-workspace.docsign-workspace.show-paper .paper-pane {
-    display: block;
+  .desk-center,
+  .desk-stage,
+  .desk-scaler,
+  .paper-box {
+    width: auto;
+    height: auto;
+    min-height: 0;
     padding: 0;
-    overflow: visible;
-    max-height: none;
+    transform: none;
   }
 }

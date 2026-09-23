@@ -123,7 +123,7 @@ export class DocsignPrint implements OnInit, OnDestroy {
       @page {
         margin: 18mm 12mm 16mm;
         background: #fff;
-        font-family: Roboto, "Helvetica Neue", sans-serif;
+        font-family: Arial, Helvetica, sans-serif;
         font-size: 8pt;
         color: #5a6a78;
         @top-left {

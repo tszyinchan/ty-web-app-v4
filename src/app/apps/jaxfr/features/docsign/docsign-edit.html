@@ -1,266 +1,329 @@
-<div
-  class="split-workspace docsign-workspace"
-  [class.show-paper]="workspacePane() === 'paper'"
->
-  @if (item(); as doc) {
-    <div class="toggle-header workspace-switch">
-      <mat-button-toggle-group
-        [value]="workspacePane()"
-        (change)="onPaneChange($event)"
-        class="full-width-toggle"
+@if (item(); as doc) {
+  <div
+    class="docsign-workspace"
+    [class.details-open]="detailsOpen()"
+    [style.--docsign-zoom]="zoomScale()"
+    [style.--docsign-stage-w]="stageWidthCss()"
+    [style.--docsign-stage-h]="stageHeightCss()"
+  >
+    <div class="desk-toolbar">
+      <button
+        type="button"
+        class="gloss-btn"
+        (click)="toggleDetails()"
       >
-        <mat-button-toggle value="form">Details</mat-button-toggle>
-        <mat-button-toggle value="paper">Paper</mat-button-toggle>
-      </mat-button-toggle-group>
-    </div>
-
-    <div class="form-scroll-area">
-      @if (hasSignedCurrent() && !isLocked()) {
-        <p class="frozen-banner">
-          You already signed this version. Wait for another signer to change the document.
-        </p>
-      }
-
-      <section class="form-group">
-        <h3 class="group-header">Document</h3>
-        <p class="group-note">Date is optional. Signing time is recorded on each signature.</p>
-        <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
-          <mat-label>Title</mat-label>
+        {{ detailsToggleLabel() }}
+      </button>
+      <div class="zoom-controls">
+        <button
+          type="button"
+          class="zoom-btn"
+          (click)="nudgeZoom(-1)"
+          aria-label="Zoom out"
+        >
+          −
+        </button>
+        <label class="zoom-slider-label">
+          <span class="visually-hidden">Zoom</span>
           <input
-            matInput
-            [(ngModel)]="doc.title"
-            required
-            [disabled]="!canEditDocument()"
+            class="zoom-slider"
+            type="range"
+            [min]="zoomMin"
+            [max]="zoomMax"
+            [step]="zoomStep"
+            [value]="zoomPercent()"
+            (input)="onZoomSlider($event)"
           />
-        </mat-form-field>
-
-        <div class="fields-grid-2 mt-16">
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>Date</mat-label>
-            <input
-              matInput
-              type="date"
-              [(ngModel)]="doc.doc_date"
-              [disabled]="!canEditDocument()"
-            />
-          </mat-form-field>
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>Remarks</mat-label>
-            <input
-              matInput
-              [(ngModel)]="doc.remarks"
-              [disabled]="!canEditDocument()"
-            />
-          </mat-form-field>
-        </div>
-      </section>
-
-      <section class="form-group">
-        <h3 class="group-header">Signers</h3>
-        <p class="group-note">
-          You are always a signer. Optionally give each person a role on this document.
-          Anyone who has not signed the current version can edit it. Everyone must belong to the same user group.
-        </p>
-        <div class="signer-list">
-          @for (uid of doc.signer_user_ids; track uid; let first = $first; let last = $last) {
-            <div class="signer-row">
-              <div class="signer-who">
-                @if (canReorderSigners()) {
-                  <div class="signer-order">
-                    <button
-                      mat-icon-button
-                      type="button"
-                      [disabled]="first"
-                      (click)="moveSigner(uid, -1)"
-                      aria-label="Move signer up"
-                    >
-                      <mat-icon>arrow_upward</mat-icon>
-                    </button>
-                    <button
-                      mat-icon-button
-                      type="button"
-                      [disabled]="last"
-                      (click)="moveSigner(uid, 1)"
-                      aria-label="Move signer down"
-                    >
-                      <mat-icon>arrow_downward</mat-icon>
-                    </button>
-                  </div>
-                }
-                <span class="signer-name">{{ displayUserName(uid) }}</span>
-                @if (uid === doc.created_by) {
-                  <span class="signer-tag">owner</span>
-                }
-                @if (canEditDocument() && uid !== doc.created_by && uid !== authService.userProfile()?.user_id) {
-                  <button
-                    mat-icon-button
-                    type="button"
-                    (click)="removeSigner(uid)"
-                    aria-label="Remove signer"
-                  >
-                    <mat-icon>cancel</mat-icon>
-                  </button>
-                }
-              </div>
-              <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                <mat-label>Role on this document</mat-label>
-                <input
-                  matInput
-                  [ngModel]="signerTitle(uid)"
-                  (ngModelChange)="setSignerTitle(uid, $event)"
-                  [disabled]="!canEditDocument()"
-                />
-              </mat-form-field>
-            </div>
-          }
-        </div>
-        @if (showAddSigner()) {
-          <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
-            <mat-label>Other signers</mat-label>
-            <mat-chip-grid #userGrid aria-label="Signers">
-              <input
-                placeholder="Add a signer..."
-                #userInput
-                [matChipInputFor]="userGrid"
-                [matAutocomplete]="userAuto"
-                (input)="userSearch.set(userInput.value)"
-                (focus)="userSearch.set('')"
-              />
-            </mat-chip-grid>
-            <mat-autocomplete
-              #userAuto="matAutocomplete"
-              (optionSelected)="addSigner($event); userInput.value = ''"
-            >
-              @for (opt of filteredUsers(); track opt.value) {
-                <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
-              }
-            </mat-autocomplete>
-          </mat-form-field>
+        </label>
+        <span class="zoom-readout">{{ zoomPercent() }}%</span>
+        <button
+          type="button"
+          class="zoom-btn"
+          (click)="nudgeZoom(1)"
+          aria-label="Zoom in"
+        >
+          +
+        </button>
+        @for (preset of zoomPresets; track preset) {
+          <button
+            type="button"
+            class="zoom-btn"
+            [class.active]="zoomChoice() === preset"
+            (click)="setZoom(preset)"
+          >
+            {{ preset }}%
+          </button>
         }
-      </section>
+        <button
+          type="button"
+          class="zoom-btn"
+          [class.active]="zoomChoice() === 'fit'"
+          (click)="setZoom('fit')"
+        >
+          Fit
+        </button>
+      </div>
+    </div>
 
-      @if (canEditDocument()) {
-        <section class="form-group">
-          <h3 class="group-header">Body</h3>
-          <div class="md-editor">
-            <div class="md-toolbar" (mousedown)="$event.preventDefault()">
-              <button
-                mat-icon-button
-                type="button"
-                title="Heading 1"
-                (click)="formatHeading1()"
-              >
-                <mat-icon>title</mat-icon>
-              </button>
-              <button
-                mat-icon-button
-                type="button"
-                title="Heading 2"
-                (click)="formatHeading2()"
-              >
-                <mat-icon>format_size</mat-icon>
-              </button>
-              <span class="md-toolbar-sep"></span>
-              <button
-                mat-icon-button
-                type="button"
-                title="Bold"
-                (click)="formatBold()"
-              >
-                <mat-icon>format_bold</mat-icon>
-              </button>
-              <button
-                mat-icon-button
-                type="button"
-                title="Italic"
-                (click)="formatItalic()"
-              >
-                <mat-icon>format_italic</mat-icon>
-              </button>
-              <button
-                mat-icon-button
-                type="button"
-                title="Inline code"
-                (click)="formatCode()"
-              >
-                <mat-icon>code</mat-icon>
-              </button>
-              <span class="md-toolbar-sep"></span>
-              <button
-                mat-icon-button
-                type="button"
-                title="Bullet list"
-                (click)="formatBulletList()"
-              >
-                <mat-icon>format_list_bulleted</mat-icon>
-              </button>
-              <button
-                mat-icon-button
-                type="button"
-                title="Numbered list"
-                (click)="formatNumberedList()"
-              >
-                <mat-icon>format_list_numbered</mat-icon>
-              </button>
-              <button
-                mat-icon-button
-                type="button"
-                title="Quote"
-                (click)="formatQuote()"
-              >
-                <mat-icon>format_quote</mat-icon>
-              </button>
-              <span class="md-toolbar-sep"></span>
-              <button
-                mat-icon-button
-                type="button"
-                title="Link"
-                (click)="formatLink()"
-              >
-                <mat-icon>link</mat-icon>
-              </button>
-              <button
-                mat-icon-button
-                type="button"
-                title="Table"
-                (click)="insertTable()"
-              >
-                <mat-icon>table_chart</mat-icon>
-              </button>
-              <button
-                mat-icon-button
-                type="button"
-                title="Horizontal rule"
-                (click)="insertRule()"
-              >
-                <mat-icon>horizontal_rule</mat-icon>
-              </button>
-            </div>
-            <textarea
-              #bodyInput
-              class="md-canvas"
-              [(ngModel)]="doc.content"
-              placeholder="Write the document here. Paste a Google Drive file link to embed a preview on the paper."
-            ></textarea>
-          </div>
-          <p class="md-editor-note">
-            Paste an https image URL, or use Markdown ![alt](https://...).
-            Google Drive links become preview frames. Diagrams (Mermaid) are not rendered.
+    <div class="desk-body">
+      <aside class="details-drawer" [attr.inert]="detailsOpen() ? null : ''">
+        <div class="details-drawer-inner">
+        @if (hasSignedCurrent() && !isLocked()) {
+          <p class="frozen-banner">
+            You already signed this version. Wait for another signer to change the document.
           </p>
-        </section>
-      }
-    </div>
+        }
 
-    <div class="paper-pane">
-      <app-docsign-document
-        [title]="doc.title"
-        [docDate]="doc.doc_date || null"
-        [documentId]="doc.tb_tyapp_dsgn_id ?? ''"
-        [versionNo]="doc.current_version_no"
-        [lifecycle]="paperLifecycle()"
-        [content]="doc.content"
-        [signers]="paperSigners()"
-      />
+        <section class="form-group">
+          <h3 class="group-header">Document</h3>
+          <p class="group-note">Date is optional. Signing time is recorded on each signature.</p>
+          <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
+            <mat-label>Title</mat-label>
+            <input
+              matInput
+              [(ngModel)]="doc.title"
+              required
+              [disabled]="!canEditDocument()"
+            />
+          </mat-form-field>
+
+          <div class="fields-grid-2 mt-16">
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-label>Date</mat-label>
+              <input
+                matInput
+                type="date"
+                [(ngModel)]="doc.doc_date"
+                [disabled]="!canEditDocument()"
+              />
+            </mat-form-field>
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-label>Remarks</mat-label>
+              <input
+                matInput
+                [(ngModel)]="doc.remarks"
+                [disabled]="!canEditDocument()"
+              />
+            </mat-form-field>
+          </div>
+        </section>
+
+        <section class="form-group">
+          <h3 class="group-header">Signers</h3>
+          <p class="group-note">
+            You are always a signer. Optionally give each person a role on this document.
+            Anyone who has not signed the current version can edit it. Everyone must belong to the same user group.
+          </p>
+          <div class="signer-list">
+            @for (uid of doc.signer_user_ids; track uid; let first = $first; let last = $last) {
+              <div class="signer-row">
+                <div class="signer-who">
+                  @if (canReorderSigners()) {
+                    <div class="signer-order">
+                      <button
+                        mat-icon-button
+                        type="button"
+                        [disabled]="first"
+                        (click)="moveSigner(uid, -1)"
+                        aria-label="Move signer up"
+                      >
+                        <mat-icon>arrow_upward</mat-icon>
+                      </button>
+                      <button
+                        mat-icon-button
+                        type="button"
+                        [disabled]="last"
+                        (click)="moveSigner(uid, 1)"
+                        aria-label="Move signer down"
+                      >
+                        <mat-icon>arrow_downward</mat-icon>
+                      </button>
+                    </div>
+                  }
+                  <span class="signer-name">{{ displayUserName(uid) }}</span>
+                  @if (uid === doc.created_by) {
+                    <span class="signer-tag">owner</span>
+                  }
+                  @if (canEditDocument() && uid !== doc.created_by && uid !== authService.userProfile()?.user_id) {
+                    <button
+                      mat-icon-button
+                      type="button"
+                      (click)="removeSigner(uid)"
+                      aria-label="Remove signer"
+                    >
+                      <mat-icon>cancel</mat-icon>
+                    </button>
+                  }
+                </div>
+                <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                  <mat-label>Role on this document</mat-label>
+                  <input
+                    matInput
+                    [ngModel]="signerTitle(uid)"
+                    (ngModelChange)="setSignerTitle(uid, $event)"
+                    [disabled]="!canEditDocument()"
+                  />
+                </mat-form-field>
+              </div>
+            }
+          </div>
+          @if (showAddSigner()) {
+            <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
+              <mat-label>Other signers</mat-label>
+              <mat-chip-grid #userGrid aria-label="Signers">
+                <input
+                  placeholder="Add a signer..."
+                  #userInput
+                  [matChipInputFor]="userGrid"
+                  [matAutocomplete]="userAuto"
+                  (input)="userSearch.set(userInput.value)"
+                  (focus)="userSearch.set('')"
+                />
+              </mat-chip-grid>
+              <mat-autocomplete
+                #userAuto="matAutocomplete"
+                (optionSelected)="addSigner($event); userInput.value = ''"
+              >
+                @for (opt of filteredUsers(); track opt.value) {
+                  <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
+                }
+              </mat-autocomplete>
+            </mat-form-field>
+          }
+        </section>
+
+        @if (canEditDocument()) {
+          <section class="form-group">
+            <h3 class="group-header">Body</h3>
+            <div class="md-editor">
+              <div class="md-toolbar" (mousedown)="$event.preventDefault()">
+                <button
+                  mat-icon-button
+                  type="button"
+                  title="Heading 1"
+                  (click)="formatHeading1()"
+                >
+                  <mat-icon>title</mat-icon>
+                </button>
+                <button
+                  mat-icon-button
+                  type="button"
+                  title="Heading 2"
+                  (click)="formatHeading2()"
+                >
+                  <mat-icon>format_size</mat-icon>
+                </button>
+                <span class="md-toolbar-sep"></span>
+                <button
+                  mat-icon-button
+                  type="button"
+                  title="Bold"
+                  (click)="formatBold()"
+                >
+                  <mat-icon>format_bold</mat-icon>
+                </button>
+                <button
+                  mat-icon-button
+                  type="button"
+                  title="Italic"
+                  (click)="formatItalic()"
+                >
+                  <mat-icon>format_italic</mat-icon>
+                </button>
+                <button
+                  mat-icon-button
+                  type="button"
+                  title="Inline code"
+                  (click)="formatCode()"
+                >
+                  <mat-icon>code</mat-icon>
+                </button>
+                <span class="md-toolbar-sep"></span>
+                <button
+                  mat-icon-button
+                  type="button"
+                  title="Bullet list"
+                  (click)="formatBulletList()"
+                >
+                  <mat-icon>format_list_bulleted</mat-icon>
+                </button>
+                <button
+                  mat-icon-button
+                  type="button"
+                  title="Numbered list"
+                  (click)="formatNumberedList()"
+                >
+                  <mat-icon>format_list_numbered</mat-icon>
+                </button>
+                <button
+                  mat-icon-button
+                  type="button"
+                  title="Quote"
+                  (click)="formatQuote()"
+                >
+                  <mat-icon>format_quote</mat-icon>
+                </button>
+                <span class="md-toolbar-sep"></span>
+                <button
+                  mat-icon-button
+                  type="button"
+                  title="Link"
+                  (click)="formatLink()"
+                >
+                  <mat-icon>link</mat-icon>
+                </button>
+                <button
+                  mat-icon-button
+                  type="button"
+                  title="Table"
+                  (click)="insertTable()"
+                >
+                  <mat-icon>table_chart</mat-icon>
+                </button>
+                <button
+                  mat-icon-button
+                  type="button"
+                  title="Horizontal rule"
+                  (click)="insertRule()"
+                >
+                  <mat-icon>horizontal_rule</mat-icon>
+                </button>
+              </div>
+              <textarea
+                #bodyInput
+                class="md-canvas"
+                [(ngModel)]="doc.content"
+                placeholder="Write the document here. Paste a Google Drive file link to embed a preview on the paper."
+              ></textarea>
+            </div>
+            <p class="md-editor-note">
+              Paste an https image URL, or use Markdown ![alt](https://...).
+              Google Drive links become preview frames. Diagrams (Mermaid) are not rendered.
+            </p>
+          </section>
+        }
+        </div>
+      </aside>
+
+      <div class="desk" #desk>
+        <div class="desk-center">
+        <div class="desk-stage">
+          <div class="desk-scaler">
+            <div class="paper-box" #paperBox>
+              <app-docsign-document
+                [title]="doc.title"
+                [docDate]="doc.doc_date || null"
+                [documentId]="doc.tb_tyapp_dsgn_id ?? ''"
+                [versionNo]="doc.current_version_no"
+                [lifecycle]="paperLifecycle()"
+                [content]="doc.content"
+                [signers]="paperSigners()"
+              />
+            </div>
+          </div>
+        </div>
+        </div>
+      </div>
     </div>
-  }
-</div>
+  </div>
+}

@@ -7,9 +7,11 @@ import {
   OnDestroy,
   OnInit,
   computed,
+  effect,
   inject,
   NgZone,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -18,7 +20,6 @@ import {
   MatAutocompleteSelectedEvent,
 } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
-import { MatButtonToggleChange, MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
@@ -40,20 +41,31 @@ import {
   DocsignDocumentView,
   DocsignSignerSlot,
 } from './docsign-document';
-import { DOCSIGN_LEASE_HEARTBEAT_MS } from './docsign.constants';
+import {
+  DOCSIGN_LEASE_HEARTBEAT_MS,
+  DOCSIGN_ZOOM_MAX,
+  DOCSIGN_ZOOM_MIN,
+  DOCSIGN_ZOOM_PRESETS,
+  DOCSIGN_ZOOM_STEP,
+  type DocsignZoomChoice,
+} from './docsign.constants';
 import { DocsignDocumentDetail, DocsignEditVm } from './docsign.model';
 import { DocsignService } from './docsign.service';
 import {
   MarkdownEditResult,
   bodyContent,
   currentVersion,
+  clampDocsignZoomPercent,
+  defaultDocsignZoom,
   docsignLifecycle,
   insertAtCursor,
+  isDocsignNarrowViewport,
   normalizeSignerTitles,
   prefixSelectedLines,
   sameSignerSet,
   signaturesForVersion,
   wrapMarkdownSelection,
+  writeDocsignZoom,
 } from './docsign.util';
 
 @Component({
@@ -66,7 +78,6 @@ import {
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule,
-    MatButtonToggleModule,
     MatIconModule,
     MatAutocompleteModule,
     MatChipsModule,
@@ -89,9 +100,17 @@ export class DocsignEdit implements OnInit, OnDestroy, DoCheck {
   public authService = inject(AuthService);
 
   readonly separatorKeysCodes = [ENTER, COMMA] as const;
+  readonly zoomPresets = DOCSIGN_ZOOM_PRESETS;
+  readonly zoomMin = DOCSIGN_ZOOM_MIN;
+  readonly zoomMax = DOCSIGN_ZOOM_MAX;
+  readonly zoomStep = DOCSIGN_ZOOM_STEP;
   private bodyInput = viewChild<ElementRef<HTMLTextAreaElement>>('bodyInput');
+  private deskEl = viewChild<ElementRef<HTMLElement>>('desk');
+  private paperBox = viewChild<ElementRef<HTMLElement>>('paperBox');
   private heartbeatTimer: ReturnType<typeof setInterval> | undefined;
   private claimedId: string | null = null;
+  private deskObserver: ResizeObserver | null = null;
+  private paperObserver: ResizeObserver | null = null;
 
   item = signal<DocsignEditVm | null>(null);
   loaded = signal<DocsignDocumentDetail | null>(null);
@@ -102,7 +121,14 @@ export class DocsignEdit implements OnInit, OnDestroy, DoCheck {
   isDirty = signal(false);
   isSaveDisabled = signal(true);
   userSearch = signal('');
-  workspacePane = signal<'form' | 'paper'>('form');
+  detailsOpen = signal(false);
+  viewportWidth = signal(
+    typeof window === 'undefined' ? 1280 : window.innerWidth,
+  );
+  zoomChoice = signal<DocsignZoomChoice>(100);
+  paperWidthPx = signal(0);
+  paperHeightPx = signal(0);
+  deskWidthPx = signal(0);
 
   syncStatus = computed<'loading' | 'up-to-date' | 'unsaved' | 'none'>(() => {
     if (this.docsignService.loading()) return 'loading';
@@ -195,6 +221,31 @@ export class DocsignEdit implements OnInit, OnDestroy, DoCheck {
 
   isFormLocked = computed(() => this.isLocked() || this.hasSignedCurrent());
 
+  detailsToggleLabel = computed(() => {
+    const narrow = isDocsignNarrowViewport(this.viewportWidth());
+    if (!this.detailsOpen()) return narrow ? 'Edit' : 'Details';
+    return narrow ? 'Paper' : 'Hide details';
+  });
+
+  zoomScale = computed(() => {
+    const choice = this.zoomChoice();
+    if (choice !== 'fit') return choice / 100;
+    const paper = this.paperWidthPx();
+    const desk = this.deskWidthPx();
+    if (!paper || !desk) return 1;
+    return Math.max(
+      DOCSIGN_ZOOM_MIN / 100,
+      Math.min(DOCSIGN_ZOOM_MAX / 100, (desk - 48) / paper),
+    );
+  });
+
+  zoomPercent = computed(() =>
+    clampDocsignZoomPercent(Math.round(this.zoomScale() * 100)),
+  );
+
+  stageWidthCss = computed(() => `${this.paperWidthPx() * this.zoomScale() || 794}px`);
+  stageHeightCss = computed(() => `${this.paperHeightPx() * this.zoomScale() || 1123}px`);
+
   headerDirty = computed(() => {
     const data = this.item();
     if (!data || !this.originalDataStr()) return false;
@@ -242,6 +293,11 @@ export class DocsignEdit implements OnInit, OnDestroy, DoCheck {
     void this.releaseClaim();
   }
 
+  @HostListener('window:resize')
+  onViewportResize() {
+    this.viewportWidth.set(window.innerWidth);
+  }
+
   ngDoCheck() {
     const current = this.item();
     const original = this.originalDataStr();
@@ -263,8 +319,28 @@ export class DocsignEdit implements OnInit, OnDestroy, DoCheck {
     }
   }
 
-  onPaneChange(event: MatButtonToggleChange) {
-    this.workspacePane.set(event.value === 'paper' ? 'paper' : 'form');
+  toggleDetails() {
+    this.detailsOpen.update((open) => !open);
+  }
+
+  closeDetails() {
+    this.detailsOpen.set(false);
+  }
+
+  setZoom(choice: DocsignZoomChoice) {
+    const next = choice === 'fit' ? 'fit' : clampDocsignZoomPercent(choice);
+    this.zoomChoice.set(next);
+    writeDocsignZoom(next);
+  }
+
+  onZoomSlider(event: Event) {
+    const value = Number((event.target as HTMLInputElement).value);
+    if (!Number.isFinite(value)) return;
+    this.setZoom(value);
+  }
+
+  nudgeZoom(delta: -1 | 1) {
+    this.setZoom(this.zoomPercent() + delta * DOCSIGN_ZOOM_STEP);
   }
 
   signerTitle(userId: string): string {
@@ -287,7 +363,17 @@ export class DocsignEdit implements OnInit, OnDestroy, DoCheck {
     return user ? this.displayNamePipe.transform(user) : 'Unknown';
   }
 
+  constructor() {
+    effect(() => {
+      this.item();
+      untracked(() => {
+        requestAnimationFrame(() => this.bindSizeObservers());
+      });
+    });
+  }
+
   async ngOnInit() {
+    this.zoomChoice.set(defaultDocsignZoom(window.innerWidth));
     this.currentId = this.route.snapshot.paramMap.get('id');
     this.returnUrl =
       this.route.snapshot.queryParamMap.get('returnUrl') || '/docsign/list';
@@ -305,7 +391,9 @@ export class DocsignEdit implements OnInit, OnDestroy, DoCheck {
         this.router.navigate(['/docsign/list']);
         return;
       }
-      if (this.isFormLocked()) this.workspacePane.set('paper');
+      this.detailsOpen.set(
+        this.canEditDocument() && !isDocsignNarrowViewport(window.innerWidth),
+      );
       this.applyHeader();
     } else {
       const me = this.authService.userProfile()?.user_id || '';
@@ -324,6 +412,7 @@ export class DocsignEdit implements OnInit, OnDestroy, DoCheck {
       };
       this.item.set(blank);
       this.originalDataStr.set(JSON.stringify(blank));
+      this.detailsOpen.set(!isDocsignNarrowViewport(window.innerWidth));
       this.applyHeader();
     }
   }
@@ -532,10 +621,46 @@ export class DocsignEdit implements OnInit, OnDestroy, DoCheck {
   }
 
   ngOnDestroy() {
+    this.deskObserver?.disconnect();
+    this.paperObserver?.disconnect();
     if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
     void this.releaseClaim();
     this.headerService.clear();
   }
+
+  private bindSizeObservers() {
+    const desk = this.deskEl()?.nativeElement ?? null;
+    const paper = this.paperBox()?.nativeElement ?? null;
+
+    if (desk && desk !== this.observedDesk) {
+      this.deskObserver?.disconnect();
+      this.observedDesk = desk;
+      this.deskObserver = new ResizeObserver((entries) => {
+        const width = entries[0]?.contentRect.width ?? desk.clientWidth;
+        this.zone.run(() => this.deskWidthPx.set(width));
+      });
+      this.deskObserver.observe(desk);
+      this.deskWidthPx.set(desk.clientWidth);
+    }
+
+    if (paper && paper !== this.observedPaper) {
+      this.paperObserver?.disconnect();
+      this.observedPaper = paper;
+      this.paperObserver = new ResizeObserver((entries) => {
+        const box = entries[0]?.contentRect;
+        this.zone.run(() => {
+          this.paperWidthPx.set(box?.width || paper.offsetWidth);
+          this.paperHeightPx.set(box?.height || paper.offsetHeight);
+        });
+      });
+      this.paperObserver.observe(paper);
+      this.paperWidthPx.set(paper.offsetWidth);
+      this.paperHeightPx.set(paper.offsetHeight);
+    }
+  }
+
+  private observedDesk: HTMLElement | null = null;
+  private observedPaper: HTMLElement | null = null;
 
   private async openExclusive(id: string): Promise<boolean> {
     const fresh = await this.docsignService.fetchDocumentById(id);

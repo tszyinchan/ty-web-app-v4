@@ -8,3 +8,18 @@ export const DOCSIGN_DRIVE_VIEW = (fileId: string): string =>
 
 export const DOCSIGN_LEASE_STALE_MS = 90_000;
 export const DOCSIGN_LEASE_HEARTBEAT_MS = 45_000;
+
+/** A4. Keep in sync with `.docsign-paper` in docsign-document.scss. */
+export const DOCSIGN_PAPER_WIDTH_MM = 210;
+export const DOCSIGN_PAPER_HEIGHT_MM = 297;
+export const DOCSIGN_PAPER_MARGIN_MM = 18;
+
+export const DOCSIGN_NARROW_PX = 1100;
+
+export const DOCSIGN_ZOOM_MIN = 25;
+export const DOCSIGN_ZOOM_MAX = 200;
+export const DOCSIGN_ZOOM_STEP = 5;
+export const DOCSIGN_ZOOM_PRESETS = [25, 50, 75, 100, 125, 150, 200] as const;
+export type DocsignZoomChoice = number | 'fit';
+
+export const DOCSIGN_ZOOM_STORAGE_KEY = 'jaxfr-docsign-paper-zoom';

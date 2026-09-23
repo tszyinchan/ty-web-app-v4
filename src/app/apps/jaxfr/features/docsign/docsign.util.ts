@@ -2,6 +2,14 @@ import DOMPurify, { type Config } from 'dompurify';
 import { diffChars, diffLines } from 'diff';
 import { marked } from 'marked';
 import {
+  DOCSIGN_NARROW_PX,
+  DOCSIGN_ZOOM_MAX,
+  DOCSIGN_ZOOM_MIN,
+  DOCSIGN_ZOOM_STEP,
+  DOCSIGN_ZOOM_STORAGE_KEY,
+  type DocsignZoomChoice,
+} from './docsign.constants';
+import {
   DiffLineVm,
   DiffPartVm,
   DocsignContentBlock,
@@ -311,6 +319,39 @@ export function sameSignerSet(left: string[], right: string[]): boolean {
 
 export function cssQuotedString(value: string): string {
   return `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
+}
+
+export function isDocsignNarrowViewport(widthPx: number): boolean {
+  return widthPx <= DOCSIGN_NARROW_PX;
+}
+
+export function clampDocsignZoomPercent(value: number): number {
+  const stepped = Math.round(value / DOCSIGN_ZOOM_STEP) * DOCSIGN_ZOOM_STEP;
+  return Math.min(DOCSIGN_ZOOM_MAX, Math.max(DOCSIGN_ZOOM_MIN, stepped));
+}
+
+export function readDocsignZoom(): DocsignZoomChoice | null {
+  try {
+    const raw = localStorage.getItem(DOCSIGN_ZOOM_STORAGE_KEY);
+    if (raw === 'fit') return 'fit';
+    const n = Number(raw);
+    if (Number.isFinite(n)) return clampDocsignZoomPercent(n);
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+export function writeDocsignZoom(value: DocsignZoomChoice): void {
+  try {
+    localStorage.setItem(DOCSIGN_ZOOM_STORAGE_KEY, String(value));
+  } catch {
+    return;
+  }
+}
+
+export function defaultDocsignZoom(viewportWidthPx: number): DocsignZoomChoice {
+  return readDocsignZoom() ?? (isDocsignNarrowViewport(viewportWidthPx) ? 'fit' : 100);
 }
 
 export function compactStampDate(value: string | null | undefined): string {

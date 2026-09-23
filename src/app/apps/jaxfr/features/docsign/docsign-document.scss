@@ -3,11 +3,9 @@
 }
 
 .docsign-paper {
-  // The paper is a physical document — it stays white/near-white in every
-  // app theme and mode, not just in print. Overriding the semantic --app-*
-  // names locally (rather than only setting `background`) means nested
-  // markdown content below (tables, blockquotes, code) that reads those
-  // same variables also stays fixed instead of following the app theme.
+  // The paper is a physical A4 sheet. Size and type stay in mm/pt so the
+  // window (and zoom) never reflow the document. Theme tokens below are
+  // pinned to paper colors so nested markdown does not follow the app skin.
   --app-surface: var(--app-paper-bg);
   --app-surface-raised: var(--app-paper-bg);
   --app-page-bg: #f3f6f9;
@@ -18,25 +16,21 @@
   --app-link: var(--app-paper-link);
   --app-accent: var(--app-paper-accent);
   position: relative;
-  max-width: 800px;
+  width: 210mm;
+  min-height: 297mm;
   margin: 0 auto;
-  padding: 40px;
+  padding: 18mm;
   background: var(--app-paper-bg);
   color: var(--app-paper-text);
   font-family: var(--app-paper-font);
   box-shadow: var(--app-panel-shadow);
-  border-radius: var(--app-radius);
+  border-radius: 0;
   box-sizing: border-box;
   overflow: visible;
 }
 
 .docsign-paper.print-mode {
-  // Colors are already fixed by the base rule above — only the
-  // print-specific layout diffs (no card chrome, full-bleed) remain here.
   box-shadow: none;
-  border-radius: 0;
-  max-width: none;
-  padding: 0;
 }
 
 .docsign-paper.print-mode .paper-body {
@@ -65,7 +59,7 @@
 
 .paper-kicker {
   margin: 0;
-  font-size: 12px;
+  font-size: 8pt;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--app-text-muted);
@@ -74,13 +68,13 @@
 
 .paper-brand-sub {
   margin: 2px 0 0;
-  font-size: 11px;
+  font-size: 8pt;
   color: var(--app-text-muted);
 }
 
 .paper-title {
-  margin: 20px 0 28px;
-  font-size: 34px;
+  margin: 12pt 0 14pt;
+  font-size: 18pt;
   font-weight: 700;
   line-height: 1.25;
   color: var(--app-text-primary);
@@ -95,7 +89,7 @@
 .meta-label {
   display: block;
   margin-bottom: 4px;
-  font-size: 11px;
+  font-size: 7.5pt;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--app-text-muted);
@@ -103,21 +97,21 @@
 
 .meta-value {
   display: block;
-  font-size: 14px;
+  font-size: 10pt;
   color: var(--app-text-secondary);
 }
 
 .meta-id {
-  font-size: 13px;
+  font-size: 10pt;
   letter-spacing: 0;
   overflow-wrap: anywhere;
 }
 
 .paper-body {
   position: relative;
-  max-width: 40em;
-  font-size: 16px;
-  line-height: 1.7;
+  max-width: none;
+  font-size: 11pt;
+  line-height: 1.45;
 }
 
 .docsign-paper .md-body {
@@ -178,7 +172,7 @@
   width: 100%;
   border-collapse: collapse;
   margin: 12px 0 20px;
-  font-size: 14px;
+  font-size: 10pt;
 }
 
 .docsign-paper .md-body th,
@@ -363,8 +357,6 @@
 }
 
 @media print {
-  // Colors are already fixed by the base .docsign-paper rule — only the
-  // print-specific layout resets (full-bleed, no card chrome) remain here.
   .docsign-document-host,
   .docsign-paper,
   .docsign-paper.print-mode {
@@ -380,6 +372,8 @@
 
   .paper-body {
     max-width: none;
+    font-size: 11pt;
+    line-height: 1.45;
   }
 
   .paper-masthead,
@@ -467,25 +461,3 @@
   }
 }
 
-@media (max-width: 1100px) {
-  .docsign-paper {
-    padding: 24px;
-  }
-
-  .paper-title {
-    font-size: 26px;
-  }
-
-  .paper-meta-grid,
-  .sig-columns {
-    grid-template-columns: 1fr;
-  }
-
-  .drive-frame {
-    min-height: 200px;
-  }
-
-  .drive-frame iframe {
-    height: 200px;
-  }
-}
