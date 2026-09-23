@@ -53,6 +53,11 @@ export const LAUNCHER_REGISTRY: Record<string, LauncherRegistryEntry> = {
     group: 'features',
     shipped: true,
   },
+  CG: {
+    image: '/icons/3d/apps.png',
+    group: 'features',
+    shipped: true,
+  },
   yyHome: {
     image: '/icons/3d/kitchen.png',
     group: 'features',

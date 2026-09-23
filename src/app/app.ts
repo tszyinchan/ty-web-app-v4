@@ -32,6 +32,7 @@ export class App {
   );
 
   private isDocsignPrint(url: string): boolean {
-    return url.split('?')[0].includes('/docsign/print/');
+    const path = url.split('?')[0];
+    return path.includes('/docsign/print/') || path.includes('/cg-live/');
   }
 }

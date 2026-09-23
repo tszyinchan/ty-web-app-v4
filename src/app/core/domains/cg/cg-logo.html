@@ -1,0 +1,9 @@
+@if (visible() && imageUrl()) {
+  <div
+    class="logo-box"
+    [class.natural]="!hasFixedWidth()"
+    [ngStyle]="css()"
+  >
+    <img [src]="imageUrl()" alt="" />
+  </div>
+}

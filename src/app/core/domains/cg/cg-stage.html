@@ -1,0 +1,10 @@
+<div
+  class="stage"
+  [class.preview]="preview()"
+  [class.backdrop-checkerboard]="
+    preview() && backdrop() === 'checkerboard'
+  "
+  [class.backdrop-studio]="preview() && backdrop() === 'studio'"
+>
+  <ng-content />
+</div>

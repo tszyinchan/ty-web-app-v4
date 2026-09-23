@@ -1,0 +1,41 @@
+<div class="standard-list-view">
+  <div class="list-search-container">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="list-search-input">
+      <mat-icon matPrefix>search</mat-icon>
+      <mat-label>Search packages...</mat-label>
+      <input matInput [(ngModel)]="searchQuery" />
+      @if (searchQuery()) {
+        <button mat-icon-button matSuffix (click)="searchQuery.set('')">
+          <mat-icon>close</mat-icon>
+        </button>
+      }
+    </mat-form-field>
+  </div>
+
+  <div class="list-container">
+    @for (item of listVm(); track item.tb_tyapp_cgpk_id) {
+      <a class="item-link" [routerLink]="['../edit', item.tb_tyapp_cgpk_id]">
+        <div class="item-content">
+          <div class="item-info-group">
+            <span class="main-text">{{ item.name }}</span>
+            <span class="sub-text">
+              {{ item.roleLabel }}
+              · {{ item.logoCount }} logo{{ item.logoCount === 1 ? '' : 's' }}
+            </span>
+          </div>
+          <div class="item-status-group">
+            <span class="status-tag">{{ item.roleLabel }}</span>
+            <mat-icon class="chevron">chevron_right</mat-icon>
+          </div>
+        </div>
+      </a>
+    } @empty {
+      @if (!cg.loading()) {
+        <div class="empty-placeholder">
+          No packages yet. Create CH36, News SNG, or any other package — they
+          all share the same logo slot type.
+        </div>
+      }
+    }
+  </div>
+</div>

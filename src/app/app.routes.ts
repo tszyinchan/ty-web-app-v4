@@ -224,6 +224,13 @@ const JAXFR_ROUTES: Routes = [
           ),
       },
       {
+        path: 'cg',
+        canActivate: [featureAccessGuard],
+        data: { featureName: 'CG' },
+        loadChildren: () =>
+          import('./apps/jaxfr/features/cg/cg.routes').then((m) => m.CG_ROUTES),
+      },
+      {
         path: 'settings',
         canActivate: [featureAccessGuard],
         data: { featureName: 'Settings' },
@@ -262,6 +269,11 @@ const JAXFR_ROUTES: Routes = [
         ],
       },
     ],
+  },
+  {
+    path: 'cg-live/:token',
+    loadComponent: () =>
+      import('./apps/cg/cg-overlay').then((m) => m.CgOverlay),
   },
   {
     path: '**',
@@ -332,11 +344,30 @@ const TIME_ROUTES: Routes = [
   { path: '**', redirectTo: '' },
 ];
 
+const CG_OVERLAY_ROUTES: Routes = [
+  {
+    path: 'o/:token',
+    loadComponent: () =>
+      import('./apps/cg/cg-overlay').then((m) => m.CgOverlay),
+  },
+  {
+    path: 'cg-live/:token',
+    loadComponent: () =>
+      import('./apps/cg/cg-overlay').then((m) => m.CgOverlay),
+  },
+  {
+    path: '**',
+    loadComponent: () =>
+      import('./apps/cg/cg-overlay').then((m) => m.CgOverlay),
+  },
+];
+
 const routeMap: Record<string, Routes> = {
   [SUBDOMAINS.JAXFR]: JAXFR_ROUTES,
   [SUBDOMAINS.FILELINK]: FILELINK_ROUTES,
   [SUBDOMAINS.SHARE]: SHARE_ROUTES,
   [SUBDOMAINS.TIME]: TIME_ROUTES,
+  [SUBDOMAINS.CG]: CG_OVERLAY_ROUTES,
 };
 
 export const routes: Routes = routeMap[currentApp] || JAXFR_ROUTES;

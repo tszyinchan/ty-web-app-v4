@@ -15,5 +15,9 @@ export function getCurrentSubdomain(): string {
     return SUBDOMAINS.TIME;
   }
 
+  if (hostname.startsWith(SUBDOMAINS.CG)) {
+    return SUBDOMAINS.CG;
+  }
+
   return SUBDOMAINS.JAXFR;
 }

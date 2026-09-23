@@ -13,8 +13,9 @@ Apex is `tszyin.com`. Apps are **subdomains of that host**. Jaxfr is **not** `ja
 | Filelink (`filelink`) | `https://filelink.tszyin.com` | hostname starting with `filelink` |
 | Share (`share`) | `https://share.tszyin.com` | hostname starting with `share` |
 | Time (`time`) | `https://time.tszyin.com` | hostname starting with `time` |
+| CG (`cg`) | `https://cg.tszyin.com` | hostname starting with `cg` — local overlay is `http://cg.localhost:4200/o/<token>` |
 
-`getCurrentSubdomain()` returns Filelink / Share / Time only when `hostname.startsWith` that prefix; **everything else is Jaxfr** (including `app.tszyin.com` and `localhost`).
+`getCurrentSubdomain()` returns Filelink / Share / Time / CG only when `hostname.startsWith` that prefix; **everything else is Jaxfr** (including `app.tszyin.com` and `localhost`).
 
 Password reset (`/reset-password`) lives on **Jaxfr only**. Do **not** use `{{ .ConfirmationURL }}` in the Reset Password email — that hits `/auth/v1/verify` and then Auth's **Site URL**. A leftover `http://localhost:3000` Site URL produces exactly that redirect (and scanners prefetching `/verify` burn the one-time token → `otp_expired`).
 

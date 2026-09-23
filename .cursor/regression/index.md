@@ -27,6 +27,7 @@
 | 5 | Fit | — | 待寫 | |
 | 6 | Filelink | — | 待寫 | |
 | 7 | Docsign | [`docsign.regression.md`](../../src/app/apps/jaxfr/features/docsign/docsign.regression.md) | 已有劇本 | 紙張 viewer、zoom、Details 抽屜、Markdown、真分頁 1/N、列印 |
+| 15 | CG | [`cg.regression.md`](../../src/app/apps/jaxfr/features/cg/cg.regression.md) | 已有劇本 | Package + logo slot + 16:9 preview；overlay 在 `cg.localhost:4200/o/:token` |
 | 8 | Work Employment | — | 待寫 | |
 | 9 | Work Schedule | — | 待寫 | 依賴 employment 資料 |
 | 10 | Work Attendance | — | 待寫 | 依賴 schedule |

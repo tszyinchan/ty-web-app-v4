@@ -1,0 +1,13 @@
+<div class="overlay-root">
+  <app-cg-stage>
+    @if (slot(); as live) {
+      @if (live.slot.component_type === Logo) {
+        <app-cg-logo
+          [imageUrl]="live.slot.payload.imageUrl"
+          [layout]="live.slot.layout"
+          [visible]="live.slot.visible"
+        />
+      }
+    }
+  </app-cg-stage>
+</div>

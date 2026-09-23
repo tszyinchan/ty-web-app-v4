@@ -63,6 +63,9 @@
         },
         "serve": {
           "builder": "@angular/build:dev-server",
+          "options": {
+            "allowedHosts": ["cg.localhost", ".localhost"]
+          },
           "configurations": {
             "production": {
               "buildTarget": "ty-web-app-v4:build:production"

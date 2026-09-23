@@ -1,0 +1,18 @@
+:host {
+  display: contents;
+}
+
+.logo-box {
+  pointer-events: none;
+  user-select: none;
+
+  img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  &.natural img {
+    width: auto;
+  }
+}

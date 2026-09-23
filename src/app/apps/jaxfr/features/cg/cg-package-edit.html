@@ -1,0 +1,205 @@
+<div class="split-workspace cg-workspace">
+  @if (item(); as pkg) {
+    <div class="form-scroll-area">
+      <section class="form-group">
+        <h3 class="group-header">Package</h3>
+        <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
+          <mat-label>Name</mat-label>
+          <input
+            matInput
+            [(ngModel)]="pkg.name"
+            required
+            placeholder="CH36, News SNG, Live show…"
+          />
+        </mat-form-field>
+        <div class="fields-grid-2 mt-16">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Role</mat-label>
+            <mat-select [(ngModel)]="pkg.role">
+              @for (option of roleOptions; track option.value) {
+                <mat-option [value]="option.value">{{ option.label }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        </div>
+        <p class="hint">
+          Channel = house look (logo, clock, ticker later). Source = feed
+          graphics (subtitle, name-tag later). A program can wear both.
+        </p>
+      </section>
+
+      <section class="form-group">
+        <div class="group-header-row">
+          <h3 class="group-header">Logo slots</h3>
+          <button mat-stroked-button type="button" (click)="addLogo()">
+            <mat-icon>add</mat-icon>
+            Add logo
+          </button>
+        </div>
+
+        @for (slot of logoSlots(); track slot.clientId) {
+          <div class="slot-card">
+            <div class="slot-card-head">
+              <span>Logo</span>
+              <mat-slide-toggle
+                [(ngModel)]="slot.visible"
+                (ngModelChange)="touchPreview()"
+              >Visible</mat-slide-toggle>
+            </div>
+
+            @if (isEmbeddedLogo(slot)) {
+              <p class="hint">
+                Local image embedded{{
+                  slot.payload.fileName ? ': ' + slot.payload.fileName : ''
+                }}
+              </p>
+            } @else {
+              <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
+                <mat-label>Image URL</mat-label>
+                <input
+                  matInput
+                  [(ngModel)]="slot.payload.imageUrl"
+                  (ngModelChange)="onImageUrlChange(slot)"
+                  placeholder="/icons/3d/apps.png or https://…"
+                />
+              </mat-form-field>
+            }
+            <div class="image-actions">
+              <label class="file-pick-btn">
+                <input
+                  type="file"
+                  [accept]="logoAccept"
+                  (change)="onLogoFile(slot, $event)"
+                />
+                Choose local image
+              </label>
+              <button
+                mat-button
+                type="button"
+                (click)="useSampleLogo(slot)"
+              >
+                Use sample PNG
+              </button>
+            </div>
+
+            <div class="fields-grid-2 mt-16">
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-label>X</mat-label>
+                <input
+                  matInput
+                  type="number"
+                  [(ngModel)]="slot.layout.x"
+                  (ngModelChange)="touchPreview()"
+                />
+              </mat-form-field>
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-label>Y</mat-label>
+                <input
+                  matInput
+                  type="number"
+                  [(ngModel)]="slot.layout.y"
+                  (ngModelChange)="touchPreview()"
+                />
+              </mat-form-field>
+            </div>
+            <div class="fields-grid-2 mt-16">
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-label>Width</mat-label>
+                <input
+                  matInput
+                  type="number"
+                  [(ngModel)]="slot.layout.width"
+                  (ngModelChange)="touchPreview()"
+                />
+              </mat-form-field>
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-label>Scale</mat-label>
+                <input
+                  matInput
+                  type="number"
+                  step="0.05"
+                  [(ngModel)]="slot.layout.scale"
+                  (ngModelChange)="touchPreview()"
+                />
+              </mat-form-field>
+            </div>
+            <div class="fields-grid-2 mt-16">
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-label>Anchor</mat-label>
+                <mat-select
+                  [(ngModel)]="slot.layout.anchor"
+                  (ngModelChange)="touchPreview()"
+                >
+                  @for (option of anchorOptions; track option.value) {
+                    <mat-option [value]="option.value">{{ option.label }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-label>Unit</mat-label>
+                <mat-select
+                  [(ngModel)]="slot.layout.unit"
+                  (ngModelChange)="touchPreview()"
+                >
+                  @for (option of unitOptions; track option.value) {
+                    <mat-option [value]="option.value">{{ option.label }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+            </div>
+
+            <div class="url-row">
+              <code class="obs-url">{{ overlayUrl(slot) }}</code>
+              <button mat-stroked-button type="button" (click)="copyOverlayUrl(slot)">
+                Copy OBS URL
+              </button>
+            </div>
+            <button mat-button type="button" color="warn" (click)="removeSlot(slot.clientId)">
+              Remove logo
+            </button>
+          </div>
+        } @empty {
+          <p class="hint">Add a logo slot. Position lives on the 16:9 stage, not in OBS.</p>
+        }
+      </section>
+    </div>
+
+    <aside class="preview-pane">
+      <div class="preview-toolbar">
+        <span class="p-header">16:9 preview</span>
+        <div class="preview-toggles">
+          <button
+            mat-stroked-button
+            type="button"
+            [class.active]="backdrop() === backdrops.Checkerboard"
+            (click)="backdrop.set(backdrops.Checkerboard)"
+          >
+            Alpha
+          </button>
+          <button
+            mat-stroked-button
+            type="button"
+            [class.active]="backdrop() === backdrops.Studio"
+            (click)="backdrop.set(backdrops.Studio)"
+          >
+            Studio
+          </button>
+        </div>
+      </div>
+      <app-cg-stage [preview]="true" [backdrop]="backdrop()">
+        @for (slot of logoSlots(); track slot.clientId) {
+          <app-cg-logo
+            [imageUrl]="slot.payload.imageUrl"
+            [layout]="layoutSnapshot(slot)"
+            [visible]="slot.visible"
+          />
+        }
+      </app-cg-stage>
+      <p class="hint">
+        Overlay page is truly transparent. Checkerboard is only this preview.
+        OBS URL is <code>cg.localhost:4200/o/…</code> locally and
+        <code>cg.tszyin.com/o/…</code> in production.
+      </p>
+    </aside>
+  }
+</div>
