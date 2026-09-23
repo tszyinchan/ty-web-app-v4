@@ -277,6 +277,27 @@ export class YyemsService {
     };
   }
 
+  async queryBillsInRange(
+    fromIso: string,
+    toIsoExclusive: string,
+  ): Promise<YyemsBillEmbed[]> {
+    try {
+      const { data, error } = await this.supabase
+        .from('tyapp_yyems')
+        .select(BILL_EMBED)
+        .is('deleted_at', null)
+        .gte('occurred_at', fromIso)
+        .lt('occurred_at', toIsoExclusive)
+        .order('occurred_at', { ascending: false })
+        .limit(2000);
+      if (error) throw error;
+      return (data as YyemsBillEmbed[]) ?? [];
+    } catch (error: unknown) {
+      this.notification.handleError('Fetch bills failed', error);
+      return [];
+    }
+  }
+
   async fetchBills(fromIso: string, toIsoExclusive: string): Promise<void> {
     this.billsLoading.set(true);
     try {
@@ -473,6 +494,24 @@ export class YyemsService {
     }
   }
 
+  async fetchSharesForBills(billIds: readonly string[]): Promise<YyemsBillShare[] | null> {
+    if (billIds.length === 0) return [];
+    try {
+      const { data, error } = await this.supabase
+        .from('tyapp_yyems_bill_share')
+        .select('*')
+        .in('yyems_id', [...billIds])
+        .limit(5000);
+      if (error) throw error;
+      return (data as YyemsBillShare[]) ?? [];
+    } catch (error: unknown) {
+      if (!isMissingShareTable(error)) {
+        this.notification.handleError('Fetch bill shares failed', error);
+      }
+      return null;
+    }
+  }
+
   async fetchBillShares(billId: string): Promise<YyemsBillShare[] | null> {
     try {
       const { data, error } = await this.supabase
@@ -638,6 +677,50 @@ export class YyemsService {
       row,
       'Vendor',
     ) as Promise<YyemsVendor | null>;
+  }
+
+  /** CAD wallet whose financial account is owned by `userId`. Joint when userId is null. */
+  async createOwnedCadWallet(
+    userId: string | null,
+    label: string,
+  ): Promise<string | null> {
+    this.loading.set(true);
+    try {
+      const { data: accountRow, error: accountError } = await this.supabase
+        .from('tyapp_yyems_financial_account')
+        .insert({
+          display_name: label,
+          currency: 'CAD',
+          owner_user_id: userId,
+          status: RecordStatus.Active,
+        })
+        .select()
+        .single();
+      if (accountError) throw accountError;
+      const account = accountRow as YyemsFinancialAccount;
+      const { data: walletRow, error: walletError } = await this.supabase
+        .from('tyapp_yyems_wallet')
+        .insert({
+          name: label,
+          financial_account_id: account.tb_tyapp_yfa_id,
+          status: RecordStatus.Active,
+        })
+        .select()
+        .single();
+      if (walletError) throw walletError;
+      this.dictsLoaded = false;
+      await this.fetchDicts(true);
+      const wallet = walletRow as YyemsWallet;
+      this.zone.run(() => {
+        this.loading.set(false);
+        this.notification.showSuccess('Test wallet created');
+      });
+      return wallet.tb_tyapp_ywl_id;
+    } catch (error: unknown) {
+      this.notification.handleError('Create test wallet failed', error);
+      this.zone.run(() => this.loading.set(false));
+      return null;
+    }
   }
 
   async saveWallet(row: Partial<YyemsWallet>): Promise<YyemsWallet | null> {

@@ -102,6 +102,12 @@ export const FEATURE_HUBS: Record<string, FeatureHubConfig> = {
         route: '/yyems/bills/list',
       },
       {
+        title: 'Split',
+        icon: 'balance',
+        image: '/icons/3d/payments.png',
+        route: '/yyems/split',
+      },
+      {
         title: 'Products',
         icon: 'shopping_basket',
         image: '/icons/3d/cart.png',

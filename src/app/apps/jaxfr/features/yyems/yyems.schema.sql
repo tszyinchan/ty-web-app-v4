@@ -5,7 +5,7 @@
 -- Does NOT import AppSheet rows. Import comes later (legacy_id mapping).
 -- Do NOT store AppSheet auto_* / VC display strings; compute those in the app.
 --
--- Access: any tyapp_user with appsheet_525_user_id set, or Super Admin.
+-- Access: appsheet_525_user_id, a yyHome / YYEMS feature grant, or Super Admin.
 -- People: cty/frd from AppSheet map to tyapp_user.user_id (UUID).
 -- Shared spend: ownership_user_id IS NULL, mirrored into tyapp_yyems_bill_share
 -- (two 0.5 rows). A single user id is one 1.0 row. "yyems" is NOT a login.
@@ -33,6 +33,15 @@ AS $$
         AND u.deleted_at IS NULL
         AND u.appsheet_525_user_id IS NOT NULL
         AND length(btrim(u.appsheet_525_user_id)) > 0
+    )
+    OR EXISTS (
+      SELECT 1
+      FROM public.tyapp_user_feature_access g
+      JOIN public.tyapp_app_feature f
+        ON f.tb_tyapp_ap_ftr_id = g.feature_id
+      WHERE g.user_id = auth.uid()
+        AND f.deleted_at IS NULL
+        AND f.name IN ('yyHome', 'YYEMS')
     ),
     false
   );

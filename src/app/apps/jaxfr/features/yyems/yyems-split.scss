@@ -1,0 +1,149 @@
+.yyems-split {
+  padding-bottom: 32px;
+}
+
+.split-block {
+  padding: 8px 16px 16px;
+  border-bottom: 1px solid var(--app-border-subtle);
+}
+
+h2 {
+  margin: 8px 0;
+  font: var(--app-weight-emphasis) 16px var(--app-font);
+  color: var(--app-text-primary);
+}
+
+.hint {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: var(--app-text-muted);
+
+  &.ok {
+    color: var(--app-link);
+  }
+}
+
+code {
+  font-size: 12px;
+}
+
+.check-list,
+.line-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.check-list li,
+.line-list li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 0;
+  border-top: 1px solid var(--app-border-subtle);
+}
+
+.check-title,
+.line-title {
+  font: var(--app-weight-emphasis) 14px var(--app-font);
+  color: var(--app-text-primary);
+}
+
+.check-actual,
+.line-verdict,
+.verdict {
+  font-size: 14px;
+  color: var(--app-text-primary);
+}
+
+.check-list li.bad .check-actual,
+.check-expected {
+  color: var(--app-danger);
+}
+
+.pair-row,
+.field-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.owner-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.owner-toggle button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font: var(--app-weight-emphasis) 14px var(--app-font);
+  color: var(--app-text-secondary);
+  background: var(--app-input-bg);
+  border: 1px solid var(--app-input-border);
+  border-radius: var(--app-radius);
+  padding: 10px 8px;
+  cursor: pointer;
+
+  mat-icon {
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+  }
+
+  &.active {
+    color: var(--app-accent-contrast);
+    background: var(--app-accent);
+    border-color: var(--app-accent);
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.5;
+  }
+}
+
+.wallet-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0 12px;
+}
+
+.ledger-chrome {
+  padding: 8px 16px 0;
+}
+
+.month-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.month-label {
+  min-width: 7.5rem;
+  text-align: center;
+  font: var(--app-weight-emphasis) 16px var(--app-font);
+  color: var(--app-text-primary);
+}
+
+.split-wait {
+  display: flex;
+  justify-content: center;
+  padding: 16px;
+}
+
+.line-when,
+.line-detail {
+  font-size: 12px;
+  color: var(--app-text-muted);
+}
+
+.verdict {
+  margin: 8px 0;
+  font: var(--app-weight-emphasis) 16px var(--app-font);
+}

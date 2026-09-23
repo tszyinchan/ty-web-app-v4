@@ -68,6 +68,105 @@ export function ownershipUserIdFromKey(key: string | null | undefined): string |
   return key;
 }
 
+const PERCENT_UNITS = 100;
+
+export interface BearerPercent {
+  user_id: string;
+  percent: number;
+}
+
+/** Equal whole percents that sum to 100. The last person absorbs the remainder. */
+export function equalBearerRows(userIds: readonly string[]): BearerPercent[] {
+  const ids = [...new Set(userIds.filter(Boolean))];
+  const count = ids.length;
+  if (count === 0) return [];
+  const each = Math.floor(PERCENT_UNITS / count);
+  const remainder = PERCENT_UNITS - each * count;
+  return ids.map((user_id, index) => ({
+    user_id,
+    percent: each + (index === count - 1 ? remainder : 0),
+  }));
+}
+
+/** Shares that sum to 1. A 0% person is omitted; the column requires share > 0. */
+export function rowsToShares(
+  rows: readonly BearerPercent[],
+): { user_id: string; share: number }[] {
+  if (rows.length === 0) return [];
+  const units = rows.map((row) => Math.round(row.percent));
+  const head = units.slice(0, -1).reduce((total, value) => total + value, 0);
+  units[units.length - 1] = PERCENT_UNITS - head;
+  return rows.flatMap((row, index) =>
+    units[index] > 0
+      ? [{ user_id: row.user_id, share: units[index] / PERCENT_UNITS }]
+      : [],
+  );
+}
+
+export function percentsFromShares(
+  rows: readonly { user_id: string; share: number }[],
+): BearerPercent[] {
+  if (rows.length === 0) return [];
+  const units = rows.map((row) => Math.round(Number(row.share) * PERCENT_UNITS));
+  const head = units.slice(0, -1).reduce((total, value) => total + value, 0);
+  units[units.length - 1] = PERCENT_UNITS - head;
+  return rows.map((row, index) => ({
+    user_id: row.user_id,
+    percent: units[index],
+  }));
+}
+
+export function equalShares(
+  userIds: readonly string[],
+): { user_id: string; share: number }[] {
+  return rowsToShares(equalBearerRows([...userIds].filter(Boolean).sort()));
+}
+
+/** Two-person bar. `ratio` is 0–1 from the left name to the right name, including 0 and 100. */
+export function pairFromRatio(
+  rows: readonly BearerPercent[],
+  ratio: number,
+): BearerPercent[] {
+  if (rows.length !== 2) return rows.map((row) => ({ ...row }));
+  const left = Math.min(
+    PERCENT_UNITS,
+    Math.max(0, Math.round(ratio * PERCENT_UNITS)),
+  );
+  return [
+    { user_id: rows[0].user_id, percent: left },
+    { user_id: rows[1].user_id, percent: PERCENT_UNITS - left },
+  ];
+}
+
+export function formatSharePercent(value: number): string {
+  return String(Math.round(value));
+}
+
+export function shareSplitHint(count: number): string {
+  if (count <= 0) return 'Select who bears this bill.';
+  if (count === 1) return '1 person · 100%';
+  const pct = 100 / count;
+  if (Number.isInteger(pct)) return `${count} people · ${pct}% each`;
+  return `${count} people · split equally`;
+}
+
+export function bearerNames(
+  shares: readonly { user_id: string }[] | undefined,
+  ownershipUserId: string | null,
+  users: readonly TyappUser[],
+): string {
+  if (shares && shares.length > 0) {
+    return shares
+      .map((row) => {
+        const user = users.find((item) => item.user_id === row.user_id);
+        return user ? formatUserDisplayName(user) : 'Unknown';
+      })
+      .sort((a, b) => a.localeCompare(b))
+      .join(' · ');
+  }
+  return ownershipLabel(ownershipUserId, users);
+}
+
 /** Map locked share rows back to the Yin / Yiu / Both control. */
 export function ownershipKeyFromShares(
   rows: readonly Pick<YyemsBillShare, 'user_id' | 'share'>[],
@@ -258,6 +357,7 @@ export function buildBillLedger(
   bills: readonly YyemsBillEmbed[],
   users: readonly TyappUser[],
   search: string,
+  sharesByBill: ReadonlyMap<string, readonly { user_id: string }[]> | null = null,
 ): YyemsBillLedger {
   const monthIn: Record<string, number> = {};
   const monthOut: Record<string, number> = {};
@@ -274,7 +374,11 @@ export function buildBillLedger(
     ? bills.filter((bill) =>
         billHaystack(
           bill,
-          ownershipLabel(bill.ownership_user_id, users),
+          bearerNames(
+            sharesByBill?.get(bill.tb_tyapp_yym_id),
+            bill.ownership_user_id,
+            users,
+          ),
         ).includes(needle),
       )
     : bills;
@@ -285,7 +389,11 @@ export function buildBillLedger(
     const dateKey = local.slice(0, 10);
     if (!dateKey) continue;
     const cat = vendorCategoryLines(bill.vendor);
-    const owner = ownershipLabel(bill.ownership_user_id, users);
+    const owner = bearerNames(
+      sharesByBill?.get(bill.tb_tyapp_yym_id),
+      bill.ownership_user_id,
+      users,
+    );
     const wallet = bill.wallet?.name || '—';
     const row: YyemsBillLedgerRow = {
       bill,
@@ -336,4 +444,269 @@ export function buildBillLedger(
     monthOut: moneyParts(monthOut),
     monthNet: netParts(monthIn, monthOut),
   };
+}
+
+/** Worked examples on the Split page. $100 so half is an exact $50. */
+export const SPLIT_CHECK_AMOUNT = 100;
+export const SPLIT_CHECK_CURRENCY = 'CAD';
+
+const FULL_SHARE = 1;
+const HALF_SHARE = 0.5;
+const MONEY_EPSILON = 0.005;
+
+export type SplitBearer = 'a' | 'b' | 'both';
+export type SplitPayer = 'a' | 'b' | 'joint';
+
+export interface SettleShare {
+  userId: string;
+  share: number;
+}
+
+export interface SettleEffect {
+  userId: string;
+  paid: number;
+  borne: number;
+  net: number;
+}
+
+export interface SettleOneResult {
+  amount: number;
+  payerUserId: string | null;
+  effects: readonly [SettleEffect, SettleEffect];
+  outsidePaid: number;
+}
+
+function money(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
+/** Split an amount into cents that add back to the original. The last share keeps the remainder. */
+export function allocateByShare(
+  amount: number,
+  shares: readonly { userId: string; share: number }[],
+): Map<string, number> {
+  const cents = Math.round(money(amount) * 100);
+  const weights = shares.map((row) => ({
+    userId: row.userId,
+    weight: Math.max(0, Math.round(Number(row.share) * PERCENT_UNITS)),
+  }));
+  const weightSum = weights.reduce((total, row) => total + row.weight, 0);
+  const out = new Map<string, number>();
+  let used = 0;
+  weights.forEach((row, index) => {
+    const portion =
+      weightSum <= 0
+        ? 0
+        : index === weights.length - 1
+          ? cents - used
+          : Math.floor((cents * row.weight) / weightSum);
+    used += portion;
+    out.set(row.userId, (out.get(row.userId) ?? 0) + portion / 100);
+  });
+  return out;
+}
+
+/**
+ * One expense between a chosen pair.
+ * Paid by = wallet owner (`null` = joint pot, 50/50 of this pair).
+ * Borne by = share rows. Net = paid − borne. Positive means the other person owes them.
+ */
+export function settleOneBill(input: {
+  amount: number;
+  payerUserId: string | null;
+  shares: readonly SettleShare[];
+  pair: readonly [string, string];
+}): SettleOneResult {
+  const amount = money(input.amount);
+  const [aId, bId] = input.pair;
+  let paidA = 0;
+  let paidB = 0;
+  let outsidePaid = 0;
+  if (input.payerUserId === null) {
+    paidA = money(amount / 2);
+    paidB = money(amount - paidA);
+  } else if (input.payerUserId === aId) {
+    paidA = amount;
+  } else if (input.payerUserId === bId) {
+    paidB = amount;
+  } else {
+    outsidePaid = amount;
+  }
+
+  const portions = allocateByShare(
+    amount,
+    input.shares.map((row) => ({ userId: row.userId, share: Number(row.share) })),
+  );
+  const borneA = portions.get(aId) ?? 0;
+  const borneB = portions.get(bId) ?? 0;
+
+  return {
+    amount,
+    payerUserId: input.payerUserId,
+    outsidePaid,
+    effects: [
+      { userId: aId, paid: paidA, borne: borneA, net: money(paidA - borneA) },
+      { userId: bId, paid: paidB, borne: borneB, net: money(paidB - borneB) },
+    ],
+  };
+}
+
+export function sharesForBearer(
+  bearer: SplitBearer,
+  pair: readonly [string, string],
+): SettleShare[] {
+  const [aId, bId] = pair;
+  if (bearer === 'a') return [{ userId: aId, share: FULL_SHARE }];
+  if (bearer === 'b') return [{ userId: bId, share: FULL_SHARE }];
+  return [
+    { userId: aId, share: HALF_SHARE },
+    { userId: bId, share: HALF_SHARE },
+  ];
+}
+
+export function payerIdFor(
+  payer: SplitPayer,
+  pair: readonly [string, string],
+): string | null {
+  if (payer === 'joint') return null;
+  return payer === 'a' ? pair[0] : pair[1];
+}
+
+/** True when every share row is one of these two people. Empty shares are not in the pair. */
+export function sharesStayInPair(
+  shares: readonly SettleShare[],
+  pair: readonly [string, string],
+): boolean {
+  if (shares.length === 0) return false;
+  const ids = new Set<string>(pair);
+  return shares.every((row) => ids.has(row.userId));
+}
+
+export function owesLabel(
+  aName: string,
+  bName: string,
+  aNet: number,
+  bNet: number,
+  currency: string,
+): string {
+  if (Math.abs(aNet + bNet) > MONEY_EPSILON) {
+    return `${aName} ${formatYyemsAmount(currency, aNet)} · ${bName} ${formatYyemsAmount(currency, bNet)} (paid outside this pair)`;
+  }
+  if (aNet < -MONEY_EPSILON) {
+    return `${aName} owes ${bName} ${formatYyemsAmount(currency, -aNet)}`;
+  }
+  if (aNet > MONEY_EPSILON) {
+    return `${bName} owes ${aName} ${formatYyemsAmount(currency, aNet)}`;
+  }
+  return 'Even';
+}
+
+interface SplitCheckCase {
+  title: string;
+  payer: SplitPayer;
+  bearer: SplitBearer;
+  expect: 'a-owes-b' | 'b-owes-a-half' | 'even' | 'a-owes-b-half';
+}
+
+const SPLIT_CHECK_CASES: readonly SplitCheckCase[] = [
+  { title: 'A bears, B’s wallet pays', payer: 'b', bearer: 'a', expect: 'a-owes-b' },
+  { title: 'Both, A’s wallet pays', payer: 'a', bearer: 'both', expect: 'b-owes-a-half' },
+  { title: 'A bears, A’s wallet pays', payer: 'a', bearer: 'a', expect: 'even' },
+  { title: 'Both, joint wallet', payer: 'joint', bearer: 'both', expect: 'even' },
+  { title: 'A bears, joint wallet', payer: 'joint', bearer: 'a', expect: 'a-owes-b-half' },
+];
+
+const SAMPLE_PAIR = ['sample-a', 'sample-b'] as const;
+
+export interface SplitCheckView {
+  title: string;
+  actual: string;
+  expected: string;
+  ok: boolean;
+}
+
+export function buildSplitChecks(aName: string, bName: string): SplitCheckView[] {
+  return SPLIT_CHECK_CASES.map((row) => {
+    const result = settleOneBill({
+      amount: SPLIT_CHECK_AMOUNT,
+      payerUserId: payerIdFor(row.payer, SAMPLE_PAIR),
+      shares: sharesForBearer(row.bearer, SAMPLE_PAIR),
+      pair: SAMPLE_PAIR,
+    });
+    const actual = owesLabel(
+      aName,
+      bName,
+      result.effects[0].net,
+      result.effects[1].net,
+      SPLIT_CHECK_CURRENCY,
+    );
+    const expected = expectedSplitVerdict(row.expect, aName, bName);
+    return { title: row.title, actual, expected, ok: actual === expected };
+  });
+}
+
+function expectedSplitVerdict(
+  kind: SplitCheckCase['expect'],
+  aName: string,
+  bName: string,
+): string {
+  const full = formatYyemsAmount(SPLIT_CHECK_CURRENCY, SPLIT_CHECK_AMOUNT);
+  const half = formatYyemsAmount(SPLIT_CHECK_CURRENCY, SPLIT_CHECK_AMOUNT / 2);
+  switch (kind) {
+    case 'a-owes-b':
+      return `${aName} owes ${bName} ${full}`;
+    case 'b-owes-a-half':
+      return `${bName} owes ${aName} ${half}`;
+    case 'a-owes-b-half':
+      return `${aName} owes ${bName} ${half}`;
+    case 'even':
+      return 'Even';
+  }
+}
+
+export interface SplitCurrencyTotal {
+  currency: string;
+  verdict: string;
+  aNet: number;
+  bNet: number;
+  outsidePaid: number;
+}
+
+export function summarizeSplit(
+  rows: readonly { currency: string; result: SettleOneResult }[],
+  aName: string,
+  bName: string,
+): SplitCurrencyTotal[] {
+  const byCurrency = new Map<
+    string,
+    { paidA: number; paidB: number; borneA: number; borneB: number; outside: number }
+  >();
+  for (const row of rows) {
+    const bucket = byCurrency.get(row.currency) ?? {
+      paidA: 0,
+      paidB: 0,
+      borneA: 0,
+      borneB: 0,
+      outside: 0,
+    };
+    bucket.paidA = money(bucket.paidA + row.result.effects[0].paid);
+    bucket.paidB = money(bucket.paidB + row.result.effects[1].paid);
+    bucket.borneA = money(bucket.borneA + row.result.effects[0].borne);
+    bucket.borneB = money(bucket.borneB + row.result.effects[1].borne);
+    bucket.outside = money(bucket.outside + row.result.outsidePaid);
+    byCurrency.set(row.currency, bucket);
+  }
+  return [...byCurrency.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([currency, bucket]) => {
+      const aNet = money(bucket.paidA - bucket.borneA);
+      const bNet = money(bucket.paidB - bucket.borneB);
+      return {
+        currency,
+        aNet,
+        bNet,
+        outsidePaid: bucket.outside,
+        verdict: owesLabel(aName, bName, aNet, bNet, currency),
+      };
+    });
 }

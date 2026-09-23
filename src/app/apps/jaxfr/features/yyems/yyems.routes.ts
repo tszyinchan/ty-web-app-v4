@@ -3,6 +3,7 @@ import { Routes } from '@angular/router';
 import { unsavedChangesGuard } from '../../../../core/guards/unsaved-changes.guard';
 import { YyemsBillEdit } from './yyems-bill-edit';
 import { YyemsBillList } from './yyems-bill-list';
+import { YyemsSplit } from './yyems-split';
 import { YyemsBuyEdit } from './yyems-buy-edit';
 import { YyemsEatEdit } from './yyems-eat-edit';
 import { YyemsFridge } from './yyems-fridge';
@@ -24,6 +25,7 @@ export const YYEMS_ROUTES: Routes = [
   { path: 'fridge', component: YyemsFridge },
   { path: 'home', component: YyemsHome },
   { path: 'bills/list', component: YyemsBillList },
+  { path: 'split', component: YyemsSplit },
   {
     path: 'bills/new',
     component: YyemsBillEdit,

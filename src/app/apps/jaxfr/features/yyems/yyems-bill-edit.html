@@ -74,6 +74,7 @@
                 name="billAmount"
                 type="number"
                 step="0.01"
+                placeholder="0.00"
                 [(ngModel)]="bill.amount"
                 required
               />
@@ -139,25 +140,83 @@
           </div>
         </div>
 
-        <div class="owner-toggle">
-          @for (u of householdUsers(); track u.user_id) {
-            <button
-              type="button"
-              [class.active]="bill.ownership_key === u.user_id"
-              [attr.aria-pressed]="bill.ownership_key === u.user_id"
-              (click)="setOwner(bill, u.user_id)"
-            >
-              {{ u | tyDisplayName }}
-            </button>
+        <div class="borne">
+          @if (myGroups().length > 1) {
+            <div class="borne-group">
+              <label class="ledger-label" for="bill-group">Group</label>
+              <select
+                id="bill-group"
+                class="borne-group-select"
+                [value]="groupId()"
+                (change)="onGroup($event)"
+              >
+                @for (group of myGroups(); track group.tb_tyapp_usr_grp_id) {
+                  <option [value]="group.tb_tyapp_usr_grp_id">{{ group.name }}</option>
+                }
+              </select>
+            </div>
           }
-          <button
-            type="button"
-            [class.active]="bill.ownership_key === YYEMS_OWNERSHIP_SHARED"
-            [attr.aria-pressed]="bill.ownership_key === YYEMS_OWNERSHIP_SHARED"
-            (click)="setOwner(bill, YYEMS_OWNERSHIP_SHARED)"
-          >
-            Both
-          </button>
+
+          @if (bearers().length === 0) {
+          <p class="owner-hint">Join a user group to choose who bears this bill.</p>
+        } @else {
+          @if (bearers().length > 2) {
+            <div class="owner-toggle">
+              @for (u of bearers(); track u.user_id) {
+                <button
+                  type="button"
+                  [class.active]="isBearer(bill, u.user_id)"
+                  [attr.aria-pressed]="isBearer(bill, u.user_id)"
+                  (click)="toggleBearer(bill, u.user_id)"
+                >
+                  @if (isBearer(bill, u.user_id)) {
+                    <mat-icon>check</mat-icon>
+                  }
+                  {{ u | tyDisplayName }}
+                </button>
+              }
+            </div>
+          }
+          @if (bill.bearers.length === 2) {
+            <div class="pair-split">
+              <div class="pair-ends">
+                <span>{{ bearerName(bill.bearers[0].user_id) }}</span>
+                <span>{{ bearerName(bill.bearers[1].user_id) }}</span>
+              </div>
+              <div
+                class="pair-hit"
+                (pointerdown)="onPairDown($event, bill, lane)"
+                (pointermove)="onPairMove($event, bill, lane)"
+                (pointerup)="onPairUp()"
+                (pointercancel)="onPairUp()"
+              >
+                <div class="pair-lane" #lane>
+                  <div class="pair-rail">
+                    <div class="pair-left" [style.width.%]="bill.bearers[0].percent"></div>
+                  </div>
+                  <button
+                    type="button"
+                    class="pair-knob"
+                    [style.left.%]="bill.bearers[0].percent"
+                    aria-label="Drag to change split"
+                    (pointerdown)="onPairDown($event, bill, lane)"
+                    (pointermove)="onPairMove($event, bill, lane)"
+                    (pointerup)="onPairUp()"
+                    (keydown)="onPairKey($event, bill)"
+                  ></button>
+                </div>
+              </div>
+              <div class="pair-ends pair-pct">
+                <span>{{ formatSharePercent(bill.bearers[0].percent) }}%</span>
+                <span>{{ formatSharePercent(bill.bearers[1].percent) }}%</span>
+              </div>
+            </div>
+          } @else if (bill.bearers.length === 1) {
+            <p class="owner-hint">{{ bearerName(bill.bearers[0].user_id) }} · 100%</p>
+          } @else {
+            <p class="owner-hint">{{ shareSplitHint(bill.bearers.length) }}</p>
+          }
+          }
         </div>
 
         <div class="ledger-row">
@@ -170,22 +229,25 @@
           <mat-checkbox [(ngModel)]="bill.reconciled"></mat-checkbox>
         </div>
 
-        <div class="ledger-row">
-          <span class="ledger-label">Period</span>
-          <div class="ledger-date">
-            <input class="ledger-control" type="date" [(ngModel)]="bill.period_start" />
-            <input class="ledger-control" type="date" [(ngModel)]="bill.period_end" />
+        <details class="ledger-more" [open]="moreOpen()" (toggle)="onMoreToggle($event)">
+          <summary>More</summary>
+          <div class="ledger-row">
+            <span class="ledger-label">Period</span>
+            <div class="ledger-date">
+              <input class="ledger-control" type="date" [(ngModel)]="bill.period_start" />
+              <input class="ledger-control" type="date" [(ngModel)]="bill.period_end" />
+            </div>
           </div>
-        </div>
 
-        <div class="ledger-note">
-          <span class="ledger-label">Description</span>
-          <textarea
-            class="ledger-control ledger-textarea"
-            rows="3"
-            [(ngModel)]="bill.description"
-          ></textarea>
-        </div>
+          <div class="ledger-note">
+            <span class="ledger-label">Description</span>
+            <textarea
+              class="ledger-control ledger-textarea"
+              rows="3"
+              [(ngModel)]="bill.description"
+            ></textarea>
+          </div>
+        </details>
       </section>
 
       <section class="form-group">

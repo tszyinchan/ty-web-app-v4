@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import {
   Component,
+  NgZone,
   OnDestroy,
   OnInit,
   computed,
@@ -18,7 +19,7 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { HeaderService } from '../../../../core/services/header.service';
 import { UserService } from '../user/user.service';
 import { localMonthUtcRange } from '../../../../core/utils/date-time.util';
-import { YYEMS_IN_OR_OUT } from './yyems.model';
+import { YYEMS_IN_OR_OUT, YyemsBillShare } from './yyems.model';
 import { YyemsService } from './yyems.service';
 import { buildBillLedger, formatYyemsAmount } from './yyems.util';
 
@@ -44,10 +45,24 @@ export class YyemsBillList implements OnInit, OnDestroy {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private users = inject(UserService);
+  private zone = inject(NgZone);
 
   readonly formatAmount = formatYyemsAmount;
   readonly YYEMS_IN_OR_OUT = YYEMS_IN_OR_OUT;
   searchQuery = signal('');
+  private billShares = signal<YyemsBillShare[] | null>(null);
+
+  private shareMap = computed(() => {
+    const rows = this.billShares();
+    if (rows === null) return null;
+    const map = new Map<string, { user_id: string }[]>();
+    for (const row of rows) {
+      const list = map.get(row.yyems_id) ?? [];
+      list.push({ user_id: row.user_id });
+      map.set(row.yyems_id, list);
+    }
+    return map;
+  });
 
   monthLabel = computed(() => {
     const { year, month } = this.yyems.billListCursor();
@@ -62,6 +77,7 @@ export class YyemsBillList implements OnInit, OnDestroy {
       this.yyems.bills(),
       this.users.users(),
       this.searchQuery(),
+      this.shareMap(),
     ),
   );
 
@@ -108,10 +124,14 @@ export class YyemsBillList implements OnInit, OnDestroy {
     void this.reload();
   }
 
-  private reload() {
+  private async reload() {
     const { year, month } = this.yyems.billListCursor();
     const range = localMonthUtcRange(year, month);
-    return this.yyems.fetchBills(range.from, range.to);
+    await this.yyems.fetchBills(range.from, range.to);
+    const shares = await this.yyems.fetchSharesForBills(
+      this.yyems.bills().map((bill) => bill.tb_tyapp_yym_id),
+    );
+    this.zone.run(() => this.billShares.set(shares));
   }
 
   ngOnDestroy() {
