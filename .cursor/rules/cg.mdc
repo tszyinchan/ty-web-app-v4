@@ -50,6 +50,6 @@ Tokens share one `/o/:token` space (unique across both tables in practice). Do n
 
 RPCs: `tyapp_cg_package_soft_delete_single_record`, `tyapp_cg_layer_soft_delete_single_record`, `tyapp_cg_get_output_by_token`.
 
-**Save** writes the Package and applies it to Output. The overlay **crossfades** from the previous take to the new one (Logo, Clock, Weather, …). Panel Stage is a live preview; it does not go to air until Save. On/Off on the Panel is draft until Save.
+**Save** writes the Package and applies it to Output. Each Layer **fades in or out on its own**. Layers that did not change stay put — turning Weather On does not blink an already-On Logo. Panel Stage is a live preview; it does not go to air until Save. On/Off on the Panel is draft until Save.
 
 Do not revive `tyapp_cg_slot` or `component_type`.

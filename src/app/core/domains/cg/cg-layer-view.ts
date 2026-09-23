@@ -13,11 +13,28 @@ import { CgLayerPayload, CgLayout } from './cg.model';
         <app-cg-logo
           [imageUrl]="payload().imageUrl"
           [layout]="layout()"
-          [visible]="visible()"
+          [visible]="true"
         />
       }
     }
   `,
+  styles: `
+    :host {
+      display: block;
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 1;
+      transition: opacity 0.4s ease;
+    }
+
+    :host.off {
+      opacity: 0;
+    }
+  `,
+  host: {
+    '[class.off]': '!visible()',
+  },
 })
 export class CgLayerView {
   readonly Logo = CgElementType.Logo;

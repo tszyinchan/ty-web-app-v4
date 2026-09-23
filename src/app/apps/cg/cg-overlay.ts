@@ -20,13 +20,6 @@ import { CgService } from '../../core/domains/cg/cg.service';
 
 const OVERLAY_HTML_CLASS = 'cg-overlay-on';
 
-interface CgTake {
-  key: number;
-  layers: CgLayer[];
-  on: boolean;
-  out: boolean;
-}
-
 @Component({
   selector: 'app-cg-overlay',
   standalone: true,
@@ -41,12 +34,11 @@ export class CgOverlay implements OnInit, OnDestroy {
   private title = inject(Title);
   private document = inject(DOCUMENT);
 
-  readonly takes = signal<CgTake[]>([]);
+  readonly stagedLayers = signal<CgLayer[]>([]);
 
   private pollId = 0;
   private fadeId = 0;
   private token = '';
-  private takeSeq = 0;
   private lastHash = '';
   private firstPaint = true;
 
@@ -68,51 +60,79 @@ export class CgOverlay implements OnInit, OnDestroy {
 
   private async refresh(): Promise<void> {
     if (!this.token) {
-      this.applyTake([], true);
+      this.applyIncoming([], true);
       return;
     }
     const live = await this.cg.fetchPublicOutput(this.token);
-    this.applyTake(live?.layers ?? [], this.firstPaint);
+    this.applyIncoming(live?.layers ?? [], this.firstPaint);
     this.firstPaint = false;
   }
 
-  private applyTake(layers: CgLayer[], instant: boolean): void {
-    const hash = takeHash(layers);
+  private applyIncoming(incoming: CgLayer[], instant: boolean): void {
+    const hash = outputHash(incoming);
     if (hash === this.lastHash) return;
     this.lastHash = hash;
-    const key = ++this.takeSeq;
-    window.clearTimeout(this.fadeId);
 
-    if (instant || this.takes().length === 0) {
-      this.takes.set([{ key, layers, on: true, out: false }]);
-      return;
+    const incomingById = new Map(
+      incoming.map((layer) => [layer.tb_tyapp_cgly_id, layer]),
+    );
+    const current = this.stagedLayers();
+    const currentById = new Map(
+      current.map((layer) => [layer.tb_tyapp_cgly_id, layer]),
+    );
+    const fadeInIds = new Set<string>();
+    const fadeOutIds = new Set<string>();
+    const next: CgLayer[] = [];
+
+    for (const layer of incoming) {
+      const previous = currentById.get(layer.tb_tyapp_cgly_id);
+      const stayOn = !!previous?.visible;
+      if (instant || stayOn) {
+        next.push({ ...layer, visible: true });
+      } else {
+        next.push({ ...layer, visible: false });
+        fadeInIds.add(layer.tb_tyapp_cgly_id);
+      }
     }
 
-    this.takes.update((list) => [
-      ...list.map((take) => ({ ...take, on: false, out: true })),
-      { key, layers, on: false, out: false },
-    ]);
+    for (const staged of current) {
+      if (!incomingById.has(staged.tb_tyapp_cgly_id)) {
+        next.push({ ...staged, visible: false });
+        fadeOutIds.add(staged.tb_tyapp_cgly_id);
+      }
+    }
 
-    requestAnimationFrame(() => {
+    this.stagedLayers.set(next);
+
+    if (fadeInIds.size > 0) {
       requestAnimationFrame(() => {
-        this.takes.update((list) =>
-          list.map((take) => (take.key === key ? { ...take, on: true } : take)),
-        );
+        requestAnimationFrame(() => {
+          this.stagedLayers.update((list) =>
+            list.map((layer) =>
+              fadeInIds.has(layer.tb_tyapp_cgly_id)
+                ? { ...layer, visible: true }
+                : layer,
+            ),
+          );
+        });
       });
-    });
+    }
 
+    window.clearTimeout(this.fadeId);
+    if (fadeOutIds.size === 0) return;
     this.fadeId = window.setTimeout(() => {
-      this.takes.update((list) => list.filter((take) => !take.out));
+      this.stagedLayers.update((list) =>
+        list.filter((layer) => !fadeOutIds.has(layer.tb_tyapp_cgly_id)),
+      );
     }, CG_VISIBLE_FADE_MS);
   }
 }
 
-function takeHash(layers: CgLayer[]): string {
+function outputHash(layers: CgLayer[]): string {
   return JSON.stringify(
     layers.map((layer) => ({
       id: layer.tb_tyapp_cgly_id,
       type: layer.element_type,
-      visible: layer.visible,
       layout: layer.layout,
       payload: layer.payload,
       sort: layer.sort_order,

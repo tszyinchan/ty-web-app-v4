@@ -62,15 +62,16 @@
 | B2 | 改 X / Y / Width / Scale | Stage 裡的 logo 跟著動，不必重載 |
 | B3 | 切 **Alpha** / **Studio** | Alpha 是棋盤（只在後台）；Studio 是暗底。都不是綠幕 |
 | B4 | 回到 Panel，撥 Logo 的 On/Off toggle | tile 變淡但圖還在。頂列 **Panel Stage 預覽**淡出。Package Output **先不要變**（還沒 Save） |
-| B5 | Save | 成功。約 2 秒內 overlay **淡出舊畫面、淡入新畫面**（不是瞬間切）。重整後位置、圖、On/Off 還在 |
+| B5 | Save | 成功。約 2 秒內 **只有這次有變的 layer** 淡入/淡出。已經 On 的 layer 維持原樣，不會整場閃一次。重整後位置、圖、On/Off 還在 |
 | B6 | 點 catalog 裡灰色的 Clock / Title | 不能加（soon）。只有 Logo 能再加一層；加完進 Layer 設定頁 |
+| B7 | `PKG_A` 加第二層 Logo，兩層都 On，Save。再開 overlay。然後只 Off 其中一層，Save | overlay 裡那一層淡出；另一層 Logo **一直在、不眨眼** |
 
 ### C — Package Output 是預設；Layer Output 也能開
 
 | # | 操作 | 預期 |
 |---|---|---|
 | C1 | Copy **Package Output**，新分頁打開 | URL 是 `http://cg.localhost:4200/o/…`（正式是 `cg.tszyin.com/o/…`）。真透明底 + package 裡所有 On 的 layer。壞 token 是空白，不是 Jaxfr 登入頁 |
-| C2 | 回到後台改 Scale，**先不要 Save**，看 overlay | overlay **不變**。Save 之後約 2 秒，overlay 淡入新 scale |
+| C2 | 回到後台改 Scale，**先不要 Save**，看 overlay | overlay **不變**。Save 之後約 2 秒，**這一層** 更新；其他 On 的 layer 不動 |
 | C3 | Copy Logo 的 **Layer Output**，另開分頁 | 同樣全幅透明，只畫那顆 Logo |
 
 ### CLEANUP
