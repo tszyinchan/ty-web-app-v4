@@ -1,25 +1,34 @@
--- SUPERSEDED by supabase/sql/cg-v2.sql (Package + Layer + dual Output).
--- Do not run this on a v2 database.
---
--- CG v1: packages + slots + public overlay RPC.
--- Run in the Supabase SQL editor. Safe to re-run.
+-- CG v2: Package + Layer + dual Output (package token + layer token).
+-- Drops v1 slot tables. Safe to re-run. Feature catalog row is kept.
+-- Run in the Supabase SQL editor.
 
-create table if not exists public.tyapp_cg_package (
+drop function if exists public.tyapp_cg_get_slot_by_token(text);
+drop function if exists public.tyapp_cg_slot_soft_delete_single_record(uuid);
+drop function if exists public.tyapp_cg_package_soft_delete_single_record(uuid);
+drop function if exists public.tyapp_cg_get_output_by_token(text);
+drop function if exists public.tyapp_cg_layer_soft_delete_single_record(uuid);
+
+drop table if exists public.tyapp_cg_layer;
+drop table if exists public.tyapp_cg_slot;
+drop table if exists public.tyapp_cg_package;
+
+create table public.tyapp_cg_package (
   tb_tyapp_cgpk_id uuid primary key default gen_random_uuid(),
   tb_tyapp_cgpk_seq_no bigint generated always as identity,
   name text not null,
   role text not null check (role in ('channel', 'source')),
+  public_token text not null unique,
   status smallint not null default 1,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   deleted_at timestamptz
 );
 
-create table if not exists public.tyapp_cg_slot (
-  tb_tyapp_cgsl_id uuid primary key default gen_random_uuid(),
-  tb_tyapp_cgsl_seq_no bigint generated always as identity,
+create table public.tyapp_cg_layer (
+  tb_tyapp_cgly_id uuid primary key default gen_random_uuid(),
+  tb_tyapp_cgly_seq_no bigint generated always as identity,
   package_id uuid not null references public.tyapp_cg_package (tb_tyapp_cgpk_id),
-  component_type text not null,
+  element_type text not null,
   public_token text not null unique,
   layout jsonb not null default '{}'::jsonb,
   payload jsonb not null default '{}'::jsonb,
@@ -31,14 +40,13 @@ create table if not exists public.tyapp_cg_slot (
   deleted_at timestamptz
 );
 
-create index if not exists tyapp_cg_slot_package_id_idx
-  on public.tyapp_cg_slot (package_id)
+create index tyapp_cg_layer_package_id_idx
+  on public.tyapp_cg_layer (package_id)
   where deleted_at is null;
 
 alter table public.tyapp_cg_package enable row level security;
-alter table public.tyapp_cg_slot enable row level security;
+alter table public.tyapp_cg_layer enable row level security;
 
-drop policy if exists tyapp_cg_package_authenticated_all on public.tyapp_cg_package;
 create policy tyapp_cg_package_authenticated_all
   on public.tyapp_cg_package
   for all
@@ -46,16 +54,15 @@ create policy tyapp_cg_package_authenticated_all
   using (true)
   with check (true);
 
-drop policy if exists tyapp_cg_slot_authenticated_all on public.tyapp_cg_slot;
-create policy tyapp_cg_slot_authenticated_all
-  on public.tyapp_cg_slot
+create policy tyapp_cg_layer_authenticated_all
+  on public.tyapp_cg_layer
   for all
   to authenticated
   using (true)
   with check (true);
 
 grant select, insert, update on public.tyapp_cg_package to authenticated;
-grant select, insert, update on public.tyapp_cg_slot to authenticated;
+grant select, insert, update on public.tyapp_cg_layer to authenticated;
 
 create or replace function public.tyapp_cg_package_soft_delete_single_record(record_id uuid)
 returns void
@@ -64,7 +71,7 @@ security definer
 set search_path = public
 as $$
 begin
-  update public.tyapp_cg_slot
+  update public.tyapp_cg_layer
   set deleted_at = now(), updated_at = now()
   where package_id = record_id
     and deleted_at is null;
@@ -76,48 +83,80 @@ begin
 end;
 $$;
 
-create or replace function public.tyapp_cg_slot_soft_delete_single_record(record_id uuid)
+create or replace function public.tyapp_cg_layer_soft_delete_single_record(record_id uuid)
 returns void
 language plpgsql
 security definer
 set search_path = public
 as $$
 begin
-  update public.tyapp_cg_slot
+  update public.tyapp_cg_layer
   set deleted_at = now(), updated_at = now()
-  where tb_tyapp_cgsl_id = record_id
+  where tb_tyapp_cgly_id = record_id
     and deleted_at is null;
 end;
 $$;
 
-create or replace function public.tyapp_cg_get_slot_by_token(p_token text)
+create or replace function public.tyapp_cg_get_output_by_token(p_token text)
 returns jsonb
-language sql
+language plpgsql
 stable
 security definer
 set search_path = public
 as $$
+declare
+  result jsonb;
+begin
   select jsonb_build_object(
-    'slot', to_jsonb(s),
+    'kind', 'layer',
     'packageName', p.name,
-    'packageRole', p.role
+    'packageRole', p.role,
+    'layers', jsonb_build_array(to_jsonb(l))
   )
-  from public.tyapp_cg_slot s
+  into result
+  from public.tyapp_cg_layer l
   join public.tyapp_cg_package p
-    on p.tb_tyapp_cgpk_id = s.package_id
-  where s.public_token = p_token
-    and s.deleted_at is null
+    on p.tb_tyapp_cgpk_id = l.package_id
+  where l.public_token = p_token
+    and l.deleted_at is null
     and p.deleted_at is null
-    and s.status = 1
+    and l.status = 1
     and p.status = 1
   limit 1;
+
+  if result is not null then
+    return result;
+  end if;
+
+  select jsonb_build_object(
+    'kind', 'package',
+    'packageName', p.name,
+    'packageRole', p.role,
+    'layers', coalesce((
+      select jsonb_agg(to_jsonb(l) order by l.sort_order)
+      from public.tyapp_cg_layer l
+      where l.package_id = p.tb_tyapp_cgpk_id
+        and l.deleted_at is null
+        and l.status = 1
+        and l.visible = true
+    ), '[]'::jsonb)
+  )
+  into result
+  from public.tyapp_cg_package p
+  where p.public_token = p_token
+    and p.deleted_at is null
+    and p.status = 1
+  limit 1;
+
+  return result;
+end;
 $$;
 
 grant execute on function public.tyapp_cg_package_soft_delete_single_record(uuid)
   to authenticated;
-grant execute on function public.tyapp_cg_slot_soft_delete_single_record(uuid)
+grant execute on function public.tyapp_cg_layer_soft_delete_single_record(uuid)
   to authenticated;
-grant execute on function public.tyapp_cg_get_slot_by_token(text)
+grant execute on function public.tyapp_cg_get_output_by_token(text)
   to anon, authenticated;
 
 insert into public.tyapp_app_feature (

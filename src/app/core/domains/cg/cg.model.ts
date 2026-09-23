@@ -1,8 +1,9 @@
 import { RecordStatus } from '../../models/status.enum';
 import {
   CgAnchor,
-  CgComponentType,
+  CgElementType,
   CgLayoutUnit,
+  CgOutputKind,
   CgPackageRole,
 } from './cg.constants';
 
@@ -21,27 +22,28 @@ export interface CgLogoPayload {
   fileName?: string;
 }
 
-export type CgSlotPayload = CgLogoPayload;
+export type CgLayerPayload = CgLogoPayload;
 
 export interface CgPackage {
   tb_tyapp_cgpk_id: string;
   tb_tyapp_cgpk_seq_no?: number;
   name: string;
   role: CgPackageRole;
+  public_token: string;
   status: RecordStatus;
   created_at?: string;
   updated_at?: string;
   deleted_at?: string | null;
 }
 
-export interface CgSlot {
-  tb_tyapp_cgsl_id: string;
-  tb_tyapp_cgsl_seq_no?: number;
+export interface CgLayer {
+  tb_tyapp_cgly_id: string;
+  tb_tyapp_cgly_seq_no?: number;
   package_id: string;
-  component_type: CgComponentType;
+  element_type: CgElementType;
   public_token: string;
   layout: CgLayout;
-  payload: CgSlotPayload;
+  payload: CgLayerPayload;
   visible: boolean;
   sort_order: number;
   status: RecordStatus;
@@ -50,20 +52,21 @@ export interface CgSlot {
   deleted_at?: string | null;
 }
 
-export interface CgSlotDraft {
+export interface CgLayerDraft {
   clientId: string;
-  tb_tyapp_cgsl_id?: string;
-  component_type: CgComponentType;
+  tb_tyapp_cgly_id?: string;
+  element_type: CgElementType;
   public_token: string;
   layout: CgLayout;
-  payload: CgSlotPayload;
+  payload: CgLayerPayload;
   visible: boolean;
   sort_order: number;
   status: RecordStatus;
 }
 
-export interface CgPublicSlot {
-  slot: CgSlot;
+export interface CgPublicOutput {
+  kind: CgOutputKind;
   packageName: string;
   packageRole: CgPackageRole;
+  layers: CgLayer[];
 }

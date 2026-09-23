@@ -1,8 +1,8 @@
 import { Injectable, NgZone, inject, signal } from '@angular/core';
 import { NotificationService } from '../../services/notification.service';
 import { SupabaseService } from '../../services/supabase.service';
-import { CgPackage, CgPublicSlot, CgSlot, CgSlotDraft } from './cg.model';
-import { normalizePublicSlot, normalizeSlot } from './cg.util';
+import { CgLayer, CgLayerDraft, CgPackage, CgPublicOutput } from './cg.model';
+import { createCgPublicToken, normalizeLayer, normalizePublicOutput } from './cg.util';
 
 @Injectable({ providedIn: 'root' })
 export class CgService {
@@ -11,7 +11,7 @@ export class CgService {
   private zone = inject(NgZone);
 
   packages = signal<CgPackage[]>([]);
-  slots = signal<CgSlot[]>([]);
+  layers = signal<CgLayer[]>([]);
   loading = signal(false);
 
   async fetchAllPackages(force = false): Promise<void> {
@@ -19,28 +19,28 @@ export class CgService {
 
     this.loading.set(true);
     try {
-      const [packageResult, slotResult] = await Promise.all([
+      const [packageResult, layerResult] = await Promise.all([
         this.supabase
           .from('tyapp_cg_package')
           .select('*')
           .is('deleted_at', null)
           .order('name', { ascending: true }),
         this.supabase
-          .from('tyapp_cg_slot')
+          .from('tyapp_cg_layer')
           .select('*')
           .is('deleted_at', null)
           .order('sort_order', { ascending: true }),
       ]);
 
       if (packageResult.error) throw packageResult.error;
-      if (slotResult.error) throw slotResult.error;
+      if (layerResult.error) throw layerResult.error;
 
       this.zone.run(() => {
         this.packages.set((packageResult.data ?? []) as CgPackage[]);
-        this.slots.set(
-          (slotResult.data ?? [])
-            .map((row) => normalizeSlot(row))
-            .filter((slot): slot is CgSlot => slot !== null),
+        this.layers.set(
+          (layerResult.data ?? [])
+            .map((row) => normalizeLayer(row))
+            .filter((layer): layer is CgLayer => layer !== null),
         );
         this.loading.set(false);
       });
@@ -52,10 +52,10 @@ export class CgService {
 
   async fetchPackageById(
     id: string,
-  ): Promise<{ package: CgPackage; slots: CgSlot[] } | null> {
+  ): Promise<{ package: CgPackage; layers: CgLayer[] } | null> {
     this.loading.set(true);
     try {
-      const [packageResult, slotResult] = await Promise.all([
+      const [packageResult, layerResult] = await Promise.all([
         this.supabase
           .from('tyapp_cg_package')
           .select('*')
@@ -63,7 +63,7 @@ export class CgService {
           .is('deleted_at', null)
           .single(),
         this.supabase
-          .from('tyapp_cg_slot')
+          .from('tyapp_cg_layer')
           .select('*')
           .eq('package_id', id)
           .is('deleted_at', null)
@@ -71,17 +71,17 @@ export class CgService {
       ]);
 
       if (packageResult.error) throw packageResult.error;
-      if (slotResult.error) throw slotResult.error;
+      if (layerResult.error) throw layerResult.error;
 
-      const slots = (slotResult.data ?? [])
-        .map((row) => normalizeSlot(row))
-        .filter((slot): slot is CgSlot => slot !== null);
+      const layers = (layerResult.data ?? [])
+        .map((row) => normalizeLayer(row))
+        .filter((layer): layer is CgLayer => layer !== null);
 
       return this.zone.run(() => {
         this.loading.set(false);
         return {
           package: packageResult.data as CgPackage,
-          slots,
+          layers,
         };
       });
     } catch (error: unknown) {
@@ -95,7 +95,7 @@ export class CgService {
 
   async savePackage(
     pkg: Partial<CgPackage>,
-    drafts: CgSlotDraft[],
+    drafts: CgLayerDraft[],
   ): Promise<string | null> {
     const isNew = !pkg.tb_tyapp_cgpk_id;
     const {
@@ -105,6 +105,8 @@ export class CgService {
       deleted_at,
       ...packagePayload
     } = pkg;
+    const publicToken =
+      packagePayload.public_token?.trim() || createCgPublicToken();
 
     this.loading.set(true);
     try {
@@ -114,6 +116,7 @@ export class CgService {
             .insert({
               name: packagePayload.name?.trim(),
               role: packagePayload.role,
+              public_token: publicToken,
               status: packagePayload.status,
             })
             .select()
@@ -137,28 +140,28 @@ export class CgService {
       const packageId = saved.tb_tyapp_cgpk_id;
       const existing = isNew
         ? []
-        : this.slots().filter((slot) => slot.package_id === packageId);
+        : this.layers().filter((layer) => layer.package_id === packageId);
       const keptIds = new Set(
         drafts
-          .map((draft) => draft.tb_tyapp_cgsl_id)
+          .map((draft) => draft.tb_tyapp_cgly_id)
           .filter((id): id is string => !!id),
       );
 
       for (const stale of existing.filter(
-        (slot) => !keptIds.has(slot.tb_tyapp_cgsl_id),
+        (layer) => !keptIds.has(layer.tb_tyapp_cgly_id),
       )) {
         const { error } = await this.supabase.rpc(
-          'tyapp_cg_slot_soft_delete_single_record',
-          { record_id: stale.tb_tyapp_cgsl_id },
+          'tyapp_cg_layer_soft_delete_single_record',
+          { record_id: stale.tb_tyapp_cgly_id },
         );
         if (error) throw error;
       }
 
-      const savedSlots: CgSlot[] = [];
+      const savedLayers: CgLayer[] = [];
       for (const [index, draft] of drafts.entries()) {
         const row = {
           package_id: packageId,
-          component_type: draft.component_type,
+          element_type: draft.element_type,
           public_token: draft.public_token,
           layout: draft.layout,
           payload: draft.payload,
@@ -168,19 +171,19 @@ export class CgService {
           updated_at: new Date().toISOString(),
         };
 
-        const slotQuery = draft.tb_tyapp_cgsl_id
+        const layerQuery = draft.tb_tyapp_cgly_id
           ? this.supabase
-              .from('tyapp_cg_slot')
+              .from('tyapp_cg_layer')
               .update(row)
-              .eq('tb_tyapp_cgsl_id', draft.tb_tyapp_cgsl_id)
+              .eq('tb_tyapp_cgly_id', draft.tb_tyapp_cgly_id)
               .select()
               .single()
-          : this.supabase.from('tyapp_cg_slot').insert(row).select().single();
+          : this.supabase.from('tyapp_cg_layer').insert(row).select().single();
 
-        const { data, error } = await slotQuery;
+        const { data, error } = await layerQuery;
         if (error) throw error;
-        const normalized = normalizeSlot(data);
-        if (normalized) savedSlots.push(normalized);
+        const normalized = normalizeLayer(data);
+        if (normalized) savedLayers.push(normalized);
       }
 
       return this.zone.run(() => {
@@ -191,9 +194,9 @@ export class CgService {
                 item.tb_tyapp_cgpk_id === saved.tb_tyapp_cgpk_id ? saved : item,
               ),
         );
-        this.slots.update((list) => [
-          ...list.filter((slot) => slot.package_id !== packageId),
-          ...savedSlots,
+        this.layers.update((list) => [
+          ...list.filter((layer) => layer.package_id !== packageId),
+          ...savedLayers,
         ]);
         this.loading.set(false);
         this.notification.showSuccess('Package saved');
@@ -221,8 +224,8 @@ export class CgService {
         this.packages.update((list) =>
           list.filter((item) => item.tb_tyapp_cgpk_id !== id),
         );
-        this.slots.update((list) =>
-          list.filter((slot) => slot.package_id !== id),
+        this.layers.update((list) =>
+          list.filter((layer) => layer.package_id !== id),
         );
         this.loading.set(false);
         this.notification.showSuccess('Package deleted');
@@ -237,14 +240,14 @@ export class CgService {
     }
   }
 
-  async fetchPublicSlot(token: string): Promise<CgPublicSlot | null> {
+  async fetchPublicOutput(token: string): Promise<CgPublicOutput | null> {
     try {
       const { data, error } = await this.supabase.rpc(
-        'tyapp_cg_get_slot_by_token',
+        'tyapp_cg_get_output_by_token',
         { p_token: token },
       );
       if (error) throw error;
-      return normalizePublicSlot(data);
+      return normalizePublicOutput(data);
     } catch {
       return null;
     }

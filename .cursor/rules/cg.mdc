@@ -1,0 +1,52 @@
+---
+description: CG feature naming — locked. Package / Element / Layer / Panel / Output / Stage.
+alwaysApply: true
+---
+
+# CG
+
+Display name is **CG** (broadcast Character Generator). Keep it. Do **not** rename to Overlay, Graphics, GFX, Live, Board, or Item.
+
+This is the locked vocabulary for code, UI copy, DB, routes, and the subdomain. If a new Element needs a payload key, add it under `payload` jsonb — do not invent a parallel table or a second token scheme.
+
+| Surface | Locked name |
+|---|---|
+| Launcher / `tyapp_app_feature.name` | `CG` |
+| Route | `/cg` (`/cg/list`, `/cg/new`, `/cg/edit/:id`) |
+| Overlay path | `/o/:token` on the CG host; fallback `/cg-live/:token` on Jaxfr |
+| Subdomain | `cg` → `https://cg.tszyin.com` / `http://cg.localhost:4200` |
+| Code | `features/cg/`, `apps/cg/` (overlay), `core/domains/cg/` |
+| Panel files | `cg-package-edit.*` (skeleton is `*-edit`; the page is still Panel) |
+
+## UI words
+
+| Word | Means | Example |
+|---|---|---|
+| **Package** | One look to use together | CH36, News SNG |
+| **Element** | Kind in the catalog (code registry `CG_ELEMENT_CATALOG`) | Logo, Clock, Ticker |
+| **Layer** | One instance inside a Package | CH36's Logo |
+| **Panel** | This Package's operator page | Drive-style grid of Layers + On/Off |
+| **Output** | OBS URL (full-frame transparent Stage) | Package Output (default), Layer Output |
+| **Stage** | 16:9 canvas | Tile thumbs, small program preview, overlay |
+
+**Channel / Source** stay on the Package as `role`. Clock is not Timer. Overlay is the public page implementation, not a product noun.
+
+## Tables and columns (final)
+
+`tyapp_cg_package` PK `tb_tyapp_cgpk_id` (seq `tb_tyapp_cgpk_seq_no`):
+
+`name`, `role` (`channel` \| `source`), `public_token`, `status`, `created_at`, `updated_at`, `deleted_at`
+
+`tyapp_cg_layer` PK `tb_tyapp_cgly_id` (seq `tb_tyapp_cgly_seq_no`):
+
+`package_id` → package PK, `element_type`, `public_token`, `layout` jsonb, `payload` jsonb, `visible` (On/Off), `sort_order`, `status`, `created_at`, `updated_at`, `deleted_at`
+
+Layout jsonb: `x`, `y`, `unit` (`percent` \| `px`), `anchor`, `scale`, `width`, `height`
+
+Logo payload jsonb: `imageUrl`, `fileName`
+
+Tokens share one `/o/:token` space (unique across both tables in practice). Do not add a token table.
+
+RPCs: `tyapp_cg_package_soft_delete_single_record`, `tyapp_cg_layer_soft_delete_single_record`, `tyapp_cg_get_output_by_token`.
+
+Do not revive `tyapp_cg_slot` or `component_type`.

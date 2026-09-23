@@ -9,18 +9,19 @@ import {
 } from '@angular/core';
 import { Title } from '@angular/platform-browser';
 import { ActivatedRoute } from '@angular/router';
-import { CgLogo } from '../../core/domains/cg/cg-logo';
+import { CgLayerView } from '../../core/domains/cg/cg-layer-view';
 import { CgStage } from '../../core/domains/cg/cg-stage';
-import { CG_OVERLAY_POLL_MS, CgComponentType } from '../../core/domains/cg/cg.constants';
-import { CgPublicSlot } from '../../core/domains/cg/cg.model';
+import { CG_OVERLAY_POLL_MS } from '../../core/domains/cg/cg.constants';
+import { CgPublicOutput } from '../../core/domains/cg/cg.model';
 import { CgService } from '../../core/domains/cg/cg.service';
 
 const OVERLAY_HTML_CLASS = 'cg-overlay-on';
 
+
 @Component({
   selector: 'app-cg-overlay',
   standalone: true,
-  imports: [CgStage, CgLogo],
+  imports: [CgStage, CgLayerView],
   templateUrl: './cg-overlay.html',
   styleUrl: './cg-overlay.scss',
   encapsulation: ViewEncapsulation.None,
@@ -31,8 +32,7 @@ export class CgOverlay implements OnInit, OnDestroy {
   private title = inject(Title);
   private document = inject(DOCUMENT);
 
-  readonly slot = signal<CgPublicSlot | null>(null);
-  readonly Logo = CgComponentType.Logo;
+  readonly output = signal<CgPublicOutput | null>(null);
 
   private pollId = 0;
   private token = '';
@@ -54,9 +54,9 @@ export class CgOverlay implements OnInit, OnDestroy {
 
   private async refresh(): Promise<void> {
     if (!this.token) {
-      this.slot.set(null);
+      this.output.set(null);
       return;
     }
-    this.slot.set(await this.cg.fetchPublicSlot(this.token));
+    this.output.set(await this.cg.fetchPublicOutput(this.token));
   }
 }

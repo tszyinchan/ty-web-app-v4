@@ -1,40 +1,30 @@
-<div class="standard-list-view">
-  <div class="list-search-container">
-    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="list-search-input">
-      <mat-icon matPrefix>search</mat-icon>
-      <mat-label>Search packages...</mat-label>
-      <input matInput [(ngModel)]="searchQuery" />
-      @if (searchQuery()) {
-        <button mat-icon-button matSuffix (click)="searchQuery.set('')">
-          <mat-icon>close</mat-icon>
-        </button>
-      }
-    </mat-form-field>
-  </div>
+<div class="cg-list">
+  <label class="cg-search">
+    <mat-icon>search</mat-icon>
+    <input
+      type="search"
+      [(ngModel)]="searchQuery"
+      placeholder="Search packages"
+    />
+  </label>
 
-  <div class="list-container">
+  <div class="cg-list-grid">
     @for (item of listVm(); track item.tb_tyapp_cgpk_id) {
-      <a class="item-link" [routerLink]="['../edit', item.tb_tyapp_cgpk_id]">
-        <div class="item-content">
-          <div class="item-info-group">
-            <span class="main-text">{{ item.name }}</span>
-            <span class="sub-text">
-              {{ item.roleLabel }}
-              · {{ item.logoCount }} logo{{ item.logoCount === 1 ? '' : 's' }}
-            </span>
-          </div>
-          <div class="item-status-group">
-            <span class="status-tag">{{ item.roleLabel }}</span>
-            <mat-icon class="chevron">chevron_right</mat-icon>
-          </div>
+      <a class="cg-pkg-card" [routerLink]="['../edit', item.tb_tyapp_cgpk_id]">
+        <div class="cg-pkg-card-top">
+          <span class="cg-pkg-name">{{ item.name }}</span>
+          <span class="cg-role" [class.source]="item.role === Source">
+            {{ item.roleLabel }}
+          </span>
         </div>
+        <p class="cg-pkg-layers">{{ item.layerSummary }}</p>
       </a>
     } @empty {
       @if (!cg.loading()) {
-        <div class="empty-placeholder">
-          No packages yet. Create CH36, News SNG, or any other package — they
-          all share the same logo slot type.
-        </div>
+        <p class="cg-empty">
+          No packages yet. Make CH36, News SNG, or any other package — they
+          pick Elements from the same catalog.
+        </p>
       }
     }
   </div>

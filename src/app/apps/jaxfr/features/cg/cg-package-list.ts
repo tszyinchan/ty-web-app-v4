@@ -1,25 +1,19 @@
-import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
-import { MatInputModule } from '@angular/material/input';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { CgPackageRole } from '../../../../core/domains/cg/cg.constants';
 import { CgService } from '../../../../core/domains/cg/cg.service';
-import { countLogoSlots, packageRoleLabel } from '../../../../core/domains/cg/cg.util';
+import {
+  layerSummary,
+  packageRoleLabel,
+} from '../../../../core/domains/cg/cg.util';
 import { HeaderService } from '../../../../core/services/header.service';
 
 @Component({
   selector: 'app-cg-package-list',
   standalone: true,
-  imports: [
-    CommonModule,
-    RouterModule,
-    FormsModule,
-    MatIconModule,
-    MatFormFieldModule,
-    MatInputModule,
-  ],
+  imports: [RouterModule, FormsModule, MatIconModule],
   templateUrl: './cg-package-list.html',
   styleUrl: './cg-package-list.scss',
 })
@@ -29,22 +23,23 @@ export class CgPackageList implements OnInit, OnDestroy {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
 
+  readonly Source = CgPackageRole.Source;
   searchQuery = signal('');
 
   listVm = computed(() => {
     const q = this.searchQuery().toLowerCase().trim();
-    const slots = this.cg.slots();
+    const layers = this.cg.layers();
     return this.cg
       .packages()
       .filter((pkg) => !q || pkg.name.toLowerCase().includes(q))
       .map((pkg) => {
-        const packageSlots = slots.filter(
-          (slot) => slot.package_id === pkg.tb_tyapp_cgpk_id,
+        const packageLayers = layers.filter(
+          (layer) => layer.package_id === pkg.tb_tyapp_cgpk_id,
         );
         return {
           ...pkg,
           roleLabel: packageRoleLabel(pkg.role),
-          logoCount: countLogoSlots(packageSlots),
+          layerSummary: layerSummary(packageLayers),
         };
       });
   });

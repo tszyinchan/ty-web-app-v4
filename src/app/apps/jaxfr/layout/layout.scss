@@ -28,12 +28,18 @@
   // instead of letting a magic `100dvh - Npx` leave a gap at the bottom.
   &:has(app-chat-page),
   &:has(app-welcome),
-  &:has(app-docsign-edit) {
+  &:has(app-docsign-edit),
+  &:has(app-cg-package-edit) {
     overflow: hidden;
 
     .page-container {
       height: 100%;
     }
+  }
+
+  &:has(app-cg-package-edit),
+  &:has(app-cg-package-list) {
+    overflow-x: auto;
   }
 
   &:has(app-welcome),

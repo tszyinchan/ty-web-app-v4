@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import {
   Component,
   DoCheck,
@@ -11,36 +10,33 @@ import {
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MatButtonModule } from '@angular/material/button';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatIconModule } from '@angular/material/icon';
-import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
-import { MatSlideToggleModule } from '@angular/material/slide-toggle';
-import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { CgLogo } from '../../../../core/domains/cg/cg-logo';
+import { ActivatedRoute, Router } from '@angular/router';
+import { CgLayerView } from '../../../../core/domains/cg/cg-layer-view';
 import { CgStage } from '../../../../core/domains/cg/cg-stage';
 import {
   CG_ANCHOR_OPTIONS,
+  CG_ELEMENT_CATALOG,
   CG_LAYOUT_UNIT_OPTIONS,
   CG_LOGO_ACCEPT,
   CG_LOGO_MAX_BYTES,
   CG_PACKAGE_ROLE_OPTIONS,
   CG_SAMPLE_LOGO_URL,
-  CgComponentType,
+  CgElementType,
   CgPackageRole,
   CgPreviewBackdrop,
 } from '../../../../core/domains/cg/cg.constants';
-import { CgPackage, CgSlotDraft } from '../../../../core/domains/cg/cg.model';
+import { CgLayerDraft, CgPackage } from '../../../../core/domains/cg/cg.model';
 import { CgService } from '../../../../core/domains/cg/cg.service';
 import {
   buildCgOverlayUrl,
-  createEmptyLogoSlot,
+  createEmptyLogoLayer,
+  createCgPublicToken,
+  elementLabel,
   isEmbeddedImageUrl,
   isLocalFilesystemPath,
+  layerToDraft,
   packageHasUnsavedIdentity,
   readImageFileAsDataUrl,
-  slotToDraft,
 } from '../../../../core/domains/cg/cg.util';
 import { RecordStatus } from '../../../../core/models/status.enum';
 import {
@@ -53,19 +49,7 @@ import { copyTextToClipboard } from '../../../../core/utils/copy-text.util';
 @Component({
   selector: 'app-cg-package-edit',
   standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    RouterModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatSelectModule,
-    MatButtonModule,
-    MatIconModule,
-    MatSlideToggleModule,
-    CgStage,
-    CgLogo,
-  ],
+  imports: [FormsModule, CgStage, CgLayerView],
   templateUrl: './cg-package-edit.html',
   styleUrl: './cg-package-edit.scss',
 })
@@ -77,27 +61,28 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
   private notification = inject(NotificationService);
   readonly cg = inject(CgService);
 
-  readonly RecordStatus = RecordStatus;
-  readonly Logo = CgComponentType.Logo;
+  readonly Logo = CgElementType.Logo;
+  readonly catalog = CG_ELEMENT_CATALOG;
   readonly roleOptions = CG_PACKAGE_ROLE_OPTIONS;
   readonly anchorOptions = CG_ANCHOR_OPTIONS;
   readonly unitOptions = CG_LAYOUT_UNIT_OPTIONS;
   readonly backdrops = CgPreviewBackdrop;
-  readonly sampleLogoUrl = CG_SAMPLE_LOGO_URL;
   readonly logoAccept = CG_LOGO_ACCEPT;
+  readonly returnUrl = '/cg/list';
 
   item = signal<Partial<CgPackage> | null>(null);
-  slots = signal<CgSlotDraft[]>([]);
+  layers = signal<CgLayerDraft[]>([]);
+  selectedClientId = signal<string | null>(null);
   currentId: string | null = null;
   originalDataStr = signal('');
   isDirty = signal(false);
   isSaveDisabled = signal(true);
-  backdrop = signal(CgPreviewBackdrop.Checkerboard);
-  readonly returnUrl = '/cg/list';
+  backdrop = signal(CgPreviewBackdrop.Studio);
 
-  logoSlots = computed(() =>
-    this.slots().filter((slot) => slot.component_type === CgComponentType.Logo),
-  );
+  readonly selectedLayer = computed(() => {
+    const id = this.selectedClientId();
+    return this.layers().find((layer) => layer.clientId === id) ?? null;
+  });
 
   syncStatus = computed<'loading' | 'up-to-date' | 'unsaved' | 'none'>(() => {
     if (this.cg.loading()) return 'loading';
@@ -143,16 +128,19 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
         this.applyLoaded(
           cachedPackage,
           this.cg
-            .slots()
-            .filter((slot) => slot.package_id === this.currentId)
-            .map((slot) => slotToDraft(slot)),
+            .layers()
+            .filter((layer) => layer.package_id === this.currentId)
+            .map((layer) => layerToDraft(layer)),
         );
       }
 
       const fresh = await this.cg.fetchPackageById(this.currentId);
       this.zone.run(() => {
         if (fresh) {
-          this.applyLoaded(fresh.package, fresh.slots.map((slot) => slotToDraft(slot)));
+          this.applyLoaded(
+            fresh.package,
+            fresh.layers.map((layer) => layerToDraft(layer)),
+          );
         } else if (!cachedPackage) {
           this.router.navigateByUrl(this.returnUrl);
         }
@@ -160,13 +148,16 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
       return;
     }
 
+    const logo = createEmptyLogoLayer(0);
     const created: Partial<CgPackage> = {
       name: '',
       role: CgPackageRole.Channel,
+      public_token: createCgPublicToken(),
       status: RecordStatus.Active,
     };
     this.item.set(created);
-    this.slots.set([]);
+    this.layers.set([logo]);
+    this.selectedClientId.set(logo.clientId);
     this.originalDataStr.set(JSON.stringify(this.snapshot()));
   }
 
@@ -174,33 +165,63 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
     this.headerService.clear();
   }
 
-  addLogo(): void {
-    this.slots.update((list) => [...list, createEmptyLogoSlot(list.length)]);
+  elementLabel = elementLabel;
+
+  addElement(type: CgElementType): void {
+    const def = this.catalog.find((item) => item.type === type);
+    if (!def?.shipped) {
+      this.notification.handleError(
+        'Element',
+        `${def?.label ?? type} is next — Logo is the one on this Panel.`,
+      );
+      return;
+    }
+    if (type !== CgElementType.Logo) return;
+    const layer = createEmptyLogoLayer(this.layers().length);
+    this.layers.update((list) => [...list, layer]);
+    this.selectedClientId.set(layer.clientId);
   }
 
-  useSampleLogo(slot: CgSlotDraft): void {
-    slot.payload.imageUrl = CG_SAMPLE_LOGO_URL;
-    delete slot.payload.fileName;
+  selectLayer(clientId: string): void {
+    this.selectedClientId.set(clientId);
+  }
+
+  toggleVisible(layer: CgLayerDraft, event: Event): void {
+    event.stopPropagation();
+    layer.visible = !layer.visible;
+    this.selectedClientId.set(layer.clientId);
     this.touchPreview();
   }
 
-  isEmbeddedLogo(slot: CgSlotDraft): boolean {
-    return isEmbeddedImageUrl(slot.payload.imageUrl);
+  setRole(role: CgPackageRole): void {
+    const pkg = this.item();
+    if (!pkg) return;
+    pkg.role = role;
   }
 
-  onImageUrlChange(slot: CgSlotDraft): void {
-    if (isLocalFilesystemPath(slot.payload.imageUrl)) {
+  useSampleLogo(layer: CgLayerDraft): void {
+    layer.payload.imageUrl = CG_SAMPLE_LOGO_URL;
+    delete layer.payload.fileName;
+    this.touchPreview();
+  }
+
+  isEmbeddedLogo(layer: CgLayerDraft): boolean {
+    return isEmbeddedImageUrl(layer.payload.imageUrl);
+  }
+
+  onImageUrlChange(layer: CgLayerDraft): void {
+    if (isLocalFilesystemPath(layer.payload.imageUrl)) {
       this.notification.handleError(
         'Local path',
         'The browser cannot open a disk path. Use Choose local image.',
       );
-      slot.payload.imageUrl = '';
+      layer.payload.imageUrl = '';
     }
-    delete slot.payload.fileName;
+    delete layer.payload.fileName;
     this.touchPreview();
   }
 
-  async onLogoFile(slot: CgSlotDraft, event: Event): Promise<void> {
+  async onLogoFile(layer: CgLayerDraft, event: Event): Promise<void> {
     const input = event.target;
     if (!(input instanceof HTMLInputElement) || !input.files?.length) {
       return;
@@ -222,41 +243,80 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
       return;
     }
     try {
-      slot.payload.imageUrl = await readImageFileAsDataUrl(file);
-      slot.payload.fileName = file.name;
+      layer.payload.imageUrl = await readImageFileAsDataUrl(file);
+      layer.payload.fileName = file.name;
       this.touchPreview();
     } catch (error: unknown) {
       this.notification.handleError('Logo', error);
     }
   }
 
-  removeSlot(clientId: string): void {
-    if (!confirm('Remove this logo slot?')) return;
-    this.slots.update((list) => list.filter((slot) => slot.clientId !== clientId));
+  removeLayer(clientId: string): void {
+    if (!confirm('Remove this layer from the package?')) return;
+    this.layers.update((list) => list.filter((layer) => layer.clientId !== clientId));
+    if (this.selectedClientId() === clientId) {
+      this.selectedClientId.set(this.layers()[0]?.clientId ?? null);
+    }
   }
 
-  overlayUrl(slot: CgSlotDraft): string {
-    return buildCgOverlayUrl(slot.public_token, window.location);
+  packageOutputUrl(): string {
+    const token = this.item()?.public_token;
+    if (!token || !this.currentId) return '';
+    return buildCgOverlayUrl(token, window.location);
   }
 
-  layoutSnapshot(slot: CgSlotDraft): CgSlotDraft['layout'] {
-    return { ...slot.layout };
+  layerOutputUrl(layer: CgLayerDraft): string {
+    if (!this.currentId) return '';
+    return buildCgOverlayUrl(layer.public_token, window.location);
+  }
+
+  layoutSnapshot(layer: CgLayerDraft): CgLayerDraft['layout'] {
+    return { ...layer.layout };
+  }
+
+  payloadSnapshot(layer: CgLayerDraft): CgLayerDraft['payload'] {
+    return { ...layer.payload };
   }
 
   touchPreview(): void {
-    this.slots.update((list) =>
-      list.map((slot) => ({
-        ...slot,
-        layout: { ...slot.layout },
-        payload: { ...slot.payload },
+    this.layers.update((list) =>
+      list.map((layer) => ({
+        ...layer,
+        layout: { ...layer.layout },
+        payload: { ...layer.payload },
       })),
     );
   }
 
-  async copyOverlayUrl(slot: CgSlotDraft): Promise<void> {
+  async copyPackageOutput(): Promise<void> {
+    const url = this.packageOutputUrl();
+    if (!url) {
+      this.notification.handleError(
+        'Package Output',
+        'Save the package first to get the OBS URL.',
+      );
+      return;
+    }
     try {
-      await copyTextToClipboard(this.overlayUrl(slot));
-      this.notification.showSuccess('OBS URL copied');
+      await copyTextToClipboard(url);
+      this.notification.showSuccess('Package Output copied');
+    } catch (error: unknown) {
+      this.notification.handleError('Copy failed', error);
+    }
+  }
+
+  async copyLayerOutput(layer: CgLayerDraft): Promise<void> {
+    const url = this.layerOutputUrl(layer);
+    if (!url) {
+      this.notification.handleError(
+        'Layer Output',
+        'Save the package first to get the OBS URL.',
+      );
+      return;
+    }
+    try {
+      await copyTextToClipboard(url);
+      this.notification.showSuccess('Layer Output copied');
     } catch (error: unknown) {
       this.notification.handleError('Copy failed', error);
     }
@@ -267,11 +327,22 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
     if (!data || packageHasUnsavedIdentity(data as Pick<CgPackage, 'name'>)) {
       return;
     }
-    const id = await this.cg.savePackage(data, this.slots());
+    const id = await this.cg.savePackage(data, this.layers());
     if (!id) return;
     this.currentId = id;
-    this.originalDataStr.set(JSON.stringify(this.snapshot()));
-    this.isDirty.set(false);
+    const fresh = await this.cg.fetchPackageById(id);
+    this.zone.run(() => {
+      if (fresh) {
+        this.applyLoaded(
+          fresh.package,
+          fresh.layers.map((layer) => layerToDraft(layer)),
+        );
+      } else {
+        this.originalDataStr.set(JSON.stringify(this.snapshot()));
+        this.isDirty.set(false);
+      }
+      this.bindHeader();
+    });
     if (!this.route.snapshot.paramMap.get('id')) {
       await this.router.navigate(['/cg/edit', id], { replaceUrl: true });
     }
@@ -279,7 +350,7 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
 
   async onDelete(): Promise<void> {
     if (!this.currentId) return;
-    if (!confirm('Delete this package and its slots?')) return;
+    if (!confirm('Delete this package and its layers?')) return;
     const ok = await this.cg.deletePackage(this.currentId);
     if (ok) {
       this.isDirty.set(false);
@@ -287,17 +358,26 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
     }
   }
 
-  private applyLoaded(pkg: CgPackage, drafts: CgSlotDraft[]): void {
+  private applyLoaded(pkg: CgPackage, drafts: CgLayerDraft[]): void {
     this.item.set(structuredClone(pkg));
-    this.slots.set(structuredClone(drafts));
+    this.layers.set(structuredClone(drafts));
+    const keep = this.selectedClientId();
+    this.selectedClientId.set(
+      drafts.find((layer) => layer.clientId === keep)?.clientId ??
+        drafts[0]?.clientId ??
+        null,
+    );
     this.originalDataStr.set(JSON.stringify(this.snapshot()));
     this.isDirty.set(false);
   }
 
-  private snapshot(): { package: Partial<CgPackage> | null; slots: CgSlotDraft[] } {
+  private snapshot(): {
+    package: Partial<CgPackage> | null;
+    layers: CgLayerDraft[];
+  } {
     return {
       package: this.item(),
-      slots: this.slots(),
+      layers: this.layers(),
     };
   }
 

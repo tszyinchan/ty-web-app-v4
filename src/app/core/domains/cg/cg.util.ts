@@ -1,21 +1,25 @@
 import { SUBDOMAINS } from '../../../app.constants';
+import { RecordStatus } from '../../models/status.enum';
 import {
+  CG_ELEMENT_CATALOG,
+  CG_SAMPLE_LOGO_URL,
   CgAnchor,
-  CgComponentType,
+  CgElementDef,
+  CgElementType,
   CgLayoutUnit,
+  CgOutputKind,
   CgPackageRole,
   DEFAULT_LOGO_LAYOUT,
 } from './cg.constants';
 import {
+  CgLayer,
+  CgLayerDraft,
+  CgLayerPayload,
   CgLayout,
   CgLogoPayload,
   CgPackage,
-  CgPublicSlot,
-  CgSlot,
-  CgSlotDraft,
-  CgSlotPayload,
+  CgPublicOutput,
 } from './cg.model';
-import { RecordStatus } from '../../models/status.enum';
 
 const ANCHOR_TRANSLATE: Record<CgAnchor, string> = {
   [CgAnchor.TopLeft]: 'translate(0, 0)',
@@ -49,13 +53,13 @@ export function createCgPublicToken(): string {
   );
 }
 
-export function createEmptyLogoSlot(sortOrder: number): CgSlotDraft {
+export function createEmptyLogoLayer(sortOrder: number): CgLayerDraft {
   return {
     clientId: `temp-${crypto.randomUUID()}`,
-    component_type: CgComponentType.Logo,
+    element_type: CgElementType.Logo,
     public_token: createCgPublicToken(),
     layout: { ...DEFAULT_LOGO_LAYOUT },
-    payload: { imageUrl: '' },
+    payload: { imageUrl: CG_SAMPLE_LOGO_URL },
     visible: true,
     sort_order: sortOrder,
     status: RecordStatus.Active,
@@ -64,6 +68,14 @@ export function createEmptyLogoSlot(sortOrder: number): CgSlotDraft {
 
 export function packageRoleLabel(role: CgPackageRole): string {
   return role === CgPackageRole.Source ? 'Source' : 'Channel';
+}
+
+export function elementDef(type: CgElementType): CgElementDef | undefined {
+  return CG_ELEMENT_CATALOG.find((item) => item.type === type);
+}
+
+export function elementLabel(type: CgElementType): string {
+  return elementDef(type)?.label ?? type;
 }
 
 export function isLogoPayload(payload: unknown): payload is CgLogoPayload {
@@ -109,40 +121,39 @@ export function normalizeLogoPayload(raw: unknown): CgLogoPayload {
   return { imageUrl: '' };
 }
 
-export function slotToDraft(slot: CgSlot): CgSlotDraft {
+export function layerToDraft(layer: CgLayer): CgLayerDraft {
   return {
-    clientId: slot.tb_tyapp_cgsl_id,
-    tb_tyapp_cgsl_id: slot.tb_tyapp_cgsl_id,
-    component_type: slot.component_type,
-    public_token: slot.public_token,
-    layout: normalizeLayout(slot.layout),
-    payload: normalizeSlotPayload(slot.component_type, slot.payload),
-    visible: slot.visible,
-    sort_order: slot.sort_order,
-    status: slot.status,
+    clientId: layer.tb_tyapp_cgly_id,
+    tb_tyapp_cgly_id: layer.tb_tyapp_cgly_id,
+    element_type: layer.element_type,
+    public_token: layer.public_token,
+    layout: normalizeLayout(layer.layout),
+    payload: normalizeLayerPayload(layer.element_type, layer.payload),
+    visible: layer.visible,
+    sort_order: layer.sort_order,
+    status: layer.status,
   };
 }
 
-export function normalizeSlot(raw: unknown): CgSlot | null {
+export function normalizeLayer(raw: unknown): CgLayer | null {
   const value = asRecord(raw);
-  const id = asString(value['tb_tyapp_cgsl_id']);
+  const id = asString(value['tb_tyapp_cgly_id']);
   const packageId = asString(value['package_id']);
   const token = asString(value['public_token']);
   if (!id || !packageId || !token) return null;
 
-  const componentType =
-    value['component_type'] === CgComponentType.Logo
-      ? CgComponentType.Logo
-      : CgComponentType.Logo;
+  const elementType = parseElementType(value['element_type']);
+  if (!elementType) return null;
 
   return {
-    tb_tyapp_cgsl_id: id,
-    tb_tyapp_cgsl_seq_no: toOptionalNumber(value['tb_tyapp_cgsl_seq_no']) ?? undefined,
+    tb_tyapp_cgly_id: id,
+    tb_tyapp_cgly_seq_no:
+      toOptionalNumber(value['tb_tyapp_cgly_seq_no']) ?? undefined,
     package_id: packageId,
-    component_type: componentType,
+    element_type: elementType,
     public_token: token,
     layout: normalizeLayout(value['layout']),
-    payload: normalizeSlotPayload(componentType, value['payload']),
+    payload: normalizeLayerPayload(elementType, value['payload']),
     visible: value['visible'] !== false,
     sort_order: toFiniteNumber(value['sort_order'], 0),
     status:
@@ -155,26 +166,41 @@ export function normalizeSlot(raw: unknown): CgSlot | null {
   };
 }
 
-export function normalizePublicSlot(raw: unknown): CgPublicSlot | null {
+export function normalizePublicOutput(raw: unknown): CgPublicOutput | null {
   const value = asRecord(raw);
-  const slot = normalizeSlot(value['slot'] ?? raw);
-  if (!slot) return null;
+  const layersRaw = value['layers'];
+  const layers = Array.isArray(layersRaw)
+    ? layersRaw
+        .map((row) => normalizeLayer(row))
+        .filter((layer): layer is CgLayer => layer !== null)
+    : [];
+
+  const packageName =
+    asString(value['packageName']) || asString(value['package_name']);
+  if (!packageName && layers.length === 0 && !asString(value['kind'])) {
+    return null;
+  }
+
   return {
-    slot,
-    packageName: asString(value['packageName']) || asString(value['package_name']),
+    kind:
+      value['kind'] === CgOutputKind.Layer
+        ? CgOutputKind.Layer
+        : CgOutputKind.Package,
+    packageName,
     packageRole:
       value['packageRole'] === CgPackageRole.Source ||
       value['package_role'] === CgPackageRole.Source
         ? CgPackageRole.Source
         : CgPackageRole.Channel,
+    layers,
   };
 }
 
-export function normalizeSlotPayload(
-  type: CgComponentType,
+export function normalizeLayerPayload(
+  type: CgElementType,
   raw: unknown,
-): CgSlotPayload {
-  if (type === CgComponentType.Logo) {
+): CgLayerPayload {
+  if (type === CgElementType.Logo) {
     return normalizeLogoPayload(raw);
   }
   return normalizeLogoPayload(raw);
@@ -247,15 +273,22 @@ export function readImageFileAsDataUrl(file: File): Promise<string> {
   });
 }
 
-export function countLogoSlots(slots: Pick<CgSlot, 'component_type'>[]): number {
-  return slots.filter((slot) => slot.component_type === CgComponentType.Logo)
-    .length;
+export function layerSummary(layers: Pick<CgLayer, 'element_type'>[]): string {
+  if (layers.length === 0) return 'No layers';
+  const labels = layers.map((layer) => elementLabel(layer.element_type));
+  return labels.join(' · ');
 }
 
 export function packageHasUnsavedIdentity(
   pkg: Pick<Partial<CgPackage>, 'name'>,
 ): boolean {
   return !pkg.name?.trim();
+}
+
+function parseElementType(raw: unknown): CgElementType | null {
+  return Object.values(CgElementType).includes(raw as CgElementType)
+    ? (raw as CgElementType)
+    : null;
 }
 
 function asRecord(raw: unknown): Record<string, unknown> {

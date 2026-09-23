@@ -3,8 +3,19 @@ export enum CgPackageRole {
   Source = 'source',
 }
 
-export enum CgComponentType {
+export enum CgElementType {
   Logo = 'logo',
+  Clock = 'clock',
+  Title = 'title',
+  Subtitle = 'subtitle',
+  Breaking = 'breaking',
+  Ticker = 'ticker',
+  Weather = 'weather',
+}
+
+export enum CgOutputKind {
+  Package = 'package',
+  Layer = 'layer',
 }
 
 export enum CgLayoutUnit {
@@ -29,15 +40,67 @@ export enum CgPreviewBackdrop {
   Studio = 'studio',
 }
 
+export interface CgElementDef {
+  type: CgElementType;
+  label: string;
+  description: string;
+  shipped: boolean;
+}
+
+export const CG_ELEMENT_CATALOG: ReadonlyArray<CgElementDef> = [
+  {
+    type: CgElementType.Logo,
+    label: 'Logo',
+    description: 'Station or show bug',
+    shipped: true,
+  },
+  {
+    type: CgElementType.Clock,
+    label: 'Clock',
+    description: 'On-air clock',
+    shipped: false,
+  },
+  {
+    type: CgElementType.Title,
+    label: 'Title',
+    description: 'Name tag / lower-third title',
+    shipped: false,
+  },
+  {
+    type: CgElementType.Subtitle,
+    label: 'Subtitle',
+    description: 'News feed line',
+    shipped: false,
+  },
+  {
+    type: CgElementType.Breaking,
+    label: 'Breaking',
+    description: 'Breaking banner',
+    shipped: false,
+  },
+  {
+    type: CgElementType.Ticker,
+    label: 'Ticker',
+    description: 'Crawl / 跑馬',
+    shipped: false,
+  },
+  {
+    type: CgElementType.Weather,
+    label: 'Weather',
+    description: 'Temperature bug',
+    shipped: false,
+  },
+];
+
 export const CG_OVERLAY_POLL_MS = 2000;
 
 export const DEFAULT_LOGO_LAYOUT = {
-  x: 2,
-  y: 2,
+  x: 2.4,
+  y: 3.2,
   unit: CgLayoutUnit.Percent,
   anchor: CgAnchor.TopLeft,
   scale: 1,
-  width: 12,
+  width: 11,
 } as const;
 
 export const CG_PACKAGE_ROLE_OPTIONS: ReadonlyArray<{

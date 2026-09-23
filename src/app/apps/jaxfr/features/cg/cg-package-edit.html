@@ -1,205 +1,247 @@
-<div class="split-workspace cg-workspace">
+<div class="cg-panel">
   @if (item(); as pkg) {
-    <div class="form-scroll-area">
-      <section class="form-group">
-        <h3 class="group-header">Package</h3>
-        <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
-          <mat-label>Name</mat-label>
-          <input
-            matInput
-            [(ngModel)]="pkg.name"
-            required
-            placeholder="CH36, News SNG, Live show…"
-          />
-        </mat-form-field>
-        <div class="fields-grid-2 mt-16">
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>Role</mat-label>
-            <mat-select [(ngModel)]="pkg.role">
-              @for (option of roleOptions; track option.value) {
-                <mat-option [value]="option.value">{{ option.label }}</mat-option>
-              }
-            </mat-select>
-          </mat-form-field>
+    <header class="cg-bar">
+      <div class="cg-program">
+        <div class="cg-stage-toolbar">
+          <span class="cg-kicker">Stage</span>
+          <div class="cg-stage-toggles">
+            <button
+              type="button"
+              class="cg-btn"
+              [class.on]="backdrop() === backdrops.Checkerboard"
+              (click)="backdrop.set(backdrops.Checkerboard)"
+            >
+              Alpha
+            </button>
+            <button
+              type="button"
+              class="cg-btn"
+              [class.on]="backdrop() === backdrops.Studio"
+              (click)="backdrop.set(backdrops.Studio)"
+            >
+              Studio
+            </button>
+          </div>
         </div>
-        <p class="hint">
-          Channel = house look (logo, clock, ticker later). Source = feed
-          graphics (subtitle, name-tag later). A program can wear both.
-        </p>
+        <div class="cg-program-frame">
+          <app-cg-stage [preview]="true" [backdrop]="backdrop()">
+            @for (layer of layers(); track layer.clientId) {
+              <app-cg-layer-view
+                [elementType]="layer.element_type"
+                [layout]="layoutSnapshot(layer)"
+                [payload]="payloadSnapshot(layer)"
+                [visible]="layer.visible"
+              />
+            }
+          </app-cg-stage>
+        </div>
+      </div>
+
+      <div class="cg-identity">
+        <input
+          class="cg-name"
+          [(ngModel)]="pkg.name"
+          placeholder="CH36, News SNG, Live show…"
+        />
+        <div class="cg-roles">
+          @for (option of roleOptions; track option.value) {
+            <button
+              type="button"
+              class="cg-role-btn"
+              [class.on]="pkg.role === option.value"
+              (click)="setRole(option.value)"
+            >
+              {{ option.label }}
+            </button>
+          }
+        </div>
+        <div class="cg-output">
+          <span class="cg-kicker">Package Output</span>
+          @if (packageOutputUrl(); as url) {
+            <code class="cg-url" [title]="url">{{ url }}</code>
+            <button type="button" class="cg-btn primary" (click)="copyPackageOutput()">
+              Copy OBS URL
+            </button>
+          } @else {
+            <span class="cg-url-placeholder">Save to get the default OBS URL</span>
+          }
+        </div>
+      </div>
+    </header>
+
+    <div class="cg-body">
+      <section class="cg-board">
+        <div class="cg-board-head">
+          <span class="cg-kicker">Panel</span>
+          <div class="cg-catalog">
+            @for (el of catalog; track el.type) {
+              <button
+                type="button"
+                class="cg-chip"
+                [class.soon]="!el.shipped"
+                [disabled]="!el.shipped"
+                (click)="addElement(el.type)"
+              >
+                {{ el.label }}
+                @if (!el.shipped) {
+                  <span>soon</span>
+                } @else {
+                  <span>+</span>
+                }
+              </button>
+            }
+          </div>
+        </div>
+
+        <div class="cg-drive">
+          @for (layer of layers(); track layer.clientId) {
+            <article
+              class="cg-tile"
+              [class.selected]="selectedClientId() === layer.clientId"
+              [class.off]="!layer.visible"
+              (click)="selectLayer(layer.clientId)"
+            >
+              <div class="cg-tile-stage">
+                <app-cg-stage [preview]="true" [backdrop]="backdrop()">
+                  <app-cg-layer-view
+                    [elementType]="layer.element_type"
+                    [layout]="layoutSnapshot(layer)"
+                    [payload]="payloadSnapshot(layer)"
+                    [visible]="true"
+                  />
+                </app-cg-stage>
+              </div>
+              <div class="cg-tile-bar">
+                <span class="cg-tile-name">{{ elementLabel(layer.element_type) }}</span>
+                <button
+                  type="button"
+                  class="cg-toggle"
+                  [class.on]="layer.visible"
+                  (click)="toggleVisible(layer, $event)"
+                >
+                  {{ layer.visible ? 'On' : 'Off' }}
+                </button>
+              </div>
+            </article>
+          } @empty {
+            <p class="cg-hint">Pick Logo from the catalog to put a layer on this Panel.</p>
+          }
+        </div>
       </section>
 
-      <section class="form-group">
-        <div class="group-header-row">
-          <h3 class="group-header">Logo slots</h3>
-          <button mat-stroked-button type="button" (click)="addLogo()">
-            <mat-icon>add</mat-icon>
-            Add logo
-          </button>
-        </div>
-
-        @for (slot of logoSlots(); track slot.clientId) {
-          <div class="slot-card">
-            <div class="slot-card-head">
-              <span>Logo</span>
-              <mat-slide-toggle
-                [(ngModel)]="slot.visible"
-                (ngModelChange)="touchPreview()"
-              >Visible</mat-slide-toggle>
-            </div>
-
-            @if (isEmbeddedLogo(slot)) {
-              <p class="hint">
-                Local image embedded{{
-                  slot.payload.fileName ? ': ' + slot.payload.fileName : ''
+      @if (selectedLayer(); as layer) {
+        <aside class="cg-inspector">
+          <span class="cg-kicker">{{ elementLabel(layer.element_type) }}</span>
+          @if (layer.element_type === Logo) {
+            @if (isEmbeddedLogo(layer)) {
+              <p class="cg-hint">
+                Embedded{{
+                  layer.payload.fileName ? ': ' + layer.payload.fileName : ''
                 }}
               </p>
             } @else {
-              <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
-                <mat-label>Image URL</mat-label>
+              <label class="cg-field cg-field-wide">
+                <span>Image URL</span>
                 <input
-                  matInput
-                  [(ngModel)]="slot.payload.imageUrl"
-                  (ngModelChange)="onImageUrlChange(slot)"
+                  type="text"
+                  [(ngModel)]="layer.payload.imageUrl"
+                  (ngModelChange)="onImageUrlChange(layer)"
                   placeholder="/icons/3d/apps.png or https://…"
                 />
-              </mat-form-field>
+              </label>
             }
-            <div class="image-actions">
-              <label class="file-pick-btn">
+            <div class="cg-inline">
+              <label class="cg-btn file">
                 <input
                   type="file"
                   [accept]="logoAccept"
-                  (change)="onLogoFile(slot, $event)"
+                  (change)="onLogoFile(layer, $event)"
                 />
                 Choose local image
               </label>
-              <button
-                mat-button
-                type="button"
-                (click)="useSampleLogo(slot)"
-              >
-                Use sample PNG
+              <button type="button" class="cg-btn" (click)="useSampleLogo(layer)">
+                Sample PNG
               </button>
             </div>
-
-            <div class="fields-grid-2 mt-16">
-              <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                <mat-label>X</mat-label>
+            <div class="cg-fields">
+              <label class="cg-field">
+                <span>X</span>
                 <input
-                  matInput
                   type="number"
-                  [(ngModel)]="slot.layout.x"
+                  [(ngModel)]="layer.layout.x"
                   (ngModelChange)="touchPreview()"
                 />
-              </mat-form-field>
-              <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                <mat-label>Y</mat-label>
+              </label>
+              <label class="cg-field">
+                <span>Y</span>
                 <input
-                  matInput
                   type="number"
-                  [(ngModel)]="slot.layout.y"
+                  [(ngModel)]="layer.layout.y"
                   (ngModelChange)="touchPreview()"
                 />
-              </mat-form-field>
-            </div>
-            <div class="fields-grid-2 mt-16">
-              <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                <mat-label>Width</mat-label>
+              </label>
+              <label class="cg-field">
+                <span>Width</span>
                 <input
-                  matInput
                   type="number"
-                  [(ngModel)]="slot.layout.width"
+                  [(ngModel)]="layer.layout.width"
                   (ngModelChange)="touchPreview()"
                 />
-              </mat-form-field>
-              <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                <mat-label>Scale</mat-label>
+              </label>
+              <label class="cg-field">
+                <span>Scale</span>
                 <input
-                  matInput
                   type="number"
                   step="0.05"
-                  [(ngModel)]="slot.layout.scale"
+                  [(ngModel)]="layer.layout.scale"
                   (ngModelChange)="touchPreview()"
                 />
-              </mat-form-field>
-            </div>
-            <div class="fields-grid-2 mt-16">
-              <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                <mat-label>Anchor</mat-label>
-                <mat-select
-                  [(ngModel)]="slot.layout.anchor"
+              </label>
+              <label class="cg-field">
+                <span>Anchor</span>
+                <select
+                  [(ngModel)]="layer.layout.anchor"
                   (ngModelChange)="touchPreview()"
                 >
                   @for (option of anchorOptions; track option.value) {
-                    <mat-option [value]="option.value">{{ option.label }}</mat-option>
+                    <option [ngValue]="option.value">{{ option.label }}</option>
                   }
-                </mat-select>
-              </mat-form-field>
-              <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                <mat-label>Unit</mat-label>
-                <mat-select
-                  [(ngModel)]="slot.layout.unit"
+                </select>
+              </label>
+              <label class="cg-field">
+                <span>Unit</span>
+                <select
+                  [(ngModel)]="layer.layout.unit"
                   (ngModelChange)="touchPreview()"
                 >
                   @for (option of unitOptions; track option.value) {
-                    <mat-option [value]="option.value">{{ option.label }}</mat-option>
+                    <option [ngValue]="option.value">{{ option.label }}</option>
                   }
-                </mat-select>
-              </mat-form-field>
+                </select>
+              </label>
             </div>
+          }
 
-            <div class="url-row">
-              <code class="obs-url">{{ overlayUrl(slot) }}</code>
-              <button mat-stroked-button type="button" (click)="copyOverlayUrl(slot)">
-                Copy OBS URL
+          <div class="cg-layer-output">
+            <span class="cg-kicker">Layer Output</span>
+            @if (layerOutputUrl(layer); as url) {
+              <code class="cg-url" [title]="url">{{ url }}</code>
+              <button type="button" class="cg-btn" (click)="copyLayerOutput(layer)">
+                Copy
               </button>
-            </div>
-            <button mat-button type="button" color="warn" (click)="removeSlot(slot.clientId)">
-              Remove logo
-            </button>
+            } @else {
+              <span class="cg-url-placeholder">Save first</span>
+            }
           </div>
-        } @empty {
-          <p class="hint">Add a logo slot. Position lives on the 16:9 stage, not in OBS.</p>
-        }
-      </section>
+          <button
+            type="button"
+            class="cg-btn danger"
+            (click)="removeLayer(layer.clientId)"
+          >
+            Remove layer
+          </button>
+        </aside>
+      }
     </div>
-
-    <aside class="preview-pane">
-      <div class="preview-toolbar">
-        <span class="p-header">16:9 preview</span>
-        <div class="preview-toggles">
-          <button
-            mat-stroked-button
-            type="button"
-            [class.active]="backdrop() === backdrops.Checkerboard"
-            (click)="backdrop.set(backdrops.Checkerboard)"
-          >
-            Alpha
-          </button>
-          <button
-            mat-stroked-button
-            type="button"
-            [class.active]="backdrop() === backdrops.Studio"
-            (click)="backdrop.set(backdrops.Studio)"
-          >
-            Studio
-          </button>
-        </div>
-      </div>
-      <app-cg-stage [preview]="true" [backdrop]="backdrop()">
-        @for (slot of logoSlots(); track slot.clientId) {
-          <app-cg-logo
-            [imageUrl]="slot.payload.imageUrl"
-            [layout]="layoutSnapshot(slot)"
-            [visible]="slot.visible"
-          />
-        }
-      </app-cg-stage>
-      <p class="hint">
-        Overlay page is truly transparent. Checkerboard is only this preview.
-        OBS URL is <code>cg.localhost:4200/o/…</code> locally and
-        <code>cg.tszyin.com/o/…</code> in production.
-      </p>
-    </aside>
   }
 </div>
