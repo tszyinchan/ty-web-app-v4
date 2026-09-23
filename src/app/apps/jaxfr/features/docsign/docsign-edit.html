@@ -7,13 +7,36 @@
     [style.--docsign-stage-h]="stageHeightCss()"
   >
     <div class="desk-toolbar">
-      <button
-        type="button"
-        class="gloss-btn"
-        (click)="toggleDetails()"
-      >
-        {{ detailsToggleLabel() }}
-      </button>
+      <div class="toolbar-left">
+        <button
+          type="button"
+          class="gloss-btn"
+          (click)="toggleDetails()"
+        >
+          {{ detailsToggleLabel() }}
+        </button>
+        <div class="page-nav">
+          <button
+            type="button"
+            class="zoom-btn"
+            (click)="goToPaperPage(paperVisiblePage() - 1)"
+            [disabled]="paperVisiblePage() <= 1"
+            aria-label="Previous page"
+          >
+            ‹
+          </button>
+          <span class="page-readout">{{ paperVisiblePage() }} / {{ paperPageCount() }}</span>
+          <button
+            type="button"
+            class="zoom-btn"
+            (click)="goToPaperPage(paperVisiblePage() + 1)"
+            [disabled]="paperVisiblePage() >= paperPageCount()"
+            aria-label="Next page"
+          >
+            ›
+          </button>
+        </div>
+      </div>
       <div class="zoom-controls">
         <button
           type="button"
@@ -318,6 +341,9 @@
                 [lifecycle]="paperLifecycle()"
                 [content]="doc.content"
                 [signers]="paperSigners()"
+                [scrollRoot]="desk"
+                (pageCount)="paperPageCount.set($event)"
+                (visiblePage)="paperVisiblePage.set($event)"
               />
             </div>
           </div>

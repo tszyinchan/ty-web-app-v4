@@ -107,6 +107,7 @@ export class DocsignEdit implements OnInit, OnDestroy, DoCheck {
   private bodyInput = viewChild<ElementRef<HTMLTextAreaElement>>('bodyInput');
   private deskEl = viewChild<ElementRef<HTMLElement>>('desk');
   private paperBox = viewChild<ElementRef<HTMLElement>>('paperBox');
+  private paperView = viewChild(DocsignDocumentView);
   private heartbeatTimer: ReturnType<typeof setInterval> | undefined;
   private claimedId: string | null = null;
   private deskObserver: ResizeObserver | null = null;
@@ -126,9 +127,11 @@ export class DocsignEdit implements OnInit, OnDestroy, DoCheck {
     typeof window === 'undefined' ? 1280 : window.innerWidth,
   );
   zoomChoice = signal<DocsignZoomChoice>(100);
-  paperWidthPx = signal(0);
-  paperHeightPx = signal(0);
+  paperWidthPx = signal(794);
+  paperHeightPx = signal(1123);
   deskWidthPx = signal(0);
+  paperPageCount = signal(1);
+  paperVisiblePage = signal(1);
 
   syncStatus = computed<'loading' | 'up-to-date' | 'unsaved' | 'none'>(() => {
     if (this.docsignService.loading()) return 'loading';
@@ -243,8 +246,12 @@ export class DocsignEdit implements OnInit, OnDestroy, DoCheck {
     clampDocsignZoomPercent(Math.round(this.zoomScale() * 100)),
   );
 
-  stageWidthCss = computed(() => `${this.paperWidthPx() * this.zoomScale() || 794}px`);
-  stageHeightCss = computed(() => `${this.paperHeightPx() * this.zoomScale() || 1123}px`);
+  stageWidthCss = computed(
+    () => `${(this.paperWidthPx() || 794) * this.zoomScale()}px`,
+  );
+  stageHeightCss = computed(
+    () => `${(this.paperHeightPx() || 1123) * this.zoomScale()}px`,
+  );
 
   headerDirty = computed(() => {
     const data = this.item();
@@ -341,6 +348,10 @@ export class DocsignEdit implements OnInit, OnDestroy, DoCheck {
 
   nudgeZoom(delta: -1 | 1) {
     this.setZoom(this.zoomPercent() + delta * DOCSIGN_ZOOM_STEP);
+  }
+
+  goToPaperPage(page: number) {
+    this.paperView()?.goToPage(page);
   }
 
   signerTitle(userId: string): string {

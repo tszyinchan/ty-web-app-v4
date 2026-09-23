@@ -61,6 +61,8 @@
 | B2 | 拖 zoom 拉桿到約 **150%**，或點 **150%** | 紙平滑放大，仍置中；桌面出現捲軸（若放不下） |
 | B3 | 點 **Fit** | 紙寬對齊桌面內側，仍是同一張 A4 比例，不是把內容重排 |
 | B4 | 點 **100%** | 回到實寸。重整頁面後 zoom 應記住上次選擇 |
+| B5 | 點 **200%** | 紙放大約兩倍，整張都看得到（放不下就出現捲軸）。**不是**只剩左邊一條白紙、右邊一大片灰桌 |
+| B6 | 點 **300%** | 紙放大約三倍，整張都在（通常要捲）。不是只剩左邊一條 |
 
 ### C — Markdown 仍驅動紙上正文
 
@@ -77,6 +79,44 @@
 | D1 | 視窗縮到 ≤1100px（或 DevTools 手機寬） | 紙在桌面上。工具列是 **Edit**（不是 Details/Paper 對切） |
 | D2 | 點 **Edit** | 表單佔滿畫面（給虛擬鍵盤空間），紙暫時看不見。按鈕變成 **Paper** |
 | D3 | 點 **Paper** | 回到紙張桌面，Edit 還在 |
+
+### F — 真分頁：長文切成多張 297mm A4
+
+Body 用下面這段（約 20 段，應超過一頁）。不要只打一行。
+
+```
+## Page break sample
+1. Alpha paragraph for pagination.
+2. Bravo paragraph for pagination.
+3. Charlie paragraph for pagination.
+4. Delta paragraph for pagination.
+5. Echo paragraph for pagination.
+6. Foxtrot paragraph for pagination.
+7. Golf paragraph for pagination.
+8. Hotel paragraph for pagination.
+9. India paragraph for pagination.
+10. Juliet paragraph for pagination.
+11. Kilo paragraph for pagination.
+12. Lima paragraph for pagination.
+13. Mike paragraph for pagination.
+14. November paragraph for pagination.
+15. Oscar paragraph for pagination.
+16. Papa paragraph for pagination.
+17. Quebec paragraph for pagination.
+18. Romeo paragraph for pagination.
+19. Sierra paragraph for pagination.
+20. Tango paragraph for pagination.
+```
+
+| # | 操作 | 預期 |
+|---|---|---|
+| F1 | 在 Body 貼上上面的 20 段 | 桌面出現 **至少 2 張** 分開的白紙，中間有空隙。不是一張往下長的長紙 |
+| F2 | 看第 1 張 | 有品牌／標題／Date 表頭。紙高仍是 A4。右上角有 `1 / N` |
+| F3 | 看最後一張 | 有 `… — continued`。**Signatures** 與 disclaimer 只在最後一張，不在第 1 張重複 |
+| F4 | 工具列頁碼是 `1 / N`。點 **›** | 桌面捲到第 2 張，讀數變成 `2 / N` |
+| F5 | 點 **‹** | 回到第 1 張，讀數 `1 / N` |
+| F6 | 點 **50%** | 每一張都一起縮小，仍是 A4 比例，不會重排成單欄 |
+| F7 | 把 Body 改成一行 `Short.` | 變回 **1 張**，工具列 `1 / 1`，Signatures 在這張 |
 
 ### E — 列印（僅已鎖定文件）
 

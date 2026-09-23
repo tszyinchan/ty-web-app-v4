@@ -1,5 +1,33 @@
 .docsign-document-host {
   display: block;
+  position: relative;
+}
+
+.page-measure {
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 210mm;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.page-measure .measure-paper {
+  height: 297mm;
+  min-height: 297mm;
+  box-shadow: none;
+  overflow: visible;
+}
+
+.measure-unit {
+  display: flow-root;
+}
+
+.docsign-pages {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  width: 210mm;
 }
 
 .docsign-paper {
@@ -29,12 +57,41 @@
   overflow: visible;
 }
 
+.docsign-pages .docsign-paper {
+  height: 297mm;
+  min-height: 297mm;
+  margin: 0;
+  overflow: hidden;
+}
+
+.docsign-pages .docsign-paper.is-overflow {
+  height: auto;
+  overflow: visible;
+}
+
 .docsign-paper.print-mode {
   box-shadow: none;
 }
 
 .docsign-paper.print-mode .paper-body {
   max-width: none;
+}
+
+.paper-page-mark {
+  position: absolute;
+  top: 8mm;
+  right: 8mm;
+  font-size: 8pt;
+  line-height: 1;
+  color: var(--app-text-muted);
+}
+
+.paper-continue {
+  margin: 0 0 16pt;
+  font-size: 8pt;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--app-text-muted);
 }
 
 .paper-masthead {
@@ -114,11 +171,15 @@
   line-height: 1.45;
 }
 
+.flow-unit {
+  display: flow-root;
+}
+
 .docsign-paper .md-body {
   overflow-wrap: anywhere;
 }
 
-.docsign-paper .md-body > :first-child {
+.docsign-paper .paper-body > .flow-unit.md-body:first-child > :first-child {
   margin-top: 0;
 }
 
@@ -273,6 +334,10 @@
   border: 0;
 }
 
+.drive-frame.measure-drive {
+  height: 320px;
+}
+
 .drive-link {
   margin: 16px 0;
   font-size: 14px;
@@ -357,9 +422,25 @@
 }
 
 @media print {
+  .page-measure {
+    display: none;
+  }
+
+  .paper-page-mark {
+    display: none;
+  }
+
+  .docsign-pages {
+    display: block;
+    width: auto;
+    gap: 0;
+  }
+
   .docsign-document-host,
   .docsign-paper,
-  .docsign-paper.print-mode {
+  .docsign-paper.print-mode,
+  .docsign-pages .docsign-paper,
+  .docsign-pages .docsign-paper.is-overflow {
     box-shadow: none;
     width: auto;
     max-width: none;
@@ -368,6 +449,16 @@
     overflow: visible;
     margin: 0;
     padding: 0;
+  }
+
+  .docsign-pages .docsign-paper {
+    break-after: page;
+    page-break-after: always;
+  }
+
+  .docsign-pages .docsign-paper:last-child {
+    break-after: auto;
+    page-break-after: auto;
   }
 
   .paper-body {

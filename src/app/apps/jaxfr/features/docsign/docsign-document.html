@@ -1,7 +1,4 @@
-<article
-  class="docsign-paper"
-  [class.print-mode]="printMode()"
->
+<ng-template #mastheadTpl>
   <header class="paper-masthead">
     <div class="paper-brand">
       <img class="paper-brand-icon" [src]="brandIcon" alt="" />
@@ -35,24 +32,30 @@
       </div>
     </div>
   </header>
+</ng-template>
 
-  <div class="paper-body">
-    @for (block of blocks(); track $index) {
-      @if (block.kind === 'html') {
-        <div class="md-body" [innerHTML]="block.html"></div>
-      } @else if (printMode()) {
-        <p class="drive-link">
-          Attachment:
-          <a [href]="block.href" target="_blank" rel="noopener">Google Drive file</a>
-        </p>
-      } @else {
-        <div class="drive-frame">
-          <iframe [src]="block.url" title="Google Drive preview"></iframe>
-        </div>
-      }
-    }
-  </div>
+<ng-template #continueTpl>
+  <p class="paper-continue">{{ title() || 'Untitled document' }} — continued</p>
+</ng-template>
 
+<ng-template #unitTpl let-unit="unit" let-measure="measure">
+  @if (unit.kind === 'html') {
+    <div class="flow-unit md-body" [innerHTML]="unit.html"></div>
+  } @else if (printMode()) {
+    <p class="flow-unit drive-link">
+      Attachment:
+      <a [href]="unit.href" target="_blank" rel="noopener">Google Drive file</a>
+    </p>
+  } @else if (measure) {
+    <div class="flow-unit drive-frame measure-drive"></div>
+  } @else {
+    <div class="flow-unit drive-frame">
+      <iframe [src]="unit.url" title="Google Drive preview"></iframe>
+    </div>
+  }
+</ng-template>
+
+<ng-template #signaturesTpl>
   <footer class="paper-signatures">
     <h2>Signatures</h2>
     <div class="sig-columns">
@@ -85,8 +88,64 @@
       }
     </div>
   </footer>
-
   <p class="paper-disclaimer">
     This document is a personal or internal record. It is not intended for formal legal execution.
   </p>
-</article>
+</ng-template>
+
+<div class="page-measure" aria-hidden="true">
+  <article class="docsign-paper measure-paper" #measurePaper>
+    <div class="measure-stack" #measureStack>
+      <div #measureMasthead>
+        <ng-container [ngTemplateOutlet]="mastheadTpl" />
+      </div>
+      <div #measureContinue>
+        <ng-container [ngTemplateOutlet]="continueTpl" />
+      </div>
+      <div class="paper-body">
+        @for (unit of flowUnits(); track unit.id) {
+          <div class="measure-unit" #measureUnit>
+            <ng-container
+              [ngTemplateOutlet]="unitTpl"
+              [ngTemplateOutletContext]="{ unit: unit, measure: true }"
+            />
+          </div>
+        }
+      </div>
+      <div #measureEnd>
+        <ng-container [ngTemplateOutlet]="signaturesTpl" />
+      </div>
+    </div>
+  </article>
+</div>
+
+<div class="docsign-pages">
+  @for (page of pages(); track page.key) {
+    <article
+      class="docsign-paper"
+      [class.print-mode]="printMode()"
+      [class.is-overflow]="page.overflow"
+      [attr.data-page]="page.no"
+      #paperPage
+    >
+      <span class="paper-page-mark">{{ page.no }} / {{ pages().length }}</span>
+      @if (page.showMasthead) {
+        <ng-container [ngTemplateOutlet]="mastheadTpl" />
+      }
+      @if (page.showContinue) {
+        <ng-container [ngTemplateOutlet]="continueTpl" />
+      }
+      <div class="paper-body">
+        @for (unit of page.units; track unit.id) {
+          <ng-container
+            [ngTemplateOutlet]="unitTpl"
+            [ngTemplateOutletContext]="{ unit: unit, measure: false }"
+          />
+        }
+      </div>
+      @if (page.showSignatures) {
+        <ng-container [ngTemplateOutlet]="signaturesTpl" />
+      }
+    </article>
+  }
+</div>

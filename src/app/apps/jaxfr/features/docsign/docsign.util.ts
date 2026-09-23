@@ -128,6 +128,116 @@ export function splitDocsignContent(
   return blocks;
 }
 
+export function splitHtmlFlowUnits(html: string): string[] {
+  const cleaned = sanitizeDocsignHtml(html);
+  if (!cleaned.trim()) return [];
+  const parsed = new DOMParser().parseFromString(
+    `<div>${cleaned}</div>`,
+    'text/html',
+  );
+  const root = parsed.body.firstElementChild;
+  if (!root) return [cleaned];
+  const units: string[] = [];
+  for (const child of Array.from(root.childNodes)) {
+    if (child.nodeType === Node.ELEMENT_NODE) {
+      units.push(...flowUnitsFromElement(child as Element));
+    } else if (child.textContent?.trim()) {
+      const text = child.textContent
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+      units.push(`<p>${text}</p>`);
+    }
+  }
+  return units.length > 0 ? units : [cleaned];
+}
+
+function flowUnitsFromElement(el: Element): string[] {
+  const tag = el.tagName.toLowerCase();
+  if (tag !== 'ul' && tag !== 'ol') return [el.outerHTML];
+
+  const start = tag === 'ol' ? Number((el as HTMLOListElement).start || 1) : 1;
+  const items: string[] = [];
+  let offset = 0;
+  for (const child of Array.from(el.children)) {
+    if (child.tagName !== 'LI') continue;
+    if (tag === 'ol') {
+      items.push(`<ol start="${start + offset}"><li>${child.innerHTML}</li></ol>`);
+    } else {
+      items.push(`<ul><li>${child.innerHTML}</li></ul>`);
+    }
+    offset += 1;
+  }
+  return items.length > 0 ? items : [el.outerHTML];
+}
+
+export interface DocsignPagePlan {
+  unitIndexes: number[];
+  showMasthead: boolean;
+  showContinue: boolean;
+  showSignatures: boolean;
+  overflow: boolean;
+}
+
+export function planDocsignPages(input: {
+  availablePx: number;
+  mastheadPx: number;
+  continuePx: number;
+  unitPx: number[];
+  signaturesPx: number;
+}): DocsignPagePlan[] {
+  const available = Math.max(1, input.availablePx);
+  const pages: DocsignPagePlan[] = [];
+  let unitIndexes: number[] = [];
+  let used = 0;
+  let isFirst = true;
+
+  const headerPx = (first: boolean) =>
+    first ? input.mastheadPx : input.continuePx;
+
+  const flush = (withSignatures: boolean) => {
+    const end = withSignatures ? input.signaturesPx : 0;
+    pages.push({
+      unitIndexes,
+      showMasthead: isFirst,
+      showContinue: !isFirst,
+      showSignatures: withSignatures,
+      overflow: used + end > available,
+    });
+    unitIndexes = [];
+    isFirst = false;
+    used = 0;
+  };
+
+  used = headerPx(true);
+
+  for (let index = 0; index < input.unitPx.length; index += 1) {
+    const height = input.unitPx[index];
+    if (unitIndexes.length > 0 && used + height > available) {
+      flush(false);
+      used = headerPx(false);
+    }
+    unitIndexes.push(index);
+    used += height;
+  }
+
+  const signatures = input.signaturesPx;
+  if (unitIndexes.length > 0 && used + signatures > available) {
+    flush(false);
+    used = headerPx(false);
+  }
+
+  const overflow = used + signatures > available;
+  pages.push({
+    unitIndexes,
+    showMasthead: isFirst,
+    showContinue: !isFirst,
+    showSignatures: true,
+    overflow,
+  });
+  return pages;
+}
+
 export function docsignLifecycle(
   sentAt: string | null | undefined,
   lockedAt: string | null | undefined,

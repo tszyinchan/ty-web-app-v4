@@ -21,6 +21,28 @@
   background: var(--app-page-bg);
 }
 
+.toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.page-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.page-readout {
+  min-width: 3.6em;
+  font-size: 12px;
+  line-height: 28px;
+  color: var(--app-text-secondary);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
 .zoom-controls {
   display: flex;
   align-items: center;
@@ -77,6 +99,11 @@
   border-color: var(--app-accent);
   color: var(--app-text-primary);
   font-weight: 600;
+}
+
+.zoom-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 .desk-body {
@@ -140,6 +167,7 @@
 }
 
 .desk-scaler {
+  width: max-content;
   transform: scale(var(--docsign-zoom, 1));
   transform-origin: top left;
   transition: transform 180ms ease;

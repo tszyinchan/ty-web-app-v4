@@ -26,7 +26,7 @@
 | 4 | Article | — | 待寫 | |
 | 5 | Fit | — | 待寫 | |
 | 6 | Filelink | — | 待寫 | |
-| 7 | Docsign | [`docsign.regression.md`](../../src/app/apps/jaxfr/features/docsign/docsign.regression.md) | 已有劇本 | 紙張 viewer、zoom、Details 抽屜、Markdown、列印 |
+| 7 | Docsign | [`docsign.regression.md`](../../src/app/apps/jaxfr/features/docsign/docsign.regression.md) | 已有劇本 | 紙張 viewer、zoom、Details 抽屜、Markdown、真分頁 1/N、列印 |
 | 8 | Work Employment | — | 待寫 | |
 | 9 | Work Schedule | — | 待寫 | 依賴 employment 資料 |
 | 10 | Work Attendance | — | 待寫 | 依賴 schedule |
