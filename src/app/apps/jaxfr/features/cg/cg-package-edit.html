@@ -1,4 +1,4 @@
-<div class="cg-panel">
+<div class="cg-panel" [class.mono]="isMono()">
   @if (item(); as pkg) {
     <header class="cg-bar">
       <div class="cg-program">
@@ -32,6 +32,7 @@
                 [payload]="payloadSnapshot(layer)"
                 [visible]="layer.visible"
                 [durationMs]="packageDurationMs()"
+                [sortOrder]="layer.sort_order"
               />
             }
           </app-cg-stage>
@@ -90,6 +91,27 @@
             </label>
           }
         </div>
+        <div class="cg-appear">
+          <span class="cg-kicker">Look</span>
+          <div class="cg-roles">
+            <button
+              type="button"
+              class="cg-role-btn"
+              [class.on]="!isMono()"
+              (click)="setLook(looks.Color)"
+            >
+              Color
+            </button>
+            <button
+              type="button"
+              class="cg-role-btn"
+              [class.on]="isMono()"
+              (click)="setLook(looks.Mono)"
+            >
+              B&amp;W
+            </button>
+          </div>
+        </div>
         <div class="cg-output">
           <span class="cg-kicker">Package Output</span>
           @if (packageOutputUrl(); as url) {
@@ -127,11 +149,18 @@
         </div>
       </div>
 
-      <div class="cg-drive">
+      <div class="cg-drive"
+        cdkDropList
+        cdkDropListOrientation="mixed"
+        [cdkDropListData]="layers()"
+        (cdkDropListDropped)="onLayerDrop($event)"
+      >
         @for (layer of layers(); track layer.clientId) {
           <article
             class="cg-tile"
+            cdkDrag
             [class.off]="!layer.visible"
+            (cdkDragStarted)="onLayerDragStarted()"
             (click)="openLayer(layer)"
           >
             <div class="cg-tile-stage">
@@ -141,10 +170,21 @@
                   [layout]="layoutSnapshot(layer)"
                   [payload]="payloadSnapshot(layer)"
                   [visible]="true"
+                  [sortOrder]="layer.sort_order"
                 />
               </app-cg-stage>
             </div>
             <div class="cg-tile-bar">
+              <button
+                type="button"
+                class="cg-drag"
+                cdkDragHandle
+                (click)="$event.stopPropagation()"
+                aria-label="Reorder layer"
+              >
+                <span class="cg-drag-dots"></span>
+              </button>
+              <span class="cg-tile-z">{{ layer.sort_order + 1 }}</span>
               <span class="cg-tile-name">{{ elementLabel(layer.element_type) }}</span>
               <button
                 type="button"
@@ -159,7 +199,7 @@
             </div>
           </article>
         } @empty {
-          <p class="cg-hint">Pick Logo from the catalog to put a layer on this Panel.</p>
+          <p class="cg-hint">Pick Logo from the catalog. Drag tiles — first is behind, last is in front.</p>
         }
       </div>
     </section>

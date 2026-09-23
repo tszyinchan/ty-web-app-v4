@@ -3,6 +3,11 @@ export enum CgPackageRole {
   Source = 'source',
 }
 
+export enum CgPackageLook {
+  Color = 'color',
+  Mono = 'mono',
+}
+
 export enum CgElementType {
   Logo = 'logo',
   Clock = 'clock',

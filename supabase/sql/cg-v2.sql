@@ -20,6 +20,8 @@ create table public.tyapp_cg_package (
   public_token text not null unique,
   duration_ms integer not null default 400
     check (duration_ms >= 0 and duration_ms <= 5000),
+  look text not null default 'color'
+    check (look in ('color', 'mono')),
   status smallint not null default 1,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
@@ -114,6 +116,7 @@ begin
     'packageName', p.name,
     'packageRole', p.role,
     'durationMs', p.duration_ms,
+    'look', p.look,
     'layers', jsonb_build_array(to_jsonb(l))
   )
   into result
@@ -136,6 +139,7 @@ begin
     'packageName', p.name,
     'packageRole', p.role,
     'durationMs', p.duration_ms,
+    'look', p.look,
     'layers', coalesce((
       select jsonb_agg(to_jsonb(l) order by l.sort_order)
       from public.tyapp_cg_layer l

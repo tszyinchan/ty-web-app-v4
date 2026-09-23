@@ -19,3 +19,7 @@ html.cg-overlay-on app-cg-stage {
   height: 100%;
   aspect-ratio: auto;
 }
+
+html.cg-overlay-on.cg-look-mono app-cg-stage {
+  filter: grayscale(1);
+}

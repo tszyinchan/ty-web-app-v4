@@ -2,7 +2,7 @@ import { Injectable, NgZone, inject, signal } from '@angular/core';
 import { RecordStatus } from '../../models/status.enum';
 import { NotificationService } from '../../services/notification.service';
 import { SupabaseService } from '../../services/supabase.service';
-import { CG_DEFAULT_DURATION_MS, CgPackageRole } from './cg.constants';
+import { CG_DEFAULT_DURATION_MS, CgPackageLook, CgPackageRole } from './cg.constants';
 import { CgLayer, CgLayerDraft, CgPackage, CgPublicOutput } from './cg.model';
 import {
   createCgPublicToken,
@@ -10,6 +10,7 @@ import {
   layerToDraft,
   normalizeDurationMs,
   normalizeLayer,
+  normalizeLook,
   normalizePackage,
   normalizePublicOutput,
 } from './cg.util';
@@ -141,6 +142,7 @@ export class CgService {
               role: packagePayload.role,
               public_token: publicToken,
               duration_ms: normalizeDurationMs(packagePayload.duration_ms),
+              look: normalizeLook(packagePayload.look),
               status: packagePayload.status,
             })
             .select()
@@ -151,6 +153,7 @@ export class CgService {
               name: packagePayload.name?.trim(),
               role: packagePayload.role,
               duration_ms: normalizeDurationMs(packagePayload.duration_ms),
+              look: normalizeLook(packagePayload.look),
               status: packagePayload.status,
               updated_at: new Date().toISOString(),
             })
@@ -274,6 +277,7 @@ export class CgService {
       role: CgPackageRole.Channel,
       public_token: createCgPublicToken(),
       duration_ms: CG_DEFAULT_DURATION_MS,
+      look: CgPackageLook.Color,
       status: RecordStatus.Active,
     };
     this.draftKey.set(null);
@@ -336,6 +340,24 @@ export class CgService {
         layer.clientId === clientId ? { ...layer, visible } : layer,
       ),
     );
+  }
+
+  reorderLayers(fromIndex: number, toIndex: number): void {
+    if (fromIndex === toIndex) return;
+    this.draftLayers.update((list) => {
+      const next = [...list];
+      if (
+        fromIndex < 0 ||
+        toIndex < 0 ||
+        fromIndex >= next.length ||
+        toIndex >= next.length
+      ) {
+        return list;
+      }
+      const [moved] = next.splice(fromIndex, 1);
+      next.splice(toIndex, 0, moved);
+      return next.map((layer, index) => ({ ...layer, sort_order: index }));
+    });
   }
 
   async fetchPublicOutput(token: string): Promise<CgPublicOutput | null> {

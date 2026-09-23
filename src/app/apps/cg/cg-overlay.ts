@@ -15,12 +15,14 @@ import {
   CG_CUT_DURATION_MS,
   CG_DEFAULT_DURATION_MS,
   CG_OVERLAY_POLL_MS,
+  CgPackageLook,
 } from '../../core/domains/cg/cg.constants';
 import { CgLayer } from '../../core/domains/cg/cg.model';
 import { CgService } from '../../core/domains/cg/cg.service';
-import { normalizeDurationMs } from '../../core/domains/cg/cg.util';
+import { normalizeDurationMs, normalizeLook } from '../../core/domains/cg/cg.util';
 
 const OVERLAY_HTML_CLASS = 'cg-overlay-on';
+const OVERLAY_MONO_CLASS = 'cg-look-mono';
 
 @Component({
   selector: 'app-cg-overlay',
@@ -38,6 +40,7 @@ export class CgOverlay implements OnInit, OnDestroy {
 
   readonly stagedLayers = signal<CgLayer[]>([]);
   readonly durationMs = signal(CG_DEFAULT_DURATION_MS);
+  readonly look = signal(CgPackageLook.Color);
 
   private pollId = 0;
   private fadeId = 0;
@@ -59,19 +62,30 @@ export class CgOverlay implements OnInit, OnDestroy {
     window.clearInterval(this.pollId);
     window.clearTimeout(this.fadeId);
     this.document.documentElement.classList.remove(OVERLAY_HTML_CLASS);
+    this.document.documentElement.classList.remove(OVERLAY_MONO_CLASS);
   }
 
   private async refresh(): Promise<void> {
     if (!this.token) {
       this.durationMs.set(CG_DEFAULT_DURATION_MS);
+      this.setLook(CgPackageLook.Color);
       this.applyIncoming([], true, CG_DEFAULT_DURATION_MS);
       return;
     }
     const live = await this.cg.fetchPublicOutput(this.token);
     const durationMs = normalizeDurationMs(live?.durationMs);
     this.durationMs.set(durationMs);
+    this.setLook(normalizeLook(live?.look));
     this.applyIncoming(live?.layers ?? [], this.firstPaint, durationMs);
     this.firstPaint = false;
+  }
+
+  private setLook(look: CgPackageLook): void {
+    this.look.set(look);
+    this.document.documentElement.classList.toggle(
+      OVERLAY_MONO_CLASS,
+      look === CgPackageLook.Mono,
+    );
   }
 
   private applyIncoming(

@@ -38,6 +38,7 @@
 - [ ] `http://localhost:4200` 已開
 - [ ] 已在 Supabase 跑過 `supabase/sql/cg-v2.sql`（會 drop v1 的 `tyapp_cg_slot`）
 - [ ] 已在 Supabase 跑過 `supabase/sql/cg-package-duration.sql`（package `duration_ms` + Output RPC；**不要**再跑一次 v2）
+- [ ] 已在 Supabase 跑過 `supabase/sql/cg-package-look.sql`（package `look` color/mono；**不要**再跑一次 v2）
 - [ ] `.cursor/test-credentials.local.json` 存在；用 **user-a** 登入成功
 - [ ] user-a 已有 CG feature grant（沒有則 Welcome 看不到，`/cg/list` 會被送回 Welcome）
 - [ ] `/cg/list` 沒有名稱以 `[TEST] CG` 開頭的 package；有的話先當 leftover 刪掉
@@ -67,6 +68,8 @@
 | B6 | 點 catalog 裡灰色的 Clock / Title | 不能加（soon）。只有 Logo 能再加一層；加完進 Layer 設定頁 |
 | B7 | `PKG_A` 加第二層 Logo，兩層都 On，Save。再開 overlay。然後只 Off 其中一層，Save | overlay 裡那一層淡出；另一層 Logo **一直在、不眨眼** |
 | B8 | `PKG_A` 改 Appear = **Cut**（或 Fade ms = `0`），Save。再開 overlay，On/Off 一層再 Save | overlay **瞬間**切，沒有 400ms fade。改回 Fade 400、Save，之後又是淡入淡出 |
+| B9 | `PKG_A` 兩層 Logo。拖第二層到第一格，看 Panel Stage：後拖到前面的那層應蓋在上面。Save，overlay 順序一樣 | 沒 Save 前 overlay 不變。數字 1 = 最後面 |
+| B10 | Panel 改 Look = **B&W**。Panel Stage 變灰。Save，overlay 也灰。改回 Color、Save | overlay 恢復彩色。Layer Output 跟 Package 同一個 look |
 
 ### C — Package Output 是預設；Layer Output 也能開
 

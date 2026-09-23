@@ -4,6 +4,7 @@ import {
   CgElementType,
   CgLayoutUnit,
   CgOutputKind,
+  CgPackageLook,
   CgPackageRole,
 } from './cg.constants';
 
@@ -32,6 +33,7 @@ export interface CgPackage {
   public_token: string;
   /** `0` = cut. Default fade is `CG_DEFAULT_DURATION_MS`. */
   duration_ms: number;
+  look: CgPackageLook;
   status: RecordStatus;
   created_at?: string;
   updated_at?: string;
@@ -71,5 +73,6 @@ export interface CgPublicOutput {
   packageName: string;
   packageRole: CgPackageRole;
   durationMs: number;
+  look: CgPackageLook;
   layers: CgLayer[];
 }

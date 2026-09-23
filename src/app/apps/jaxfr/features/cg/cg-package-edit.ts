@@ -10,6 +10,12 @@ import {
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import {
+  CdkDrag,
+  CdkDragDrop,
+  CdkDragHandle,
+  CdkDropList,
+} from '@angular/cdk/drag-drop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CgLayerView } from '../../../../core/domains/cg/cg-layer-view';
 import { CgStage } from '../../../../core/domains/cg/cg-stage';
@@ -20,6 +26,7 @@ import {
   CG_MAX_DURATION_MS,
   CG_PACKAGE_ROLE_OPTIONS,
   CgElementType,
+  CgPackageLook,
   CgPackageRole,
   CgPreviewBackdrop,
 } from '../../../../core/domains/cg/cg.constants';
@@ -30,6 +37,7 @@ import {
   createEmptyLogoLayer,
   elementLabel,
   isCgCut,
+  isCgMono,
   layerToDraft,
   normalizeDurationMs,
   packageHasUnsavedIdentity,
@@ -44,7 +52,7 @@ import { copyTextToClipboard } from '../../../../core/utils/copy-text.util';
 @Component({
   selector: 'app-cg-package-edit',
   standalone: true,
-  imports: [FormsModule, CgStage, CgLayerView],
+  imports: [FormsModule, CdkDropList, CdkDrag, CdkDragHandle, CgStage, CgLayerView],
   templateUrl: './cg-package-edit.html',
   styleUrl: './cg-package-edit.scss',
 })
@@ -61,6 +69,7 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
   readonly backdrops = CgPreviewBackdrop;
   readonly cutMs = CG_CUT_DURATION_MS;
   readonly maxDurationMs = CG_MAX_DURATION_MS;
+  readonly looks = CgPackageLook;
   readonly returnUrl = '/cg/list';
 
   readonly item = this.cg.draftItem;
@@ -69,6 +78,7 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
   isSaveDisabled = signal(true);
   backdrop = signal(CgPreviewBackdrop.Studio);
   private lastFadeMs = CG_DEFAULT_DURATION_MS;
+  private layerDragged = false;
 
   syncStatus = computed<'loading' | 'up-to-date' | 'unsaved' | 'none'>(() => {
     if (this.cg.loading()) return 'loading';
@@ -147,6 +157,10 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
   }
 
   openLayer(layer: CgLayerDraft): void {
+    if (this.layerDragged) {
+      this.layerDragged = false;
+      return;
+    }
     const id = this.packageId;
     if (id) {
       void this.router.navigate(['/cg/edit', id, 'layer', layer.clientId]);
@@ -158,6 +172,14 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
   toggleVisible(layer: CgLayerDraft, event: Event): void {
     event.stopPropagation();
     void this.cg.setLayerVisible(layer.clientId, !layer.visible);
+  }
+
+  onLayerDragStarted(): void {
+    this.layerDragged = true;
+  }
+
+  onLayerDrop(event: CdkDragDrop<CgLayerDraft[]>): void {
+    this.cg.reorderLayers(event.previousIndex, event.currentIndex);
   }
 
   setRole(role: CgPackageRole): void {
@@ -195,6 +217,16 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
     const pkg = this.item();
     if (!pkg) return;
     pkg.duration_ms = normalizeDurationMs(value);
+  }
+
+  isMono(): boolean {
+    return isCgMono(this.item()?.look);
+  }
+
+  setLook(look: CgPackageLook): void {
+    const pkg = this.item();
+    if (!pkg) return;
+    pkg.look = look;
   }
 
   packageOutputUrl(): string {

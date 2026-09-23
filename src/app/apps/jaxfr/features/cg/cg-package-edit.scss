@@ -257,6 +257,18 @@
   align-content: start;
 }
 
+.cg-drive.cdk-drop-list-dragging .cg-tile:not(.cdk-drag-placeholder) {
+  transition: transform 0.16s ease;
+}
+
+.cg-tile.cdk-drag-placeholder {
+  opacity: 0.4;
+}
+
+.cg-tile.cdk-drag-animating {
+  transition: transform 0.16s ease;
+}
+
 .cg-tile {
   display: flex;
   flex-direction: column;
@@ -295,6 +307,37 @@
   justify-content: space-between;
   gap: 8px;
   padding: 8px 10px;
+}
+
+.cg-drag {
+  width: 20px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: grab;
+  flex-shrink: 0;
+}
+
+.cg-drag-dots {
+  display: block;
+  width: 10px;
+  height: 16px;
+  margin: 4px auto 0;
+  background-image: radial-gradient(
+    circle,
+    var(--app-text-muted) 1.25px,
+    transparent 1.35px
+  );
+  background-size: 5px 5.5px;
+  background-repeat: repeat;
+}
+
+.cg-tile-z {
+  flex-shrink: 0;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--app-text-muted);
 }
 
 .cg-tile-name {
@@ -342,4 +385,9 @@
   font-size: 12px;
   line-height: 1.45;
   color: var(--app-text-muted);
+}
+
+.cg-panel.mono .cg-program-frame app-cg-stage,
+.cg-panel.mono .cg-tile-stage app-cg-stage {
+  filter: grayscale(1);
 }

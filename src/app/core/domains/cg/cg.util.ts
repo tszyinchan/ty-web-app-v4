@@ -11,6 +11,7 @@ import {
   CgElementType,
   CgLayoutUnit,
   CgOutputKind,
+  CgPackageLook,
   CgPackageRole,
   DEFAULT_LOGO_LAYOUT,
 } from './cg.constants';
@@ -103,6 +104,14 @@ export function isCgCut(durationMs: unknown): boolean {
   return normalizeDurationMs(durationMs) === CG_CUT_DURATION_MS;
 }
 
+export function normalizeLook(raw: unknown): CgPackageLook {
+  return raw === CgPackageLook.Mono ? CgPackageLook.Mono : CgPackageLook.Color;
+}
+
+export function isCgMono(look: unknown): boolean {
+  return normalizeLook(look) === CgPackageLook.Mono;
+}
+
 export function normalizePackage(raw: unknown): CgPackage | null {
   const value = asRecord(raw);
   const id = asString(value['tb_tyapp_cgpk_id']);
@@ -120,6 +129,7 @@ export function normalizePackage(raw: unknown): CgPackage | null {
         : CgPackageRole.Channel,
     public_token: token,
     duration_ms: normalizeDurationMs(value['duration_ms']),
+    look: normalizeLook(value['look']),
     status:
       value['status'] === RecordStatus.Inactive
         ? RecordStatus.Inactive
@@ -238,6 +248,7 @@ export function normalizePublicOutput(raw: unknown): CgPublicOutput | null {
     durationMs: normalizeDurationMs(
       value['durationMs'] ?? value['duration_ms'],
     ),
+    look: normalizeLook(value['look']),
     layers,
   };
 }

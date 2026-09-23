@@ -31,6 +31,7 @@ import {
   isLocalFilesystemPath,
   layerToDraft,
   normalizeDurationMs,
+  isCgMono,
   packageHasUnsavedIdentity,
   readImageFileAsDataUrl,
 } from '../../../../core/domains/cg/cg.util';
@@ -208,6 +209,10 @@ export class CgLayerEdit implements OnInit, OnDestroy, DoCheck {
 
   packageDurationMs(): number {
     return normalizeDurationMs(this.cg.draftItem()?.duration_ms);
+  }
+
+  isMono(): boolean {
+    return isCgMono(this.cg.draftItem()?.look);
   }
 
   layerOutputUrl(layer: CgLayerDraft): string {

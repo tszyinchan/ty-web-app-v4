@@ -1,4 +1,4 @@
-<div class="cg-layer-page">
+<div class="cg-layer-page" [class.mono]="isMono()">
   @if (layer(); as layer) {
     <div class="cg-layer-stage">
       <div class="cg-stage-toolbar">
@@ -29,6 +29,7 @@
           [payload]="payloadSnapshot(layer)"
           [visible]="layer.visible"
           [durationMs]="packageDurationMs()"
+          [sortOrder]="layer.sort_order"
         />
       </app-cg-stage>
     </div>

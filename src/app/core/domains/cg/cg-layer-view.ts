@@ -35,6 +35,7 @@ import { CgLayerPayload, CgLayout } from './cg.model';
   host: {
     '[class.off]': '!visible()',
     '[style.--cg-duration-ms]': 'durationMs() + "ms"',
+    '[style.z-index]': 'sortOrder()',
   },
 })
 export class CgLayerView {
@@ -44,4 +45,5 @@ export class CgLayerView {
   readonly payload = input.required<CgLayerPayload>();
   readonly visible = input(true);
   readonly durationMs = input(CG_DEFAULT_DURATION_MS);
+  readonly sortOrder = input(0);
 }

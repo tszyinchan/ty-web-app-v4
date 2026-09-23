@@ -199,3 +199,7 @@
   line-height: 1.45;
   color: var(--app-text-muted);
 }
+
+.cg-layer-page.mono app-cg-stage {
+  filter: grayscale(1);
+}
