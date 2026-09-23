@@ -18,6 +18,8 @@ import { UserPreferenceService } from '../../features/settings/user-preference.s
 import { FeatureHubLink, FEATURE_HUBS } from '../feature-hub/feature-hub.config';
 import { AppFeature } from '../../features/development/app-feature/app-feature.model';
 import { AppFeatureService } from '../../features/development/app-feature/app-feature.service';
+import { ChatService } from '../../features/chat/chat.service';
+import { formatUnreadBadge, totalUnreadCount } from '../../features/chat/chat.util';
 import {
   ARCHIVE_IMAGES,
   HUB_ROUTES,
@@ -26,6 +28,8 @@ import {
   launcherImage,
   launcherLabel,
 } from './launcher.registry';
+
+const CHAT_LAUNCHER_NAME = 'Chat';
 
 interface WelcomeCategory {
   name: string;
@@ -88,6 +92,7 @@ export class Welcome implements OnInit, OnDestroy {
   private readonly prefs = inject(UserPreferenceService);
   private readonly viewport = inject(ViewportService);
   private readonly theme = inject(ThemeService);
+  private readonly chat = inject(ChatService);
 
   readonly versionDate = APP_CONFIG.versionDate;
   readonly userProfile = this.auth.userProfile;
@@ -156,6 +161,10 @@ export class Welcome implements OnInit, OnDestroy {
     this.categories().filter((tile) => launcherGroup(tile.name) === 'settings'),
   );
 
+  readonly chatUnreadLabel = computed(() =>
+    formatUnreadBadge(totalUnreadCount(this.chat.unreadByRoomId())),
+  );
+
   private toCategory(feature: AppFeature, apps: TyappApp[]): WelcomeCategory {
     return this.withLinks({
       name: feature.name,
@@ -214,6 +223,17 @@ export class Welcome implements OnInit, OnDestroy {
 
   tileLabel(name: string): string {
     return launcherLabel(name);
+  }
+
+  tileAriaLabel(name: string): string {
+    const label = launcherLabel(name);
+    if (name !== CHAT_LAUNCHER_NAME) return label;
+    const unread = this.chatUnreadLabel();
+    return unread ? `${label}, ${unread} unread` : label;
+  }
+
+  unreadForTile(name: string): string | null {
+    return name === CHAT_LAUNCHER_NAME ? this.chatUnreadLabel() : null;
   }
 
   async onSignOut() {

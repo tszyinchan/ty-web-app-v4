@@ -14,6 +14,9 @@ export const CHAT_ROOM_MIN_OTHER_MEMBERS = CHAT_ROOM_MIN_MEMBERS - 1;
 
 export const CHAT_MARK_READ_DEBOUNCE_MS = 1000;
 
+/** Welcome / room-list badge shows this cap instead of the raw count. */
+export const CHAT_UNREAD_BADGE_MAX = 99;
+
 export const CHAT_QUILL_MODULES: QuillModules = {
   toolbar: [
     [{ font: [] }],

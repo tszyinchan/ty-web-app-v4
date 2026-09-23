@@ -90,6 +90,7 @@
 }
 
 .cp-icon {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -112,6 +113,23 @@
     color: var(--app-accent);
     filter: var(--app-icon-filter);
   }
+}
+
+.cp-unread {
+  position: absolute;
+  top: -4px;
+  right: -6px;
+  z-index: 1;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: #c62828;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 18px;
+  text-align: center;
 }
 
 .cp-text {

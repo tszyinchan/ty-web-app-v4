@@ -1,5 +1,5 @@
 import DOMPurify, { type Config } from 'dompurify';
-import { CHAT_QUOTE_MAX } from './chat.constants';
+import { CHAT_QUOTE_MAX, CHAT_UNREAD_BADGE_MAX } from './chat.constants';
 import { ChatMessage, ChatReactionEntry, ChatReactions, ChatRoomRead } from './chat.model';
 
 const ALLOWED_CSS_PROPS = new Set([
@@ -249,4 +249,15 @@ export function readersByMessageId(
   }
 
   return result;
+}
+
+export function totalUnreadCount(byRoomId: Record<string, number>): number {
+  return Object.values(byRoomId).reduce((sum, count) => sum + count, 0);
+}
+
+export function formatUnreadBadge(count: number): string | null {
+  if (count <= 0) return null;
+  return count > CHAT_UNREAD_BADGE_MAX
+    ? `${CHAT_UNREAD_BADGE_MAX}+`
+    : String(count);
 }

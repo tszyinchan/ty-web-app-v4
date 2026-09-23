@@ -47,7 +47,7 @@
                       class="cp-item"
                       [class.solo]="!item.links.length"
                       [class.coming-soon]="!item.shipped"
-                      [attr.aria-label]="tileLabel(item.name)"
+                      [attr.aria-label]="tileAriaLabel(item.name)"
                     >
                       <span class="cp-icon">
                         @if (item.image) {
@@ -55,13 +55,16 @@
                         } @else {
                           <mat-icon>{{ item.icon }}</mat-icon>
                         }
+                        @if (unreadForTile(item.name); as unread) {
+                          <span class="cp-unread">{{ unread }}</span>
+                        }
                       </span>
                       <div class="cp-text">
                         @if (item.shipped) {
                           <a
                             class="cp-title"
                             [routerLink]="item.route"
-                            [title]="tileLabel(item.name)"
+                            [title]="tileAriaLabel(item.name)"
                           >{{ tileLabel(item.name) }}</a>
                           @if (launcherMode() === 'detailed' && item.links.length) {
                             <div class="cp-links">
