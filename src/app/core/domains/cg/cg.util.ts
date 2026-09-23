@@ -298,6 +298,16 @@ function asRecord(raw: unknown): Record<string, unknown> {
   return {};
 }
 
+export function isSameCgPackageUrl(fromUrl: string, toUrl: string): boolean {
+  const path = (url: string) => url.split('?')[0].replace(/\/+$/, '') || '/';
+  const from = path(fromUrl);
+  const to = path(toUrl);
+  if (from.startsWith('/cg/new') && to.startsWith('/cg/new')) return true;
+  const fromId = from.match(/^\/cg\/edit\/([^/]+)/)?.[1];
+  const toId = to.match(/^\/cg\/edit\/([^/]+)/)?.[1];
+  return !!fromId && fromId === toId;
+}
+
 function asString(raw: unknown): string {
   return typeof raw === 'string' ? raw : '';
 }

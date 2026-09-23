@@ -1,14 +1,16 @@
 <div class="overlay-root">
-  <app-cg-stage>
-    @if (output(); as live) {
-      @for (layer of live.layers; track layer.tb_tyapp_cgly_id) {
-        <app-cg-layer-view
-          [elementType]="layer.element_type"
-          [layout]="layer.layout"
-          [payload]="layer.payload"
-          [visible]="layer.visible"
-        />
-      }
-    }
-  </app-cg-stage>
+  @for (take of takes(); track take.key) {
+    <div class="cg-take" [class.on]="take.on" [class.out]="take.out">
+      <app-cg-stage>
+        @for (layer of take.layers; track layer.tb_tyapp_cgly_id) {
+          <app-cg-layer-view
+            [elementType]="layer.element_type"
+            [layout]="layer.layout"
+            [payload]="layer.payload"
+            [visible]="true"
+          />
+        }
+      </app-cg-stage>
+    </div>
+  }
 </div>

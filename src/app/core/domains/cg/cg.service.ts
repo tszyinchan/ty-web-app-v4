@@ -1,8 +1,16 @@
 import { Injectable, NgZone, inject, signal } from '@angular/core';
+import { RecordStatus } from '../../models/status.enum';
 import { NotificationService } from '../../services/notification.service';
 import { SupabaseService } from '../../services/supabase.service';
+import { CgPackageRole } from './cg.constants';
 import { CgLayer, CgLayerDraft, CgPackage, CgPublicOutput } from './cg.model';
-import { createCgPublicToken, normalizeLayer, normalizePublicOutput } from './cg.util';
+import {
+  createCgPublicToken,
+  createEmptyLogoLayer,
+  layerToDraft,
+  normalizeLayer,
+  normalizePublicOutput,
+} from './cg.util';
 
 @Injectable({ providedIn: 'root' })
 export class CgService {
@@ -13,6 +21,12 @@ export class CgService {
   packages = signal<CgPackage[]>([]);
   layers = signal<CgLayer[]>([]);
   loading = signal(false);
+
+  /** `undefined` = no session; `null` = new package; string = saved id. */
+  draftKey = signal<string | null | undefined>(undefined);
+  draftItem = signal<Partial<CgPackage> | null>(null);
+  draftLayers = signal<CgLayerDraft[]>([]);
+  draftOriginal = signal('');
 
   async fetchAllPackages(force = false): Promise<void> {
     if (this.packages().length > 0 && !force) return;
@@ -238,6 +252,77 @@ export class CgService {
         return false;
       });
     }
+  }
+
+  beginNewDraft(): void {
+    if (this.draftKey() === null && this.draftItem()) return;
+    const logo = createEmptyLogoLayer(0);
+    const created: Partial<CgPackage> = {
+      name: '',
+      role: CgPackageRole.Channel,
+      public_token: createCgPublicToken(),
+      status: RecordStatus.Active,
+    };
+    this.draftKey.set(null);
+    this.draftItem.set(created);
+    this.draftLayers.set([logo]);
+    this.markDraftClean();
+  }
+
+  async loadSavedDraft(id: string): Promise<boolean> {
+    if (this.draftKey() === id && this.draftItem()) return true;
+    const fresh = await this.fetchPackageById(id);
+    if (!fresh) return false;
+    this.applyDraft(fresh.package, fresh.layers.map((layer) => layerToDraft(layer)));
+    return true;
+  }
+
+  applyDraft(pkg: CgPackage, drafts: CgLayerDraft[]): void {
+    this.draftKey.set(pkg.tb_tyapp_cgpk_id);
+    this.draftItem.set(structuredClone(pkg));
+    this.draftLayers.set(structuredClone(drafts));
+    this.markDraftClean();
+  }
+
+  clearDraft(): void {
+    this.draftKey.set(undefined);
+    this.draftItem.set(null);
+    this.draftLayers.set([]);
+    this.draftOriginal.set('');
+  }
+
+  draftSnapshot(): {
+    package: Partial<CgPackage> | null;
+    layers: CgLayerDraft[];
+  } {
+    return {
+      package: this.draftItem(),
+      layers: this.draftLayers(),
+    };
+  }
+
+  markDraftClean(): void {
+    this.draftOriginal.set(JSON.stringify(this.draftSnapshot()));
+  }
+
+  touchPreview(): void {
+    this.draftLayers.update((list) =>
+      list.map((layer) => ({
+        ...layer,
+        layout: { ...layer.layout },
+        payload: { ...layer.payload },
+      })),
+    );
+  }
+
+  setLayerVisible(clientId: string, visible: boolean): void {
+    const previous = this.draftLayers().find((layer) => layer.clientId === clientId);
+    if (!previous || previous.visible === visible) return;
+    this.draftLayers.update((list) =>
+      list.map((layer) =>
+        layer.clientId === clientId ? { ...layer, visible } : layer,
+      ),
+    );
   }
 
   async fetchPublicOutput(token: string): Promise<CgPublicOutput | null> {

@@ -94,6 +94,8 @@ export const CG_ELEMENT_CATALOG: ReadonlyArray<CgElementDef> = [
 
 export const CG_OVERLAY_POLL_MS = 2000;
 
+export const CG_VISIBLE_FADE_MS = 400;
+
 export const DEFAULT_LOGO_LAYOUT = {
   x: 2.4,
   y: 3.2,

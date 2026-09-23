@@ -5,7 +5,7 @@
 | | |
 |---|---|
 | Feature 路由 | `/cg` |
-| 子頁 | `/cg/list`、`/cg/new`、`/cg/edit/:id`；overlay `http://cg.localhost:4200/o/:token` 或 `https://cg.tszyin.com/o/:token` |
+| 子頁 | `/cg/list`、`/cg/new`、`/cg/edit/:id`、`/cg/edit/:id/layer/:layerId`；overlay `http://cg.localhost:4200/o/:token` 或 `https://cg.tszyin.com/o/:token` |
 | 測試帳 | `.cursor/test-credentials.local.json` 的 **user-a**（USER） |
 | Super Admin | Welcome 目錄列、`tyapp_user_feature_access` grant。劇本有標 `Needs Super Admin` 的才列 |
 | 結果報告 | `.cursor/regression/runs/YYYY-MM-DD-cg.md`（gitignore） |
@@ -57,20 +57,20 @@
 
 | # | 操作 | 預期 |
 |---|---|---|
-| B1 | 打開 `PKG_A`。頂列有一塊小 16:9 Stage；下面是 Layer 格子（Drive 風格每張 16:9 縮圖）。點一張 Logo tile，必要時點 **Sample PNG** | 每張 tile 都是全幅 16:9（看得到那層的位置）。頂列小 Stage 只畫 On 的 layer。Inspector 在格子下面 |
-| B1b | 點 **Choose local image**，選本機 PNG | Stage 換成該圖；欄位顯示 embedded 檔名，不是 `C:\\` 路徑 |
+| B1 | 打開 `PKG_A`。頂列小 16:9 Stage；下面只有 Layer 格子。點 Logo tile | 進入該 Layer 設定頁（Stage + X/Y/圖）。Panel 底下沒有 inspector |
+| B1b | 在 Layer 頁點 **Choose local image**，選本機 PNG | Stage 換成該圖；欄位顯示 embedded 檔名，不是 `C:\\` 路徑 |
 | B2 | 改 X / Y / Width / Scale | Stage 裡的 logo 跟著動，不必重載 |
 | B3 | 切 **Alpha** / **Studio** | Alpha 是棋盤（只在後台）；Studio 是暗底。都不是綠幕 |
-| B4 | 點 Logo tile 的 **Off** | tile 變淡但圖還在（方便監看）；頂列小 Stage 裡 logo 消失；Package Output 也不該再畫它 |
-| B5 | Save | 成功；重整後位置、圖、On/Off 還在 |
-| B6 | 點 catalog 裡灰色的 Clock / Title | 不能加（soon）。只有 Logo 能再加一層 |
+| B4 | 回到 Panel，撥 Logo 的 On/Off toggle | tile 變淡但圖還在。頂列 **Panel Stage 預覽**淡出。Package Output **先不要變**（還沒 Save） |
+| B5 | Save | 成功。約 2 秒內 overlay **淡出舊畫面、淡入新畫面**（不是瞬間切）。重整後位置、圖、On/Off 還在 |
+| B6 | 點 catalog 裡灰色的 Clock / Title | 不能加（soon）。只有 Logo 能再加一層；加完進 Layer 設定頁 |
 
 ### C — Package Output 是預設；Layer Output 也能開
 
 | # | 操作 | 預期 |
 |---|---|---|
 | C1 | Copy **Package Output**，新分頁打開 | URL 是 `http://cg.localhost:4200/o/…`（正式是 `cg.tszyin.com/o/…`）。真透明底 + package 裡所有 On 的 layer。壞 token 是空白，不是 Jaxfr 登入頁 |
-| C2 | 回到後台改 Scale，等約 2 秒看 overlay 分頁 | overlay 跟著變，不用重開 |
+| C2 | 回到後台改 Scale，**先不要 Save**，看 overlay | overlay **不變**。Save 之後約 2 秒，overlay 淡入新 scale |
 | C3 | Copy Logo 的 **Layer Output**，另開分頁 | 同樣全幅透明，只畫那顆 Logo |
 
 ### CLEANUP

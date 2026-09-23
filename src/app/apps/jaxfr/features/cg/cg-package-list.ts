@@ -65,6 +65,7 @@ export class CgPackageList implements OnInit, OnDestroy {
       ],
     });
     void this.cg.fetchAllPackages();
+    this.cg.clearDraft();
   }
 
   ngOnDestroy(): void {

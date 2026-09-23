@@ -12,11 +12,12 @@ This is the locked vocabulary for code, UI copy, DB, routes, and the subdomain. 
 | Surface | Locked name |
 |---|---|
 | Launcher / `tyapp_app_feature.name` | `CG` |
-| Route | `/cg` (`/cg/list`, `/cg/new`, `/cg/edit/:id`) |
+| Route | `/cg` (`/cg/list`, `/cg/new`, `/cg/edit/:id`, `/cg/edit/:id/layer/:layerId`) |
 | Overlay path | `/o/:token` on the CG host; fallback `/cg-live/:token` on Jaxfr |
 | Subdomain | `cg` → `https://cg.tszyin.com` / `http://cg.localhost:4200` |
 | Code | `features/cg/`, `apps/cg/` (overlay), `core/domains/cg/` |
 | Panel files | `cg-package-edit.*` (skeleton is `*-edit`; the page is still Panel) |
+| Layer config | `cg-layer-edit.*` at `/cg/edit/:id/layer/:layerId` |
 
 ## UI words
 
@@ -25,7 +26,7 @@ This is the locked vocabulary for code, UI copy, DB, routes, and the subdomain. 
 | **Package** | One look to use together | CH36, News SNG |
 | **Element** | Kind in the catalog (code registry `CG_ELEMENT_CATALOG`) | Logo, Clock, Ticker |
 | **Layer** | One instance inside a Package | CH36's Logo |
-| **Panel** | This Package's operator page | Drive-style grid of Layers + On/Off |
+| **Panel** | This Package's operator page | Drive-style grid of Layers + On/Off toggle |
 | **Output** | OBS URL (full-frame transparent Stage) | Package Output (default), Layer Output |
 | **Stage** | 16:9 canvas | Tile thumbs, small program preview, overlay |
 
@@ -48,5 +49,7 @@ Logo payload jsonb: `imageUrl`, `fileName`
 Tokens share one `/o/:token` space (unique across both tables in practice). Do not add a token table.
 
 RPCs: `tyapp_cg_package_soft_delete_single_record`, `tyapp_cg_layer_soft_delete_single_record`, `tyapp_cg_get_output_by_token`.
+
+**Save** writes the Package and applies it to Output. The overlay **crossfades** from the previous take to the new one (Logo, Clock, Weather, …). Panel Stage is a live preview; it does not go to air until Save. On/Off on the Panel is draft until Save.
 
 Do not revive `tyapp_cg_slot` or `component_type`.

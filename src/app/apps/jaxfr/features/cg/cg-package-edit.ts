@@ -14,13 +14,8 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { CgLayerView } from '../../../../core/domains/cg/cg-layer-view';
 import { CgStage } from '../../../../core/domains/cg/cg-stage';
 import {
-  CG_ANCHOR_OPTIONS,
   CG_ELEMENT_CATALOG,
-  CG_LAYOUT_UNIT_OPTIONS,
-  CG_LOGO_ACCEPT,
-  CG_LOGO_MAX_BYTES,
   CG_PACKAGE_ROLE_OPTIONS,
-  CG_SAMPLE_LOGO_URL,
   CgElementType,
   CgPackageRole,
   CgPreviewBackdrop,
@@ -30,15 +25,10 @@ import { CgService } from '../../../../core/domains/cg/cg.service';
 import {
   buildCgOverlayUrl,
   createEmptyLogoLayer,
-  createCgPublicToken,
   elementLabel,
-  isEmbeddedImageUrl,
-  isLocalFilesystemPath,
   layerToDraft,
   packageHasUnsavedIdentity,
-  readImageFileAsDataUrl,
 } from '../../../../core/domains/cg/cg.util';
-import { RecordStatus } from '../../../../core/models/status.enum';
 import {
   HeaderAction,
   HeaderService,
@@ -61,35 +51,28 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
   private notification = inject(NotificationService);
   readonly cg = inject(CgService);
 
-  readonly Logo = CgElementType.Logo;
   readonly catalog = CG_ELEMENT_CATALOG;
   readonly roleOptions = CG_PACKAGE_ROLE_OPTIONS;
-  readonly anchorOptions = CG_ANCHOR_OPTIONS;
-  readonly unitOptions = CG_LAYOUT_UNIT_OPTIONS;
   readonly backdrops = CgPreviewBackdrop;
-  readonly logoAccept = CG_LOGO_ACCEPT;
   readonly returnUrl = '/cg/list';
 
-  item = signal<Partial<CgPackage> | null>(null);
-  layers = signal<CgLayerDraft[]>([]);
-  selectedClientId = signal<string | null>(null);
-  currentId: string | null = null;
-  originalDataStr = signal('');
+  readonly item = this.cg.draftItem;
+  readonly layers = this.cg.draftLayers;
   isDirty = signal(false);
   isSaveDisabled = signal(true);
   backdrop = signal(CgPreviewBackdrop.Studio);
 
-  readonly selectedLayer = computed(() => {
-    const id = this.selectedClientId();
-    return this.layers().find((layer) => layer.clientId === id) ?? null;
-  });
-
   syncStatus = computed<'loading' | 'up-to-date' | 'unsaved' | 'none'>(() => {
     if (this.cg.loading()) return 'loading';
     if (this.isDirty()) return 'unsaved';
-    if (this.currentId) return 'up-to-date';
+    if (this.packageId) return 'up-to-date';
     return 'none';
   });
+
+  get packageId(): string | null {
+    const key = this.cg.draftKey();
+    return typeof key === 'string' ? key : null;
+  }
 
   @HostListener('window:beforeunload', ['$event'])
   onBeforeUnload(event: BeforeUnloadEvent) {
@@ -101,15 +84,15 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
   }
 
   ngDoCheck(): void {
-    const current = this.snapshot();
-    const original = this.originalDataStr();
-    if (!current || !original) return;
-    const currentlyDirty = JSON.stringify(current) !== original;
+    const original = this.cg.draftOriginal();
+    if (!original || !this.item()) return;
+    const currentlyDirty = JSON.stringify(this.cg.draftSnapshot()) !== original;
     if (this.isDirty() !== currentlyDirty) {
       this.isDirty.set(currentlyDirty);
     }
-    const invalid =
-      !current.package || packageHasUnsavedIdentity(current.package);
+    const invalid = packageHasUnsavedIdentity(
+      this.item() as Pick<CgPackage, 'name'>,
+    );
     const disabled = !currentlyDirty || invalid || this.cg.loading();
     if (this.isSaveDisabled() !== disabled) {
       this.isSaveDisabled.set(disabled);
@@ -117,48 +100,21 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
   }
 
   async ngOnInit(): Promise<void> {
-    this.currentId = this.route.snapshot.paramMap.get('id');
-    this.bindHeader();
-
-    if (this.currentId) {
-      const cachedPackage = this.cg
-        .packages()
-        .find((pkg) => pkg.tb_tyapp_cgpk_id === this.currentId);
-      if (cachedPackage) {
-        this.applyLoaded(
-          cachedPackage,
-          this.cg
-            .layers()
-            .filter((layer) => layer.package_id === this.currentId)
-            .map((layer) => layerToDraft(layer)),
-        );
-      }
-
-      const fresh = await this.cg.fetchPackageById(this.currentId);
+    const id = this.route.snapshot.paramMap.get('id');
+    if (id) {
+      const ok = await this.cg.loadSavedDraft(id);
       this.zone.run(() => {
-        if (fresh) {
-          this.applyLoaded(
-            fresh.package,
-            fresh.layers.map((layer) => layerToDraft(layer)),
-          );
-        } else if (!cachedPackage) {
+        if (!ok) {
           this.router.navigateByUrl(this.returnUrl);
+          return;
         }
+        this.bindHeader();
       });
       return;
     }
 
-    const logo = createEmptyLogoLayer(0);
-    const created: Partial<CgPackage> = {
-      name: '',
-      role: CgPackageRole.Channel,
-      public_token: createCgPublicToken(),
-      status: RecordStatus.Active,
-    };
-    this.item.set(created);
-    this.layers.set([logo]);
-    this.selectedClientId.set(logo.clientId);
-    this.originalDataStr.set(JSON.stringify(this.snapshot()));
+    this.cg.beginNewDraft();
+    this.bindHeader();
   }
 
   ngOnDestroy(): void {
@@ -178,19 +134,22 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
     }
     if (type !== CgElementType.Logo) return;
     const layer = createEmptyLogoLayer(this.layers().length);
-    this.layers.update((list) => [...list, layer]);
-    this.selectedClientId.set(layer.clientId);
+    this.cg.draftLayers.update((list) => [...list, layer]);
+    this.openLayer(layer);
   }
 
-  selectLayer(clientId: string): void {
-    this.selectedClientId.set(clientId);
+  openLayer(layer: CgLayerDraft): void {
+    const id = this.packageId;
+    if (id) {
+      void this.router.navigate(['/cg/edit', id, 'layer', layer.clientId]);
+      return;
+    }
+    void this.router.navigate(['/cg/new/layer', layer.clientId]);
   }
 
   toggleVisible(layer: CgLayerDraft, event: Event): void {
     event.stopPropagation();
-    layer.visible = !layer.visible;
-    this.selectedClientId.set(layer.clientId);
-    this.touchPreview();
+    void this.cg.setLayerVisible(layer.clientId, !layer.visible);
   }
 
   setRole(role: CgPackageRole): void {
@@ -199,75 +158,10 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
     pkg.role = role;
   }
 
-  useSampleLogo(layer: CgLayerDraft): void {
-    layer.payload.imageUrl = CG_SAMPLE_LOGO_URL;
-    delete layer.payload.fileName;
-    this.touchPreview();
-  }
-
-  isEmbeddedLogo(layer: CgLayerDraft): boolean {
-    return isEmbeddedImageUrl(layer.payload.imageUrl);
-  }
-
-  onImageUrlChange(layer: CgLayerDraft): void {
-    if (isLocalFilesystemPath(layer.payload.imageUrl)) {
-      this.notification.handleError(
-        'Local path',
-        'The browser cannot open a disk path. Use Choose local image.',
-      );
-      layer.payload.imageUrl = '';
-    }
-    delete layer.payload.fileName;
-    this.touchPreview();
-  }
-
-  async onLogoFile(layer: CgLayerDraft, event: Event): Promise<void> {
-    const input = event.target;
-    if (!(input instanceof HTMLInputElement) || !input.files?.length) {
-      return;
-    }
-    const file = input.files[0];
-    input.value = '';
-    if (!/^image\/(png|webp)$/.test(file.type)) {
-      this.notification.handleError(
-        'Logo',
-        'Use a PNG or WebP with transparency.',
-      );
-      return;
-    }
-    if (file.size > CG_LOGO_MAX_BYTES) {
-      this.notification.handleError(
-        'Logo',
-        'Keep the file under 1.5 MB for now.',
-      );
-      return;
-    }
-    try {
-      layer.payload.imageUrl = await readImageFileAsDataUrl(file);
-      layer.payload.fileName = file.name;
-      this.touchPreview();
-    } catch (error: unknown) {
-      this.notification.handleError('Logo', error);
-    }
-  }
-
-  removeLayer(clientId: string): void {
-    if (!confirm('Remove this layer from the package?')) return;
-    this.layers.update((list) => list.filter((layer) => layer.clientId !== clientId));
-    if (this.selectedClientId() === clientId) {
-      this.selectedClientId.set(this.layers()[0]?.clientId ?? null);
-    }
-  }
-
   packageOutputUrl(): string {
     const token = this.item()?.public_token;
-    if (!token || !this.currentId) return '';
+    if (!token || !this.packageId) return '';
     return buildCgOverlayUrl(token, window.location);
-  }
-
-  layerOutputUrl(layer: CgLayerDraft): string {
-    if (!this.currentId) return '';
-    return buildCgOverlayUrl(layer.public_token, window.location);
   }
 
   layoutSnapshot(layer: CgLayerDraft): CgLayerDraft['layout'] {
@@ -276,16 +170,6 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
 
   payloadSnapshot(layer: CgLayerDraft): CgLayerDraft['payload'] {
     return { ...layer.payload };
-  }
-
-  touchPreview(): void {
-    this.layers.update((list) =>
-      list.map((layer) => ({
-        ...layer,
-        layout: { ...layer.layout },
-        payload: { ...layer.payload },
-      })),
-    );
   }
 
   async copyPackageOutput(): Promise<void> {
@@ -305,23 +189,6 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
     }
   }
 
-  async copyLayerOutput(layer: CgLayerDraft): Promise<void> {
-    const url = this.layerOutputUrl(layer);
-    if (!url) {
-      this.notification.handleError(
-        'Layer Output',
-        'Save the package first to get the OBS URL.',
-      );
-      return;
-    }
-    try {
-      await copyTextToClipboard(url);
-      this.notification.showSuccess('Layer Output copied');
-    } catch (error: unknown) {
-      this.notification.handleError('Copy failed', error);
-    }
-  }
-
   async onSave(): Promise<void> {
     const data = this.item();
     if (!data || packageHasUnsavedIdentity(data as Pick<CgPackage, 'name'>)) {
@@ -329,16 +196,15 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
     }
     const id = await this.cg.savePackage(data, this.layers());
     if (!id) return;
-    this.currentId = id;
     const fresh = await this.cg.fetchPackageById(id);
     this.zone.run(() => {
       if (fresh) {
-        this.applyLoaded(
+        this.cg.applyDraft(
           fresh.package,
           fresh.layers.map((layer) => layerToDraft(layer)),
         );
       } else {
-        this.originalDataStr.set(JSON.stringify(this.snapshot()));
+        this.cg.markDraftClean();
         this.isDirty.set(false);
       }
       this.bindHeader();
@@ -349,41 +215,20 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
   }
 
   async onDelete(): Promise<void> {
-    if (!this.currentId) return;
+    const id = this.packageId;
+    if (!id) return;
     if (!confirm('Delete this package and its layers?')) return;
-    const ok = await this.cg.deletePackage(this.currentId);
+    const ok = await this.cg.deletePackage(id);
     if (ok) {
       this.isDirty.set(false);
+      this.cg.clearDraft();
       this.router.navigateByUrl(this.returnUrl);
     }
   }
 
-  private applyLoaded(pkg: CgPackage, drafts: CgLayerDraft[]): void {
-    this.item.set(structuredClone(pkg));
-    this.layers.set(structuredClone(drafts));
-    const keep = this.selectedClientId();
-    this.selectedClientId.set(
-      drafts.find((layer) => layer.clientId === keep)?.clientId ??
-        drafts[0]?.clientId ??
-        null,
-    );
-    this.originalDataStr.set(JSON.stringify(this.snapshot()));
-    this.isDirty.set(false);
-  }
-
-  private snapshot(): {
-    package: Partial<CgPackage> | null;
-    layers: CgLayerDraft[];
-  } {
-    return {
-      package: this.item(),
-      layers: this.layers(),
-    };
-  }
-
   private bindHeader(): void {
     const actions: HeaderAction[] = [];
-    if (this.currentId) {
+    if (this.packageId) {
       actions.push({
         label: 'Delete',
         icon: 'delete',
@@ -392,7 +237,7 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
       });
     }
     actions.push({
-      label: this.currentId ? 'Save changes' : 'Create package',
+      label: this.packageId ? 'Save changes' : 'Create package',
       icon: 'check',
       type: 'primary',
       disabled: this.isSaveDisabled,

@@ -29,7 +29,8 @@
   &:has(app-chat-page),
   &:has(app-welcome),
   &:has(app-docsign-edit),
-  &:has(app-cg-package-edit) {
+  &:has(app-cg-package-edit),
+  &:has(app-cg-layer-edit) {
     overflow: hidden;
 
     .page-container {
@@ -38,6 +39,7 @@
   }
 
   &:has(app-cg-package-edit),
+  &:has(app-cg-layer-edit),
   &:has(app-cg-package-list) {
     overflow-x: auto;
   }

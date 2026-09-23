@@ -1,0 +1,151 @@
+<div class="cg-layer-page">
+  @if (layer(); as layer) {
+    <div class="cg-layer-stage">
+      <div class="cg-stage-toolbar">
+        <span class="cg-kicker">Stage</span>
+        <div class="cg-stage-toggles">
+          <button
+            type="button"
+            class="cg-btn"
+            [class.on]="backdrop() === backdrops.Checkerboard"
+            (click)="backdrop.set(backdrops.Checkerboard)"
+          >
+            Alpha
+          </button>
+          <button
+            type="button"
+            class="cg-btn"
+            [class.on]="backdrop() === backdrops.Studio"
+            (click)="backdrop.set(backdrops.Studio)"
+          >
+            Studio
+          </button>
+        </div>
+      </div>
+      <app-cg-stage [preview]="true" [backdrop]="backdrop()">
+        <app-cg-layer-view
+          [elementType]="layer.element_type"
+          [layout]="layoutSnapshot(layer)"
+          [payload]="payloadSnapshot(layer)"
+          [visible]="layer.visible"
+        />
+      </app-cg-stage>
+    </div>
+
+    <section class="cg-layer-form">
+      <div class="cg-layer-head">
+        <span class="cg-kicker">{{ elementLabel(layer.element_type) }}</span>
+        <button
+          type="button"
+          class="cg-switch"
+          [class.on]="layer.visible"
+          role="switch"
+          [attr.aria-checked]="layer.visible"
+          (click)="toggleVisible(layer)"
+        >
+          <span class="cg-switch-thumb"></span>
+        </button>
+      </div>
+
+      @if (layer.element_type === Logo) {
+        @if (isEmbeddedLogo(layer)) {
+          <p class="cg-hint">
+            Embedded{{ layer.payload.fileName ? ': ' + layer.payload.fileName : '' }}
+          </p>
+        } @else {
+          <label class="cg-field">
+            <span>Image URL</span>
+            <input
+              type="text"
+              [(ngModel)]="layer.payload.imageUrl"
+              (ngModelChange)="onImageUrlChange(layer)"
+              placeholder="/icons/3d/apps.png or https://…"
+            />
+          </label>
+        }
+        <div class="cg-inline">
+          <label class="cg-btn file">
+            <input
+              type="file"
+              [accept]="logoAccept"
+              (change)="onLogoFile(layer, $event)"
+            />
+            Choose local image
+          </label>
+          <button type="button" class="cg-btn" (click)="useSampleLogo(layer)">
+            Sample PNG
+          </button>
+        </div>
+        <div class="cg-fields">
+          <label class="cg-field">
+            <span>X</span>
+            <input
+              type="number"
+              [(ngModel)]="layer.layout.x"
+              (ngModelChange)="touchPreview()"
+            />
+          </label>
+          <label class="cg-field">
+            <span>Y</span>
+            <input
+              type="number"
+              [(ngModel)]="layer.layout.y"
+              (ngModelChange)="touchPreview()"
+            />
+          </label>
+          <label class="cg-field">
+            <span>Width</span>
+            <input
+              type="number"
+              [(ngModel)]="layer.layout.width"
+              (ngModelChange)="touchPreview()"
+            />
+          </label>
+          <label class="cg-field">
+            <span>Scale</span>
+            <input
+              type="number"
+              step="0.05"
+              [(ngModel)]="layer.layout.scale"
+              (ngModelChange)="touchPreview()"
+            />
+          </label>
+          <label class="cg-field">
+            <span>Anchor</span>
+            <select
+              [(ngModel)]="layer.layout.anchor"
+              (ngModelChange)="touchPreview()"
+            >
+              @for (option of anchorOptions; track option.value) {
+                <option [ngValue]="option.value">{{ option.label }}</option>
+              }
+            </select>
+          </label>
+          <label class="cg-field">
+            <span>Unit</span>
+            <select [(ngModel)]="layer.layout.unit" (ngModelChange)="touchPreview()">
+              @for (option of unitOptions; track option.value) {
+                <option [ngValue]="option.value">{{ option.label }}</option>
+              }
+            </select>
+          </label>
+        </div>
+      }
+
+      <div class="cg-layer-output">
+        <span class="cg-kicker">Layer Output</span>
+        @if (layerOutputUrl(layer); as url) {
+          <code class="cg-url" [title]="url">{{ url }}</code>
+          <button type="button" class="cg-btn" (click)="copyLayerOutput(layer)">
+            Copy
+          </button>
+        } @else {
+          <span class="cg-url-placeholder">Save first</span>
+        }
+      </div>
+      <button type="button" class="cg-btn danger" (click)="removeLayer(layer)">
+        Remove layer
+      </button>
+    </section>
+  }
+</div>

@@ -69,179 +69,64 @@
       </div>
     </header>
 
-    <div class="cg-body">
-      <section class="cg-board">
-        <div class="cg-board-head">
-          <span class="cg-kicker">Panel</span>
-          <div class="cg-catalog">
-            @for (el of catalog; track el.type) {
+    <section class="cg-board">
+      <div class="cg-board-head">
+        <span class="cg-kicker">Panel</span>
+        <div class="cg-catalog">
+          @for (el of catalog; track el.type) {
+            <button
+              type="button"
+              class="cg-chip"
+              [class.soon]="!el.shipped"
+              [disabled]="!el.shipped"
+              (click)="addElement(el.type)"
+            >
+              {{ el.label }}
+              @if (!el.shipped) {
+                <span>soon</span>
+              } @else {
+                <span>+</span>
+              }
+            </button>
+          }
+        </div>
+      </div>
+
+      <div class="cg-drive">
+        @for (layer of layers(); track layer.clientId) {
+          <article
+            class="cg-tile"
+            [class.off]="!layer.visible"
+            (click)="openLayer(layer)"
+          >
+            <div class="cg-tile-stage">
+              <app-cg-stage [preview]="true" [backdrop]="backdrop()">
+                <app-cg-layer-view
+                  [elementType]="layer.element_type"
+                  [layout]="layoutSnapshot(layer)"
+                  [payload]="payloadSnapshot(layer)"
+                  [visible]="true"
+                />
+              </app-cg-stage>
+            </div>
+            <div class="cg-tile-bar">
+              <span class="cg-tile-name">{{ elementLabel(layer.element_type) }}</span>
               <button
                 type="button"
-                class="cg-chip"
-                [class.soon]="!el.shipped"
-                [disabled]="!el.shipped"
-                (click)="addElement(el.type)"
+                class="cg-switch"
+                [class.on]="layer.visible"
+                role="switch"
+                [attr.aria-checked]="layer.visible"
+                (click)="toggleVisible(layer, $event)"
               >
-                {{ el.label }}
-                @if (!el.shipped) {
-                  <span>soon</span>
-                } @else {
-                  <span>+</span>
-                }
-              </button>
-            }
-          </div>
-        </div>
-
-        <div class="cg-drive">
-          @for (layer of layers(); track layer.clientId) {
-            <article
-              class="cg-tile"
-              [class.selected]="selectedClientId() === layer.clientId"
-              [class.off]="!layer.visible"
-              (click)="selectLayer(layer.clientId)"
-            >
-              <div class="cg-tile-stage">
-                <app-cg-stage [preview]="true" [backdrop]="backdrop()">
-                  <app-cg-layer-view
-                    [elementType]="layer.element_type"
-                    [layout]="layoutSnapshot(layer)"
-                    [payload]="payloadSnapshot(layer)"
-                    [visible]="true"
-                  />
-                </app-cg-stage>
-              </div>
-              <div class="cg-tile-bar">
-                <span class="cg-tile-name">{{ elementLabel(layer.element_type) }}</span>
-                <button
-                  type="button"
-                  class="cg-toggle"
-                  [class.on]="layer.visible"
-                  (click)="toggleVisible(layer, $event)"
-                >
-                  {{ layer.visible ? 'On' : 'Off' }}
-                </button>
-              </div>
-            </article>
-          } @empty {
-            <p class="cg-hint">Pick Logo from the catalog to put a layer on this Panel.</p>
-          }
-        </div>
-      </section>
-
-      @if (selectedLayer(); as layer) {
-        <aside class="cg-inspector">
-          <span class="cg-kicker">{{ elementLabel(layer.element_type) }}</span>
-          @if (layer.element_type === Logo) {
-            @if (isEmbeddedLogo(layer)) {
-              <p class="cg-hint">
-                Embedded{{
-                  layer.payload.fileName ? ': ' + layer.payload.fileName : ''
-                }}
-              </p>
-            } @else {
-              <label class="cg-field cg-field-wide">
-                <span>Image URL</span>
-                <input
-                  type="text"
-                  [(ngModel)]="layer.payload.imageUrl"
-                  (ngModelChange)="onImageUrlChange(layer)"
-                  placeholder="/icons/3d/apps.png or https://…"
-                />
-              </label>
-            }
-            <div class="cg-inline">
-              <label class="cg-btn file">
-                <input
-                  type="file"
-                  [accept]="logoAccept"
-                  (change)="onLogoFile(layer, $event)"
-                />
-                Choose local image
-              </label>
-              <button type="button" class="cg-btn" (click)="useSampleLogo(layer)">
-                Sample PNG
+                <span class="cg-switch-thumb"></span>
               </button>
             </div>
-            <div class="cg-fields">
-              <label class="cg-field">
-                <span>X</span>
-                <input
-                  type="number"
-                  [(ngModel)]="layer.layout.x"
-                  (ngModelChange)="touchPreview()"
-                />
-              </label>
-              <label class="cg-field">
-                <span>Y</span>
-                <input
-                  type="number"
-                  [(ngModel)]="layer.layout.y"
-                  (ngModelChange)="touchPreview()"
-                />
-              </label>
-              <label class="cg-field">
-                <span>Width</span>
-                <input
-                  type="number"
-                  [(ngModel)]="layer.layout.width"
-                  (ngModelChange)="touchPreview()"
-                />
-              </label>
-              <label class="cg-field">
-                <span>Scale</span>
-                <input
-                  type="number"
-                  step="0.05"
-                  [(ngModel)]="layer.layout.scale"
-                  (ngModelChange)="touchPreview()"
-                />
-              </label>
-              <label class="cg-field">
-                <span>Anchor</span>
-                <select
-                  [(ngModel)]="layer.layout.anchor"
-                  (ngModelChange)="touchPreview()"
-                >
-                  @for (option of anchorOptions; track option.value) {
-                    <option [ngValue]="option.value">{{ option.label }}</option>
-                  }
-                </select>
-              </label>
-              <label class="cg-field">
-                <span>Unit</span>
-                <select
-                  [(ngModel)]="layer.layout.unit"
-                  (ngModelChange)="touchPreview()"
-                >
-                  @for (option of unitOptions; track option.value) {
-                    <option [ngValue]="option.value">{{ option.label }}</option>
-                  }
-                </select>
-              </label>
-            </div>
-          }
-
-          <div class="cg-layer-output">
-            <span class="cg-kicker">Layer Output</span>
-            @if (layerOutputUrl(layer); as url) {
-              <code class="cg-url" [title]="url">{{ url }}</code>
-              <button type="button" class="cg-btn" (click)="copyLayerOutput(layer)">
-                Copy
-              </button>
-            } @else {
-              <span class="cg-url-placeholder">Save first</span>
-            }
-          </div>
-          <button
-            type="button"
-            class="cg-btn danger"
-            (click)="removeLayer(layer.clientId)"
-          >
-            Remove layer
-          </button>
-        </aside>
-      }
-    </div>
+          </article>
+        } @empty {
+          <p class="cg-hint">Pick Logo from the catalog to put a layer on this Panel.</p>
+        }
+      </div>
+    </section>
   }
 </div>

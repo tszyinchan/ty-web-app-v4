@@ -9,9 +9,25 @@ html.cg-overlay-on app-root,
 html.cg-overlay-on app-cg-overlay,
 html.cg-overlay-on .overlay-root {
   display: block;
+  position: relative;
   width: 100vw;
   height: 100vh;
   background: transparent;
+}
+
+html.cg-overlay-on .cg-take {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+html.cg-overlay-on .cg-take.on {
+  opacity: 1;
+}
+
+html.cg-overlay-on .cg-take.out {
+  opacity: 0;
 }
 
 html.cg-overlay-on app-cg-stage {
