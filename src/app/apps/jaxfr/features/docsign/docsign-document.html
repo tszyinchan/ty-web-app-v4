@@ -56,41 +56,43 @@
 </ng-template>
 
 <ng-template #signaturesTpl>
-  <footer class="paper-signatures">
-    <h2>Signatures</h2>
-    <div class="sig-columns">
-      @for (slot of signerViews(); track slot.userId) {
-        <div class="sig-col" [class.signed]="!!slot.signedAt">
-          @if (slot.signedAt) {
-            @if (slot.svgHtml) {
-              <div class="sig-svg" [innerHTML]="slot.svgHtml"></div>
+  <div class="paper-end">
+    <footer class="paper-signatures">
+      <h2>Signatures</h2>
+      <div class="sig-columns">
+        @for (slot of signerViews(); track slot.userId) {
+          <div class="sig-col" [class.signed]="!!slot.signedAt">
+            @if (slot.signedAt) {
+              @if (slot.svgHtml) {
+                <div class="sig-svg" [innerHTML]="slot.svgHtml"></div>
+              } @else {
+                <p class="sig-mark">{{ slot.signedMark || slot.signedName || slot.name }}</p>
+              }
+              <p class="sig-name">{{ slot.signedName || slot.name }}</p>
+              @if (slot.role) {
+                <p class="sig-role">{{ slot.role }}</p>
+              }
+              <p class="sig-time">
+                {{ slot.signedAt | date: 'yyyy-MM-dd HH:mm:ss z' }}
+              </p>
             } @else {
-              <p class="sig-mark">{{ slot.signedMark || slot.signedName || slot.name }}</p>
+              <p class="sig-pending-line"></p>
+              <p class="sig-name">{{ slot.name }}</p>
+              @if (slot.role) {
+                <p class="sig-role">{{ slot.role }}</p>
+              }
+              @if (!printMode()) {
+                <p class="sig-time">Pending signature</p>
+              }
             }
-            <p class="sig-name">{{ slot.signedName || slot.name }}</p>
-            @if (slot.role) {
-              <p class="sig-role">{{ slot.role }}</p>
-            }
-            <p class="sig-time">
-              {{ slot.signedAt | date: 'yyyy-MM-dd HH:mm:ss z' }}
-            </p>
-          } @else {
-            <p class="sig-pending-line"></p>
-            <p class="sig-name">{{ slot.name }}</p>
-            @if (slot.role) {
-              <p class="sig-role">{{ slot.role }}</p>
-            }
-            @if (!printMode()) {
-              <p class="sig-time">Pending signature</p>
-            }
-          }
-        </div>
-      }
-    </div>
-  </footer>
-  <p class="paper-disclaimer">
-    This document is a personal or internal record. It is not intended for formal legal execution.
-  </p>
+          </div>
+        }
+      </div>
+    </footer>
+    <p class="paper-disclaimer">
+      This document is a personal or internal record. It is not intended for formal legal execution.
+    </p>
+  </div>
 </ng-template>
 
 <div class="page-measure" aria-hidden="true">

@@ -171,7 +171,7 @@ html.theme-aero.mode-dark {
 
 html.theme-material {
   --app-font: Roboto, "Helvetica Neue", sans-serif;
-  // Roboto is loaded at 300/400/500. 600/700 would synthesize extra bold.
+  // Roboto is loaded at 300/400/500/700. Keep emphasis at 500 in the app chrome.
   --app-weight-emphasis: 500;
   --app-weight-strong: 500;
   font-synthesis-weight: none;

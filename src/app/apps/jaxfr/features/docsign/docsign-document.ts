@@ -24,6 +24,7 @@ import {
   DOCSIGN_BRAND_ICON,
   DOCSIGN_DRIVE_PREVIEW,
   DOCSIGN_DRIVE_VIEW,
+  DOCSIGN_PAGE_PACK_SLACK_PX,
 } from './docsign.constants';
 import {
   planDocsignPages,
@@ -65,8 +66,10 @@ interface PaperPageVm {
 function boxHeight(el: HTMLElement | undefined | null): number {
   if (!el) return 0;
   const style = getComputedStyle(el);
+  // offsetHeight is the layout box. getBoundingClientRect follows ancestor
+  // zoom transforms, so Fit on iPad packed too much and painted past the footer.
   return (
-    el.getBoundingClientRect().height +
+    el.offsetHeight +
     parseFloat(style.marginTop) +
     parseFloat(style.marginBottom)
   );
@@ -119,6 +122,7 @@ export class DocsignDocumentView implements OnDestroy {
   private planQueued = false;
   private lastPlanKey = '';
   private visiblePageNo = 1;
+  private waitingForFonts = false;
 
   pages = signal<PaperPageVm[]>([
     {
@@ -254,7 +258,19 @@ export class DocsignDocumentView implements OnDestroy {
       continuePx: boxHeight(this.measureContinue()?.nativeElement),
       unitPx,
       signaturesPx: boxHeight(this.measureEnd()?.nativeElement),
+      slackPx: DOCSIGN_PAGE_PACK_SLACK_PX,
     });
+    if (
+      !this.waitingForFonts &&
+      typeof document !== 'undefined' &&
+      document.fonts?.status === 'loading'
+    ) {
+      this.waitingForFonts = true;
+      void document.fonts.ready.then(() => {
+        this.waitingForFonts = false;
+        this.zone.run(() => this.measureAndPlan());
+      });
+    }
     const planKey = `${JSON.stringify(plan)}|${this.content()}|${units.map((unit) => unit.id).join(',')}`;
     if (planKey === this.lastPlanKey) {
       return;

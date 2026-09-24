@@ -185,8 +185,10 @@ export function planDocsignPages(input: {
   continuePx: number;
   unitPx: number[];
   signaturesPx: number;
+  slackPx?: number;
 }): DocsignPagePlan[] {
   const available = Math.max(1, input.availablePx);
+  const room = Math.max(1, available - Math.max(0, input.slackPx ?? 0));
   const pages: DocsignPagePlan[] = [];
   let unitIndexes: number[] = [];
   let used = 0;
@@ -213,7 +215,7 @@ export function planDocsignPages(input: {
 
   for (let index = 0; index < input.unitPx.length; index += 1) {
     const height = input.unitPx[index];
-    if (unitIndexes.length > 0 && used + height > available) {
+    if (unitIndexes.length > 0 && used + height > room) {
       flush(false);
       used = headerPx(false);
     }
@@ -222,7 +224,7 @@ export function planDocsignPages(input: {
   }
 
   const signatures = input.signaturesPx;
-  if (unitIndexes.length > 0 && used + signatures > available) {
+  if (unitIndexes.length > 0 && used + signatures > room) {
     flush(false);
     used = headerPx(false);
   }

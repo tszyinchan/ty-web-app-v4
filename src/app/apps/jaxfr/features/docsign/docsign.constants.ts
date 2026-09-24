@@ -15,6 +15,8 @@ export const DOCSIGN_PAPER_HEIGHT_MM = 297;
 export const DOCSIGN_PAPER_MARGIN_MM = 18;
 export const DOCSIGN_CONTENT_HEIGHT_MM =
   DOCSIGN_PAPER_HEIGHT_MM - DOCSIGN_PAPER_MARGIN_MM * 2;
+/** Leave a little unused page so Safari / CJK rounding cannot paint past the footer. */
+export const DOCSIGN_PAGE_PACK_SLACK_PX = 12;
 
 export const DOCSIGN_NARROW_PX = 1100;
 
