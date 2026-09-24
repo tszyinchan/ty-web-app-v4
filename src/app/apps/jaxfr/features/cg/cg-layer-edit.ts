@@ -18,12 +18,16 @@ import { CgLayerView } from '../../../../core/domains/cg/cg-layer-view';
 import { CgStage } from '../../../../core/domains/cg/cg-stage';
 import {
   CG_ANCHOR_OPTIONS,
+  CG_LAYER_LOOK_OPTIONS,
   CG_LAYOUT_UNIT_OPTIONS,
   CG_LOGO_ACCEPT,
   CG_LOGO_MAX_BYTES,
   CG_SAMPLE_LOGO_URL,
+  CG_SUBTITLE_PRESET_OPTIONS,
   CgElementType,
+  CgLayerLook,
   CgPreviewBackdrop,
+  CgSubtitlePreset,
 } from '../../../../core/domains/cg/cg.constants';
 import { CgLayerDraft, CgPackage } from '../../../../core/domains/cg/cg.model';
 import { CgService } from '../../../../core/domains/cg/cg.service';
@@ -33,12 +37,13 @@ import {
   elementLabel,
   isEmbeddedImageUrl,
   isLocalFilesystemPath,
+  layerIsMono,
   layerToDraft,
   normalizeDurationMs,
-  isCgMono,
   packageHasUnsavedIdentity,
   parseSubtitleScript,
   readImageFileAsDataUrl,
+  subtitlePresetOf,
 } from '../../../../core/domains/cg/cg.util';
 import {
   HeaderAction,
@@ -64,6 +69,8 @@ export class CgLayerEdit implements OnInit, OnDestroy, DoCheck {
 
   readonly Logo = CgElementType.Logo;
   readonly Subtitle = CgElementType.Subtitle;
+  readonly lookOptions = CG_LAYER_LOOK_OPTIONS;
+  readonly presetOptions = CG_SUBTITLE_PRESET_OPTIONS;
   readonly anchorOptions = CG_ANCHOR_OPTIONS;
   readonly unitOptions = CG_LAYOUT_UNIT_OPTIONS;
   readonly backdrops = CgPreviewBackdrop;
@@ -73,11 +80,19 @@ export class CgLayerEdit implements OnInit, OnDestroy, DoCheck {
   isDirty = signal(false);
   isSaveDisabled = signal(true);
   backdrop = signal(CgPreviewBackdrop.Studio);
+  copyTargetId = signal('');
   private layerId = '';
 
   readonly layer = computed(() => {
     const id = this.layerId;
     return this.cg.draftLayers().find((row) => row.clientId === id) ?? null;
+  });
+
+  readonly copyTargets = computed(() => {
+    const current = this.packageId;
+    return this.cg
+      .packages()
+      .filter((pkg) => pkg.tb_tyapp_cgpk_id !== current);
   });
 
   private readonly queueRows =
@@ -168,6 +183,7 @@ export class CgLayerEdit implements OnInit, OnDestroy, DoCheck {
   async ngOnInit(): Promise<void> {
     this.layerId = this.route.snapshot.paramMap.get('layerId') ?? '';
     const packageId = this.route.snapshot.paramMap.get('id');
+    void this.cg.fetchAllPackages();
 
     if (packageId) {
       const ok = await this.cg.loadSavedDraft(packageId);
@@ -259,7 +275,11 @@ export class CgLayerEdit implements OnInit, OnDestroy, DoCheck {
   }
 
   payloadSnapshot(layer: CgLayerDraft): CgLayerDraft['payload'] {
-    return { ...layer.payload, lines: [...layer.payload.lines] };
+    return {
+      ...layer.payload,
+      lines: [...layer.payload.lines],
+      style: { preset: subtitlePresetOf(layer.payload) },
+    };
   }
 
   cue(direction: 1 | -1): void {
@@ -359,7 +379,36 @@ export class CgLayerEdit implements OnInit, OnDestroy, DoCheck {
   }
 
   isMono(): boolean {
-    return isCgMono(this.cg.draftItem()?.look);
+    const layer = this.layer();
+    return layerIsMono(layer?.look, this.cg.draftItem()?.look);
+  }
+
+  setLayerLook(look: CgLayerLook): void {
+    const layer = this.layer();
+    if (!layer) return;
+    layer.look = look;
+  }
+
+  setPreset(preset: CgSubtitlePreset): void {
+    const layer = this.layer();
+    if (!layer || layer.element_type !== this.Subtitle) return;
+    layer.payload = {
+      ...layer.payload,
+      style: { preset },
+    };
+    this.touchPreview();
+  }
+
+  isPreset(preset: CgSubtitlePreset): boolean {
+    const layer = this.layer();
+    return !!layer && subtitlePresetOf(layer.payload) === preset;
+  }
+
+  async copyToPackage(): Promise<void> {
+    const layer = this.layer();
+    const targetId = this.copyTargetId();
+    if (!layer || !targetId) return;
+    await this.cg.copyLayerToPackage(layer, targetId);
   }
 
   layerOutputUrl(layer: CgLayerDraft): string {
@@ -397,9 +446,10 @@ export class CgLayerEdit implements OnInit, OnDestroy, DoCheck {
     if (!data || packageHasUnsavedIdentity(data as Pick<CgPackage, 'name'>)) {
       return;
     }
+    const previousClientId = this.layerId;
+    const previousToken = this.layer()?.public_token;
     const id = await this.cg.savePackage(data, this.cg.draftLayers());
     if (!id) return;
-    const previousClientId = this.layerId;
     const fresh = await this.cg.fetchPackageById(id);
     this.zone.run(() => {
       if (fresh) {
@@ -407,7 +457,10 @@ export class CgLayerEdit implements OnInit, OnDestroy, DoCheck {
         this.cg.applyDraft(fresh.package, drafts);
         const still =
           drafts.find((row) => row.clientId === previousClientId) ??
-          drafts.find((row) => row.tb_tyapp_cgly_id === previousClientId);
+          drafts.find((row) => row.tb_tyapp_cgly_id === previousClientId) ??
+          drafts.find(
+            (row) => !!previousToken && row.public_token === previousToken,
+          );
         if (still && still.clientId !== this.layerId) {
           this.layerId = still.clientId;
         }
@@ -417,7 +470,10 @@ export class CgLayerEdit implements OnInit, OnDestroy, DoCheck {
       }
       this.bindHeader();
     });
-    if (!this.route.snapshot.paramMap.get('id')) {
+    if (
+      this.layerId &&
+      this.route.snapshot.paramMap.get('layerId') !== this.layerId
+    ) {
       await this.router.navigate(['/cg/edit', id, 'layer', this.layerId], {
         replaceUrl: true,
       });

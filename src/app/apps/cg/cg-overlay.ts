@@ -19,7 +19,11 @@ import {
 } from '../../core/domains/cg/cg.constants';
 import { CgLayer } from '../../core/domains/cg/cg.model';
 import { CgService } from '../../core/domains/cg/cg.service';
-import { normalizeDurationMs, normalizeLook } from '../../core/domains/cg/cg.util';
+import {
+  layerIsMono,
+  normalizeDurationMs,
+  normalizeLook,
+} from '../../core/domains/cg/cg.util';
 
 const OVERLAY_HTML_CLASS = 'cg-overlay-on';
 
@@ -40,7 +44,7 @@ export class CgOverlay implements OnInit, OnDestroy {
   readonly stagedLayers = signal<CgLayer[]>([]);
   readonly durationMs = signal(CG_DEFAULT_DURATION_MS);
   readonly look = signal(CgPackageLook.Color);
-  readonly Mono = CgPackageLook.Mono;
+  readonly layerIsMono = layerIsMono;
 
   private pollId = 0;
   private fadeId = 0;
@@ -155,6 +159,7 @@ function outputHash(layers: CgLayer[]): string {
       type: layer.element_type,
       layout: layer.layout,
       payload: layer.payload,
+      look: layer.look,
       sort: layer.sort_order,
     })),
   );

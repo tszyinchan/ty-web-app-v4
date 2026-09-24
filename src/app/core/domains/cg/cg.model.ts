@@ -2,10 +2,12 @@ import { RecordStatus } from '../../models/status.enum';
 import {
   CgAnchor,
   CgElementType,
+  CgLayerLook,
   CgLayoutUnit,
   CgOutputKind,
   CgPackageLook,
   CgPackageRole,
+  CgSubtitlePreset,
 } from './cg.constants';
 
 export interface CgLayout {
@@ -23,12 +25,17 @@ export interface CgLogoPayload {
   fileName?: string;
 }
 
+export interface CgSubtitleStyle {
+  preset: CgSubtitlePreset;
+}
+
 export interface CgSubtitlePayload {
   lines: string[];
   /** On-air cue. `null` = blank air. */
   index: number | null;
   /** Last clicked / last on-air row. Kept when Blank. */
   cursor: number;
+  style: CgSubtitleStyle;
 }
 
 export type CgLayerPayload = CgLogoPayload & CgSubtitlePayload;
@@ -57,6 +64,7 @@ export interface CgLayer {
   layout: CgLayout;
   payload: CgLayerPayload;
   visible: boolean;
+  look: CgLayerLook;
   sort_order: number;
   status: RecordStatus;
   created_at?: string;
@@ -72,6 +80,7 @@ export interface CgLayerDraft {
   layout: CgLayout;
   payload: CgLayerPayload;
   visible: boolean;
+  look: CgLayerLook;
   sort_order: number;
   status: RecordStatus;
 }

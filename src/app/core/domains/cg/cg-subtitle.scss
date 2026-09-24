@@ -14,9 +14,9 @@
 }
 
 .sub-text {
+  position: relative;
   max-width: 100%;
   box-sizing: border-box;
-  padding: 0.08em 0.2em;
   color: #fff;
   font-family:
     '華康中黑體', '華康中黑體(P)', 'Microsoft JhengHei', 'Segoe UI', sans-serif;
@@ -26,22 +26,78 @@
   letter-spacing: 0.104em;
   line-height: 1.15;
   text-align: center;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
   transform: scaleY(1.11);
   transform-origin: center bottom;
-  text-shadow:
-    -0.05em -0.05em 0 #000,
-    0.05em -0.05em 0 #000,
-    -0.05em 0.05em 0 #000,
-    0.05em 0.05em 0 #000,
-    -0.05em 0 0 #000,
-    0.05em 0 0 #000,
-    0 -0.05em 0 #000,
-    0 0.05em 0 #000;
+}
+
+.sub-stroke,
+.sub-fill {
+  box-sizing: border-box;
+  max-width: 100%;
+  padding: 0.2em 0.32em;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   line-clamp: 2;
   overflow: hidden;
+}
+
+.sub-stroke {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  color: #000;
+  -webkit-text-stroke: 0.12em #000;
+}
+
+.sub-fill {
+  position: relative;
+  color: #fff;
+}
+
+.sub-text .latin {
+  font-family: 'Segoe UI', Arial, sans-serif;
+  letter-spacing: 0.04em;
+}
+
+.sub-text.outgoing {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  opacity: 1;
+  transition: opacity var(--cg-cue-ms, 400ms) ease;
+}
+
+.sub-text.outgoing.fade {
+  opacity: 0;
+}
+
+.sub-text.incoming.fade-in {
+  animation: cg-cue-in var(--cg-cue-ms, 400ms) ease forwards;
+}
+
+.sub-box.show .sub-text {
+  font-weight: 500;
+  letter-spacing: 0.06em;
+}
+
+.sub-box.show .sub-stroke {
+  -webkit-text-stroke: 0.16em #000;
+}
+
+.sub-box.show .sub-fill {
+  color: #fff6d8;
+}
+
+@keyframes cg-cue-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }

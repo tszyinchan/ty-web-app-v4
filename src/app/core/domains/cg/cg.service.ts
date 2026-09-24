@@ -2,14 +2,22 @@ import { Injectable, NgZone, inject, signal } from '@angular/core';
 import { RecordStatus } from '../../models/status.enum';
 import { NotificationService } from '../../services/notification.service';
 import { SupabaseService } from '../../services/supabase.service';
-import { CG_DEFAULT_DURATION_MS, CgPackageLook, CgPackageRole } from './cg.constants';
+import {
+  CG_DEFAULT_DURATION_MS,
+  CgElementType,
+  CgPackageLook,
+  CgPackageRole,
+} from './cg.constants';
 import { CgLayer, CgLayerDraft, CgLayerPayload, CgPackage, CgPublicOutput } from './cg.model';
 import {
   createCgPublicToken,
   createEmptyLogoLayer,
+  emptySubtitlePayload,
   layerToDraft,
   normalizeDurationMs,
   normalizeLayer,
+  normalizeLayerLook,
+  normalizeLayerPayload,
   normalizeLook,
   normalizePackage,
   normalizePublicOutput,
@@ -195,6 +203,7 @@ export class CgService {
           layout: draft.layout,
           payload: draft.payload,
           visible: draft.visible,
+          look: normalizeLayerLook(draft.look),
           sort_order: index,
           status: draft.status,
           updated_at: new Date().toISOString(),
@@ -364,18 +373,21 @@ export class CgService {
     clientId: string,
     payload: CgLayerPayload,
   ): Promise<boolean> {
-    const nextPayload: CgLayerPayload = {
-      ...payload,
-      lines: [...payload.lines],
-    };
     const current = this.draftLayers().find((layer) => layer.clientId === clientId);
     if (!current) return false;
+
+    const nextDraft: CgLayerPayload = {
+      ...current.payload,
+      lines: [...payload.lines],
+      index: payload.index,
+      cursor: payload.cursor,
+    };
 
     this.zone.run(() => {
       this.draftLayers.update((list) =>
         list.map((layer) =>
           layer.clientId === clientId
-            ? { ...layer, payload: nextPayload }
+            ? { ...layer, payload: nextDraft }
             : layer,
         ),
       );
@@ -384,16 +396,24 @@ export class CgService {
     const layerId = current.tb_tyapp_cgly_id;
     if (!layerId) return true;
 
+    const originalPayload = this.originalLayerPayload(clientId) ?? current.payload;
+    const nextSaved: CgLayerPayload = {
+      ...originalPayload,
+      lines: [...payload.lines],
+      index: payload.index,
+      cursor: payload.cursor,
+    };
+
     try {
       const { error } = await this.supabase
         .from('tyapp_cg_layer')
         .update({
-          payload: nextPayload,
+          payload: nextSaved,
           updated_at: new Date().toISOString(),
         })
         .eq('tb_tyapp_cgly_id', layerId);
       if (error) throw error;
-      this.zone.run(() => this.rememberLayerPayload(clientId, nextPayload));
+      this.zone.run(() => this.rememberLayerCue(clientId, nextSaved));
       return true;
     } catch (error: unknown) {
       this.notification.handleError('Cue subtitle failed', error);
@@ -401,10 +421,96 @@ export class CgService {
     }
   }
 
-  private rememberLayerPayload(
-    clientId: string,
-    payload: CgLayerPayload,
-  ): void {
+  async copyLayerToPackage(
+    source: CgLayerDraft,
+    targetPackageId: string,
+  ): Promise<CgLayer | null> {
+    const target = this.packages().find(
+      (pkg) => pkg.tb_tyapp_cgpk_id === targetPackageId,
+    );
+    if (!target) {
+      this.notification.handleError(
+        'Copy layer',
+        'That package is not in the list.',
+      );
+      return null;
+    }
+
+    const payload = normalizeLayerPayload(source.element_type, source.payload);
+    const copiedPayload =
+      source.element_type === CgElementType.Subtitle
+        ? emptySubtitlePayload(
+            payload.lines,
+            null,
+            payload.cursor,
+            payload.style,
+          )
+        : payload;
+    const siblings = this.layers().filter(
+      (layer) => layer.package_id === targetPackageId,
+    );
+    const sortOrder =
+      siblings.length > 0
+        ? Math.max(...siblings.map((layer) => layer.sort_order)) + 1
+        : 0;
+    const row = {
+      package_id: targetPackageId,
+      element_type: source.element_type,
+      public_token: createCgPublicToken(),
+      layout: { ...source.layout },
+      payload: copiedPayload,
+      visible: source.visible,
+      look: normalizeLayerLook(source.look),
+      sort_order: sortOrder,
+      status: source.status,
+    };
+
+    this.loading.set(true);
+    try {
+      const { data, error } = await this.supabase
+        .from('tyapp_cg_layer')
+        .insert(row)
+        .select()
+        .single();
+      if (error) throw error;
+      const saved = normalizeLayer(data);
+      if (!saved) throw new Error('Copied CG layer row was incomplete');
+
+      return this.zone.run(() => {
+        this.layers.update((list) => [...list, saved]);
+        if (this.draftKey() === targetPackageId) {
+          const draft = layerToDraft(saved);
+          this.draftLayers.update((list) => [...list, draft]);
+          this.appendOriginalLayer(draft);
+        }
+        this.loading.set(false);
+        this.notification.showSuccess(`Copied to ${target.name}`);
+        return saved;
+      });
+    } catch (error: unknown) {
+      this.notification.handleError('Copy layer failed', error);
+      return this.zone.run(() => {
+        this.loading.set(false);
+        return null;
+      });
+    }
+  }
+
+  private originalLayerPayload(clientId: string): CgLayerPayload | null {
+    const raw = this.draftOriginal();
+    if (!raw) return null;
+    try {
+      const snapshot = JSON.parse(raw) as { layers: CgLayerDraft[] };
+      const layer = snapshot.layers.find((row) => row.clientId === clientId);
+      return layer
+        ? { ...layer.payload, lines: [...layer.payload.lines] }
+        : null;
+    } catch {
+      return null;
+    }
+  }
+
+  private rememberLayerCue(clientId: string, payload: CgLayerPayload): void {
     const raw = this.draftOriginal();
     if (!raw) return;
     try {
@@ -414,9 +520,32 @@ export class CgService {
       };
       snapshot.layers = snapshot.layers.map((layer) =>
         layer.clientId === clientId
-          ? { ...layer, payload: { ...payload, lines: [...payload.lines] } }
+          ? {
+              ...layer,
+              payload: {
+                ...layer.payload,
+                lines: [...payload.lines],
+                index: payload.index,
+                cursor: payload.cursor,
+              },
+            }
           : layer,
       );
+      this.draftOriginal.set(JSON.stringify(snapshot));
+    } catch {
+      return;
+    }
+  }
+
+  private appendOriginalLayer(draft: CgLayerDraft): void {
+    const raw = this.draftOriginal();
+    if (!raw) return;
+    try {
+      const snapshot = JSON.parse(raw) as {
+        package: Partial<CgPackage> | null;
+        layers: CgLayerDraft[];
+      };
+      snapshot.layers = [...snapshot.layers, structuredClone(draft)];
       this.draftOriginal.set(JSON.stringify(snapshot));
     } catch {
       return;

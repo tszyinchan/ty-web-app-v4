@@ -8,6 +8,17 @@ export enum CgPackageLook {
   Mono = 'mono',
 }
 
+export enum CgLayerLook {
+  Inherit = 'inherit',
+  Color = 'color',
+  Mono = 'mono',
+}
+
+export enum CgSubtitlePreset {
+  News = 'news',
+  Show = 'show',
+}
+
 export enum CgElementType {
   Logo = 'logo',
   Clock = 'clock',
@@ -124,6 +135,24 @@ export const DEFAULT_SUBTITLE_LAYOUT = {
 
 /** Scale 1 type size: percent of Stage / OBS viewport height (ffmpeg FontSize 16.1 on PlayRes 288). */
 export const CG_SUBTITLE_FONT_VH = 5.6;
+export const CG_SUBTITLE_SHOW_FONT_VH = 7.2;
+
+export const CG_LAYER_LOOK_OPTIONS: ReadonlyArray<{
+  value: CgLayerLook;
+  label: string;
+}> = [
+  { value: CgLayerLook.Inherit, label: 'Inherit' },
+  { value: CgLayerLook.Color, label: 'Color' },
+  { value: CgLayerLook.Mono, label: 'B&W' },
+];
+
+export const CG_SUBTITLE_PRESET_OPTIONS: ReadonlyArray<{
+  value: CgSubtitlePreset;
+  label: string;
+}> = [
+  { value: CgSubtitlePreset.News, label: 'News' },
+  { value: CgSubtitlePreset.Show, label: 'Show' },
+];
 
 export const CG_PACKAGE_ROLE_OPTIONS: ReadonlyArray<{
   value: CgPackageRole;

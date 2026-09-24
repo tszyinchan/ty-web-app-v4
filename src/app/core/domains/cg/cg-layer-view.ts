@@ -1,9 +1,12 @@
 import { Component, input } from '@angular/core';
 import { CgLogo } from './cg-logo';
 import { CgSubtitle } from './cg-subtitle';
-import { CG_DEFAULT_DURATION_MS, CgElementType } from './cg.constants';
+import {
+  CG_DEFAULT_DURATION_MS,
+  CgElementType,
+} from './cg.constants';
 import { CgLayerPayload, CgLayout } from './cg.model';
-import { subtitleLine } from './cg.util';
+import { subtitleLine, subtitlePresetOf } from './cg.util';
 
 @Component({
   selector: 'app-cg-layer-view',
@@ -19,7 +22,12 @@ import { subtitleLine } from './cg.util';
         />
       }
       @case (Subtitle) {
-        <app-cg-subtitle [text]="subtitleLine(payload())" [layout]="layout()" />
+        <app-cg-subtitle
+          [text]="subtitleLine(payload())"
+          [layout]="layout()"
+          [durationMs]="durationMs()"
+          [preset]="subtitlePresetOf(payload())"
+        />
       }
     }
   `,
@@ -55,6 +63,7 @@ export class CgLayerView {
   readonly Logo = CgElementType.Logo;
   readonly Subtitle = CgElementType.Subtitle;
   readonly subtitleLine = subtitleLine;
+  readonly subtitlePresetOf = subtitlePresetOf;
   readonly elementType = input.required<CgElementType>();
   readonly layout = input.required<CgLayout>();
   readonly payload = input.required<CgLayerPayload>();

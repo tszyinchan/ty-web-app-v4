@@ -38,9 +38,11 @@ import {
   elementLabel,
   isCgCut,
   isCgMono,
+  layerIsMono,
   layerToDraft,
   normalizeDurationMs,
   packageHasUnsavedIdentity,
+  subtitlePresetOf,
 } from '../../../../core/domains/cg/cg.util';
 import {
   HeaderAction,
@@ -223,6 +225,10 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
     return isCgMono(this.item()?.look);
   }
 
+  layerMono(layer: CgLayerDraft): boolean {
+    return layerIsMono(layer.look, this.item()?.look);
+  }
+
   setLook(look: CgPackageLook): void {
     const pkg = this.item();
     if (!pkg) return;
@@ -240,7 +246,11 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
   }
 
   payloadSnapshot(layer: CgLayerDraft): CgLayerDraft['payload'] {
-    return { ...layer.payload, lines: [...layer.payload.lines] };
+    return {
+      ...layer.payload,
+      lines: [...layer.payload.lines],
+      style: { preset: subtitlePresetOf(layer.payload) },
+    };
   }
 
   async copyPackageOutput(): Promise<void> {

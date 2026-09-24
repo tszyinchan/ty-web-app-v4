@@ -50,6 +50,22 @@
         </button>
       </div>
 
+      <div class="cg-appear">
+        <span class="cg-kicker">Look</span>
+        <div class="cg-roles">
+          @for (option of lookOptions; track option.value) {
+            <button
+              type="button"
+              class="cg-btn"
+              [class.on]="layer.look === option.value"
+              (click)="setLayerLook(option.value)"
+            >
+              {{ option.label }}
+            </button>
+          }
+        </div>
+      </div>
+
       @if (layer.element_type === Logo) {
         @if (isEmbeddedLogo(layer)) {
           <p class="cg-hint">
@@ -110,6 +126,22 @@
         @if (!packageId) {
           <p class="cg-hint">Save the package once so cue goes to OBS.</p>
         }
+        <div class="cg-appear">
+          <span class="cg-kicker">Style</span>
+          <div class="cg-roles">
+            @for (option of presetOptions; track option.value) {
+              <button
+                type="button"
+                class="cg-btn"
+                [class.on]="isPreset(option.value)"
+                (click)="setPreset(option.value)"
+              >
+                {{ option.label }}
+              </button>
+            }
+          </div>
+        </div>
+        <p class="cg-hint">News / Show wait for Save. Cue fade uses Package Appear.</p>
         <div class="cg-queue" role="listbox" aria-label="Caption queue">
           @for (line of layer.payload.lines; track $index) {
             <button
@@ -224,6 +256,33 @@
         </p>
       }
 
+      <div class="cg-layer-output">
+        <span class="cg-kicker">Copy to package</span>
+        @if (copyTargets().length > 0) {
+          <div class="cg-inline">
+            <select
+              class="cg-copy-select"
+              [ngModel]="copyTargetId()"
+              (ngModelChange)="copyTargetId.set($event)"
+            >
+              <option value="">Choose…</option>
+              @for (pkg of copyTargets(); track pkg.tb_tyapp_cgpk_id) {
+                <option [value]="pkg.tb_tyapp_cgpk_id">{{ pkg.name }}</option>
+              }
+            </select>
+            <button
+              type="button"
+              class="cg-btn"
+              [disabled]="!copyTargetId() || cg.loading()"
+              (click)="copyToPackage()"
+            >
+              Copy
+            </button>
+          </div>
+        } @else {
+          <span class="cg-url-placeholder">Need another saved package</span>
+        }
+      </div>
       <div class="cg-layer-output">
         <span class="cg-kicker">Layer Output</span>
         @if (layerOutputUrl(layer); as url) {

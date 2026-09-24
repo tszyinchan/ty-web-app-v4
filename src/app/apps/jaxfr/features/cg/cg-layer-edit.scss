@@ -173,6 +173,30 @@
   gap: 8px;
 }
 
+.cg-appear {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cg-roles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.cg-copy-select {
+  flex: 1;
+  min-width: 0;
+  height: 32px;
+  border: 1px solid var(--app-card-border);
+  border-radius: 4px;
+  background: var(--app-card-bg);
+  color: var(--app-text-primary);
+  font: 13px var(--app-font);
+  padding: 0 8px;
+}
+
 .cg-layer-output {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;

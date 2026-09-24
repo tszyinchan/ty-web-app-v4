@@ -39,6 +39,7 @@
 - [ ] 已在 Supabase 跑過 `supabase/sql/cg-v2.sql`（會 drop v1 的 `tyapp_cg_slot`）
 - [ ] 已在 Supabase 跑過 `supabase/sql/cg-package-duration.sql`（package `duration_ms` + Output RPC；**不要**再跑一次 v2）
 - [ ] 已在 Supabase 跑過 `supabase/sql/cg-package-look.sql`（package `look` color/mono；**不要**再跑一次 v2）
+- [ ] 已在 Supabase 跑過 `supabase/sql/cg-layer-look.sql`（layer `look` inherit/color/mono；**不要**再跑一次 v2）
 - [ ] `.cursor/test-credentials.local.json` 存在；用 **user-a** 登入成功
 - [ ] user-a 已有 CG feature grant（沒有則 Welcome 看不到，`/cg/list` 會被送回 Welcome）
 - [ ] `/cg/list` 沒有名稱以 `[TEST] CG` 開頭的 package；有的話先當 leftover 刪掉
@@ -66,11 +67,14 @@
 | B4 | 回到 Panel，撥 Logo 的 On/Off toggle | tile 變淡但圖還在。頂列 **Panel Stage 預覽**依 Package Appear 淡出或 cut。Package Output **先不要變**（還沒 Save） |
 | B5 | Save | 成功。約 **300ms** 內 **只有這次有變的 layer** 用 Package `duration_ms` 淡入/淡出（`0` = 瞬間 cut）。已經 On 的 layer 維持原樣，不會整場閃一次。重整後位置、圖、On/Off、Appear 還在 |
 | B6 | 點 catalog 裡灰色的 Clock / Title | 不能加（soon）。**Logo** 與 **Subtitle** 能加；加完進 Layer 設定頁 |
-| B6b | `PKG_A` 加 **Subtitle**。Paste 或 Load **.txt / .srt**。點 queue 上氣。**Blank**：氣上沒字，queue 仍記住那一句並捲到該句。再 Down 從下一句繼續；Up 把剛那句拉回來。**不要 Save** | Stage / overlay 約 300ms 換成亮起的那句。字級 Scale 1 ≈ ffmpeg 16.1（畫面高 5.6%），白字、細黑邊、ScaleY 1.11，不是粗 stroke。Subtitle desk 只有 Scale / Y / Width。Layout / On/Off 仍要 Save |
+| B6b | `PKG_A` 加 **Subtitle**。Paste 或 Load **.txt / .srt**。點 queue 上氣。**Blank**：氣上沒字，queue 仍記住那一句並捲到該句。再 Down 從下一句繼續；Up 把剛那句拉回來。**不要 Save** | Stage / overlay 約 300ms 換成亮起的那句，並用 Package Appear **crossfade**（Cut = 瞬間）。字級 Scale 1 ≈ ffmpeg 16.1（畫面高 5.6%），白字、黑邊是一圈（後面 stroke、前面填色），不是 8 向 shadow 鋸齒、也不是同一顆字上的 blob stroke。ScaleY 1.11。Subtitle desk 只有 Scale / Y / Width + News/Show。Layout / On/Off / Look / Style 仍要 Save |
 | B7 | `PKG_A` 加第二層 Logo，兩層都 On，Save。再開 overlay。然後只 Off 其中一層，Save | overlay 裡那一層淡出；另一層 Logo **一直在、不眨眼** |
-| B8 | `PKG_A` 改 Appear = **Cut**（或 Fade ms = `0`），Save。再開 overlay，On/Off 一層再 Save | overlay **瞬間**切，沒有 400ms fade。改回 Fade 400、Save，之後又是淡入淡出 |
+| B8 | `PKG_A` 改 Appear = **Cut**（或 Fade ms = `0`），Save。再開 overlay，On/Off 一層再 Save | overlay **瞬間**切，沒有 400ms fade。Cue 也是 cut。改回 Fade 400、Save，之後又是淡入淡出 |
 | B9 | `PKG_A` 兩層 Logo。拖第二層到第一格，看 Panel Stage：後拖到前面的那層應蓋在上面。Save，overlay 順序一樣 | 沒 Save 前 overlay 不變。數字 1 = 最後面 |
-| B10 | Panel 改 Look = **B&W**。Panel Stage 用 Package ms **淡成灰**，已 On 的 layer **z-order 不變**。Save，overlay 同樣淡灰。改回 Color、Save | overlay 淡回彩色。Layer Output 跟 Package 同一個 look |
+| B10 | Panel 改 Look = **B&W**。Panel Stage 用 Package ms **淡成灰**，已 On 的 layer **z-order 不變**。Save，overlay 同樣淡灰。改回 Color、Save | overlay 淡回彩色。Inherit layer 跟 Package 同一個 look |
+| B11 | Subtitle desk：Look = **Color**，Package 仍是 B&W。Save | 這一層 overlay 彩色；其他 Inherit 層仍灰。改 **B&W** 強制灰，即使 Package 是 Color |
+| B12 | Subtitle 改 Style = **Show**。Stage 立刻較大、偏金。**不要 Save**，看 overlay | overlay 仍是 News。Save 之後 overlay 變 Show。Cue 仍即時上氣，但 style 不跟著 patch |
+| B13 | Subtitle Copy to `PKG_B`。打開 `PKG_B` | 新 Layer、新 Output URL、queue 有字但 **Blank**（`index` null）。`PKG_A` 原本那層不動 |
 
 ### C — Package Output 是預設；Layer Output 也能開
 

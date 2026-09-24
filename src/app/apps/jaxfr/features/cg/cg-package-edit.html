@@ -33,7 +33,7 @@
                 [visible]="layer.visible"
                 [durationMs]="packageDurationMs()"
                 [sortOrder]="layer.sort_order"
-                [mono]="isMono()"
+                [mono]="layerMono(layer)"
               />
             }
           </app-cg-stage>
@@ -172,7 +172,7 @@
                   [payload]="payloadSnapshot(layer)"
                   [visible]="true"
                   [sortOrder]="layer.sort_order"
-                  [mono]="isMono()"
+                  [mono]="layerMono(layer)"
                 />
               </app-cg-stage>
             </div>

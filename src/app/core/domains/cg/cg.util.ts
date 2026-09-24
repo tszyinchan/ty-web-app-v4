@@ -7,14 +7,17 @@ import {
   CG_MAX_DURATION_MS,
   CG_SAMPLE_LOGO_URL,
   CG_SAMPLE_SUBTITLE_LINES,
+  CG_SUBTITLE_FONT_VH,
+  CG_SUBTITLE_SHOW_FONT_VH,
   CgAnchor,
   CgElementDef,
   CgElementType,
+  CgLayerLook,
   CgLayoutUnit,
   CgOutputKind,
   CgPackageLook,
   CgPackageRole,
-  CG_SUBTITLE_FONT_VH,
+  CgSubtitlePreset,
   DEFAULT_LOGO_LAYOUT,
   DEFAULT_SUBTITLE_LAYOUT,
 } from './cg.constants';
@@ -26,6 +29,7 @@ import {
   CgLogoPayload,
   CgPackage,
   CgPublicOutput,
+  CgSubtitleStyle,
 } from './cg.model';
 
 const ANCHOR_TRANSLATE: Record<CgAnchor, string> = {
@@ -68,6 +72,7 @@ export function createEmptyLogoLayer(sortOrder: number): CgLayerDraft {
     layout: { ...DEFAULT_LOGO_LAYOUT },
     payload: emptyLogoPayload(CG_SAMPLE_LOGO_URL),
     visible: true,
+    look: CgLayerLook.Inherit,
     sort_order: sortOrder,
     status: RecordStatus.Active,
   };
@@ -81,6 +86,7 @@ export function createEmptySubtitleLayer(sortOrder: number): CgLayerDraft {
     layout: { ...DEFAULT_SUBTITLE_LAYOUT },
     payload: emptySubtitlePayload([...CG_SAMPLE_SUBTITLE_LINES], 0),
     visible: true,
+    look: CgLayerLook.Inherit,
     sort_order: sortOrder,
     status: RecordStatus.Active,
   };
@@ -103,6 +109,7 @@ export function emptyLogoPayload(imageUrl = '', fileName?: string): CgLayerPaylo
     lines: [],
     index: null,
     cursor: 0,
+    style: { preset: CgSubtitlePreset.News },
     ...(fileName ? { fileName } : {}),
   };
 }
@@ -111,12 +118,14 @@ export function emptySubtitlePayload(
   lines: string[],
   index: number | null,
   cursor?: number,
+  style?: CgSubtitleStyle,
 ): CgLayerPayload {
   return {
     imageUrl: '',
     lines: [...lines],
     index,
     cursor: clampSubtitleCursor(lines, cursor ?? index ?? 0),
+    style: { preset: normalizeSubtitlePreset(style?.preset) },
   };
 }
 
@@ -246,6 +255,53 @@ export function isCgMono(look: unknown): boolean {
   return normalizeLook(look) === CgPackageLook.Mono;
 }
 
+export function normalizeLayerLook(raw: unknown): CgLayerLook {
+  if (raw === CgLayerLook.Color) return CgLayerLook.Color;
+  if (raw === CgLayerLook.Mono) return CgLayerLook.Mono;
+  return CgLayerLook.Inherit;
+}
+
+export function layerIsMono(
+  layerLook: unknown,
+  packageLook: unknown,
+): boolean {
+  const look = normalizeLayerLook(layerLook);
+  if (look === CgLayerLook.Color) return false;
+  if (look === CgLayerLook.Mono) return true;
+  return isCgMono(packageLook);
+}
+
+export function normalizeSubtitlePreset(raw: unknown): CgSubtitlePreset {
+  return raw === CgSubtitlePreset.Show
+    ? CgSubtitlePreset.Show
+    : CgSubtitlePreset.News;
+}
+
+export function subtitlePresetOf(payload: CgLayerPayload): CgSubtitlePreset {
+  return normalizeSubtitlePreset(payload.style?.preset);
+}
+
+export function subtitleTextParts(
+  text: string,
+): ReadonlyArray<{ text: string; latin: boolean }> {
+  const parts: { text: string; latin: boolean }[] = [];
+  const re = /([A-Za-z0-9][A-Za-z0-9 .,'’\-:/!?&@#%+()]*)/g;
+  let last = 0;
+  let match: RegExpExecArray | null = re.exec(text);
+  while (match !== null) {
+    if (match.index > last) {
+      parts.push({ text: text.slice(last, match.index), latin: false });
+    }
+    parts.push({ text: match[1], latin: true });
+    last = match.index + match[0].length;
+    match = re.exec(text);
+  }
+  if (last < text.length) {
+    parts.push({ text: text.slice(last), latin: false });
+  }
+  return parts.length > 0 ? parts : [{ text, latin: false }];
+}
+
 export function normalizePackage(raw: unknown): CgPackage | null {
   const value = asRecord(raw);
   const id = asString(value['tb_tyapp_cgpk_id']);
@@ -331,7 +387,10 @@ export function normalizeSubtitlePayload(raw: unknown): CgLayerPayload {
     typeof rawCursor === 'number' && Number.isFinite(rawCursor)
       ? rawCursor
       : (index ?? 0);
-  return emptySubtitlePayload(lines, index, cursorSource);
+  const styleRaw = asRecord(value['style']);
+  return emptySubtitlePayload(lines, index, cursorSource, {
+    preset: normalizeSubtitlePreset(styleRaw['preset']),
+  });
 }
 
 export function layerToDraft(layer: CgLayer): CgLayerDraft {
@@ -343,6 +402,7 @@ export function layerToDraft(layer: CgLayer): CgLayerDraft {
     layout: normalizeLayout(layer.layout),
     payload: normalizeLayerPayload(layer.element_type, layer.payload),
     visible: layer.visible,
+    look: normalizeLayerLook(layer.look),
     sort_order: layer.sort_order,
     status: layer.status,
   };
@@ -368,6 +428,7 @@ export function normalizeLayer(raw: unknown): CgLayer | null {
     layout: normalizeLayout(value['layout']),
     payload: normalizeLayerPayload(elementType, value['payload']),
     visible: value['visible'] !== false,
+    look: normalizeLayerLook(value['look']),
     sort_order: toFiniteNumber(value['sort_order'], 0),
     status:
       value['status'] === RecordStatus.Inactive
@@ -428,10 +489,17 @@ export function layoutToCss(layout: CgLayout): Record<string, string> {
 }
 
 /** Subtitle Scale is type size, not a CSS transform of the caption box. */
-export function subtitleLayoutToCss(layout: CgLayout): Record<string, string> {
+export function subtitleLayoutToCss(
+  layout: CgLayout,
+  preset: CgSubtitlePreset = CgSubtitlePreset.News,
+): Record<string, string> {
   const css = layoutBoxCss(layout, false);
   const scale = Number.isFinite(layout.scale) ? layout.scale : 1;
-  css['--cg-sub-font'] = String(CG_SUBTITLE_FONT_VH * scale);
+  const base =
+    preset === CgSubtitlePreset.Show
+      ? CG_SUBTITLE_SHOW_FONT_VH
+      : CG_SUBTITLE_FONT_VH;
+  css['--cg-sub-font'] = String(base * scale);
   return css;
 }
 

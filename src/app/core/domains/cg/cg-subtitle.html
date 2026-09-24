@@ -1,5 +1,35 @@
-<div class="sub-box" [ngStyle]="css()">
-  @if (text()) {
-    <span class="sub-text">{{ text() }}</span>
+<div
+  class="sub-box"
+  [class.show]="preset() === Show"
+  [ngStyle]="css()"
+  [style.--cg-cue-ms]="durationMs() + 'ms'"
+>
+  @if (outgoing()) {
+    <span class="sub-text outgoing" [class.fade]="fading()">
+      <span class="sub-stroke" aria-hidden="true">
+        @for (part of outgoingParts(); track $index) {
+          <span [class.latin]="part.latin">{{ part.text }}</span>
+        }
+      </span>
+      <span class="sub-fill">
+        @for (part of outgoingParts(); track $index) {
+          <span [class.latin]="part.latin">{{ part.text }}</span>
+        }
+      </span>
+    </span>
+  }
+  @if (incoming()) {
+    <span class="sub-text incoming" [class.fade-in]="fading()">
+      <span class="sub-stroke" aria-hidden="true">
+        @for (part of incomingParts(); track $index) {
+          <span [class.latin]="part.latin">{{ part.text }}</span>
+        }
+      </span>
+      <span class="sub-fill">
+        @for (part of incomingParts(); track $index) {
+          <span [class.latin]="part.latin">{{ part.text }}</span>
+        }
+      </span>
+    </span>
   }
 </div>

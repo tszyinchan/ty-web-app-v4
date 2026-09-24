@@ -8,7 +8,7 @@
         [visible]="layer.visible"
         [durationMs]="durationMs()"
         [sortOrder]="layer.sort_order"
-        [mono]="look() === Mono"
+        [mono]="layerIsMono(layer.look, look())"
       />
     }
   </app-cg-stage>
