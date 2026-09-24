@@ -17,7 +17,7 @@ This is the locked vocabulary for code, UI copy, DB, routes, and the subdomain. 
 | Subdomain | `cg` → `https://cg.tszyin.com` / `http://cg.localhost:4200` |
 | Code | `features/cg/`, `apps/cg/` (overlay), `core/domains/cg/` |
 | Panel files | `cg-package-edit.*` (skeleton is `*-edit`; the page is still Panel) |
-| Layer config | `cg-layer-edit.*` at `/cg/edit/:id/layer/:layerId` |
+| Layer desk | `cg-layer-edit.*` nested on the Panel at `/cg/edit/:id/layer/:layerId` (same right column as tiles — not a second page) |
 
 ## UI words
 
@@ -26,13 +26,17 @@ This is the locked vocabulary for code, UI copy, DB, routes, and the subdomain. 
 | **Package** | One look to use together | CH36, News SNG |
 | **Element** | Kind in the catalog (code registry `CG_ELEMENT_CATALOG`) | Logo, Clock, Ticker |
 | **Layer** | One instance inside a Package | CH36's Logo |
-| **Panel** | This Package's operator page | Drive-style grid of Layers + On/Off toggle |
+| **Panel** | This Package's operator page | Left Package (main), right Layers |
 | **Output** | OBS URL (full-frame transparent Stage) | Package Output (default), Layer Output |
 | **Stage** | 16:9 canvas | Tile thumbs, On air / Pending, overlay |
 | **On air** | Last Save (plus live cue) | Small monitor of what OBS has |
 | **Pending** | Unsaved draft mix | Save promotes it to On air |
 
-**Channel / Source** stay on the Package as `role`. Clock is not Timer. Overlay is the public page implementation, not a product noun. Welcome → CG and every CG subpage (list / Panel / Layer) skip the Jaxfr page crossfade — instant swap, no 200ms fade. Other Jaxfr features keep the Aero transition.
+**Channel / Source** stay on the Package as `role`. Clock is not Timer. Overlay is the public page implementation, not a product noun. Welcome → CG and every CG subpage (list / Panel) skip the Jaxfr page crossfade — instant swap, no 200ms fade. Other Jaxfr features keep the Aero transition.
+
+**Panel layout:** one page, two columns. Left is the **Package** (main): column title, then Pending | On air, then Package controls. Right is **Layers** (inside that Package): column title + catalog, tiles, and the selected Layer desk (`/cg/edit/:id/layer/:layerId` is that selection, not a separate layout). Click the selected tile again to close the desk. Package title is heavier than Layers — Stage / Appear / Look stay as inner kickers, not column labels.
+
+**Always desktop:** list + Panel lock the viewport to `width=1280` and `min-width: 1280px`. Phone and tablet keep the same 3-pane (pinch-zoom / horizontal pan) — do not add a stacked `@media` reflow. Overlay `/o` and `/cg-live` stay `width=device-width`. Unlock the viewport when leaving CG admin.
 
 ## Tables and columns (final)
 
@@ -58,7 +62,7 @@ RPCs: `tyapp_cg_package_soft_delete_single_record`, `tyapp_cg_layer_soft_delete_
 
 **Host vs inner:** Package / Panel owns mix — which Layers exist, On/Off, z-order, OBS URL, **Appear** (Fade / Cut + `duration_ms` for the whole Layer going on or off), and **Package Look** as a master bus. Package B&W greys **every** Layer. Package Color lets a Layer set Inherit / Color / B&W (B&W = that Layer grey). Layer Color cannot punch out of a B&W Package. Layer desk does **not** have its own Appear. Cue crossfade, News / Show, layout, and later inner animation live on the Layer (`payload.transition.duration_ms` for cue). Package Cut must not force cue to cut.
 
-**On air / Pending:** Panel and Layer pages each show **two small** 16:9 Stages of the **full mix**, **Pending on the left**, **On air on the right**. **On air** is last Save (OBS). **Pending** is the unsaved draft. Save copies Pending onto On air. New unsaved Package: On air is empty. Live cue (Up / Down / Blank / Paste / Load) **and Cue Fade / Cut** also update On air immediately; unsaved News / Show / layout / Look / On/Off wait for Save. Alpha / Studio is shared by both monitors.
+**On air / Pending:** the Panel shows **two small** 16:9 Stages of the **full mix**, **Pending on the left**, **On air on the right** (top-left pane). **On air** is last Save (OBS). **Pending** is the unsaved draft. Save copies Pending onto On air. New unsaved Package: On air is empty. Live cue (Up / Down / Blank / Paste / Load) **and Cue Fade / Cut** also update On air immediately; unsaved News / Show / layout / Look / On/Off wait for Save. Alpha / Studio is shared by both monitors.
 
 Greyscale is per-layer host filter with Package `duration_ms`; it must not change z-order.
 

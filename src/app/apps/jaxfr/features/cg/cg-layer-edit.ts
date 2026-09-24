@@ -1,10 +1,7 @@
 import {
   Component,
-  DoCheck,
   ElementRef,
   HostListener,
-  NgZone,
-  OnDestroy,
   OnInit,
   computed,
   effect,
@@ -14,7 +11,7 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { CgMixPreview } from '../../../../core/domains/cg/cg-mix-preview';
+import { toSignal } from '@angular/core/rxjs-interop';
 import {
   CG_ANCHOR_OPTIONS,
   CG_CUT_DURATION_MS,
@@ -28,11 +25,9 @@ import {
   CG_SUBTITLE_PRESET_OPTIONS,
   CgElementType,
   CgLayerLook,
-  CgPackageLook,
-  CgPreviewBackdrop,
   CgSubtitlePreset,
 } from '../../../../core/domains/cg/cg.constants';
-import { CgLayerDraft, CgPackage } from '../../../../core/domains/cg/cg.model';
+import { CgLayerDraft } from '../../../../core/domains/cg/cg.model';
 import { CgService } from '../../../../core/domains/cg/cg.service';
 import {
   buildCgOverlayUrl,
@@ -43,32 +38,23 @@ import {
   isCgMono,
   isEmbeddedImageUrl,
   isLocalFilesystemPath,
-  layerToDraft,
-  normalizeDurationMs,
-  packageHasUnsavedIdentity,
   parseSubtitleScript,
   readImageFileAsDataUrl,
   subtitlePresetOf,
 } from '../../../../core/domains/cg/cg.util';
-import {
-  HeaderAction,
-  HeaderService,
-} from '../../../../core/services/header.service';
 import { NotificationService } from '../../../../core/services/notification.service';
 import { copyTextToClipboard } from '../../../../core/utils/copy-text.util';
 
 @Component({
   selector: 'app-cg-layer-edit',
   standalone: true,
-  imports: [FormsModule, CgMixPreview],
+  imports: [FormsModule],
   templateUrl: './cg-layer-edit.html',
   styleUrl: './cg-layer-edit.scss',
 })
-export class CgLayerEdit implements OnInit, OnDestroy, DoCheck {
+export class CgLayerEdit implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
-  private zone = inject(NgZone);
-  private headerService = inject(HeaderService);
   private notification = inject(NotificationService);
   readonly cg = inject(CgService);
 
@@ -78,23 +64,17 @@ export class CgLayerEdit implements OnInit, OnDestroy, DoCheck {
   readonly presetOptions = CG_SUBTITLE_PRESET_OPTIONS;
   readonly anchorOptions = CG_ANCHOR_OPTIONS;
   readonly unitOptions = CG_LAYOUT_UNIT_OPTIONS;
-  readonly backdrops = CgPreviewBackdrop;
   readonly logoAccept = CG_LOGO_ACCEPT;
   readonly scriptAccept = '.txt,.srt,text/plain,application/x-subrip';
   readonly cutMs = CG_CUT_DURATION_MS;
   readonly maxDurationMs = CG_MAX_DURATION_MS;
-  readonly layers = this.cg.draftLayers;
-  readonly onAirLayers = this.cg.onAirLayers;
-
-  isDirty = signal(false);
-  isSaveDisabled = signal(true);
-  backdrop = signal(CgPreviewBackdrop.Studio);
-  copyTargetId = signal('');
-  private layerId = '';
+  readonly copyTargetId = signal('');
   private lastCueFadeMs = CG_DEFAULT_DURATION_MS;
 
+  private readonly params = toSignal(this.route.paramMap, { requireSync: true });
+
   readonly layer = computed(() => {
-    const id = this.layerId;
+    const id = this.params().get('layerId') ?? '';
     return this.cg.draftLayers().find((row) => row.clientId === id) ?? null;
   });
 
@@ -134,13 +114,6 @@ export class CgLayerEdit implements OnInit, OnDestroy, DoCheck {
     );
   }
 
-  syncStatus = computed<'loading' | 'up-to-date' | 'unsaved' | 'none'>(() => {
-    if (this.cg.loading()) return 'loading';
-    if (this.isDirty()) return 'unsaved';
-    if (this.packageId) return 'up-to-date';
-    return 'none';
-  });
-
   get packageId(): string | null {
     const key = this.cg.draftKey();
     return typeof key === 'string' ? key : null;
@@ -165,60 +138,9 @@ export class CgLayerEdit implements OnInit, OnDestroy, DoCheck {
       void this.cue(-1);
     }
   }
-  @HostListener('window:beforeunload', ['$event'])
-  onBeforeUnload(event: BeforeUnloadEvent) {
-    if (this.isDirty()) {
-      event.preventDefault();
-      return false;
-    }
-    return true;
-  }
 
-  ngDoCheck(): void {
-    const original = this.cg.draftOriginal();
-    if (!original || !this.cg.draftItem()) return;
-    const currentlyDirty = JSON.stringify(this.cg.draftSnapshot()) !== original;
-    if (this.isDirty() !== currentlyDirty) {
-      this.isDirty.set(currentlyDirty);
-    }
-    const invalid = packageHasUnsavedIdentity(
-      this.cg.draftItem() as Pick<CgPackage, 'name'>,
-    );
-    const disabled = !currentlyDirty || invalid || this.cg.loading();
-    if (this.isSaveDisabled() !== disabled) {
-      this.isSaveDisabled.set(disabled);
-    }
-  }
-
-  async ngOnInit(): Promise<void> {
-    this.layerId = this.route.snapshot.paramMap.get('layerId') ?? '';
-    const packageId = this.route.snapshot.paramMap.get('id');
+  ngOnInit(): void {
     void this.cg.fetchAllPackages();
-
-    if (packageId) {
-      const ok = await this.cg.loadSavedDraft(packageId);
-      this.zone.run(() => {
-        if (!ok || !this.layer()) {
-          this.router.navigateByUrl(this.panelUrl());
-          return;
-        }
-        this.bindHeader();
-      });
-      return;
-    }
-
-    if (this.cg.draftKey() === undefined) {
-      this.cg.beginNewDraft();
-    }
-    if (!this.layer()) {
-      this.router.navigateByUrl(this.panelUrl());
-      return;
-    }
-    this.bindHeader();
-  }
-
-  ngOnDestroy(): void {
-    this.headerService.clear();
   }
 
   elementLabel = elementLabel;
@@ -372,22 +294,6 @@ export class CgLayerEdit implements OnInit, OnDestroy, DoCheck {
     });
   }
 
-  packageDurationMs(): number {
-    return normalizeDurationMs(this.cg.draftItem()?.duration_ms);
-  }
-
-  onAirDurationMs(): number {
-    return normalizeDurationMs(this.cg.onAirItem()?.duration_ms);
-  }
-
-  onAirLook(): CgPackageLook {
-    return this.cg.onAirItem()?.look ?? CgPackageLook.Color;
-  }
-
-  pendingLook(): CgPackageLook {
-    return this.cg.draftItem()?.look ?? CgPackageLook.Color;
-  }
-
   packageIsMono(): boolean {
     return isCgMono(this.cg.draftItem()?.look);
   }
@@ -472,66 +378,6 @@ export class CgLayerEdit implements OnInit, OnDestroy, DoCheck {
     this.cg.draftLayers.update((list) =>
       list.filter((row) => row.clientId !== layer.clientId),
     );
-    void this.router.navigateByUrl(this.panelUrl());
-  }
-
-  async onSave(): Promise<void> {
-    const data = this.cg.draftItem();
-    if (!data || packageHasUnsavedIdentity(data as Pick<CgPackage, 'name'>)) {
-      return;
-    }
-    const previousClientId = this.layerId;
-    const previousToken = this.layer()?.public_token;
-    const id = await this.cg.savePackage(data, this.cg.draftLayers());
-    if (!id) return;
-    const fresh = await this.cg.fetchPackageById(id);
-    this.zone.run(() => {
-      if (fresh) {
-        const drafts = fresh.layers.map((row) => layerToDraft(row));
-        this.cg.applyDraft(fresh.package, drafts);
-        const still =
-          drafts.find((row) => row.clientId === previousClientId) ??
-          drafts.find((row) => row.tb_tyapp_cgly_id === previousClientId) ??
-          drafts.find(
-            (row) => !!previousToken && row.public_token === previousToken,
-          );
-        if (still && still.clientId !== this.layerId) {
-          this.layerId = still.clientId;
-        }
-      } else {
-        this.cg.markDraftClean();
-        this.isDirty.set(false);
-      }
-      this.bindHeader();
-    });
-    if (
-      this.layerId &&
-      this.route.snapshot.paramMap.get('layerId') !== this.layerId
-    ) {
-      await this.router.navigate(['/cg/edit', id, 'layer', this.layerId], {
-        replaceUrl: true,
-      });
-    }
-  }
-
-  private panelUrl(): string {
-    return this.packageId ? `/cg/edit/${this.packageId}` : '/cg/new';
-  }
-
-  private bindHeader(): void {
-    const actions: HeaderAction[] = [
-      {
-        label: this.packageId ? 'Save changes' : 'Create package',
-        icon: 'check',
-        type: 'primary',
-        disabled: this.isSaveDisabled,
-        onClick: () => void this.onSave(),
-      },
-    ];
-    this.headerService.setConfig({
-      backLink: this.panelUrl(),
-      syncStatus: this.syncStatus,
-      actions,
-    });
+    void this.router.navigate(['..'], { relativeTo: this.route });
   }
 }

@@ -33,21 +33,13 @@ export const CG_ROUTES: Routes = [
         path: 'new',
         component: CgPackageEdit,
         canDeactivate: [cgPackageUnsavedGuard],
-      },
-      {
-        path: 'new/layer/:layerId',
-        component: CgLayerEdit,
-        canDeactivate: [cgPackageUnsavedGuard],
+        children: [{ path: 'layer/:layerId', component: CgLayerEdit }],
       },
       {
         path: 'edit/:id',
         component: CgPackageEdit,
         canDeactivate: [cgPackageUnsavedGuard],
-      },
-      {
-        path: 'edit/:id/layer/:layerId',
-        component: CgLayerEdit,
-        canDeactivate: [cgPackageUnsavedGuard],
+        children: [{ path: 'layer/:layerId', component: CgLayerEdit }],
       },
     ],
   },

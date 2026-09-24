@@ -1,31 +1,95 @@
 :host {
   display: block;
   height: 100%;
-  min-width: 0;
+  /* CG_DESKTOP_MIN_WIDTH_PX — never stack on phone/tablet */
+  min-width: 1280px;
 }
 
 .cg-panel {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-columns: 420px minmax(0, 1fr);
   height: 100%;
   min-height: 0;
-  padding: 16px 20px 20px;
+  padding: 0;
   box-sizing: border-box;
-  gap: 16px;
+  gap: 0;
   background: var(--app-page-bg);
   color: var(--app-text-primary);
   font-family: var(--app-font);
 }
 
-.cg-bar {
+.cg-col-head {
   display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  align-items: flex-start;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 8px 16px;
+  box-sizing: border-box;
+  border-bottom: 1px solid var(--app-card-border);
+}
+
+.cg-col-title {
+  margin: 0;
+  flex-shrink: 0;
+  font: var(--app-weight-emphasis) 15px / 1.2 var(--app-font);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--app-text-primary);
+}
+
+.cg-left {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
+  background: var(--app-card-bg);
+  border-right: 2px solid var(--app-card-border);
+}
+
+.cg-right {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
+  background: var(--app-page-bg);
+}
+
+.cg-right .cg-col-head {
+  padding-left: 20px;
+}
+
+.cg-right .cg-col-title {
+  color: var(--app-text-muted);
+  font-size: 13px;
+}
+
+.cg-right .cg-chip {
+  background: var(--app-card-bg);
+}
+
+.cg-monitors-pane {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--app-card-border);
+}
+
+.cg-package-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  min-height: 0;
+  padding: 12px 16px;
+  overflow: auto;
+}
+
+.cg-desk {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  padding: 12px 20px 12px 20px;
 }
 
 .cg-identity {
-  flex: 1 1 320px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -95,7 +159,7 @@
 .cg-chip {
   border: 1px solid var(--app-card-border);
   border-radius: 4px;
-  background: var(--app-card-bg);
+  background: var(--app-page-bg);
   color: var(--app-text-primary);
   font: 13px var(--app-font);
   cursor: pointer;
@@ -184,7 +248,7 @@
 
 .cg-monitors {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 10px;
 }
 
@@ -212,20 +276,15 @@
   flex-direction: column;
   min-height: 0;
   min-width: 0;
-}
-
-.cg-board-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px 16px;
-  margin-bottom: 12px;
+  padding: 12px 16px 12px 20px;
+  border-bottom: 1px solid var(--app-card-border);
 }
 
 .cg-catalog {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  min-width: 0;
 }
 
 .cg-chip {
@@ -248,12 +307,12 @@
 }
 
 .cg-drive {
-  flex: 1;
   min-height: 0;
+  max-height: 220px;
   overflow: auto;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
   align-content: start;
 }
 

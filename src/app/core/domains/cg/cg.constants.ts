@@ -110,6 +110,11 @@ export const CG_ELEMENT_CATALOG: ReadonlyArray<CgElementDef> = [
 
 export const CG_OVERLAY_POLL_MS = 300;
 
+/** Admin UI is always the desktop 3-pane. Phones/tablets get this layout (pinch-zoom), not a stacked reflow. Overlay `/o` and `/cg-live` stay device-width. */
+export const CG_DESKTOP_MIN_WIDTH_PX = 1280;
+export const CG_DESKTOP_VIEWPORT = `width=${CG_DESKTOP_MIN_WIDTH_PX}`;
+export const CG_PAGE_VIEWPORT = 'width=device-width, initial-scale=1';
+
 /** Package Output: `0` = cut (instant). Default fade is 400ms. */
 export const CG_CUT_DURATION_MS = 0;
 export const CG_DEFAULT_DURATION_MS = 400;

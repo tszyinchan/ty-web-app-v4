@@ -3,8 +3,10 @@ import { RecordStatus } from '../../models/status.enum';
 import {
   CG_CUT_DURATION_MS,
   CG_DEFAULT_DURATION_MS,
+  CG_DESKTOP_VIEWPORT,
   CG_ELEMENT_CATALOG,
   CG_MAX_DURATION_MS,
+  CG_PAGE_VIEWPORT,
   CG_SAMPLE_LOGO_URL,
   CG_SAMPLE_SUBTITLE_LINES,
   CG_SUBTITLE_FONT_VH,
@@ -605,6 +607,20 @@ function asRecord(raw: unknown): Record<string, unknown> {
     return raw as Record<string, unknown>;
   }
   return {};
+}
+
+export function setCgDesktopViewport(doc: Document, lock: boolean): void {
+  const metas = doc.getElementsByTagName('meta');
+  for (let i = 0; i < metas.length; i++) {
+    const meta = metas.item(i);
+    if (meta?.getAttribute('name') === 'viewport') {
+      meta.setAttribute(
+        'content',
+        lock ? CG_DESKTOP_VIEWPORT : CG_PAGE_VIEWPORT,
+      );
+      return;
+    }
+  }
 }
 
 export function isSameCgPackageUrl(fromUrl: string, toUrl: string): boolean {

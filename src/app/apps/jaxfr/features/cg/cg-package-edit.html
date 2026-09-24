@@ -1,7 +1,10 @@
 <div class="cg-panel">
   @if (item(); as pkg) {
-    <header class="cg-bar">
-      <div class="cg-program">
+    <div class="cg-left">
+      <header class="cg-col-head">
+        <h2 class="cg-col-title">Package</h2>
+      </header>
+      <section class="cg-monitors-pane">
         <div class="cg-stage-toolbar">
           <span class="cg-kicker">Stage</span>
           <div class="cg-stage-toggles">
@@ -39,9 +42,9 @@
             [backdrop]="backdrop()"
           />
         </div>
-      </div>
+      </section>
 
-      <div class="cg-identity">
+      <section class="cg-package-pane">
         <input
           class="cg-name"
           [(ngModel)]="pkg.name"
@@ -125,12 +128,12 @@
             <span class="cg-url-placeholder">Save to get the default OBS URL</span>
           }
         </div>
-      </div>
-    </header>
+      </section>
+    </div>
 
-    <section class="cg-board">
-      <div class="cg-board-head">
-        <span class="cg-kicker">Panel</span>
+    <div class="cg-right">
+      <header class="cg-col-head">
+        <h2 class="cg-col-title">Layers</h2>
         <div class="cg-catalog">
           @for (el of catalog; track el.type) {
             <button
@@ -149,62 +152,73 @@
             </button>
           }
         </div>
-      </div>
+      </header>
+      <section class="cg-board">
 
-      <div class="cg-drive"
-        cdkDropList
-        cdkDropListOrientation="mixed"
-        [cdkDropListData]="layers()"
-        (cdkDropListDropped)="onLayerDrop($event)"
-      >
-        @for (layer of layers(); track layer.clientId) {
-          <article
-            class="cg-tile"
-            cdkDrag
-            [class.off]="!layer.visible"
-            (cdkDragStarted)="onLayerDragStarted()"
-            (click)="openLayer(layer)"
-          >
-            <div class="cg-tile-stage">
-              <app-cg-stage [preview]="true" [backdrop]="backdrop()">
-                <app-cg-layer-view
-                  [elementType]="layer.element_type"
-                  [layout]="layoutSnapshot(layer)"
-                  [payload]="payloadSnapshot(layer)"
-                  [visible]="true"
-                  [sortOrder]="layer.sort_order"
-                  [mono]="layerMono(layer)"
-                />
-              </app-cg-stage>
-            </div>
-            <div class="cg-tile-bar">
-              <button
-                type="button"
-                class="cg-drag"
-                cdkDragHandle
-                (click)="$event.stopPropagation()"
-                aria-label="Reorder layer"
-              >
-                <span class="cg-drag-dots"></span>
-              </button>
-              <span class="cg-tile-z">{{ layer.sort_order + 1 }}</span>
-              <span class="cg-tile-name">{{ elementLabel(layer.element_type) }}</span>
-              <button
-                type="button"
-                class="cg-switch"
-                [class.on]="layer.visible"
-                role="switch"
-                [attr.aria-checked]="layer.visible"
-                (click)="toggleVisible(layer, $event)"
-              >
-                <span class="cg-switch-thumb"></span>
-              </button>
-            </div>
-          </article>
-        } @empty {
-          <p class="cg-hint">Pick Logo from the catalog. Drag tiles — first is behind, last is in front.</p>
+        <div
+          class="cg-drive"
+          cdkDropList
+          cdkDropListOrientation="mixed"
+          [cdkDropListData]="layers()"
+          (cdkDropListDropped)="onLayerDrop($event)"
+        >
+          @for (layer of layers(); track layer.clientId) {
+            <article
+              class="cg-tile"
+              cdkDrag
+              [class.off]="!layer.visible"
+              [class.selected]="layer.clientId === selectedLayerId()"
+              (cdkDragStarted)="onLayerDragStarted()"
+              (click)="openLayer(layer)"
+            >
+              <div class="cg-tile-stage">
+                <app-cg-stage [preview]="true" [backdrop]="backdrop()">
+                  <app-cg-layer-view
+                    [elementType]="layer.element_type"
+                    [layout]="layoutSnapshot(layer)"
+                    [payload]="payloadSnapshot(layer)"
+                    [visible]="true"
+                    [sortOrder]="layer.sort_order"
+                    [mono]="layerMono(layer)"
+                  />
+                </app-cg-stage>
+              </div>
+              <div class="cg-tile-bar">
+                <button
+                  type="button"
+                  class="cg-drag"
+                  cdkDragHandle
+                  (click)="$event.stopPropagation()"
+                  aria-label="Reorder layer"
+                >
+                  <span class="cg-drag-dots"></span>
+                </button>
+                <span class="cg-tile-z">{{ layer.sort_order + 1 }}</span>
+                <span class="cg-tile-name">{{ elementLabel(layer.element_type) }}</span>
+                <button
+                  type="button"
+                  class="cg-switch"
+                  [class.on]="layer.visible"
+                  role="switch"
+                  [attr.aria-checked]="layer.visible"
+                  (click)="toggleVisible(layer, $event)"
+                >
+                  <span class="cg-switch-thumb"></span>
+                </button>
+              </div>
+            </article>
+          } @empty {
+            <p class="cg-hint">Pick Logo from the catalog. Drag tiles — first is behind, last is in front.</p>
+          }
+        </div>
+      </section>
+
+      <section class="cg-desk">
+        <router-outlet />
+        @if (!selectedLayerId()) {
+          <p class="cg-hint">Select a layer to edit it here.</p>
         }
-      </div>
-    </section>
+      </section>
+    </div>
   }
 </div>

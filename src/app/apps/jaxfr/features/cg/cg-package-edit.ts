@@ -1,3 +1,4 @@
+import { DOCUMENT } from '@angular/common';
 import {
   Component,
   DoCheck,
@@ -9,6 +10,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import {
   CdkDrag,
@@ -16,7 +18,8 @@ import {
   CdkDragHandle,
   CdkDropList,
 } from '@angular/cdk/drag-drop';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, NavigationEnd, Router, RouterOutlet } from '@angular/router';
+import { filter, map, startWith } from 'rxjs/operators';
 import { CgLayerView } from '../../../../core/domains/cg/cg-layer-view';
 import { CgMixPreview } from '../../../../core/domains/cg/cg-mix-preview';
 import { CgStage } from '../../../../core/domains/cg/cg-stage';
@@ -43,6 +46,7 @@ import {
   layerToDraft,
   normalizeDurationMs,
   packageHasUnsavedIdentity,
+  setCgDesktopViewport,
   subtitlePresetOf,
 } from '../../../../core/domains/cg/cg.util';
 import {
@@ -55,7 +59,16 @@ import { copyTextToClipboard } from '../../../../core/utils/copy-text.util';
 @Component({
   selector: 'app-cg-package-edit',
   standalone: true,
-  imports: [FormsModule, CdkDropList, CdkDrag, CdkDragHandle, CgStage, CgLayerView, CgMixPreview],
+  imports: [
+    FormsModule,
+    RouterOutlet,
+    CdkDropList,
+    CdkDrag,
+    CdkDragHandle,
+    CgStage,
+    CgLayerView,
+    CgMixPreview,
+  ],
   templateUrl: './cg-package-edit.html',
   styleUrl: './cg-package-edit.scss',
 })
@@ -63,6 +76,7 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private zone = inject(NgZone);
+  private document = inject(DOCUMENT);
   private headerService = inject(HeaderService);
   private notification = inject(NotificationService);
   readonly cg = inject(CgService);
@@ -79,6 +93,17 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
   readonly layers = this.cg.draftLayers;
   readonly onAirItem = this.cg.onAirItem;
   readonly onAirLayers = this.cg.onAirLayers;
+  readonly selectedLayerId = toSignal(
+    this.router.events.pipe(
+      filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+      startWith(null),
+      map(() => this.route.snapshot.firstChild?.paramMap.get('layerId') ?? ''),
+    ),
+    {
+      initialValue:
+        this.route.snapshot.firstChild?.paramMap.get('layerId') ?? '',
+    },
+  );
   isDirty = signal(false);
   isSaveDisabled = signal(true);
   backdrop = signal(CgPreviewBackdrop.Studio);
@@ -123,6 +148,8 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
   }
 
   async ngOnInit(): Promise<void> {
+    setCgDesktopViewport(this.document, true);
+    void this.cg.fetchAllPackages();
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
       const ok = await this.cg.loadSavedDraft(id);
@@ -131,16 +158,19 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
           this.router.navigateByUrl(this.returnUrl);
           return;
         }
+        this.dropMissingLayerRoute();
         this.bindHeader();
       });
       return;
     }
 
     this.cg.beginNewDraft();
+    this.dropMissingLayerRoute();
     this.bindHeader();
   }
 
   ngOnDestroy(): void {
+    setCgDesktopViewport(this.document, false);
     this.headerService.clear();
   }
 
@@ -166,12 +196,13 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
       this.layerDragged = false;
       return;
     }
-    const id = this.packageId;
-    if (id) {
-      void this.router.navigate(['/cg/edit', id, 'layer', layer.clientId]);
+    if (this.selectedLayerId() === layer.clientId) {
+      void this.router.navigate(this.panelCommands());
       return;
     }
-    void this.router.navigate(['/cg/new/layer', layer.clientId]);
+    void this.router.navigate(['layer', layer.clientId], {
+      relativeTo: this.route,
+    });
   }
 
   toggleVisible(layer: CgLayerDraft, event: Event): void {
@@ -293,23 +324,47 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
     if (!data || packageHasUnsavedIdentity(data as Pick<CgPackage, 'name'>)) {
       return;
     }
+    const previousClientId = this.selectedLayerId();
+    const previousToken = this.layers().find(
+      (row) => row.clientId === previousClientId,
+    )?.public_token;
     const id = await this.cg.savePackage(data, this.layers());
     if (!id) return;
     const fresh = await this.cg.fetchPackageById(id);
+    let nextLayerId = previousClientId;
     this.zone.run(() => {
       if (fresh) {
-        this.cg.applyDraft(
-          fresh.package,
-          fresh.layers.map((layer) => layerToDraft(layer)),
-        );
+        const drafts = fresh.layers.map((layer) => layerToDraft(layer));
+        this.cg.applyDraft(fresh.package, drafts);
+        const still =
+          drafts.find((row) => row.clientId === previousClientId) ??
+          drafts.find((row) => row.tb_tyapp_cgly_id === previousClientId) ??
+          drafts.find(
+            (row) => !!previousToken && row.public_token === previousToken,
+          );
+        nextLayerId = still?.clientId ?? '';
       } else {
         this.cg.markDraftClean();
         this.isDirty.set(false);
       }
       this.bindHeader();
     });
-    if (!this.route.snapshot.paramMap.get('id')) {
-      await this.router.navigate(['/cg/edit', id], { replaceUrl: true });
+    const hadPackageId = !!this.route.snapshot.paramMap.get('id');
+    if (!hadPackageId) {
+      if (nextLayerId) {
+        await this.router.navigate(['/cg/edit', id, 'layer', nextLayerId], {
+          replaceUrl: true,
+        });
+      } else {
+        await this.router.navigate(['/cg/edit', id], { replaceUrl: true });
+      }
+      return;
+    }
+    if (previousClientId && nextLayerId && nextLayerId !== previousClientId) {
+      await this.router.navigate(['layer', nextLayerId], {
+        relativeTo: this.route,
+        replaceUrl: true,
+      });
     }
   }
 
@@ -323,6 +378,18 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
       this.cg.clearDraft();
       this.router.navigateByUrl(this.returnUrl);
     }
+  }
+
+  private panelCommands(): (string | number)[] {
+    const id = this.packageId ?? this.route.snapshot.paramMap.get('id');
+    return id ? ['/cg/edit', id] : ['/cg/new'];
+  }
+
+  private dropMissingLayerRoute(): void {
+    const layerId = this.route.snapshot.firstChild?.paramMap.get('layerId');
+    if (!layerId) return;
+    if (this.layers().some((row) => row.clientId === layerId)) return;
+    void this.router.navigate(this.panelCommands(), { replaceUrl: true });
   }
 
   private bindHeader(): void {

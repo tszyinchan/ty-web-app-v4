@@ -1,345 +1,304 @@
-<div class="cg-layer-page">
-  @if (layer(); as layer) {
-    <div class="cg-layer-stage">
-      <div class="cg-stage-toolbar">
-        <span class="cg-kicker">Stage</span>
-        <div class="cg-stage-toggles">
-          <button
-            type="button"
-            class="cg-btn"
-            [class.on]="backdrop() === backdrops.Checkerboard"
-            (click)="backdrop.set(backdrops.Checkerboard)"
-          >
-            Alpha
-          </button>
-          <button
-            type="button"
-            class="cg-btn"
-            [class.on]="backdrop() === backdrops.Studio"
-            (click)="backdrop.set(backdrops.Studio)"
-          >
-            Studio
-          </button>
-        </div>
-      </div>
-      <div class="cg-monitors">
-        <app-cg-mix-preview
-          label="Pending"
-          [layers]="layers()"
-          [packageLook]="pendingLook()"
-          [durationMs]="packageDurationMs()"
-          [backdrop]="backdrop()"
-        />
-        <app-cg-mix-preview
-          label="On air"
-          [layers]="onAirLayers()"
-          [packageLook]="onAirLook()"
-          [durationMs]="onAirDurationMs()"
-          [backdrop]="backdrop()"
-        />
-      </div>
+@if (layer(); as layer) {
+  <section class="cg-layer-form">
+    <div class="cg-layer-head">
+      <span class="cg-kicker">{{ elementLabel(layer.element_type) }}</span>
+      <button
+        type="button"
+        class="cg-switch"
+        [class.on]="layer.visible"
+        role="switch"
+        [attr.aria-checked]="layer.visible"
+        (click)="toggleVisible(layer)"
+      >
+        <span class="cg-switch-thumb"></span>
+      </button>
     </div>
 
-    <section class="cg-layer-form">
-      <div class="cg-layer-head">
-        <span class="cg-kicker">{{ elementLabel(layer.element_type) }}</span>
-        <button
-          type="button"
-          class="cg-switch"
-          [class.on]="layer.visible"
-          role="switch"
-          [attr.aria-checked]="layer.visible"
-          (click)="toggleVisible(layer)"
-        >
-          <span class="cg-switch-thumb"></span>
+    <div class="cg-appear">
+      <span class="cg-kicker">Look</span>
+      <div class="cg-roles">
+        @for (option of lookOptions; track option.value) {
+          <button
+            type="button"
+            class="cg-btn"
+            [class.on]="layer.look === option.value"
+            (click)="setLayerLook(option.value)"
+          >
+            {{ option.label }}
+          </button>
+        }
+      </div>
+      @if (packageIsMono()) {
+        <p class="cg-hint">
+          Package is B&amp;W — this Look stays grey until Package is Color.
+        </p>
+      }
+    </div>
+
+    @if (layer.element_type === Logo) {
+      @if (isEmbeddedLogo(layer)) {
+        <p class="cg-hint">
+          Embedded{{ layer.payload.fileName ? ': ' + layer.payload.fileName : '' }}
+        </p>
+      } @else {
+        <label class="cg-field">
+          <span>Image URL</span>
+          <input
+            type="text"
+            [(ngModel)]="layer.payload.imageUrl"
+            (ngModelChange)="onImageUrlChange(layer)"
+            placeholder="/icons/3d/apps.png or https://…"
+          />
+        </label>
+      }
+      <div class="cg-inline">
+        <label class="cg-btn file">
+          <input
+            type="file"
+            [accept]="logoAccept"
+            (change)="onLogoFile(layer, $event)"
+          />
+          Choose local image
+        </label>
+        <button type="button" class="cg-btn" (click)="useSampleLogo(layer)">
+          Sample PNG
         </button>
       </div>
+    }
 
-      <div class="cg-appear">
-        <span class="cg-kicker">Look</span>
+    @if (layer.element_type === Subtitle) {
+      <div class="cg-cue-bar">
+        <button type="button" class="cg-btn" (click)="cue(-1)">Up</button>
+        <button type="button" class="cg-btn" (click)="cue(1)">Down</button>
+        <button
+          type="button"
+          class="cg-btn"
+          [class.on]="layer.payload.index === null"
+          (click)="blankAir()"
+        >
+          Blank
+        </button>
+      </div>
+      <div class="cg-appear cue">
+        <span class="cg-kicker">Cue</span>
         <div class="cg-roles">
-          @for (option of lookOptions; track option.value) {
+          <button
+            type="button"
+            class="cg-role-btn"
+            [class.on]="!isCueCut(layer)"
+            (click)="setCueFade(layer)"
+          >
+            Fade
+          </button>
+          <button
+            type="button"
+            class="cg-role-btn"
+            [class.on]="isCueCut(layer)"
+            (click)="setCueCut(layer)"
+          >
+            Cut
+          </button>
+        </div>
+        @if (!isCueCut(layer)) {
+          <label class="cg-field cg-duration">
+            <span>ms</span>
+            <input
+              type="number"
+              [min]="cutMs"
+              [max]="maxDurationMs"
+              step="50"
+              [ngModel]="cueDurationMs(layer)"
+              (ngModelChange)="onCueDurationMsChange(layer, $event)"
+            />
+          </label>
+        }
+      </div>
+      <div class="cg-inline">
+        <button type="button" class="cg-btn" (click)="pasteScript()">
+          Paste
+        </button>
+        <label class="cg-btn file">
+          <input
+            type="file"
+            [accept]="scriptAccept"
+            (change)="onScriptFile(layer, $event)"
+          />
+          Load .txt / .srt
+        </label>
+      </div>
+      @if (!packageId) {
+        <p class="cg-hint">Save the package once so cue goes to OBS.</p>
+      }
+      <div class="cg-appear">
+        <span class="cg-kicker">Style</span>
+        <div class="cg-roles">
+          @for (option of presetOptions; track option.value) {
             <button
               type="button"
               class="cg-btn"
-              [class.on]="layer.look === option.value"
-              (click)="setLayerLook(option.value)"
+              [class.on]="isPreset(option.value)"
+              (click)="setPreset(option.value)"
             >
               {{ option.label }}
             </button>
           }
         </div>
-        @if (packageIsMono()) {
-          <p class="cg-hint">
-            Package is B&amp;W — this Look stays grey until Package is Color.
-          </p>
+      </div>
+      <p class="cg-hint">Cue Fade / Cut goes to air now. News / Show wait for Save.</p>
+      <div class="cg-queue" role="listbox" aria-label="Caption queue">
+        @for (line of layer.payload.lines; track $index) {
+          <button
+            type="button"
+            #queueRow
+            class="cg-queue-row"
+            role="option"
+            [class.on]="$index === layer.payload.index"
+            [class.held]="
+              layer.payload.index === null && $index === layer.payload.cursor
+            "
+            [attr.aria-selected]="
+              $index === layer.payload.index ||
+              (layer.payload.index === null && $index === layer.payload.cursor)
+            "
+            (click)="cueAt($index)"
+          >
+            <span class="cg-queue-n">{{ $index + 1 }}</span>
+            <span class="cg-queue-line">{{ line }}</span>
+          </button>
         }
       </div>
+    }
 
-      @if (layer.element_type === Logo) {
-        @if (isEmbeddedLogo(layer)) {
-          <p class="cg-hint">
-            Embedded{{ layer.payload.fileName ? ': ' + layer.payload.fileName : '' }}
-          </p>
-        } @else {
-          <label class="cg-field">
-            <span>Image URL</span>
-            <input
-              type="text"
-              [(ngModel)]="layer.payload.imageUrl"
-              (ngModelChange)="onImageUrlChange(layer)"
-              placeholder="/icons/3d/apps.png or https://…"
-            />
-          </label>
-        }
+    @if (layer.element_type === Logo) {
+      <div class="cg-fields">
+        <label class="cg-field">
+          <span>X</span>
+          <input
+            type="number"
+            [(ngModel)]="layer.layout.x"
+            (ngModelChange)="touchPreview()"
+          />
+        </label>
+        <label class="cg-field">
+          <span>Y</span>
+          <input
+            type="number"
+            [(ngModel)]="layer.layout.y"
+            (ngModelChange)="touchPreview()"
+          />
+        </label>
+        <label class="cg-field">
+          <span>Width</span>
+          <input
+            type="number"
+            [(ngModel)]="layer.layout.width"
+            (ngModelChange)="touchPreview()"
+          />
+        </label>
+        <label class="cg-field">
+          <span>Scale</span>
+          <input
+            type="number"
+            step="0.05"
+            [(ngModel)]="layer.layout.scale"
+            (ngModelChange)="touchPreview()"
+          />
+        </label>
+        <label class="cg-field">
+          <span>Anchor</span>
+          <select
+            [(ngModel)]="layer.layout.anchor"
+            (ngModelChange)="touchPreview()"
+          >
+            @for (option of anchorOptions; track option.value) {
+              <option [ngValue]="option.value">{{ option.label }}</option>
+            }
+          </select>
+        </label>
+        <label class="cg-field">
+          <span>Unit</span>
+          <select [(ngModel)]="layer.layout.unit" (ngModelChange)="touchPreview()">
+            @for (option of unitOptions; track option.value) {
+              <option [ngValue]="option.value">{{ option.label }}</option>
+            }
+          </select>
+        </label>
+      </div>
+    }
+
+    @if (layer.element_type === Subtitle) {
+      <div class="cg-fields">
+        <label class="cg-field">
+          <span>Scale</span>
+          <input
+            type="number"
+            step="0.05"
+            [(ngModel)]="layer.layout.scale"
+            (ngModelChange)="touchPreview()"
+          />
+        </label>
+        <label class="cg-field">
+          <span>Y</span>
+          <input
+            type="number"
+            [(ngModel)]="layer.layout.y"
+            (ngModelChange)="touchPreview()"
+          />
+        </label>
+        <label class="cg-field">
+          <span>Width</span>
+          <input
+            type="number"
+            [(ngModel)]="layer.layout.width"
+            (ngModelChange)="touchPreview()"
+          />
+        </label>
+      </div>
+      <p class="cg-hint">
+        Scale is type size (1 = burned-in caption). Y is how high. Width is wrap.
+      </p>
+    }
+
+    <div class="cg-layer-output">
+      <span class="cg-kicker">Copy to package</span>
+      @if (copyTargets().length > 0) {
         <div class="cg-inline">
-          <label class="cg-btn file">
-            <input
-              type="file"
-              [accept]="logoAccept"
-              (change)="onLogoFile(layer, $event)"
-            />
-            Choose local image
-          </label>
-          <button type="button" class="cg-btn" (click)="useSampleLogo(layer)">
-            Sample PNG
-          </button>
-        </div>
-      }
-
-      @if (layer.element_type === Subtitle) {
-        <div class="cg-cue-bar">
-          <button type="button" class="cg-btn" (click)="cue(-1)">Up</button>
-          <button type="button" class="cg-btn" (click)="cue(1)">Down</button>
+          <select
+            class="cg-copy-select"
+            [ngModel]="copyTargetId()"
+            (ngModelChange)="copyTargetId.set($event)"
+          >
+            <option value="">Choose…</option>
+            @for (pkg of copyTargets(); track pkg.tb_tyapp_cgpk_id) {
+              <option [value]="pkg.tb_tyapp_cgpk_id">{{ pkg.name }}</option>
+            }
+          </select>
           <button
             type="button"
             class="cg-btn"
-            [class.on]="layer.payload.index === null"
-            (click)="blankAir()"
+            [disabled]="!copyTargetId() || cg.loading()"
+            (click)="copyToPackage()"
           >
-            Blank
-          </button>
-        </div>
-        <div class="cg-appear cue">
-          <div class="cg-roles">
-            <button
-              type="button"
-              class="cg-role-btn"
-              [class.on]="!isCueCut(layer)"
-              (click)="setCueFade(layer)"
-            >
-              Fade
-            </button>
-            <button
-              type="button"
-              class="cg-role-btn"
-              [class.on]="isCueCut(layer)"
-              (click)="setCueCut(layer)"
-            >
-              Cut
-            </button>
-          </div>
-          @if (!isCueCut(layer)) {
-            <label class="cg-field cg-duration">
-              <span>ms</span>
-              <input
-                type="number"
-                [min]="cutMs"
-                [max]="maxDurationMs"
-                step="50"
-                [ngModel]="cueDurationMs(layer)"
-                (ngModelChange)="onCueDurationMsChange(layer, $event)"
-              />
-            </label>
-          }
-        </div>
-        <div class="cg-inline">
-          <button type="button" class="cg-btn" (click)="pasteScript()">
-            Paste
-          </button>
-          <label class="cg-btn file">
-            <input
-              type="file"
-              [accept]="scriptAccept"
-              (change)="onScriptFile(layer, $event)"
-            />
-            Load .txt / .srt
-          </label>
-        </div>
-        @if (!packageId) {
-          <p class="cg-hint">Save the package once so cue goes to OBS.</p>
-        }
-        <div class="cg-appear">
-          <span class="cg-kicker">Style</span>
-          <div class="cg-roles">
-            @for (option of presetOptions; track option.value) {
-              <button
-                type="button"
-                class="cg-btn"
-                [class.on]="isPreset(option.value)"
-                (click)="setPreset(option.value)"
-              >
-                {{ option.label }}
-              </button>
-            }
-          </div>
-        </div>
-        <p class="cg-hint">Cue Fade / Cut goes to air now. News / Show wait for Save.</p>
-        <div class="cg-queue" role="listbox" aria-label="Caption queue">
-          @for (line of layer.payload.lines; track $index) {
-            <button
-              type="button"
-              #queueRow
-              class="cg-queue-row"
-              role="option"
-              [class.on]="$index === layer.payload.index"
-              [class.held]="
-                layer.payload.index === null && $index === layer.payload.cursor
-              "
-              [attr.aria-selected]="
-                $index === layer.payload.index ||
-                (layer.payload.index === null && $index === layer.payload.cursor)
-              "
-              (click)="cueAt($index)"
-            >
-              <span class="cg-queue-n">{{ $index + 1 }}</span>
-              <span class="cg-queue-line">{{ line }}</span>
-            </button>
-          }
-        </div>
-      }
-
-      @if (layer.element_type === Logo) {
-        <div class="cg-fields">
-          <label class="cg-field">
-            <span>X</span>
-            <input
-              type="number"
-              [(ngModel)]="layer.layout.x"
-              (ngModelChange)="touchPreview()"
-            />
-          </label>
-          <label class="cg-field">
-            <span>Y</span>
-            <input
-              type="number"
-              [(ngModel)]="layer.layout.y"
-              (ngModelChange)="touchPreview()"
-            />
-          </label>
-          <label class="cg-field">
-            <span>Width</span>
-            <input
-              type="number"
-              [(ngModel)]="layer.layout.width"
-              (ngModelChange)="touchPreview()"
-            />
-          </label>
-          <label class="cg-field">
-            <span>Scale</span>
-            <input
-              type="number"
-              step="0.05"
-              [(ngModel)]="layer.layout.scale"
-              (ngModelChange)="touchPreview()"
-            />
-          </label>
-          <label class="cg-field">
-            <span>Anchor</span>
-            <select
-              [(ngModel)]="layer.layout.anchor"
-              (ngModelChange)="touchPreview()"
-            >
-              @for (option of anchorOptions; track option.value) {
-                <option [ngValue]="option.value">{{ option.label }}</option>
-              }
-            </select>
-          </label>
-          <label class="cg-field">
-            <span>Unit</span>
-            <select [(ngModel)]="layer.layout.unit" (ngModelChange)="touchPreview()">
-              @for (option of unitOptions; track option.value) {
-                <option [ngValue]="option.value">{{ option.label }}</option>
-              }
-            </select>
-          </label>
-        </div>
-      }
-
-      @if (layer.element_type === Subtitle) {
-        <div class="cg-fields">
-          <label class="cg-field">
-            <span>Scale</span>
-            <input
-              type="number"
-              step="0.05"
-              [(ngModel)]="layer.layout.scale"
-              (ngModelChange)="touchPreview()"
-            />
-          </label>
-          <label class="cg-field">
-            <span>Y</span>
-            <input
-              type="number"
-              [(ngModel)]="layer.layout.y"
-              (ngModelChange)="touchPreview()"
-            />
-          </label>
-          <label class="cg-field">
-            <span>Width</span>
-            <input
-              type="number"
-              [(ngModel)]="layer.layout.width"
-              (ngModelChange)="touchPreview()"
-            />
-          </label>
-        </div>
-        <p class="cg-hint">
-          Scale is type size (1 = burned-in caption). Y is how high. Width is wrap.
-        </p>
-      }
-
-      <div class="cg-layer-output">
-        <span class="cg-kicker">Copy to package</span>
-        @if (copyTargets().length > 0) {
-          <div class="cg-inline">
-            <select
-              class="cg-copy-select"
-              [ngModel]="copyTargetId()"
-              (ngModelChange)="copyTargetId.set($event)"
-            >
-              <option value="">Choose…</option>
-              @for (pkg of copyTargets(); track pkg.tb_tyapp_cgpk_id) {
-                <option [value]="pkg.tb_tyapp_cgpk_id">{{ pkg.name }}</option>
-              }
-            </select>
-            <button
-              type="button"
-              class="cg-btn"
-              [disabled]="!copyTargetId() || cg.loading()"
-              (click)="copyToPackage()"
-            >
-              Copy
-            </button>
-          </div>
-        } @else {
-          <span class="cg-url-placeholder">Need another saved package</span>
-        }
-      </div>
-      <div class="cg-layer-output">
-        <span class="cg-kicker">Layer Output</span>
-        @if (layerOutputUrl(layer); as url) {
-          <code class="cg-url" [title]="url">{{ url }}</code>
-          <button type="button" class="cg-btn" (click)="copyLayerOutput(layer)">
             Copy
           </button>
-        } @else {
-          <span class="cg-url-placeholder">Save first</span>
-        }
-      </div>
-      <button type="button" class="cg-btn danger" (click)="removeLayer(layer)">
-        Remove layer
-      </button>
-    </section>
-  }
-</div>
+        </div>
+      } @else {
+        <span class="cg-url-placeholder">Need another saved package</span>
+      }
+    </div>
+    <div class="cg-layer-output">
+      <span class="cg-kicker">Layer Output</span>
+      @if (layerOutputUrl(layer); as url) {
+        <code class="cg-url" [title]="url">{{ url }}</code>
+        <button type="button" class="cg-btn" (click)="copyLayerOutput(layer)">
+          Copy
+        </button>
+      } @else {
+        <span class="cg-url-placeholder">Save first</span>
+      }
+    </div>
+    <button type="button" class="cg-btn danger" (click)="removeLayer(layer)">
+      Remove layer
+    </button>
+  </section>
+}

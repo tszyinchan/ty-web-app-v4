@@ -1,3 +1,4 @@
+import { DOCUMENT } from '@angular/common';
 import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
@@ -7,6 +8,7 @@ import { CgService } from '../../../../core/domains/cg/cg.service';
 import {
   layerSummary,
   packageRoleLabel,
+  setCgDesktopViewport,
 } from '../../../../core/domains/cg/cg.util';
 import { HeaderService } from '../../../../core/services/header.service';
 
@@ -22,6 +24,7 @@ export class CgPackageList implements OnInit, OnDestroy {
   private headerService = inject(HeaderService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
+  private document = inject(DOCUMENT);
 
   readonly Source = CgPackageRole.Source;
   searchQuery = signal('');
@@ -45,6 +48,7 @@ export class CgPackageList implements OnInit, OnDestroy {
   });
 
   ngOnInit(): void {
+    setCgDesktopViewport(this.document, true);
     this.headerService.setConfig({
       actions: [
         {
@@ -69,6 +73,7 @@ export class CgPackageList implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    setCgDesktopViewport(this.document, false);
     this.headerService.clear();
   }
 }
