@@ -34,7 +34,7 @@ import { CgLayerDraft, CgPackage } from '../../../../core/domains/cg/cg.model';
 import { CgService } from '../../../../core/domains/cg/cg.service';
 import {
   buildCgOverlayUrl,
-  createEmptyLogoLayer,
+  createEmptyLayer,
   elementLabel,
   isCgCut,
   isCgMono,
@@ -146,12 +146,12 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
     if (!def?.shipped) {
       this.notification.handleError(
         'Element',
-        `${def?.label ?? type} is next — Logo is the one on this Panel.`,
+        `${def?.label ?? type} is next — Logo and Subtitle are on this Panel.`,
       );
       return;
     }
-    if (type !== CgElementType.Logo) return;
-    const layer = createEmptyLogoLayer(this.layers().length);
+    const layer = createEmptyLayer(type, this.layers().length);
+    if (!layer) return;
     this.cg.draftLayers.update((list) => [...list, layer]);
     this.openLayer(layer);
   }
@@ -240,7 +240,7 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
   }
 
   payloadSnapshot(layer: CgLayerDraft): CgLayerDraft['payload'] {
-    return { ...layer.payload };
+    return { ...layer.payload, lines: [...layer.payload.lines] };
   }
 
   async copyPackageOutput(): Promise<void> {

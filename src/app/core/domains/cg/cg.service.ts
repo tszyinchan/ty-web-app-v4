@@ -3,7 +3,7 @@ import { RecordStatus } from '../../models/status.enum';
 import { NotificationService } from '../../services/notification.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { CG_DEFAULT_DURATION_MS, CgPackageLook, CgPackageRole } from './cg.constants';
-import { CgLayer, CgLayerDraft, CgPackage, CgPublicOutput } from './cg.model';
+import { CgLayer, CgLayerDraft, CgLayerPayload, CgPackage, CgPublicOutput } from './cg.model';
 import {
   createCgPublicToken,
   createEmptyLogoLayer,
@@ -327,7 +327,7 @@ export class CgService {
       list.map((layer) => ({
         ...layer,
         layout: { ...layer.layout },
-        payload: { ...layer.payload },
+        payload: { ...layer.payload, lines: [...layer.payload.lines] },
       })),
     );
   }
@@ -358,6 +358,69 @@ export class CgService {
       next.splice(toIndex, 0, moved);
       return next.map((layer, index) => ({ ...layer, sort_order: index }));
     });
+  }
+
+  async patchLayerPayload(
+    clientId: string,
+    payload: CgLayerPayload,
+  ): Promise<boolean> {
+    const nextPayload: CgLayerPayload = {
+      ...payload,
+      lines: [...payload.lines],
+    };
+    const current = this.draftLayers().find((layer) => layer.clientId === clientId);
+    if (!current) return false;
+
+    this.zone.run(() => {
+      this.draftLayers.update((list) =>
+        list.map((layer) =>
+          layer.clientId === clientId
+            ? { ...layer, payload: nextPayload }
+            : layer,
+        ),
+      );
+    });
+
+    const layerId = current.tb_tyapp_cgly_id;
+    if (!layerId) return true;
+
+    try {
+      const { error } = await this.supabase
+        .from('tyapp_cg_layer')
+        .update({
+          payload: nextPayload,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('tb_tyapp_cgly_id', layerId);
+      if (error) throw error;
+      this.zone.run(() => this.rememberLayerPayload(clientId, nextPayload));
+      return true;
+    } catch (error: unknown) {
+      this.notification.handleError('Cue subtitle failed', error);
+      return false;
+    }
+  }
+
+  private rememberLayerPayload(
+    clientId: string,
+    payload: CgLayerPayload,
+  ): void {
+    const raw = this.draftOriginal();
+    if (!raw) return;
+    try {
+      const snapshot = JSON.parse(raw) as {
+        package: Partial<CgPackage> | null;
+        layers: CgLayerDraft[];
+      };
+      snapshot.layers = snapshot.layers.map((layer) =>
+        layer.clientId === clientId
+          ? { ...layer, payload: { ...payload, lines: [...payload.lines] } }
+          : layer,
+      );
+      this.draftOriginal.set(JSON.stringify(snapshot));
+    } catch {
+      return;
+    }
   }
 
   async fetchPublicOutput(token: string): Promise<CgPublicOutput | null> {

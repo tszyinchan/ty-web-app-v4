@@ -23,7 +23,15 @@ export interface CgLogoPayload {
   fileName?: string;
 }
 
-export type CgLayerPayload = CgLogoPayload;
+export interface CgSubtitlePayload {
+  lines: string[];
+  /** On-air cue. `null` = blank air. */
+  index: number | null;
+  /** Last clicked / last on-air row. Kept when Blank. */
+  cursor: number;
+}
+
+export type CgLayerPayload = CgLogoPayload & CgSubtitlePayload;
 
 export interface CgPackage {
   tb_tyapp_cgpk_id: string;

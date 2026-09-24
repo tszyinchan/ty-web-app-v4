@@ -1,13 +1,16 @@
 import {
   Component,
   DoCheck,
+  ElementRef,
   HostListener,
   NgZone,
   OnDestroy,
   OnInit,
   computed,
+  effect,
   inject,
   signal,
+  viewChildren,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -26,6 +29,7 @@ import { CgLayerDraft, CgPackage } from '../../../../core/domains/cg/cg.model';
 import { CgService } from '../../../../core/domains/cg/cg.service';
 import {
   buildCgOverlayUrl,
+  cueSubtitleIndex,
   elementLabel,
   isEmbeddedImageUrl,
   isLocalFilesystemPath,
@@ -33,6 +37,7 @@ import {
   normalizeDurationMs,
   isCgMono,
   packageHasUnsavedIdentity,
+  parseSubtitleScript,
   readImageFileAsDataUrl,
 } from '../../../../core/domains/cg/cg.util';
 import {
@@ -58,10 +63,12 @@ export class CgLayerEdit implements OnInit, OnDestroy, DoCheck {
   readonly cg = inject(CgService);
 
   readonly Logo = CgElementType.Logo;
+  readonly Subtitle = CgElementType.Subtitle;
   readonly anchorOptions = CG_ANCHOR_OPTIONS;
   readonly unitOptions = CG_LAYOUT_UNIT_OPTIONS;
   readonly backdrops = CgPreviewBackdrop;
   readonly logoAccept = CG_LOGO_ACCEPT;
+  readonly scriptAccept = '.txt,.srt,text/plain,application/x-subrip';
 
   isDirty = signal(false);
   isSaveDisabled = signal(true);
@@ -72,6 +79,35 @@ export class CgLayerEdit implements OnInit, OnDestroy, DoCheck {
     const id = this.layerId;
     return this.cg.draftLayers().find((row) => row.clientId === id) ?? null;
   });
+
+  private readonly queueRows =
+    viewChildren<ElementRef<HTMLButtonElement>>('queueRow');
+
+  private readonly _keepCueVisible = effect(() => {
+    const rows = this.queueRows();
+    const layer = this.layer();
+    if (!layer || layer.element_type !== this.Subtitle) return;
+    const i = layer.payload.index ?? layer.payload.cursor ?? 0;
+    const node = rows[i]?.nativeElement;
+    if (!node) return;
+    requestAnimationFrame(() => this.scrollCueIntoView(node));
+  });
+
+  private scrollCueIntoView(node: HTMLButtonElement): void {
+    const scroller = node.parentElement;
+    if (!scroller) return;
+    const scrollerBox = scroller.getBoundingClientRect();
+    const nodeBox = node.getBoundingClientRect();
+    const delta =
+      nodeBox.top +
+      nodeBox.height / 2 -
+      (scrollerBox.top + scrollerBox.height / 2);
+    const max = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
+    scroller.scrollTop = Math.min(
+      max,
+      Math.max(0, scroller.scrollTop + delta),
+    );
+  }
 
   syncStatus = computed<'loading' | 'up-to-date' | 'unsaved' | 'none'>(() => {
     if (this.cg.loading()) return 'loading';
@@ -85,6 +121,25 @@ export class CgLayerEdit implements OnInit, OnDestroy, DoCheck {
     return typeof key === 'string' ? key : null;
   }
 
+  @HostListener('window:keydown', ['$event'])
+  onCueKeys(event: KeyboardEvent): void {
+    if (this.layer()?.element_type !== this.Subtitle) return;
+    const target = event.target;
+    if (target instanceof HTMLElement) {
+      const tag = target.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      if (target.isContentEditable) return;
+    }
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      void this.cue(1);
+      return;
+    }
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      void this.cue(-1);
+    }
+  }
   @HostListener('window:beforeunload', ['$event'])
   onBeforeUnload(event: BeforeUnloadEvent) {
     if (this.isDirty()) {
@@ -204,7 +259,99 @@ export class CgLayerEdit implements OnInit, OnDestroy, DoCheck {
   }
 
   payloadSnapshot(layer: CgLayerDraft): CgLayerDraft['payload'] {
-    return { ...layer.payload };
+    return { ...layer.payload, lines: [...layer.payload.lines] };
+  }
+
+  cue(direction: 1 | -1): void {
+    const layer = this.layer();
+    if (!layer || layer.element_type !== this.Subtitle) return;
+    const next = cueSubtitleIndex(
+      layer.payload.lines,
+      layer.payload.index,
+      direction,
+      layer.payload.cursor,
+    );
+    void this.applySubtitlePayload(
+      layer,
+      layer.payload.lines,
+      next.index,
+      next.cursor,
+    );
+  }
+
+  cueAt(index: number): void {
+    const layer = this.layer();
+    if (!layer || layer.element_type !== this.Subtitle) return;
+    if (index < 0 || index >= layer.payload.lines.length) return;
+    void this.applySubtitlePayload(layer, layer.payload.lines, index, index);
+  }
+
+  blankAir(): void {
+    const layer = this.layer();
+    if (!layer || layer.element_type !== this.Subtitle) return;
+    void this.applySubtitlePayload(
+      layer,
+      layer.payload.lines,
+      null,
+      layer.payload.cursor,
+    );
+  }
+
+  async pasteScript(): Promise<void> {
+    const layer = this.layer();
+    if (!layer || layer.element_type !== this.Subtitle) return;
+    try {
+      const raw = await navigator.clipboard.readText();
+      this.replaceScript(layer, raw);
+    } catch (error: unknown) {
+      this.notification.handleError('Clipboard', error);
+    }
+  }
+
+  onScriptFile(layer: CgLayerDraft, event: Event): void {
+    const input = event.target;
+    if (!(input instanceof HTMLInputElement) || !input.files?.length) {
+      return;
+    }
+    const file = input.files[0];
+    input.value = '';
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result !== 'string') {
+        this.notification.handleError('Script', 'Could not read that file.');
+        return;
+      }
+      this.replaceScript(layer, reader.result);
+    };
+    reader.onerror = () =>
+      this.notification.handleError('Script', 'Could not read that file.');
+    reader.readAsText(file);
+  }
+
+  private replaceScript(layer: CgLayerDraft, raw: string): void {
+    const lines = parseSubtitleScript(raw);
+    if (lines.length === 0) {
+      this.notification.handleError(
+        'Script',
+        'No sentences. Use one line per caption, or an .srt file.',
+      );
+      return;
+    }
+    void this.applySubtitlePayload(layer, lines, 0, 0);
+  }
+
+  private applySubtitlePayload(
+    layer: CgLayerDraft,
+    lines: string[],
+    index: number | null,
+    cursor: number,
+  ): void {
+    void this.cg.patchLayerPayload(layer.clientId, {
+      ...layer.payload,
+      lines: [...lines],
+      index,
+      cursor,
+    });
   }
 
   packageDurationMs(): number {

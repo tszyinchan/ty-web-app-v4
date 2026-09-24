@@ -64,8 +64,9 @@
 | B2 | 改 X / Y / Width / Scale | Stage 裡的 logo 跟著動，不必重載 |
 | B3 | 切 **Alpha** / **Studio** | Alpha 是棋盤（只在後台）；Studio 是暗底。都不是綠幕 |
 | B4 | 回到 Panel，撥 Logo 的 On/Off toggle | tile 變淡但圖還在。頂列 **Panel Stage 預覽**依 Package Appear 淡出或 cut。Package Output **先不要變**（還沒 Save） |
-| B5 | Save | 成功。約 2 秒內 **只有這次有變的 layer** 用 Package `duration_ms` 淡入/淡出（`0` = 瞬間 cut）。已經 On 的 layer 維持原樣，不會整場閃一次。重整後位置、圖、On/Off、Appear 還在 |
-| B6 | 點 catalog 裡灰色的 Clock / Title | 不能加（soon）。只有 Logo 能再加一層；加完進 Layer 設定頁 |
+| B5 | Save | 成功。約 **300ms** 內 **只有這次有變的 layer** 用 Package `duration_ms` 淡入/淡出（`0` = 瞬間 cut）。已經 On 的 layer 維持原樣，不會整場閃一次。重整後位置、圖、On/Off、Appear 還在 |
+| B6 | 點 catalog 裡灰色的 Clock / Title | 不能加（soon）。**Logo** 與 **Subtitle** 能加；加完進 Layer 設定頁 |
+| B6b | `PKG_A` 加 **Subtitle**。Paste 或 Load **.txt / .srt**。點 queue 上氣。**Blank**：氣上沒字，queue 仍記住那一句並捲到該句。再 Down 從下一句繼續；Up 把剛那句拉回來。**不要 Save** | Stage / overlay 約 300ms 換成亮起的那句。字級 Scale 1 ≈ ffmpeg 16.1（畫面高 5.6%），白字、細黑邊、ScaleY 1.11，不是粗 stroke。Subtitle desk 只有 Scale / Y / Width。Layout / On/Off 仍要 Save |
 | B7 | `PKG_A` 加第二層 Logo，兩層都 On，Save。再開 overlay。然後只 Off 其中一層，Save | overlay 裡那一層淡出；另一層 Logo **一直在、不眨眼** |
 | B8 | `PKG_A` 改 Appear = **Cut**（或 Fade ms = `0`），Save。再開 overlay，On/Off 一層再 Save | overlay **瞬間**切，沒有 400ms fade。改回 Fade 400、Save，之後又是淡入淡出 |
 | B9 | `PKG_A` 兩層 Logo。拖第二層到第一格，看 Panel Stage：後拖到前面的那層應蓋在上面。Save，overlay 順序一樣 | 沒 Save 前 overlay 不變。數字 1 = 最後面 |
@@ -76,7 +77,7 @@
 | # | 操作 | 預期 |
 |---|---|---|
 | C1 | Copy **Package Output**，新分頁打開 | URL 是 `http://cg.localhost:4200/o/…`（正式是 `cg.tszyin.com/o/…`）。真透明底 + package 裡所有 On 的 layer。壞 token 是空白，不是 Jaxfr 登入頁 |
-| C2 | 回到後台改 Scale，**先不要 Save**，看 overlay | overlay **不變**。Save 之後約 2 秒，**這一層** 更新；其他 On 的 layer 不動 |
+| C2 | 回到後台改 Scale，**先不要 Save**，看 overlay | overlay **不變**。Save 之後約 300ms，**這一層** 更新；其他 On 的 layer 不動 |
 | C3 | Copy Logo 的 **Layer Output**，另開分頁 | 同樣全幅透明，只畫那顆 Logo |
 
 ### CLEANUP

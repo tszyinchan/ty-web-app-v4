@@ -6,6 +6,7 @@ import {
   CG_ELEMENT_CATALOG,
   CG_MAX_DURATION_MS,
   CG_SAMPLE_LOGO_URL,
+  CG_SAMPLE_SUBTITLE_LINES,
   CgAnchor,
   CgElementDef,
   CgElementType,
@@ -13,7 +14,9 @@ import {
   CgOutputKind,
   CgPackageLook,
   CgPackageRole,
+  CG_SUBTITLE_FONT_VH,
   DEFAULT_LOGO_LAYOUT,
+  DEFAULT_SUBTITLE_LAYOUT,
 } from './cg.constants';
 import {
   CgLayer,
@@ -63,11 +66,142 @@ export function createEmptyLogoLayer(sortOrder: number): CgLayerDraft {
     element_type: CgElementType.Logo,
     public_token: createCgPublicToken(),
     layout: { ...DEFAULT_LOGO_LAYOUT },
-    payload: { imageUrl: CG_SAMPLE_LOGO_URL },
+    payload: emptyLogoPayload(CG_SAMPLE_LOGO_URL),
     visible: true,
     sort_order: sortOrder,
     status: RecordStatus.Active,
   };
+}
+
+export function createEmptySubtitleLayer(sortOrder: number): CgLayerDraft {
+  return {
+    clientId: `temp-${crypto.randomUUID()}`,
+    element_type: CgElementType.Subtitle,
+    public_token: createCgPublicToken(),
+    layout: { ...DEFAULT_SUBTITLE_LAYOUT },
+    payload: emptySubtitlePayload([...CG_SAMPLE_SUBTITLE_LINES], 0),
+    visible: true,
+    sort_order: sortOrder,
+    status: RecordStatus.Active,
+  };
+}
+
+export function createEmptyLayer(
+  type: CgElementType,
+  sortOrder: number,
+): CgLayerDraft | null {
+  if (type === CgElementType.Logo) return createEmptyLogoLayer(sortOrder);
+  if (type === CgElementType.Subtitle) {
+    return createEmptySubtitleLayer(sortOrder);
+  }
+  return null;
+}
+
+export function emptyLogoPayload(imageUrl = '', fileName?: string): CgLayerPayload {
+  return {
+    imageUrl,
+    lines: [],
+    index: null,
+    cursor: 0,
+    ...(fileName ? { fileName } : {}),
+  };
+}
+
+export function emptySubtitlePayload(
+  lines: string[],
+  index: number | null,
+  cursor?: number,
+): CgLayerPayload {
+  return {
+    imageUrl: '',
+    lines: [...lines],
+    index,
+    cursor: clampSubtitleCursor(lines, cursor ?? index ?? 0),
+  };
+}
+
+export function parseSubtitleScript(raw: string): string[] {
+  if (looksLikeSrt(raw)) return parseSubtitleSrt(raw);
+  return raw
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+}
+
+const SRT_TIME =
+  /^\d{1,2}:\d{2}:\d{2}[,.]\d{1,3}\s*-->\s*\d{1,2}:\d{2}:\d{2}/m;
+const SRT_INDEX = /^\d+$/;
+
+export function looksLikeSrt(raw: string): boolean {
+  return SRT_TIME.test(raw);
+}
+
+export function parseSubtitleSrt(raw: string): string[] {
+  const body = raw
+    .replace(/^\uFEFF/, '')
+    .replace(/\r\n/g, '\n')
+    .replace(/^WEBVTT[^\n]*\n+/i, '');
+  const blocks = body.split(/\n{2,}/);
+  const lines: string[] = [];
+  for (const block of blocks) {
+    const parts = block
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0);
+    if (parts.length === 0) continue;
+    if (/^NOTE\b/i.test(parts[0]) || /^STYLE\b/i.test(parts[0])) continue;
+    let start = 0;
+    if (SRT_INDEX.test(parts[0])) start += 1;
+    if (start < parts.length && SRT_TIME.test(parts[start])) start += 1;
+    const cue = parts
+      .slice(start)
+      .map(stripSrtMarkup)
+      .filter((line) => line.length > 0)
+      .join('\n')
+      .trim();
+    if (cue) lines.push(cue);
+  }
+  return lines;
+}
+
+function stripSrtMarkup(line: string): string {
+  return line
+    .replace(/<[^>]+>/g, '')
+    .replace(/\{[^}]+\}/g, '')
+    .replace(/&nbsp;/gi, ' ')
+    .trim();
+}
+
+export function subtitleLine(payload: CgLayerPayload): string {
+  const index = payload.index;
+  if (index == null || index < 0) return '';
+  return payload.lines[index] ?? '';
+}
+
+export function cueSubtitleIndex(
+  lines: string[],
+  current: number | null,
+  direction: 1 | -1,
+  cursor = 0,
+): { index: number | null; cursor: number } {
+  if (lines.length === 0) return { index: null, cursor: 0 };
+  const held = clampSubtitleCursor(lines, cursor);
+  if (current == null) {
+    if (direction < 0) return { index: held, cursor: held };
+    const next = held + 1;
+    if (next >= lines.length) return { index: null, cursor: held };
+    return { index: next, cursor: next };
+  }
+  const next = current + direction;
+  if (next < 0) return { index: 0, cursor: 0 };
+  if (next >= lines.length) return { index: null, cursor: current };
+  return { index: next, cursor: next };
+}
+
+export function clampSubtitleCursor(lines: string[], cursor: number): number {
+  if (lines.length === 0) return 0;
+  if (!Number.isFinite(cursor)) return 0;
+  return Math.min(lines.length - 1, Math.max(0, Math.round(cursor)));
 }
 
 export function packageRoleLabel(role: CgPackageRole): string {
@@ -160,18 +294,44 @@ export function normalizeLayout(raw: unknown): CgLayout {
   };
 }
 
-export function normalizeLogoPayload(raw: unknown): CgLogoPayload {
+export function normalizeLogoPayload(raw: unknown): CgLayerPayload {
   if (isLogoPayload(raw)) {
     const fileName =
       'fileName' in raw && typeof raw.fileName === 'string'
         ? raw.fileName.trim()
         : '';
-    return {
-      imageUrl: raw.imageUrl.trim(),
-      ...(fileName ? { fileName } : {}),
-    };
+    return emptyLogoPayload(raw.imageUrl.trim(), fileName || undefined);
   }
-  return { imageUrl: '' };
+  return emptyLogoPayload();
+}
+
+export function normalizeSubtitlePayload(raw: unknown): CgLayerPayload {
+  const value = asRecord(raw);
+  const fromLines = Array.isArray(value['lines'])
+    ? value['lines'].filter((line): line is string => typeof line === 'string')
+    : [];
+  const lines =
+    fromLines.length > 0
+      ? parseSubtitleScript(fromLines.join('\n'))
+      : parseSubtitleScript(asString(value['text']));
+  const rawIndex = value['index'];
+  let index: number | null = null;
+  if (typeof rawIndex === 'number' && Number.isFinite(rawIndex)) {
+    index = Math.round(rawIndex);
+  }
+  if (index != null && (index < 0 || index >= lines.length)) {
+    index = lines.length > 0 ? 0 : null;
+  }
+  if (index == null && lines.length > 0 && rawIndex !== null) {
+    index = 0;
+  }
+  if (rawIndex === null) index = null;
+  const rawCursor = value['cursor'];
+  const cursorSource =
+    typeof rawCursor === 'number' && Number.isFinite(rawCursor)
+      ? rawCursor
+      : (index ?? 0);
+  return emptySubtitlePayload(lines, index, cursorSource);
 }
 
 export function layerToDraft(layer: CgLayer): CgLayerDraft {
@@ -257,20 +417,37 @@ export function normalizeLayerPayload(
   type: CgElementType,
   raw: unknown,
 ): CgLayerPayload {
-  if (type === CgElementType.Logo) {
-    return normalizeLogoPayload(raw);
+  if (type === CgElementType.Subtitle) {
+    return normalizeSubtitlePayload(raw);
   }
   return normalizeLogoPayload(raw);
 }
 
 export function layoutToCss(layout: CgLayout): Record<string, string> {
+  return layoutBoxCss(layout, true);
+}
+
+/** Subtitle Scale is type size, not a CSS transform of the caption box. */
+export function subtitleLayoutToCss(layout: CgLayout): Record<string, string> {
+  const css = layoutBoxCss(layout, false);
+  const scale = Number.isFinite(layout.scale) ? layout.scale : 1;
+  css['--cg-sub-font'] = String(CG_SUBTITLE_FONT_VH * scale);
+  return css;
+}
+
+function layoutBoxCss(
+  layout: CgLayout,
+  scaleAsTransform: boolean,
+): Record<string, string> {
   const unit = layout.unit === CgLayoutUnit.Pixel ? 'px' : '%';
   const scale = Number.isFinite(layout.scale) ? layout.scale : 1;
   const css: Record<string, string> = {
     position: 'absolute',
     left: `${layout.x}${unit}`,
     top: `${layout.y}${unit}`,
-    transform: `${ANCHOR_TRANSLATE[layout.anchor]} scale(${scale})`,
+    transform: scaleAsTransform
+      ? `${ANCHOR_TRANSLATE[layout.anchor]} scale(${scale})`
+      : ANCHOR_TRANSLATE[layout.anchor],
     transformOrigin: ANCHOR_ORIGIN[layout.anchor],
   };
   if (layout.width != null && Number.isFinite(layout.width)) {

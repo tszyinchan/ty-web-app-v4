@@ -1,5 +1,8 @@
 html.cg-overlay-on,
 html.cg-overlay-on body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
   background-color: transparent;
   background-image: none;
   overflow: hidden;
@@ -18,4 +21,8 @@ html.cg-overlay-on app-cg-stage {
   width: 100%;
   height: 100%;
   aspect-ratio: auto;
+}
+
+html.cg-overlay-on .sub-text {
+  font-size: calc(var(--cg-sub-font, 5.6) * 1vh);
 }

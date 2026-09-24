@@ -79,6 +79,62 @@
             Sample PNG
           </button>
         </div>
+      }
+
+      @if (layer.element_type === Subtitle) {
+        <div class="cg-cue-bar">
+          <button type="button" class="cg-btn" (click)="cue(-1)">Up</button>
+          <button type="button" class="cg-btn" (click)="cue(1)">Down</button>
+          <button
+            type="button"
+            class="cg-btn"
+            [class.on]="layer.payload.index === null"
+            (click)="blankAir()"
+          >
+            Blank
+          </button>
+        </div>
+        <div class="cg-inline">
+          <button type="button" class="cg-btn" (click)="pasteScript()">
+            Paste
+          </button>
+          <label class="cg-btn file">
+            <input
+              type="file"
+              [accept]="scriptAccept"
+              (change)="onScriptFile(layer, $event)"
+            />
+            Load .txt / .srt
+          </label>
+        </div>
+        @if (!packageId) {
+          <p class="cg-hint">Save the package once so cue goes to OBS.</p>
+        }
+        <div class="cg-queue" role="listbox" aria-label="Caption queue">
+          @for (line of layer.payload.lines; track $index) {
+            <button
+              type="button"
+              #queueRow
+              class="cg-queue-row"
+              role="option"
+              [class.on]="$index === layer.payload.index"
+              [class.held]="
+                layer.payload.index === null && $index === layer.payload.cursor
+              "
+              [attr.aria-selected]="
+                $index === layer.payload.index ||
+                (layer.payload.index === null && $index === layer.payload.cursor)
+              "
+              (click)="cueAt($index)"
+            >
+              <span class="cg-queue-n">{{ $index + 1 }}</span>
+              <span class="cg-queue-line">{{ line }}</span>
+            </button>
+          }
+        </div>
+      }
+
+      @if (layer.element_type === Logo) {
         <div class="cg-fields">
           <label class="cg-field">
             <span>X</span>
@@ -133,6 +189,39 @@
             </select>
           </label>
         </div>
+      }
+
+      @if (layer.element_type === Subtitle) {
+        <div class="cg-fields">
+          <label class="cg-field">
+            <span>Scale</span>
+            <input
+              type="number"
+              step="0.05"
+              [(ngModel)]="layer.layout.scale"
+              (ngModelChange)="touchPreview()"
+            />
+          </label>
+          <label class="cg-field">
+            <span>Y</span>
+            <input
+              type="number"
+              [(ngModel)]="layer.layout.y"
+              (ngModelChange)="touchPreview()"
+            />
+          </label>
+          <label class="cg-field">
+            <span>Width</span>
+            <input
+              type="number"
+              [(ngModel)]="layer.layout.width"
+              (ngModelChange)="touchPreview()"
+            />
+          </label>
+        </div>
+        <p class="cg-hint">
+          Scale is type size (1 = burned-in caption). Y is how high. Width is wrap.
+        </p>
       }
 
       <div class="cg-layer-output">

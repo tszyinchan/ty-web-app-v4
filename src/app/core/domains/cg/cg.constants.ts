@@ -74,8 +74,8 @@ export const CG_ELEMENT_CATALOG: ReadonlyArray<CgElementDef> = [
   {
     type: CgElementType.Subtitle,
     label: 'Subtitle',
-    description: 'News feed line',
-    shipped: false,
+    description: 'Live captions',
+    shipped: true,
   },
   {
     type: CgElementType.Breaking,
@@ -97,7 +97,7 @@ export const CG_ELEMENT_CATALOG: ReadonlyArray<CgElementDef> = [
   },
 ];
 
-export const CG_OVERLAY_POLL_MS = 2000;
+export const CG_OVERLAY_POLL_MS = 300;
 
 /** Package Output: `0` = cut (instant). Default fade is 400ms. */
 export const CG_CUT_DURATION_MS = 0;
@@ -112,6 +112,18 @@ export const DEFAULT_LOGO_LAYOUT = {
   scale: 1,
   width: 11,
 } as const;
+
+export const DEFAULT_SUBTITLE_LAYOUT = {
+  x: 50,
+  y: 89,
+  unit: CgLayoutUnit.Percent,
+  anchor: CgAnchor.BottomCenter,
+  scale: 1,
+  width: 88,
+} as const;
+
+/** Scale 1 type size: percent of Stage / OBS viewport height (ffmpeg FontSize 16.1 on PlayRes 288). */
+export const CG_SUBTITLE_FONT_VH = 5.6;
 
 export const CG_PACKAGE_ROLE_OPTIONS: ReadonlyArray<{
   value: CgPackageRole;
@@ -145,6 +157,12 @@ export const CG_LAYOUT_UNIT_OPTIONS: ReadonlyArray<{
 ];
 
 export const CG_SAMPLE_LOGO_URL = '/icons/3d/apps.png';
+
+export const CG_SAMPLE_SUBTITLE_LINES: readonly string[] = [
+  'This is the first caption.',
+  'Down cues the next sentence.',
+  'Blank clears the air.',
+];
 
 export const CG_LOGO_ACCEPT = 'image/png,image/webp';
 

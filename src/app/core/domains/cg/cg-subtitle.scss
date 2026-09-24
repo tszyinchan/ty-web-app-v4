@@ -1,0 +1,47 @@
+:host {
+  display: contents;
+}
+
+.sub-box {
+  box-sizing: border-box;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  min-width: 0;
+  pointer-events: none;
+  user-select: none;
+  background: transparent;
+}
+
+.sub-text {
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 0.08em 0.2em;
+  color: #fff;
+  font-family:
+    '華康中黑體', '華康中黑體(P)', 'Microsoft JhengHei', 'Segoe UI', sans-serif;
+  font-size: calc(var(--cg-sub-font, 5.6) * 1vh);
+  font-size: calc(var(--cg-sub-font, 5.6) * 1cqh);
+  font-weight: 400;
+  letter-spacing: 0.104em;
+  line-height: 1.15;
+  text-align: center;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  transform: scaleY(1.11);
+  transform-origin: center bottom;
+  text-shadow:
+    -0.05em -0.05em 0 #000,
+    0.05em -0.05em 0 #000,
+    -0.05em 0.05em 0 #000,
+    0.05em 0.05em 0 #000,
+    -0.05em 0 0 #000,
+    0.05em 0 0 #000,
+    0 -0.05em 0 #000,
+    0 0.05em 0 #000;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}

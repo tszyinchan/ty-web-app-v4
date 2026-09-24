@@ -42,14 +42,18 @@ This is the locked vocabulary for code, UI copy, DB, routes, and the subdomain. 
 
 `package_id` → package PK, `element_type`, `public_token`, `layout` jsonb, `payload` jsonb, `visible` (On/Off), `sort_order`, `status`, `created_at`, `updated_at`, `deleted_at`
 
-Layout jsonb: `x`, `y`, `unit` (`percent` \| `px`), `anchor`, `scale`, `width`, `height`
+Layout jsonb: `x`, `y`, `unit` (`percent` \| `px`), `anchor`, `scale`, `width`, `height`. Logo `scale` is a CSS transform of the box. Subtitle `scale` only multiplies type size (`1` = ffmpeg FontSize 16.1 / PlayRes 288, about 5.6% of frame height); the caption stays inside `width` and wraps. Overlay uses `vh` so Browser Source gets on-air size even when `cqh` does not. Subtitle look is white fill, regular weight, `ScaleY` 1.11, `Spacing` 1.68, black outline via text-shadow (not `-webkit-text-stroke`).
 
 Logo payload jsonb: `imageUrl`, `fileName`
+
+Subtitle payload jsonb: `lines` (string[]), `index` (`number` \| `null` = blank / off air), `cursor` (last clicked row; kept when Blank)
 
 Tokens share one `/o/:token` space (unique across both tables in practice). Do not add a token table.
 
 RPCs: `tyapp_cg_package_soft_delete_single_record`, `tyapp_cg_layer_soft_delete_single_record`, `tyapp_cg_get_output_by_token`.
 
 **Save** writes the Package and applies it to Output. Each Layer **fades in or out on its own** using the Package `duration_ms` (`0` = cut). Layers that did not change stay put — turning Weather On does not blink an already-On Logo. Panel tile order is Stage **z-order** (first tile behind, last in front); drag to reorder, Save to apply. Package **Look** Color / B&W (`look` `color` \| `mono`) greyscales each Layer with the same `duration_ms`; it must not change z-order. Panel Stage is a live preview; it does not go to air until Save. On/Off on the Panel is draft until Save.
+
+**Subtitle cue is the live exception:** Up / Down / click / Paste / Load .txt or .srt patches that Layer's `payload` immediately (no Package Save). Overlay polls every 300ms and shows `lines[index]`. `index = null` is blank air; `cursor` stays on the last clicked row so Down continues from there and Up puts it back. Layout, On/Off, and Look still wait for Save. SRT import strips sequence numbers and timestamps; each cue becomes one queue line. Subtitle desk shows Scale / Y / Width only (bottom-center, `%`). Logo still has full X/Y/Width/Scale/Anchor/Unit.
 
 Do not revive `tyapp_cg_slot` or `component_type`.
