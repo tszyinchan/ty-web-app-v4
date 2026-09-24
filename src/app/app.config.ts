@@ -6,7 +6,11 @@ import {
   provideAppInitializer,
   inject,
 } from '@angular/core';
-import { provideRouter, withViewTransitions } from '@angular/router';
+import {
+  provideRouter,
+  Router,
+  withViewTransitions,
+} from '@angular/router';
 import { routes } from './app.routes';
 import { SUBDOMAINS } from './app.constants';
 import { AuthService } from './core/services/auth.service';
@@ -18,6 +22,14 @@ import { provideNativeDateAdapter } from '@angular/material/core';
 import { DateAdapter, provideCalendar } from 'angular-calendar';
 import { adapterFactory } from 'angular-calendar/date-adapters/date-fns';
 
+function urlPath(url: string): string {
+  return url.split('?')[0].split('#')[0] || '/';
+}
+
+/** Jaxfr CG admin (`/cg`, `/cg/list`, Panel, Layer). Not overlay `/cg-live`. */
+function isCgAdminPath(path: string): boolean {
+  return path === '/cg' || path.startsWith('/cg/');
+}
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -29,7 +41,24 @@ export const appConfig: ApplicationConfig = {
     // navigations in document.startViewTransition() here. Browsers without
     // support (Firefox, older Safari) silently fall back to a normal
     // instant navigation — no error, no polyfill required.
-    provideRouter(routes, withViewTransitions()),
+    provideRouter(
+      routes,
+      withViewTransitions({
+        onViewTransitionCreated: ({ transition }) => {
+          const router = inject(Router);
+          const nav = router.getCurrentNavigation();
+          const to = urlPath(nav?.finalUrl?.toString() ?? router.url);
+          const from = urlPath(
+            nav?.previousNavigation?.finalUrl?.toString() ??
+              nav?.initialUrl?.toString() ??
+              '',
+          );
+          if (isCgAdminPath(from) || isCgAdminPath(to)) {
+            transition.skipTransition();
+          }
+        },
+      }),
+    ),
     provideNativeDateAdapter(),
     {
       provide: DATE_PIPE_DEFAULT_OPTIONS,

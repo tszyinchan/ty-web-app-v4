@@ -22,17 +22,22 @@
           </button>
         </div>
       </div>
-      <app-cg-stage [preview]="true" [backdrop]="backdrop()">
-        <app-cg-layer-view
-          [elementType]="layer.element_type"
-          [layout]="layoutSnapshot(layer)"
-          [payload]="payloadSnapshot(layer)"
-          [visible]="layer.visible"
+      <div class="cg-monitors">
+        <app-cg-mix-preview
+          label="Pending"
+          [layers]="layers()"
+          [packageLook]="pendingLook()"
           [durationMs]="packageDurationMs()"
-          [sortOrder]="layer.sort_order"
-          [mono]="isMono()"
+          [backdrop]="backdrop()"
         />
-      </app-cg-stage>
+        <app-cg-mix-preview
+          label="On air"
+          [layers]="onAirLayers()"
+          [packageLook]="onAirLook()"
+          [durationMs]="onAirDurationMs()"
+          [backdrop]="backdrop()"
+        />
+      </div>
     </div>
 
     <section class="cg-layer-form">
@@ -64,6 +69,11 @@
             </button>
           }
         </div>
+        @if (packageIsMono()) {
+          <p class="cg-hint">
+            Package is B&amp;W — this Look stays grey until Package is Color.
+          </p>
+        }
       </div>
 
       @if (layer.element_type === Logo) {
@@ -110,6 +120,39 @@
             Blank
           </button>
         </div>
+        <div class="cg-appear cue">
+          <div class="cg-roles">
+            <button
+              type="button"
+              class="cg-role-btn"
+              [class.on]="!isCueCut(layer)"
+              (click)="setCueFade(layer)"
+            >
+              Fade
+            </button>
+            <button
+              type="button"
+              class="cg-role-btn"
+              [class.on]="isCueCut(layer)"
+              (click)="setCueCut(layer)"
+            >
+              Cut
+            </button>
+          </div>
+          @if (!isCueCut(layer)) {
+            <label class="cg-field cg-duration">
+              <span>ms</span>
+              <input
+                type="number"
+                [min]="cutMs"
+                [max]="maxDurationMs"
+                step="50"
+                [ngModel]="cueDurationMs(layer)"
+                (ngModelChange)="onCueDurationMsChange(layer, $event)"
+              />
+            </label>
+          }
+        </div>
         <div class="cg-inline">
           <button type="button" class="cg-btn" (click)="pasteScript()">
             Paste
@@ -141,7 +184,7 @@
             }
           </div>
         </div>
-        <p class="cg-hint">News / Show wait for Save. Cue fade uses Package Appear.</p>
+        <p class="cg-hint">Cue Fade / Cut goes to air now. News / Show wait for Save.</p>
         <div class="cg-queue" role="listbox" aria-label="Caption queue">
           @for (line of layer.payload.lines; track $index) {
             <button

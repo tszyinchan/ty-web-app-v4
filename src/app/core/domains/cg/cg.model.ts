@@ -29,6 +29,11 @@ export interface CgSubtitleStyle {
   preset: CgSubtitlePreset;
 }
 
+/** Inner cue / future Layer animation. Not Package Appear. */
+export interface CgLayerTransition {
+  duration_ms: number;
+}
+
 export interface CgSubtitlePayload {
   lines: string[];
   /** On-air cue. `null` = blank air. */
@@ -36,6 +41,7 @@ export interface CgSubtitlePayload {
   /** Last clicked / last on-air row. Kept when Blank. */
   cursor: number;
   style: CgSubtitleStyle;
+  transition: CgLayerTransition;
 }
 
 export type CgLayerPayload = CgLogoPayload & CgSubtitlePayload;

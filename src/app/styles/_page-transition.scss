@@ -3,6 +3,9 @@
 // involved — Angular just wraps navigation in document.startViewTransition(),
 // and these rules style the before/after snapshot pair the browser produces.
 //
+// CG admin (`/cg` and its subpages) skips the transition in app.config.ts
+// so Welcome → CG and list / Panel / Layer swaps are instant.
+//
 // Only the swapped content region gets a name (and therefore participates in
 // the transition) — never the whole document — so the persistent toolbar/nav
 // chrome never flashes or crossfades on navigation, in either theme.

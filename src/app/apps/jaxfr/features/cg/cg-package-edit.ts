@@ -18,6 +18,7 @@ import {
 } from '@angular/cdk/drag-drop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CgLayerView } from '../../../../core/domains/cg/cg-layer-view';
+import { CgMixPreview } from '../../../../core/domains/cg/cg-mix-preview';
 import { CgStage } from '../../../../core/domains/cg/cg-stage';
 import {
   CG_CUT_DURATION_MS,
@@ -54,7 +55,7 @@ import { copyTextToClipboard } from '../../../../core/utils/copy-text.util';
 @Component({
   selector: 'app-cg-package-edit',
   standalone: true,
-  imports: [FormsModule, CdkDropList, CdkDrag, CdkDragHandle, CgStage, CgLayerView],
+  imports: [FormsModule, CdkDropList, CdkDrag, CdkDragHandle, CgStage, CgLayerView, CgMixPreview],
   templateUrl: './cg-package-edit.html',
   styleUrl: './cg-package-edit.scss',
 })
@@ -76,6 +77,8 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
 
   readonly item = this.cg.draftItem;
   readonly layers = this.cg.draftLayers;
+  readonly onAirItem = this.cg.onAirItem;
+  readonly onAirLayers = this.cg.onAirLayers;
   isDirty = signal(false);
   isSaveDisabled = signal(true);
   backdrop = signal(CgPreviewBackdrop.Studio);
@@ -198,6 +201,18 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
     return normalizeDurationMs(this.item()?.duration_ms);
   }
 
+  onAirDurationMs(): number {
+    return normalizeDurationMs(this.onAirItem()?.duration_ms);
+  }
+
+  onAirLook(): CgPackageLook {
+    return this.onAirItem()?.look ?? CgPackageLook.Color;
+  }
+
+  pendingLook(): CgPackageLook {
+    return this.item()?.look ?? CgPackageLook.Color;
+  }
+
   setCut(): void {
     const current = this.packageDurationMs();
     if (current > this.cutMs) {
@@ -250,6 +265,9 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
       ...layer.payload,
       lines: [...layer.payload.lines],
       style: { preset: subtitlePresetOf(layer.payload) },
+      transition: {
+        duration_ms: layer.payload.transition?.duration_ms ?? CG_DEFAULT_DURATION_MS,
+      },
     };
   }
 

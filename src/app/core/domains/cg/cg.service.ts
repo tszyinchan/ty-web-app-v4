@@ -38,6 +38,9 @@ export class CgService {
   draftItem = signal<Partial<CgPackage> | null>(null);
   draftLayers = signal<CgLayerDraft[]>([]);
   draftOriginal = signal('');
+  /** Last Save (+ live cue). Empty until the package exists in DB. */
+  onAirItem = signal<Partial<CgPackage> | null>(null);
+  onAirLayers = signal<CgLayerDraft[]>([]);
 
   async fetchAllPackages(force = false): Promise<void> {
     if (this.packages().length > 0 && !force) return;
@@ -292,6 +295,7 @@ export class CgService {
     this.draftKey.set(null);
     this.draftItem.set(created);
     this.draftLayers.set([logo]);
+    this.clearOnAir();
     this.markDraftClean();
   }
 
@@ -307,6 +311,7 @@ export class CgService {
     this.draftKey.set(pkg.tb_tyapp_cgpk_id);
     this.draftItem.set(structuredClone(pkg));
     this.draftLayers.set(structuredClone(drafts));
+    this.captureOnAir();
     this.markDraftClean();
   }
 
@@ -315,6 +320,7 @@ export class CgService {
     this.draftItem.set(null);
     this.draftLayers.set([]);
     this.draftOriginal.set('');
+    this.clearOnAir();
   }
 
   draftSnapshot(): {
@@ -329,6 +335,16 @@ export class CgService {
 
   markDraftClean(): void {
     this.draftOriginal.set(JSON.stringify(this.draftSnapshot()));
+  }
+
+  private captureOnAir(): void {
+    this.onAirItem.set(structuredClone(this.draftItem()));
+    this.onAirLayers.set(structuredClone(this.draftLayers()));
+  }
+
+  private clearOnAir(): void {
+    this.onAirItem.set(null);
+    this.onAirLayers.set([]);
   }
 
   touchPreview(): void {
@@ -421,6 +437,70 @@ export class CgService {
     }
   }
 
+  async patchLayerTransition(
+    clientId: string,
+    durationMs: unknown,
+  ): Promise<boolean> {
+    const current = this.draftLayers().find((layer) => layer.clientId === clientId);
+    if (!current) return false;
+    const ms = normalizeDurationMs(durationMs);
+    const nextDraft: CgLayerPayload = {
+      ...current.payload,
+      transition: { duration_ms: ms },
+    };
+
+    this.zone.run(() => {
+      this.draftLayers.update((list) =>
+        list.map((layer) =>
+          layer.clientId === clientId
+            ? { ...layer, payload: nextDraft }
+            : layer,
+        ),
+      );
+      this.onAirLayers.update((list) =>
+        list.map((layer) =>
+          layer.clientId === clientId
+            ? {
+                ...layer,
+                payload: {
+                  ...layer.payload,
+                  transition: { duration_ms: ms },
+                },
+              }
+            : layer,
+        ),
+      );
+    });
+
+    const layerId = current.tb_tyapp_cgly_id;
+    if (!layerId) {
+      this.rememberLayerTransition(clientId, ms);
+      return true;
+    }
+
+    const originalPayload = this.originalLayerPayload(clientId) ?? current.payload;
+    const nextSaved: CgLayerPayload = {
+      ...originalPayload,
+      transition: { duration_ms: ms },
+    };
+
+    try {
+      const { error } = await this.supabase
+        .from('tyapp_cg_layer')
+        .update({
+          payload: nextSaved,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('tb_tyapp_cgly_id', layerId);
+      if (error) throw error;
+      this.zone.run(() => this.rememberLayerTransition(clientId, ms));
+      return true;
+    } catch (error: unknown) {
+      this.notification.handleError('Cue fade failed', error);
+      return false;
+    }
+  }
+
   async copyLayerToPackage(
     source: CgLayerDraft,
     targetPackageId: string,
@@ -444,6 +524,7 @@ export class CgService {
             null,
             payload.cursor,
             payload.style,
+            payload.transition?.duration_ms,
           )
         : payload;
     const siblings = this.layers().filter(
@@ -532,6 +613,46 @@ export class CgService {
           : layer,
       );
       this.draftOriginal.set(JSON.stringify(snapshot));
+      this.onAirLayers.update((list) =>
+        list.map((layer) =>
+          layer.clientId === clientId
+            ? {
+                ...layer,
+                payload: {
+                  ...layer.payload,
+                  lines: [...payload.lines],
+                  index: payload.index,
+                  cursor: payload.cursor,
+                },
+              }
+            : layer,
+        ),
+      );
+    } catch {
+      return;
+    }
+  }
+
+  private rememberLayerTransition(clientId: string, durationMs: number): void {
+    const raw = this.draftOriginal();
+    if (!raw) return;
+    try {
+      const snapshot = JSON.parse(raw) as {
+        package: Partial<CgPackage> | null;
+        layers: CgLayerDraft[];
+      };
+      snapshot.layers = snapshot.layers.map((layer) =>
+        layer.clientId === clientId
+          ? {
+              ...layer,
+              payload: {
+                ...layer.payload,
+                transition: { duration_ms: durationMs },
+              },
+            }
+          : layer,
+      );
+      this.draftOriginal.set(JSON.stringify(snapshot));
     } catch {
       return;
     }
@@ -547,6 +668,7 @@ export class CgService {
       };
       snapshot.layers = [...snapshot.layers, structuredClone(draft)];
       this.draftOriginal.set(JSON.stringify(snapshot));
+      this.onAirLayers.update((list) => [...list, structuredClone(draft)]);
     } catch {
       return;
     }

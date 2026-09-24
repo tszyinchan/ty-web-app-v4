@@ -52,36 +52,38 @@
 
 | # | 操作 | 預期 |
 |---|---|---|
-| A1 | Welcome 點 **CG**，或開 `/cg/list` | 進入 package 清單 |
-| A2 | 點 **New package**。Panel 已有一塊 Logo（sample PNG 在 Stage 左上）。Name = `PKG_A`，Role = Channel。Appear = **Fade** 400ms。Save | 頂列出現 Package Output URL；清單之後看得到 Channel |
+| A1 | Welcome 點 **CG**，或開 `/cg/list` | 進入 package 清單。**沒有** 200ms 整頁 crossfade（Welcome → CG、以及 CG 裡 list / Panel / Layer 換頁都是瞬間）。其他 feature（例如 Welcome → Chat）Aero 仍有淡入 |
+| A2 | 點 **New package**。頂列左 **Pending**、右 **On air**。Pending 左上有 sample Logo。**On air** 空白（還沒 Save）。Name = `PKG_A`，Role = Channel。Appear = **Fade** 400ms。Save | 頂列出現 Package Output URL；兩塊看起來一樣；清單之後看得到 Channel |
 | A3 | 再 New，Name = `PKG_B`，Role = Source，Save | 兩個 package 並存；Role 標 Source |
 
 ### B — Panel On/Off，定位在 Stage 上
 
 | # | 操作 | 預期 |
 |---|---|---|
-| B1 | 打開 `PKG_A`。頂列小 16:9 Stage；下面只有 Layer 格子。點 Logo tile | 進入該 Layer 設定頁（Stage + X/Y/圖）。Panel 底下沒有 inspector |
-| B1b | 在 Layer 頁點 **Choose local image**，選本機 PNG | Stage 換成該圖；欄位顯示 embedded 檔名，不是 `C:\\` 路徑 |
-| B2 | 改 X / Y / Width / Scale | Stage 裡的 logo 跟著動，不必重載 |
-| B3 | 切 **Alpha** / **Studio** | Alpha 是棋盤（只在後台）；Studio 是暗底。都不是綠幕 |
-| B4 | 回到 Panel，撥 Logo 的 On/Off toggle | tile 變淡但圖還在。頂列 **Panel Stage 預覽**依 Package Appear 淡出或 cut。Package Output **先不要變**（還沒 Save） |
-| B5 | Save | 成功。約 **300ms** 內 **只有這次有變的 layer** 用 Package `duration_ms` 淡入/淡出（`0` = 瞬間 cut）。已經 On 的 layer 維持原樣，不會整場閃一次。重整後位置、圖、On/Off、Appear 還在 |
+| B1 | 打開 `PKG_A`。頂列兩塊小 16:9：左 **Pending**、右 **On air**（都是整場混音）。下面只有 Layer 格子。點 Logo tile | 進入該 Layer 設定頁（同樣 Pending | On air + X/Y/圖）。Panel 底下沒有 inspector |
+| B1b | 在 Layer 頁點 **Choose local image**，選本機 PNG | **Pending** 換成該圖；**On air** 仍是舊圖。欄位顯示 embedded 檔名，不是 `C:\\` 路徑 |
+| B2 | 改 X / Y / Width / Scale | **Pending** 裡的 logo 跟著動，不必重載。**On air** 不動 |
+| B3 | 切 **Alpha** / **Studio** | 兩塊小畫面一起換。Alpha 是棋盤（只在後台）；Studio 是暗底。都不是綠幕 |
+| B4 | 回到 Panel，撥 Logo 的 On/Off toggle | tile 變淡但圖還在。**Pending** 依 Package Appear 淡出或 cut。**On air** 與 Package Output **先不要變**（還沒 Save） |
+| B5 | Save | 成功。**On air** 追上 **Pending**。約 **300ms** 內 **只有這次有變的 layer** 用 Package `duration_ms` 淡入/淡出（`0` = 瞬間 cut）。已經 On 的 layer 維持原樣，不會整場閃一次。重整後位置、圖、On/Off、Appear 還在 |
 | B6 | 點 catalog 裡灰色的 Clock / Title | 不能加（soon）。**Logo** 與 **Subtitle** 能加；加完進 Layer 設定頁 |
-| B6b | `PKG_A` 加 **Subtitle**。Paste 或 Load **.txt / .srt**。點 queue 上氣。**Blank**：氣上沒字，queue 仍記住那一句並捲到該句。再 Down 從下一句繼續；Up 把剛那句拉回來。**不要 Save** | Stage / overlay 約 300ms 換成亮起的那句，並用 Package Appear **crossfade**（Cut = 瞬間）。字級 Scale 1 ≈ ffmpeg 16.1（畫面高 5.6%），白字、黑邊是一圈（後面 stroke、前面填色），不是 8 向 shadow 鋸齒、也不是同一顆字上的 blob stroke。ScaleY 1.11。Subtitle desk 只有 Scale / Y / Width + News/Show。Layout / On/Off / Look / Style 仍要 Save |
+| B6b | `PKG_A` 加 **Subtitle**。Paste 或 Load **.txt / .srt**。點 queue 上氣。**Blank**：氣上沒字，queue 仍記住那一句並捲到該句。再 Down 從下一句繼續；Up 把剛那句拉回來。**不要 Save** | **On air** / overlay 約 300ms 換成亮起的那句，並用 **這一層 Cue** crossfade（預設 Fade 400）。**不是** Package Appear。Cue Fade / Cut **立刻**上氣（不必 Save）。字級 Scale 1 ≈ ffmpeg 16.1（畫面高 5.6%），白字、黑邊是一圈（後面 stroke、前面填色）。Subtitle desk：Up/Down/Blank 下面就是 Cue Fade/Cut + ms，然後 News/Show。Layout / On/Off / Look / Style 仍要 Save |
 | B7 | `PKG_A` 加第二層 Logo，兩層都 On，Save。再開 overlay。然後只 Off 其中一層，Save | overlay 裡那一層淡出；另一層 Logo **一直在、不眨眼** |
-| B8 | `PKG_A` 改 Appear = **Cut**（或 Fade ms = `0`），Save。再開 overlay，On/Off 一層再 Save | overlay **瞬間**切，沒有 400ms fade。Cue 也是 cut。改回 Fade 400、Save，之後又是淡入淡出 |
-| B9 | `PKG_A` 兩層 Logo。拖第二層到第一格，看 Panel Stage：後拖到前面的那層應蓋在上面。Save，overlay 順序一樣 | 沒 Save 前 overlay 不變。數字 1 = 最後面 |
-| B10 | Panel 改 Look = **B&W**。Panel Stage 用 Package ms **淡成灰**，已 On 的 layer **z-order 不變**。Save，overlay 同樣淡灰。改回 Color、Save | overlay 淡回彩色。Inherit layer 跟 Package 同一個 look |
-| B11 | Subtitle desk：Look = **Color**，Package 仍是 B&W。Save | 這一層 overlay 彩色；其他 Inherit 層仍灰。改 **B&W** 強制灰，即使 Package 是 Color |
-| B12 | Subtitle 改 Style = **Show**。Stage 立刻較大、偏金。**不要 Save**，看 overlay | overlay 仍是 News。Save 之後 overlay 變 Show。Cue 仍即時上氣，但 style 不跟著 patch |
+| B8 | `PKG_A` 改 Appear = **Cut**（或 Fade ms = `0`），Save。再開 overlay，On/Off 一層再 Save | overlay **瞬間**切 Host，沒有 400ms fade。**Cue 仍 Fade**（除非那層 Cue 也是 Cut）。改回 Fade 400、Save，之後 Host 又是淡入淡出 |
+| B9 | `PKG_A` 兩層 Logo。拖第二層到第一格，看 **Pending**：後拖到前面的那層應蓋在上面。Save，overlay 順序一樣 | 沒 Save 前 **On air** / overlay 不變。數字 1 = 最後面 |
+| B10 | Panel 改 Look = **B&W**。**Pending** 用 Package ms **淡成灰**，已 On 的 layer **z-order 不變**。**On air** 仍彩色直到 Save。Save，overlay 同樣淡灰。改回 Color、Save | overlay 淡回彩色。Inherit layer 跟 Package 同一個 look |
+| B11 | Subtitle desk：Look = **Color**，Package 仍是 B&W。Save | **全部仍灰**（Package B&W 是總閘）。改 Package = Color、這一層 Look = **B&W**、Save → 只有這層灰，其他 Color/Inherit 層彩色 |
+| B12 | Subtitle 改 Style = **Show**。**Pending** 立刻較大、偏金。**不要 Save**，看 **On air** / overlay | On air / overlay 仍是 News。Save 之後 overlay 變 Show。Cue 仍即時上氣，但 style 不跟著 patch |
 | B13 | Subtitle Copy to `PKG_B`。打開 `PKG_B` | 新 Layer、新 Output URL、queue 有字但 **Blank**（`index` null）。`PKG_A` 原本那層不動 |
+| B14 | 未 Save 時改 Scale。看兩塊小畫面 | **Pending** 變；**On air** 不變。Save 後兩塊一樣 |
+| B15 | Subtitle Cue = **Cut**（不必 Save）。Package Appear 仍 Fade。Down 一句 | 字幕 **瞬間**換句（Pending 與 On air 一樣）。再把一層 Logo Off、**Save**：那層仍依 Package Appear **淡出** |
 
 ### C — Package Output 是預設；Layer Output 也能開
 
 | # | 操作 | 預期 |
 |---|---|---|
 | C1 | Copy **Package Output**，新分頁打開 | URL 是 `http://cg.localhost:4200/o/…`（正式是 `cg.tszyin.com/o/…`）。真透明底 + package 裡所有 On 的 layer。壞 token 是空白，不是 Jaxfr 登入頁 |
-| C2 | 回到後台改 Scale，**先不要 Save**，看 overlay | overlay **不變**。Save 之後約 300ms，**這一層** 更新；其他 On 的 layer 不動 |
+| C2 | 回到後台改 Scale，**先不要 Save**，看 overlay 與 **On air** | overlay 與 On air **不變**。**Pending** 變。Save 之後約 300ms，**這一層** 更新；其他 On 的 layer 不動 |
 | C3 | Copy Logo 的 **Layer Output**，另開分頁 | 同樣全幅透明，只畫那顆 Logo |
 
 ### CLEANUP

@@ -110,6 +110,7 @@ export function emptyLogoPayload(imageUrl = '', fileName?: string): CgLayerPaylo
     index: null,
     cursor: 0,
     style: { preset: CgSubtitlePreset.News },
+    transition: { duration_ms: CG_DEFAULT_DURATION_MS },
     ...(fileName ? { fileName } : {}),
   };
 }
@@ -119,6 +120,7 @@ export function emptySubtitlePayload(
   index: number | null,
   cursor?: number,
   style?: CgSubtitleStyle,
+  transitionMs?: unknown,
 ): CgLayerPayload {
   return {
     imageUrl: '',
@@ -126,6 +128,7 @@ export function emptySubtitlePayload(
     index,
     cursor: clampSubtitleCursor(lines, cursor ?? index ?? 0),
     style: { preset: normalizeSubtitlePreset(style?.preset) },
+    transition: { duration_ms: normalizeDurationMs(transitionMs) },
   };
 }
 
@@ -265,10 +268,13 @@ export function layerIsMono(
   layerLook: unknown,
   packageLook: unknown,
 ): boolean {
-  const look = normalizeLayerLook(layerLook);
-  if (look === CgLayerLook.Color) return false;
-  if (look === CgLayerLook.Mono) return true;
-  return isCgMono(packageLook);
+  if (isCgMono(packageLook)) return true;
+  return normalizeLayerLook(layerLook) === CgLayerLook.Mono;
+}
+
+/** Subtitle cue / inner fade. Host On/Off still uses Package duration_ms. */
+export function innerDurationMs(payload: Pick<CgLayerPayload, 'transition'>): number {
+  return normalizeDurationMs(payload.transition?.duration_ms);
 }
 
 export function normalizeSubtitlePreset(raw: unknown): CgSubtitlePreset {
@@ -388,9 +394,10 @@ export function normalizeSubtitlePayload(raw: unknown): CgLayerPayload {
       ? rawCursor
       : (index ?? 0);
   const styleRaw = asRecord(value['style']);
+  const transitionRaw = asRecord(value['transition']);
   return emptySubtitlePayload(lines, index, cursorSource, {
     preset: normalizeSubtitlePreset(styleRaw['preset']),
-  });
+  }, transitionRaw['duration_ms']);
 }
 
 export function layerToDraft(layer: CgLayer): CgLayerDraft {

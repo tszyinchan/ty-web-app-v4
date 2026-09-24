@@ -1,0 +1,24 @@
+---
+description: Jaxfr app version stays 4.x.x — never bump major to 5
+alwaysApply: true
+---
+
+# App version stays 4.x.x
+
+`APP_CONFIG.version.major` in `src/app/app.constants.ts` is **locked at 4**. Product versions are only `4.minor.patch` (commit `Ver4.X.X-…`).
+
+## Do
+
+- New feature / page / route → bump **minor**, reset patch to 0 (`4.100.0` → `4.101.0`).
+- Bug fix, style, refactor, copy → bump **patch** (`4.100.0` → `4.100.1`).
+- Breaking change or redesign → still stay on **4**; bump **minor** (or ask). Do not bump major.
+
+## Do not
+
+- Propose, write, or commit `major: 5` / `Ver5.X.X`.
+- Reset minor to 0 because “it feels like a new era”.
+- Treat 4.99 → 4.100 as illegal; minor may go past 99 (`4.100.0` is valid).
+
+## Example
+
+Latest is `4.99.1`, this chat wants a new CG feature → **4.100.0**, not 5.00.0.

@@ -179,13 +179,13 @@
 }
 
 .cg-program {
-  flex: 0 0 200px;
-  width: 200px;
+  flex: 0 1 auto;
 }
 
-.cg-program-frame app-cg-stage {
-  display: block;
-  width: 100%;
+.cg-monitors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .cg-stage-toolbar {

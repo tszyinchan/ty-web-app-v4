@@ -1,0 +1,16 @@
+<div class="cg-monitor-head">
+  <span class="cg-kicker">{{ label() }}</span>
+</div>
+<app-cg-stage [preview]="true" [backdrop]="backdrop()">
+  @for (layer of layers(); track layer.clientId) {
+    <app-cg-layer-view
+      [elementType]="layer.element_type"
+      [layout]="layoutSnapshot(layer)"
+      [payload]="payloadSnapshot(layer)"
+      [visible]="layer.visible"
+      [durationMs]="durationMs()"
+      [sortOrder]="layer.sort_order"
+      [mono]="layerIsMono(layer.look, packageLook())"
+    />
+  }
+</app-cg-stage>

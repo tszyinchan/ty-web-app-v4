@@ -23,20 +23,21 @@
             </button>
           </div>
         </div>
-        <div class="cg-program-frame">
-          <app-cg-stage [preview]="true" [backdrop]="backdrop()">
-            @for (layer of layers(); track layer.clientId) {
-              <app-cg-layer-view
-                [elementType]="layer.element_type"
-                [layout]="layoutSnapshot(layer)"
-                [payload]="payloadSnapshot(layer)"
-                [visible]="layer.visible"
-                [durationMs]="packageDurationMs()"
-                [sortOrder]="layer.sort_order"
-                [mono]="layerMono(layer)"
-              />
-            }
-          </app-cg-stage>
+        <div class="cg-monitors">
+          <app-cg-mix-preview
+            label="Pending"
+            [layers]="layers()"
+            [packageLook]="pendingLook()"
+            [durationMs]="packageDurationMs()"
+            [backdrop]="backdrop()"
+          />
+          <app-cg-mix-preview
+            label="On air"
+            [layers]="onAirLayers()"
+            [packageLook]="onAirLook()"
+            [durationMs]="onAirDurationMs()"
+            [backdrop]="backdrop()"
+          />
         </div>
       </div>
 

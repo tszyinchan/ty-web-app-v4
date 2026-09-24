@@ -15,7 +15,7 @@ Several agents edit this repo at once. A version from the current chat, a summar
    - `HEAD`
    - the working-tree file (another agent may have bumped it already)
 3. If `origin` is ahead of `HEAD`, pull/rebase first. Do not commit a lower or duplicate `VerX.X.X`.
-4. Bump **once** from that latest number. Commit message must match: `VerX.X.X-<description>`.
+4. Bump **once** from that latest number. Commit message must match: `Ver4.X.X-<description>`. `major` stays **4** — never 5 (see `app-version-major-4.mdc`).
 
 ## Do not
 

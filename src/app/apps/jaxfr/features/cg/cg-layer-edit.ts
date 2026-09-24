@@ -14,18 +14,21 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { CgLayerView } from '../../../../core/domains/cg/cg-layer-view';
-import { CgStage } from '../../../../core/domains/cg/cg-stage';
+import { CgMixPreview } from '../../../../core/domains/cg/cg-mix-preview';
 import {
   CG_ANCHOR_OPTIONS,
+  CG_CUT_DURATION_MS,
+  CG_DEFAULT_DURATION_MS,
   CG_LAYER_LOOK_OPTIONS,
   CG_LAYOUT_UNIT_OPTIONS,
   CG_LOGO_ACCEPT,
   CG_LOGO_MAX_BYTES,
+  CG_MAX_DURATION_MS,
   CG_SAMPLE_LOGO_URL,
   CG_SUBTITLE_PRESET_OPTIONS,
   CgElementType,
   CgLayerLook,
+  CgPackageLook,
   CgPreviewBackdrop,
   CgSubtitlePreset,
 } from '../../../../core/domains/cg/cg.constants';
@@ -35,9 +38,11 @@ import {
   buildCgOverlayUrl,
   cueSubtitleIndex,
   elementLabel,
+  innerDurationMs,
+  isCgCut,
+  isCgMono,
   isEmbeddedImageUrl,
   isLocalFilesystemPath,
-  layerIsMono,
   layerToDraft,
   normalizeDurationMs,
   packageHasUnsavedIdentity,
@@ -55,7 +60,7 @@ import { copyTextToClipboard } from '../../../../core/utils/copy-text.util';
 @Component({
   selector: 'app-cg-layer-edit',
   standalone: true,
-  imports: [FormsModule, CgStage, CgLayerView],
+  imports: [FormsModule, CgMixPreview],
   templateUrl: './cg-layer-edit.html',
   styleUrl: './cg-layer-edit.scss',
 })
@@ -76,12 +81,17 @@ export class CgLayerEdit implements OnInit, OnDestroy, DoCheck {
   readonly backdrops = CgPreviewBackdrop;
   readonly logoAccept = CG_LOGO_ACCEPT;
   readonly scriptAccept = '.txt,.srt,text/plain,application/x-subrip';
+  readonly cutMs = CG_CUT_DURATION_MS;
+  readonly maxDurationMs = CG_MAX_DURATION_MS;
+  readonly layers = this.cg.draftLayers;
+  readonly onAirLayers = this.cg.onAirLayers;
 
   isDirty = signal(false);
   isSaveDisabled = signal(true);
   backdrop = signal(CgPreviewBackdrop.Studio);
   copyTargetId = signal('');
   private layerId = '';
+  private lastCueFadeMs = CG_DEFAULT_DURATION_MS;
 
   readonly layer = computed(() => {
     const id = this.layerId;
@@ -270,18 +280,6 @@ export class CgLayerEdit implements OnInit, OnDestroy, DoCheck {
     this.cg.touchPreview();
   }
 
-  layoutSnapshot(layer: CgLayerDraft): CgLayerDraft['layout'] {
-    return { ...layer.layout };
-  }
-
-  payloadSnapshot(layer: CgLayerDraft): CgLayerDraft['payload'] {
-    return {
-      ...layer.payload,
-      lines: [...layer.payload.lines],
-      style: { preset: subtitlePresetOf(layer.payload) },
-    };
-  }
-
   cue(direction: 1 | -1): void {
     const layer = this.layer();
     if (!layer || layer.element_type !== this.Subtitle) return;
@@ -378,9 +376,45 @@ export class CgLayerEdit implements OnInit, OnDestroy, DoCheck {
     return normalizeDurationMs(this.cg.draftItem()?.duration_ms);
   }
 
-  isMono(): boolean {
-    const layer = this.layer();
-    return layerIsMono(layer?.look, this.cg.draftItem()?.look);
+  onAirDurationMs(): number {
+    return normalizeDurationMs(this.cg.onAirItem()?.duration_ms);
+  }
+
+  onAirLook(): CgPackageLook {
+    return this.cg.onAirItem()?.look ?? CgPackageLook.Color;
+  }
+
+  pendingLook(): CgPackageLook {
+    return this.cg.draftItem()?.look ?? CgPackageLook.Color;
+  }
+
+  packageIsMono(): boolean {
+    return isCgMono(this.cg.draftItem()?.look);
+  }
+
+  cueDurationMs(layer: CgLayerDraft): number {
+    return innerDurationMs(layer.payload);
+  }
+
+  isCueCut(layer: CgLayerDraft): boolean {
+    return isCgCut(this.cueDurationMs(layer));
+  }
+
+  setCueCut(layer: CgLayerDraft): void {
+    const current = this.cueDurationMs(layer);
+    if (current > this.cutMs) {
+      this.lastCueFadeMs = current;
+    }
+    void this.cg.patchLayerTransition(layer.clientId, this.cutMs);
+  }
+
+  setCueFade(layer: CgLayerDraft): void {
+    if (!this.isCueCut(layer)) return;
+    void this.cg.patchLayerTransition(layer.clientId, this.lastCueFadeMs);
+  }
+
+  onCueDurationMsChange(layer: CgLayerDraft, value: number | string): void {
+    void this.cg.patchLayerTransition(layer.clientId, value);
   }
 
   setLayerLook(look: CgLayerLook): void {
