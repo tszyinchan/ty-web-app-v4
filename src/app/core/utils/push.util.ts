@@ -31,6 +31,33 @@ export function isPushSupported(): boolean {
   );
 }
 
+const LAST_APPROVED_USER_KEY = 'jaxfr.push.last-approved-user';
+
+export function readLastApprovedPushUserId(): string | null {
+  try {
+    const value = localStorage.getItem(LAST_APPROVED_USER_KEY);
+    return value && value.length > 0 ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+export function writeLastApprovedPushUserId(userId: string): void {
+  try {
+    localStorage.setItem(LAST_APPROVED_USER_KEY, userId);
+  } catch {
+    // Private mode / quota — next login will need Enable again.
+  }
+}
+
+export function clearLastApprovedPushUserId(): void {
+  try {
+    localStorage.removeItem(LAST_APPROVED_USER_KEY);
+  } catch {
+    // ignore
+  }
+}
+
 /**
  * iOS only allows Web Push once the site has been added to the home screen
  * (installed as a standalone PWA) — Safari tabs and "Add to Dock" shortcuts

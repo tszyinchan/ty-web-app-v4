@@ -6,10 +6,13 @@ import { NotificationService } from './notification.service';
 import { SupabaseService } from './supabase.service';
 import { TyappPushSubscription } from '../models/push-subscription.model';
 import {
+  clearLastApprovedPushUserId,
   isIosNonStandalone,
   isPushSupported,
+  readLastApprovedPushUserId,
   truncatePushBody,
   urlBase64ToUint8Array,
+  writeLastApprovedPushUserId,
 } from '../utils/push.util';
 
 const SW_URL = '/push-sw.js';
@@ -97,7 +100,7 @@ export class PushService {
       this.permissionStatus.set(result);
       if (result !== 'granted') return;
       await this.registerServiceWorker();
-      await this.subscribeAndSave();
+      await this.subscribeAndSave(true);
     } catch (error: unknown) {
       this.notification.handleError('Notification Permission Failed', error);
     }
@@ -105,29 +108,27 @@ export class PushService {
 
   /** Unsubscribes this browser/device only; other devices are unaffected. */
   async unsubscribeThisDevice(): Promise<void> {
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
     try {
-      const registration = await navigator.serviceWorker.ready;
-      const subscription = await registration.pushManager.getSubscription();
-      if (!subscription) {
-        this.zone.run(() => this.pushReady.set(false));
-        return;
-      }
-
-      const endpoint = subscription.endpoint;
-      await subscription.unsubscribe();
-
-      const { error } = await this.supabase.rpc(
-        'tyapp_push_delete_subscription',
-        { p_endpoint: endpoint },
-      );
-      if (error) throw error;
-
-      this.zone.run(() => this.pushReady.set(false));
+      await this.detachBrowserSubscription();
+      clearLastApprovedPushUserId();
       this.notification.showSuccess('Notifications disabled on this device');
     } catch (error: unknown) {
       this.notification.handleError('Disable Notifications Failed', error);
     }
+  }
+
+  /**
+   * Call while the session is still valid. Deletes this browser's row, then
+   * drops the PushManager subscription. Does not clear lastApprovedUserId so
+   * the same person can reconnect on the next login.
+   */
+  async unbindOnLogout(): Promise<void> {
+    try {
+      await this.detachBrowserSubscription();
+    } catch (error: unknown) {
+      this.notification.handleError('Disable Notifications Failed', error);
+    }
+    this.zone.run(() => this.pushReady.set(false));
   }
 
   /** Admin only (enforced by RLS): every user's subscribed devices. */
@@ -169,8 +170,13 @@ export class PushService {
     try {
       await this.registerServiceWorker();
       this.zone.run(() => this.permissionStatus.set(Notification.permission));
-      if (Notification.permission === 'granted') {
-        await this.subscribeAndSave();
+      const userId = this.auth.userProfile()?.user_id;
+      const sameApprovedUser =
+        !!userId && readLastApprovedPushUserId() === userId;
+      if (Notification.permission === 'granted' && sameApprovedUser) {
+        await this.subscribeAndSave(false);
+      } else {
+        this.zone.run(() => this.pushReady.set(false));
       }
     } finally {
       this.starting = false;
@@ -195,7 +201,36 @@ export class PushService {
     });
   }
 
-  private async subscribeAndSave(): Promise<void> {
+  private async detachBrowserSubscription(): Promise<void> {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      this.zone.run(() => this.pushReady.set(false));
+      return;
+    }
+
+    const registration = await navigator.serviceWorker.getRegistration('/');
+    if (!registration) {
+      this.zone.run(() => this.pushReady.set(false));
+      return;
+    }
+
+    const subscription = await registration.pushManager.getSubscription();
+    if (!subscription) {
+      this.zone.run(() => this.pushReady.set(false));
+      return;
+    }
+
+    const endpoint = subscription.endpoint;
+    const { error } = await this.supabase.rpc(
+      'tyapp_push_delete_subscription',
+      { p_endpoint: endpoint },
+    );
+    if (error) throw error;
+
+    await subscription.unsubscribe();
+    this.zone.run(() => this.pushReady.set(false));
+  }
+
+  private async subscribeAndSave(markApproved: boolean): Promise<void> {
     if (!this.vapidPublicKey) {
       this.notification.handleError(
         'Push Subscribe Failed',
@@ -233,6 +268,10 @@ export class PushService {
         },
       );
       if (error) throw error;
+      if (markApproved) {
+        const userId = this.auth.userProfile()?.user_id;
+        if (userId) writeLastApprovedPushUserId(userId);
+      }
       this.zone.run(() => this.pushReady.set(true));
     } catch (error: unknown) {
       this.notification.handleError('Push Subscribe Failed', error);

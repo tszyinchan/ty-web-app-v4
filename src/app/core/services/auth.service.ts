@@ -1,6 +1,7 @@
-import { Injectable, inject, signal, computed, NgZone } from '@angular/core';
+import { Injectable, Injector, inject, signal, computed, NgZone } from '@angular/core';
 import { RecordStatus } from '../models/status.enum';
 import { TyappUser, USER_ROLES } from '../models/user.model';
+import { PushService } from './push.service';
 import { SupabaseService } from './supabase.service';
 import { clearActiveUserPreferenceCache } from '../utils/user-preference-cache.util';
 
@@ -11,6 +12,7 @@ export const AUTH_ACCOUNT_REJECTED = 'ACCOUNT_REJECTED';
 export class AuthService {
   private supabase = inject(SupabaseService).client;
   private zone = inject(NgZone);
+  private injector = inject(Injector);
 
   private _userProfile = signal<TyappUser | null>(null);
   public userProfile = this._userProfile.asReadonly();
@@ -153,6 +155,7 @@ export class AuthService {
   }
 
   async logout() {
+    await this.injector.get(PushService).unbindOnLogout();
     clearActiveUserPreferenceCache();
     await this.supabase.auth.signOut();
   }

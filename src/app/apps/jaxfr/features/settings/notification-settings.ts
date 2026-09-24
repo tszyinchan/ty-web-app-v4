@@ -48,8 +48,16 @@ export class NotificationSettings implements OnInit {
       return 'Open Jaxfr from the Home Screen icon first (Safari only)';
     }
     if (status === 'denied') return 'Blocked in this browser';
-    if (status === 'granted' && this.pushService.pushReady()) return 'Enabled on this device';
-    if (status === 'granted') return 'Allowed, but not subscribed yet';
+    if (status === 'granted' && this.pushService.pushReady()) {
+      const profile = this.auth.userProfile();
+      const name = profile ? this.displayNamePipe.transform(profile) : '';
+      return name
+        ? `Enabled on this device for ${name}`
+        : 'Enabled on this device';
+    }
+    if (status === 'granted') {
+      return 'Allowed in the browser, not enabled for this account';
+    }
     return 'Not enabled on this device';
   });
 
