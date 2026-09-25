@@ -40,6 +40,7 @@
 - [ ] 已在 Supabase 跑過 `supabase/sql/cg-package-duration.sql`（package `duration_ms` + Output RPC；**不要**再跑一次 v2）
 - [ ] 已在 Supabase 跑過 `supabase/sql/cg-package-look.sql`（package `look` color/mono；**不要**再跑一次 v2）
 - [ ] 已在 Supabase 跑過 `supabase/sql/cg-layer-look.sql`（layer `look` inherit/color/mono；**不要**再跑一次 v2）
+- [ ] 已在 Supabase 跑過 `supabase/sql/cg-logo-storage.sql`（public bucket `cg-logo` + 清掉 `payload.imageUrl` 的 `data:image`；**不要**再跑一次 v2、**不要** drop `tyapp_cg_*`）
 - [ ] `.cursor/test-credentials.local.json` 存在；用 **user-a** 登入成功
 - [ ] user-a 已有 CG feature grant（沒有則 Welcome 看不到，`/cg/list` 會被送回 Welcome）
 - [ ] `/cg/list` 沒有名稱以 `[TEST] CG` 開頭的 package；有的話先當 leftover 刪掉
@@ -62,7 +63,7 @@
 |---|---|---|
 | B1 | 打開 `PKG_A`。左欄標題 **Package**（監看 + 控制），右欄標題 **Layers**（catalog + 格子）。Package 標題比 Layers 重。左欄標題列本身有 **Back**（回清單）、Save/Create、（既有 package 才有）Delete、sync 狀態小字——沒有全域頂列。點 Logo tile | 右邊出現該 Layer 設定（X/Y/圖），**上方多一組較小的 Pending/On air 監看**（只畫這一層，有自己的 Alpha/Studio 切換，跟左欄 Package 整體監看分開，不影響左欄尺寸）。左欄 Package 監看與控制留在左邊。URL 是 `/cg/edit/:id/layer/:layerId` |
 | B1a | `PKG_A` 加一個新 Logo layer（還沒 Save）。看它 desk 上方那組小監看 | 這一層的 **Pending** 有內容；這一層的 **On air** 是空白（這層還沒被 Save 過一次）。Save 之後兩塊一樣 |
-| B1b | 在右欄點 **Choose local image**，選本機 PNG | **Pending** 換成該圖；**On air** 仍是舊圖。欄位顯示 embedded 檔名，不是 `C:\\` 路徑 |
+| B1b | 在右欄點 **Choose local image**，選本機 PNG | **Pending** 換成該圖；**On air** 仍是舊圖。`imageUrl` 是 `…/storage/v1/object/public/cg-logo/…`，**不是** `data:image`、也不是 `C:\\` 路徑。DevTools Network 的 `tyapp_cg_get_output_by_token` 回應應只有短 URL，沒有整包圖 |
 | B2 | 改 X / Y / Width / Scale | **Pending** 裡的 logo 跟著動，不必重載。**On air** 不動 |
 | B3 | 切 **Alpha** / **Studio** | 兩塊小畫面一起換。Alpha 是棋盤（只在後台）；Studio 是暗底。都不是綠幕 |
 | B4 | 回到 Panel，撥 Logo 的 On/Off toggle | tile 變淡但圖還在。**Pending** 依 Package Appear 淡出或 cut。**On air** 與 Package Output **先不要變**（還沒 Save） |

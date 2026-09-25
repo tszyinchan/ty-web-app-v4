@@ -201,3 +201,11 @@ export const CG_SAMPLE_SUBTITLE_LINES: readonly string[] = [
 export const CG_LOGO_ACCEPT = 'image/png,image/webp';
 
 export const CG_LOGO_MAX_BYTES = 1_500_000;
+
+// Public Supabase Storage bucket — Logo images upload here instead of being
+// embedded as base64 in `payload.imageUrl`. The overlay polls its RPC every
+// CG_OVERLAY_POLL_MS forever (by design, left open in OBS); embedding the
+// image meant every poll re-transmitted the whole file via PostgREST
+// (uncached egress). A Storage URL is a few bytes and the browser caches
+// the actual image after the first load. See supabase/sql/cg-logo-storage.sql.
+export const CG_LOGO_BUCKET = 'cg-logo';

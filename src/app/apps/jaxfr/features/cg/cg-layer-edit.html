@@ -81,9 +81,12 @@
     @if (layer.element_type === Logo) {
       @if (isEmbeddedLogo(layer)) {
         <p class="cg-hint">
-          Embedded{{ layer.payload.fileName ? ': ' + layer.payload.fileName : '' }}
+          This leftover embedded image will not save. Use Choose local image.
         </p>
-      } @else {
+      } @else if (layer.payload.fileName) {
+        <p class="cg-hint">Uploaded: {{ layer.payload.fileName }}</p>
+      }
+      @if (!isEmbeddedLogo(layer)) {
         <label class="cg-field">
           <span>Image URL</span>
           <input

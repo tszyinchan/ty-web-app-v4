@@ -4,6 +4,7 @@ import { NotificationService } from '../../services/notification.service';
 import { SupabaseService } from '../../services/supabase.service';
 import {
   CG_DEFAULT_DURATION_MS,
+  CG_LOGO_BUCKET,
   CgElementType,
   CgPackageLook,
   CgPackageRole,
@@ -574,6 +575,32 @@ export class CgService {
         this.loading.set(false);
         return null;
       });
+    }
+  }
+
+  /** Uploads a Logo image to the public `cg-logo` Storage bucket and
+   * returns its public URL — never embed image bytes in `payload.imageUrl`
+   * (see cg.constants.ts CG_LOGO_BUCKET for why: the overlay polls forever). */
+  async uploadLogoImage(layerToken: string, file: File): Promise<string | null> {
+    const ext = file.type === 'image/webp' ? 'webp' : 'png';
+    const folder = layerToken.replace(/[^a-zA-Z0-9_-]/g, '') || 'logo';
+    const path = `${folder}/${Date.now()}.${ext}`;
+    try {
+      const { error: uploadError } = await this.supabase.storage
+        .from(CG_LOGO_BUCKET)
+        .upload(path, file, {
+          contentType: file.type,
+          cacheControl: '31536000',
+          upsert: false,
+        });
+      if (uploadError) throw uploadError;
+      const { data } = this.supabase.storage
+        .from(CG_LOGO_BUCKET)
+        .getPublicUrl(path);
+      return data.publicUrl;
+    } catch (error: unknown) {
+      this.notification.handleError('Logo upload failed', error);
+      return null;
     }
   }
 

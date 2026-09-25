@@ -360,11 +360,17 @@ export function normalizeLayout(raw: unknown): CgLayout {
 
 export function normalizeLogoPayload(raw: unknown): CgLayerPayload {
   if (isLogoPayload(raw)) {
+    const imageUrl = raw.imageUrl.trim();
+    // Drop leftover data: URLs so a later Save cannot re-embed them.
+    // Overlay polls this row forever; bytes belong in Storage, not payload.
+    if (isEmbeddedImageUrl(imageUrl)) {
+      return emptyLogoPayload();
+    }
     const fileName =
       'fileName' in raw && typeof raw.fileName === 'string'
         ? raw.fileName.trim()
         : '';
-    return emptyLogoPayload(raw.imageUrl.trim(), fileName || undefined);
+    return emptyLogoPayload(imageUrl, fileName || undefined);
   }
   return emptyLogoPayload();
 }
@@ -567,21 +573,6 @@ export function isLocalFilesystemPath(value: string): boolean {
     trimmed.startsWith('\\\\') ||
     trimmed.startsWith('file:')
   );
-}
-
-export function readImageFileAsDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === 'string') {
-        resolve(reader.result);
-        return;
-      }
-      reject(new Error('Could not read that image'));
-    };
-    reader.onerror = () => reject(new Error('Could not read that image'));
-    reader.readAsDataURL(file);
-  });
 }
 
 export function layerSummary(layers: Pick<CgLayer, 'element_type'>[]): string {

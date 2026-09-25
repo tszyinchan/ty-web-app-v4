@@ -44,7 +44,6 @@ import {
   isLocalFilesystemPath,
   normalizeDurationMs,
   parseSubtitleScript,
-  readImageFileAsDataUrl,
   subtitlePresetOf,
 } from '../../../../core/domains/cg/cg.util';
 import { NotificationService } from '../../../../core/services/notification.service';
@@ -173,6 +172,15 @@ export class CgLayerEdit implements OnInit {
         'The browser cannot open a disk path. Use Choose local image.',
       );
       layer.payload.imageUrl = '';
+    } else if (isEmbeddedImageUrl(layer.payload.imageUrl)) {
+      // Never allow a pasted data: URL back in — the overlay polls this
+      // row forever, so an embedded image gets re-transmitted every poll.
+      // Use "Choose local image" instead, which uploads to Storage.
+      this.notification.handleError(
+        'Embedded image',
+        'Pasting an embedded image here would resend it on every overlay poll. Use Choose local image instead.',
+      );
+      layer.payload.imageUrl = '';
     }
     delete layer.payload.fileName;
     this.cg.touchPreview();
@@ -196,13 +204,11 @@ export class CgLayerEdit implements OnInit {
       this.notification.handleError('Logo', 'Keep the file under 1.5 MB for now.');
       return;
     }
-    try {
-      layer.payload.imageUrl = await readImageFileAsDataUrl(file);
-      layer.payload.fileName = file.name;
-      this.cg.touchPreview();
-    } catch (error: unknown) {
-      this.notification.handleError('Logo', error);
-    }
+    const url = await this.cg.uploadLogoImage(layer.public_token, file);
+    if (!url) return; // cg.service already reported the error
+    layer.payload.imageUrl = url;
+    layer.payload.fileName = file.name;
+    this.cg.touchPreview();
   }
 
   touchPreview(): void {
