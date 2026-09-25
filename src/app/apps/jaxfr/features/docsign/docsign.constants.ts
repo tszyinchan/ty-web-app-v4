@@ -28,3 +28,6 @@ export const DOCSIGN_ZOOM_PRESETS_NARROW = [50, 100, 200] as const;
 export type DocsignZoomChoice = number | 'fit';
 
 export const DOCSIGN_ZOOM_STORAGE_KEY = 'jaxfr-docsign-paper-zoom';
+
+/** Welcome tile badge shows this cap instead of the raw pending-signature count. */
+export const DOCSIGN_PENDING_BADGE_MAX = 99;

@@ -137,6 +137,20 @@ Body 用下面這段（約 20 段，應超過一頁）。不要只打一行。
 
 若 Sign & send 因「沒有簽名」失敗：標 Blocked，寫要先去 My signature。
 
+### G — Welcome tile 待簽章紅點（跟 Chat 未讀紅點同樣式）
+
+需要 user-a **和** user-b 兩人都在同一個 user group。
+
+| # | 操作 | 預期 |
+|---|---|---|
+| G1 | user-a 建 DOC_A，加 user-b 為 co-signer，**Sign & send**（自己先簽） | 回到 list，狀態顯示 Waiting on user-b |
+| G2 | user-a 開 `/welcome` | DocSign 圖示**沒有**紅點（自己已簽，不欠簽） |
+| G3 | 換 user-b 登入，開 `/welcome` | DocSign 圖示右上角有紅點，數字 `1`；圖示 aria-label 含「1 pending your signature」 |
+| G4 | user-b 開 DOC_A，**Sign & send**（沒有簽名先去設一個再回來簽） | 回到 list，狀態變 Locked |
+| G5 | user-b 回 `/welcome` | DocSign 紅點消失，aria-label 回到純 `DocSign` |
+
+若草稿超過 99 筆待簽（`DOCSIGN_PENDING_BADGE_MAX`），數字顯示 `99+`——目前無法量產測試，略過即可，不算 Fail。
+
 ### CLEANUP
 
 | # | 操作 | 預期 |

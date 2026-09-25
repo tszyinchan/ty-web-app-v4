@@ -1,4 +1,5 @@
 import DOMPurify, { type Config } from 'dompurify';
+import { formatCountBadge } from '../../../../core/utils/badge.util';
 import { CHAT_QUOTE_MAX, CHAT_UNREAD_BADGE_MAX } from './chat.constants';
 import { ChatMessage, ChatReactionEntry, ChatReactions, ChatRoomRead } from './chat.model';
 
@@ -256,8 +257,5 @@ export function totalUnreadCount(byRoomId: Record<string, number>): number {
 }
 
 export function formatUnreadBadge(count: number): string | null {
-  if (count <= 0) return null;
-  return count > CHAT_UNREAD_BADGE_MAX
-    ? `${CHAT_UNREAD_BADGE_MAX}+`
-    : String(count);
+  return formatCountBadge(count, CHAT_UNREAD_BADGE_MAX);
 }

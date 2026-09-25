@@ -274,6 +274,26 @@ export function unsignedSignerIds(
   return signerUserIds.filter((id) => !signed.has(id));
 }
 
+/** Documents sent for signature, not yet locked, where currentUserId still owes a signature. */
+export function pendingSignatureCount(
+  documents: DocsignDocumentDetail[],
+  currentUserId: string | undefined,
+): number {
+  if (!currentUserId) return 0;
+  let count = 0;
+  for (const doc of documents) {
+    if (!doc.sent_at || doc.locked_at) continue;
+    const version = currentVersion(doc);
+    const pending = unsignedSignerIds(
+      doc.signer_user_ids,
+      doc.signatures,
+      version?.tb_tyapp_dsgn_ver_id,
+    );
+    if (pending.includes(currentUserId)) count += 1;
+  }
+  return count;
+}
+
 export function bodyContent(doc: DocsignDocumentDetail): string {
   if (!doc.sent_at) return doc.draft_content;
   return currentVersion(doc)?.content ?? '';

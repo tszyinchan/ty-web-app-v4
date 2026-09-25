@@ -20,6 +20,10 @@ import { AppFeature } from '../../features/development/app-feature/app-feature.m
 import { AppFeatureService } from '../../features/development/app-feature/app-feature.service';
 import { ChatService } from '../../features/chat/chat.service';
 import { formatUnreadBadge, totalUnreadCount } from '../../features/chat/chat.util';
+import { formatCountBadge } from '../../../../core/utils/badge.util';
+import { DOCSIGN_PENDING_BADGE_MAX } from '../../features/docsign/docsign.constants';
+import { DocsignService } from '../../features/docsign/docsign.service';
+import { pendingSignatureCount } from '../../features/docsign/docsign.util';
 import {
   ARCHIVE_IMAGES,
   HUB_ROUTES,
@@ -30,6 +34,7 @@ import {
 } from './launcher.registry';
 
 const CHAT_LAUNCHER_NAME = 'Chat';
+const DOCSIGN_LAUNCHER_NAME = 'DocSign';
 
 interface WelcomeCategory {
   name: string;
@@ -93,6 +98,7 @@ export class Welcome implements OnInit, OnDestroy {
   private readonly viewport = inject(ViewportService);
   private readonly theme = inject(ThemeService);
   private readonly chat = inject(ChatService);
+  private readonly docsign = inject(DocsignService);
 
   readonly versionDate = APP_CONFIG.versionDate;
   readonly userProfile = this.auth.userProfile;
@@ -165,6 +171,30 @@ export class Welcome implements OnInit, OnDestroy {
     formatUnreadBadge(totalUnreadCount(this.chat.unreadByRoomId())),
   );
 
+  readonly docsignPendingLabel = computed(() =>
+    formatCountBadge(
+      pendingSignatureCount(
+        this.docsign.documents(),
+        this.auth.userProfile()?.user_id,
+      ),
+      DOCSIGN_PENDING_BADGE_MAX,
+    ),
+  );
+
+  private readonly tileBadges: Record<
+    string,
+    { label: () => string | null; ariaSuffix: string }
+  > = {
+    [CHAT_LAUNCHER_NAME]: {
+      label: () => this.chatUnreadLabel(),
+      ariaSuffix: 'unread',
+    },
+    [DOCSIGN_LAUNCHER_NAME]: {
+      label: () => this.docsignPendingLabel(),
+      ariaSuffix: 'pending your signature',
+    },
+  };
+
   private toCategory(feature: AppFeature, apps: TyappApp[]): WelcomeCategory {
     return this.withLinks({
       name: feature.name,
@@ -227,13 +257,13 @@ export class Welcome implements OnInit, OnDestroy {
 
   tileAriaLabel(name: string): string {
     const label = launcherLabel(name);
-    if (name !== CHAT_LAUNCHER_NAME) return label;
-    const unread = this.chatUnreadLabel();
-    return unread ? `${label}, ${unread} unread` : label;
+    const config = this.tileBadges[name];
+    const badge = config?.label();
+    return badge ? `${label}, ${badge} ${config.ariaSuffix}` : label;
   }
 
   unreadForTile(name: string): string | null {
-    return name === CHAT_LAUNCHER_NAME ? this.chatUnreadLabel() : null;
+    return this.tileBadges[name]?.label() ?? null;
   }
 
   async onSignOut() {
@@ -245,6 +275,7 @@ export class Welcome implements OnInit, OnDestroy {
     void this.features.fetchAllFeatures();
     void this.apps.fetchAllApps();
     void this.access.fetchMyAccess();
+    void this.docsign.fetchAllDocuments();
   }
 
   ngOnDestroy() {
