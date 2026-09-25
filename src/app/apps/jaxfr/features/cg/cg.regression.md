@@ -52,7 +52,7 @@
 
 | # | 操作 | 預期 |
 |---|---|---|
-| A1 | Welcome 點 **CG**，或開 `/cg/list` | 進入 package 清單。**沒有** 200ms 整頁 crossfade（Welcome → CG、以及 CG 裡 list / Panel 換頁都是瞬間）。其他 feature（例如 Welcome → Chat）Aero 仍有淡入。清單與 Panel 在窄螢幕仍是桌面排法（viewport `width=1280`，可 pinch），不是直向堆疊 |
+| A1 | Welcome 點 **CG**，或開 `/cg/list` | 進入 package 清單。**沒有** 200ms 整頁 crossfade（Welcome → CG、以及 CG 裡 list / Panel 換頁都是瞬間）。其他 feature（例如 Welcome → Chat）Aero 仍有淡入。清單與 Panel 在窄螢幕仍是桌面排法（viewport `width=1280`，可 pinch），不是直向堆疊。**沒有**全域頂列 toolbar；清單自己的頁首有 Home（回 Welcome）、Refresh、New package。CG 按鈕**沒有**固定配色 — 跟著使用者自己的 Aero/Material 面板選擇換（Aero 是立體光澤按鈕，Material 是扁平藥丸按鈕），切 light/dark 也一起換。用 `Ctrl+Alt+H` 打開 Dev HUD 可以在畫面上直接切換確認 |
 | A2 | 點 **New package**。頂列左 **Pending**、右 **On air**。Pending 左上有 sample Logo。**On air** 空白（還沒 Save）。Name = `PKG_A`，Role = Channel。Appear = **Fade** 400ms。Save | 頂列出現 Package Output URL；兩塊看起來一樣；清單之後看得到 Channel |
 | A3 | 再 New，Name = `PKG_B`，Role = Source，Save | 兩個 package 並存；Role 標 Source |
 
@@ -60,7 +60,8 @@
 
 | # | 操作 | 預期 |
 |---|---|---|
-| B1 | 打開 `PKG_A`。左欄標題 **Package**（監看 + 控制），右欄標題 **Layers**（catalog + 格子）。Package 標題比 Layers 重。點 Logo tile | 右邊出現該 Layer 設定（X/Y/圖）。監看與 Package 留在左邊。URL 是 `/cg/edit/:id/layer/:layerId` |
+| B1 | 打開 `PKG_A`。左欄標題 **Package**（監看 + 控制），右欄標題 **Layers**（catalog + 格子）。Package 標題比 Layers 重。左欄標題列本身有 **Back**（回清單）、Save/Create、（既有 package 才有）Delete、sync 狀態小字——沒有全域頂列。點 Logo tile | 右邊出現該 Layer 設定（X/Y/圖），**上方多一組較小的 Pending/On air 監看**（只畫這一層，有自己的 Alpha/Studio 切換，跟左欄 Package 整體監看分開，不影響左欄尺寸）。左欄 Package 監看與控制留在左邊。URL 是 `/cg/edit/:id/layer/:layerId` |
+| B1a | `PKG_A` 加一個新 Logo layer（還沒 Save）。看它 desk 上方那組小監看 | 這一層的 **Pending** 有內容；這一層的 **On air** 是空白（這層還沒被 Save 過一次）。Save 之後兩塊一樣 |
 | B1b | 在右欄點 **Choose local image**，選本機 PNG | **Pending** 換成該圖；**On air** 仍是舊圖。欄位顯示 embedded 檔名，不是 `C:\\` 路徑 |
 | B2 | 改 X / Y / Width / Scale | **Pending** 裡的 logo 跟著動，不必重載。**On air** 不動 |
 | B3 | 切 **Alpha** / **Studio** | 兩塊小畫面一起換。Alpha 是棋盤（只在後台）；Studio 是暗底。都不是綠幕 |

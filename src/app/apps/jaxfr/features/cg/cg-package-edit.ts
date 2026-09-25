@@ -18,7 +18,15 @@ import {
   CdkDragHandle,
   CdkDropList,
 } from '@angular/cdk/drag-drop';
-import { ActivatedRoute, NavigationEnd, Router, RouterOutlet } from '@angular/router';
+import {
+  ActivatedRoute,
+  NavigationEnd,
+  Router,
+  RouterLink,
+  RouterOutlet,
+} from '@angular/router';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
 import { filter, map, startWith } from 'rxjs/operators';
 import { CgLayerView } from '../../../../core/domains/cg/cg-layer-view';
 import { CgMixPreview } from '../../../../core/domains/cg/cg-mix-preview';
@@ -49,10 +57,6 @@ import {
   setCgDesktopViewport,
   subtitlePresetOf,
 } from '../../../../core/domains/cg/cg.util';
-import {
-  HeaderAction,
-  HeaderService,
-} from '../../../../core/services/header.service';
 import { NotificationService } from '../../../../core/services/notification.service';
 import { copyTextToClipboard } from '../../../../core/utils/copy-text.util';
 
@@ -61,7 +65,10 @@ import { copyTextToClipboard } from '../../../../core/utils/copy-text.util';
   standalone: true,
   imports: [
     FormsModule,
+    RouterLink,
     RouterOutlet,
+    MatButtonModule,
+    MatIconModule,
     CdkDropList,
     CdkDrag,
     CdkDragHandle,
@@ -77,7 +84,6 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
   private router = inject(Router);
   private zone = inject(NgZone);
   private document = inject(DOCUMENT);
-  private headerService = inject(HeaderService);
   private notification = inject(NotificationService);
   readonly cg = inject(CgService);
 
@@ -159,19 +165,16 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
           return;
         }
         this.dropMissingLayerRoute();
-        this.bindHeader();
       });
       return;
     }
 
     this.cg.beginNewDraft();
     this.dropMissingLayerRoute();
-    this.bindHeader();
   }
 
   ngOnDestroy(): void {
     setCgDesktopViewport(this.document, false);
-    this.headerService.clear();
   }
 
   elementLabel = elementLabel;
@@ -347,7 +350,6 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
         this.cg.markDraftClean();
         this.isDirty.set(false);
       }
-      this.bindHeader();
     });
     const hadPackageId = !!this.route.snapshot.paramMap.get('id');
     if (!hadPackageId) {
@@ -390,29 +392,5 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
     if (!layerId) return;
     if (this.layers().some((row) => row.clientId === layerId)) return;
     void this.router.navigate(this.panelCommands(), { replaceUrl: true });
-  }
-
-  private bindHeader(): void {
-    const actions: HeaderAction[] = [];
-    if (this.packageId) {
-      actions.push({
-        label: 'Delete',
-        icon: 'delete',
-        type: 'secondary',
-        onClick: () => void this.onDelete(),
-      });
-    }
-    actions.push({
-      label: this.packageId ? 'Save changes' : 'Create package',
-      icon: 'check',
-      type: 'primary',
-      disabled: this.isSaveDisabled,
-      onClick: () => void this.onSave(),
-    });
-    this.headerService.setConfig({
-      backLink: this.returnUrl,
-      syncStatus: this.syncStatus,
-      actions,
-    });
   }
 }

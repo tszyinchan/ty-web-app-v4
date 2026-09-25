@@ -5,6 +5,56 @@
 
 .cg-list {
   padding: 20px 24px 32px;
+  color: var(--app-text-primary);
+  font-family: var(--app-font);
+}
+
+.cg-list-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.cg-home {
+  // Compact icon button — see dev-toggle-test experiment G: explicit
+  // width/height/padding on the host reliably overrides Material's
+  // 40x40 default, unlike --mdc-* custom properties alone.
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  color: var(--app-text-muted);
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+}
+
+.cg-list-title {
+  margin: 0;
+  flex: 1;
+  font: var(--app-weight-emphasis) 15px / 1.2 var(--app-font);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.cg-list-actions {
+  display: flex;
+  gap: 8px;
+}
+
+// Compact action button — same spirit as the app-wide `.shortcut-btn`
+// (work-attendance-edit), sized down for CG's tighter admin chrome.
+// Aero glossy / Material flat rendering comes for free from
+// styles/_aero-controls.scss (button.mat-mdc-unelevated-button /
+// button.mat-mdc-outlined-button) since CG is nested inside <app-layout>.
+.cg-seg-btn {
+  height: 32px;
+  line-height: 32px;
+  padding: 0 12px;
+  font-family: var(--app-font);
 }
 
 .cg-search {

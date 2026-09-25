@@ -623,6 +623,11 @@ export function setCgDesktopViewport(doc: Document, lock: boolean): void {
   }
 }
 
+/** Jaxfr CG admin (`/cg`, `/cg/list`, Panel, Layer desk). Not overlay `/cg-live`. */
+export function isCgAdminPath(path: string): boolean {
+  return path === '/cg' || path.startsWith('/cg/');
+}
+
 export function isSameCgPackageUrl(fromUrl: string, toUrl: string): boolean {
   const path = (url: string) => url.split('?')[0].replace(/\/+$/, '') || '/';
   const from = path(fromUrl);

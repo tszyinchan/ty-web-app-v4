@@ -1,8 +1,9 @@
 import { DOCUMENT } from '@angular/common';
 import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { CgPackageRole } from '../../../../core/domains/cg/cg.constants';
 import { CgService } from '../../../../core/domains/cg/cg.service';
 import {
@@ -10,20 +11,17 @@ import {
   packageRoleLabel,
   setCgDesktopViewport,
 } from '../../../../core/domains/cg/cg.util';
-import { HeaderService } from '../../../../core/services/header.service';
 
 @Component({
   selector: 'app-cg-package-list',
   standalone: true,
-  imports: [RouterModule, FormsModule, MatIconModule],
+  imports: [RouterModule, FormsModule, MatButtonModule, MatIconModule],
   templateUrl: './cg-package-list.html',
   styleUrl: './cg-package-list.scss',
 })
 export class CgPackageList implements OnInit, OnDestroy {
   readonly cg = inject(CgService);
-  private headerService = inject(HeaderService);
   private router = inject(Router);
-  private route = inject(ActivatedRoute);
   private document = inject(DOCUMENT);
 
   readonly Source = CgPackageRole.Source;
@@ -49,31 +47,19 @@ export class CgPackageList implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     setCgDesktopViewport(this.document, true);
-    this.headerService.setConfig({
-      actions: [
-        {
-          label: 'Refresh',
-          icon: 'refresh',
-          type: 'secondary',
-          disabled: this.cg.loading,
-          onClick: () => void this.cg.fetchAllPackages(true),
-        },
-        {
-          label: 'New package',
-          icon: 'add',
-          type: 'primary',
-          disabled: this.cg.loading,
-          onClick: () =>
-            this.router.navigate(['../new'], { relativeTo: this.route }),
-        },
-      ],
-    });
     void this.cg.fetchAllPackages();
     this.cg.clearDraft();
   }
 
   ngOnDestroy(): void {
     setCgDesktopViewport(this.document, false);
-    this.headerService.clear();
+  }
+
+  refresh(): void {
+    void this.cg.fetchAllPackages(true);
+  }
+
+  newPackage(): void {
+    void this.router.navigate(['/cg/new']);
   }
 }

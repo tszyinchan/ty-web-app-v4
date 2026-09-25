@@ -21,14 +21,10 @@ import { DATE_DISPLAY_FORMAT } from './core/utils/date-time.util';
 import { provideNativeDateAdapter } from '@angular/material/core';
 import { DateAdapter, provideCalendar } from 'angular-calendar';
 import { adapterFactory } from 'angular-calendar/date-adapters/date-fns';
+import { isCgAdminPath } from './core/domains/cg/cg.util';
 
 function urlPath(url: string): string {
   return url.split('?')[0].split('#')[0] || '/';
-}
-
-/** Jaxfr CG admin (`/cg`, `/cg/list`, Panel, Layer). Not overlay `/cg-live`. */
-function isCgAdminPath(path: string): boolean {
-  return path === '/cg' || path.startsWith('/cg/');
 }
 
 export const appConfig: ApplicationConfig = {

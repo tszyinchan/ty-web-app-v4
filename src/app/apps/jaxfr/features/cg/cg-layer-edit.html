@@ -1,5 +1,47 @@
 @if (layer(); as layer) {
   <section class="cg-layer-form">
+    <div class="cg-layer-monitors">
+      <div class="cg-stage-toolbar">
+        <span class="cg-kicker">This Layer</span>
+        <div class="cg-stage-toggles">
+          <button
+            mat-stroked-button
+            type="button"
+            class="cg-seg-btn"
+            [class.selected]="backdrop() === backdrops.Checkerboard"
+            (click)="backdrop.set(backdrops.Checkerboard)"
+          >
+            Alpha
+          </button>
+          <button
+            mat-stroked-button
+            type="button"
+            class="cg-seg-btn"
+            [class.selected]="backdrop() === backdrops.Studio"
+            (click)="backdrop.set(backdrops.Studio)"
+          >
+            Studio
+          </button>
+        </div>
+      </div>
+      <div class="cg-monitors">
+        <app-cg-mix-preview
+          label="Pending"
+          [layers]="[layer]"
+          [packageLook]="pendingLook()"
+          [durationMs]="packageDurationMs()"
+          [backdrop]="backdrop()"
+        />
+        <app-cg-mix-preview
+          label="On air"
+          [layers]="onAirLayerOf(layer.clientId)"
+          [packageLook]="onAirLook()"
+          [durationMs]="onAirDurationMs()"
+          [backdrop]="backdrop()"
+        />
+      </div>
+    </div>
+
     <div class="cg-layer-head">
       <span class="cg-kicker">{{ elementLabel(layer.element_type) }}</span>
       <button
@@ -19,9 +61,10 @@
       <div class="cg-roles">
         @for (option of lookOptions; track option.value) {
           <button
+            mat-stroked-button
             type="button"
-            class="cg-btn"
-            [class.on]="layer.look === option.value"
+            class="cg-seg-btn"
+            [class.selected]="layer.look === option.value"
             (click)="setLayerLook(option.value)"
           >
             {{ option.label }}
@@ -52,15 +95,27 @@
         </label>
       }
       <div class="cg-inline">
-        <label class="cg-btn file">
-          <input
-            type="file"
-            [accept]="logoAccept"
-            (change)="onLogoFile(layer, $event)"
-          />
+        <button
+          mat-stroked-button
+          type="button"
+          class="cg-seg-btn"
+          (click)="logoFileInput.click()"
+        >
           Choose local image
-        </label>
-        <button type="button" class="cg-btn" (click)="useSampleLogo(layer)">
+        </button>
+        <input
+          #logoFileInput
+          class="cg-file-input"
+          type="file"
+          [accept]="logoAccept"
+          (change)="onLogoFile(layer, $event)"
+        />
+        <button
+          mat-stroked-button
+          type="button"
+          class="cg-seg-btn"
+          (click)="useSampleLogo(layer)"
+        >
           Sample PNG
         </button>
       </div>
@@ -68,12 +123,17 @@
 
     @if (layer.element_type === Subtitle) {
       <div class="cg-cue-bar">
-        <button type="button" class="cg-btn" (click)="cue(-1)">Up</button>
-        <button type="button" class="cg-btn" (click)="cue(1)">Down</button>
+        <button mat-stroked-button type="button" class="cg-seg-btn" (click)="cue(-1)">
+          Up
+        </button>
+        <button mat-stroked-button type="button" class="cg-seg-btn" (click)="cue(1)">
+          Down
+        </button>
         <button
+          mat-stroked-button
           type="button"
-          class="cg-btn"
-          [class.on]="layer.payload.index === null"
+          class="cg-seg-btn"
+          [class.selected]="layer.payload.index === null"
           (click)="blankAir()"
         >
           Blank
@@ -83,17 +143,19 @@
         <span class="cg-kicker">Cue</span>
         <div class="cg-roles">
           <button
+            mat-stroked-button
             type="button"
-            class="cg-role-btn"
-            [class.on]="!isCueCut(layer)"
+            class="cg-seg-btn"
+            [class.selected]="!isCueCut(layer)"
             (click)="setCueFade(layer)"
           >
             Fade
           </button>
           <button
+            mat-stroked-button
             type="button"
-            class="cg-role-btn"
-            [class.on]="isCueCut(layer)"
+            class="cg-seg-btn"
+            [class.selected]="isCueCut(layer)"
             (click)="setCueCut(layer)"
           >
             Cut
@@ -114,17 +176,29 @@
         }
       </div>
       <div class="cg-inline">
-        <button type="button" class="cg-btn" (click)="pasteScript()">
+        <button
+          mat-stroked-button
+          type="button"
+          class="cg-seg-btn"
+          (click)="pasteScript()"
+        >
           Paste
         </button>
-        <label class="cg-btn file">
-          <input
-            type="file"
-            [accept]="scriptAccept"
-            (change)="onScriptFile(layer, $event)"
-          />
+        <button
+          mat-stroked-button
+          type="button"
+          class="cg-seg-btn"
+          (click)="scriptFileInput.click()"
+        >
           Load .txt / .srt
-        </label>
+        </button>
+        <input
+          #scriptFileInput
+          class="cg-file-input"
+          type="file"
+          [accept]="scriptAccept"
+          (change)="onScriptFile(layer, $event)"
+        />
       </div>
       @if (!packageId) {
         <p class="cg-hint">Save the package once so cue goes to OBS.</p>
@@ -134,9 +208,10 @@
         <div class="cg-roles">
           @for (option of presetOptions; track option.value) {
             <button
+              mat-stroked-button
               type="button"
-              class="cg-btn"
-              [class.on]="isPreset(option.value)"
+              class="cg-seg-btn"
+              [class.selected]="isPreset(option.value)"
               (click)="setPreset(option.value)"
             >
               {{ option.label }}
@@ -274,8 +349,10 @@
             }
           </select>
           <button
+            mat-flat-button
+            color="primary"
             type="button"
-            class="cg-btn"
+            class="cg-seg-btn"
             [disabled]="!copyTargetId() || cg.loading()"
             (click)="copyToPackage()"
           >
@@ -290,14 +367,26 @@
       <span class="cg-kicker">Layer Output</span>
       @if (layerOutputUrl(layer); as url) {
         <code class="cg-url" [title]="url">{{ url }}</code>
-        <button type="button" class="cg-btn" (click)="copyLayerOutput(layer)">
+        <button
+          mat-flat-button
+          color="primary"
+          type="button"
+          class="cg-seg-btn"
+          (click)="copyLayerOutput(layer)"
+        >
           Copy
         </button>
       } @else {
         <span class="cg-url-placeholder">Save first</span>
       }
     </div>
-    <button type="button" class="cg-btn danger" (click)="removeLayer(layer)">
+    <button
+      mat-stroked-button
+      color="warn"
+      type="button"
+      class="cg-seg-btn cg-remove-btn"
+      (click)="removeLayer(layer)"
+    >
       Remove layer
     </button>
   </section>

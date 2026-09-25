@@ -1,4 +1,39 @@
 <div class="cg-list">
+  <header class="cg-list-head">
+    <a
+      mat-icon-button
+      class="cg-home"
+      routerLink="/welcome"
+      title="Home"
+    >
+      <mat-icon>home</mat-icon>
+    </a>
+    <h1 class="cg-list-title">CG</h1>
+    <div class="cg-list-actions">
+      <button
+        mat-stroked-button
+        type="button"
+        class="cg-seg-btn"
+        [disabled]="cg.loading()"
+        (click)="refresh()"
+      >
+        <mat-icon>refresh</mat-icon>
+        Refresh
+      </button>
+      <button
+        mat-flat-button
+        color="primary"
+        type="button"
+        class="cg-seg-btn"
+        [disabled]="cg.loading()"
+        (click)="newPackage()"
+      >
+        <mat-icon>add</mat-icon>
+        New package
+      </button>
+    </div>
+  </header>
+
   <label class="cg-search">
     <mat-icon>search</mat-icon>
     <input

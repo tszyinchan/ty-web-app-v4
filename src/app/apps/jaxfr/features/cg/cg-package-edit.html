@@ -2,24 +2,70 @@
   @if (item(); as pkg) {
     <div class="cg-left">
       <header class="cg-col-head">
+        <a
+          mat-icon-button
+          class="cg-back"
+          [routerLink]="returnUrl"
+          title="Back to CG list"
+        >
+          <mat-icon>west</mat-icon>
+        </a>
         <h2 class="cg-col-title">Package</h2>
+        <div class="cg-col-actions">
+          @if (syncStatus() === 'unsaved') {
+            <span class="cg-sync unsaved">
+              <mat-icon>error_outline</mat-icon>
+              Unsaved
+            </span>
+          } @else if (syncStatus() === 'loading') {
+            <span class="cg-sync">Saving…</span>
+          } @else if (syncStatus() === 'up-to-date') {
+            <span class="cg-sync ok">
+              <mat-icon>cloud_done</mat-icon>
+              Saved
+            </span>
+          }
+          @if (packageId) {
+            <button
+              mat-stroked-button
+              color="warn"
+              type="button"
+              class="cg-seg-btn"
+              (click)="onDelete()"
+            >
+              Delete
+            </button>
+          }
+          <button
+            mat-flat-button
+            color="primary"
+            type="button"
+            class="cg-seg-btn"
+            [disabled]="isSaveDisabled()"
+            (click)="onSave()"
+          >
+            {{ packageId ? 'Save changes' : 'Create package' }}
+          </button>
+        </div>
       </header>
       <section class="cg-monitors-pane">
         <div class="cg-stage-toolbar">
           <span class="cg-kicker">Stage</span>
           <div class="cg-stage-toggles">
             <button
+              mat-stroked-button
               type="button"
-              class="cg-btn"
-              [class.on]="backdrop() === backdrops.Checkerboard"
+              class="cg-seg-btn"
+              [class.selected]="backdrop() === backdrops.Checkerboard"
               (click)="backdrop.set(backdrops.Checkerboard)"
             >
               Alpha
             </button>
             <button
+              mat-stroked-button
               type="button"
-              class="cg-btn"
-              [class.on]="backdrop() === backdrops.Studio"
+              class="cg-seg-btn"
+              [class.selected]="backdrop() === backdrops.Studio"
               (click)="backdrop.set(backdrops.Studio)"
             >
               Studio
@@ -53,9 +99,10 @@
         <div class="cg-roles">
           @for (option of roleOptions; track option.value) {
             <button
+              mat-stroked-button
               type="button"
-              class="cg-role-btn"
-              [class.on]="pkg.role === option.value"
+              class="cg-seg-btn"
+              [class.selected]="pkg.role === option.value"
               (click)="setRole(option.value)"
             >
               {{ option.label }}
@@ -66,17 +113,19 @@
           <span class="cg-kicker">Appear</span>
           <div class="cg-roles">
             <button
+              mat-stroked-button
               type="button"
-              class="cg-role-btn"
-              [class.on]="!isCut()"
+              class="cg-seg-btn"
+              [class.selected]="!isCut()"
               (click)="setFade()"
             >
               Fade
             </button>
             <button
+              mat-stroked-button
               type="button"
-              class="cg-role-btn"
-              [class.on]="isCut()"
+              class="cg-seg-btn"
+              [class.selected]="isCut()"
               (click)="setCut()"
             >
               Cut
@@ -100,17 +149,19 @@
           <span class="cg-kicker">Look</span>
           <div class="cg-roles">
             <button
+              mat-stroked-button
               type="button"
-              class="cg-role-btn"
-              [class.on]="!isMono()"
+              class="cg-seg-btn"
+              [class.selected]="!isMono()"
               (click)="setLook(looks.Color)"
             >
               Color
             </button>
             <button
+              mat-stroked-button
               type="button"
-              class="cg-role-btn"
-              [class.on]="isMono()"
+              class="cg-seg-btn"
+              [class.selected]="isMono()"
               (click)="setLook(looks.Mono)"
             >
               B&amp;W
@@ -121,7 +172,13 @@
           <span class="cg-kicker">Package Output</span>
           @if (packageOutputUrl(); as url) {
             <code class="cg-url" [title]="url">{{ url }}</code>
-            <button type="button" class="cg-btn primary" (click)="copyPackageOutput()">
+            <button
+              mat-flat-button
+              color="primary"
+              type="button"
+              class="cg-seg-btn"
+              (click)="copyPackageOutput()"
+            >
               Copy OBS URL
             </button>
           } @else {
@@ -137,8 +194,9 @@
         <div class="cg-catalog">
           @for (el of catalog; track el.type) {
             <button
+              mat-stroked-button
               type="button"
-              class="cg-chip"
+              class="cg-seg-btn cg-chip"
               [class.soon]="!el.shipped"
               [disabled]="!el.shipped"
               (click)="addElement(el.type)"

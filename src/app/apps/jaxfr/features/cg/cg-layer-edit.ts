@@ -12,6 +12,8 @@ import {
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { MatButtonModule } from '@angular/material/button';
+import { CgMixPreview } from '../../../../core/domains/cg/cg-mix-preview';
 import {
   CG_ANCHOR_OPTIONS,
   CG_CUT_DURATION_MS,
@@ -25,6 +27,8 @@ import {
   CG_SUBTITLE_PRESET_OPTIONS,
   CgElementType,
   CgLayerLook,
+  CgPackageLook,
+  CgPreviewBackdrop,
   CgSubtitlePreset,
 } from '../../../../core/domains/cg/cg.constants';
 import { CgLayerDraft } from '../../../../core/domains/cg/cg.model';
@@ -38,6 +42,7 @@ import {
   isCgMono,
   isEmbeddedImageUrl,
   isLocalFilesystemPath,
+  normalizeDurationMs,
   parseSubtitleScript,
   readImageFileAsDataUrl,
   subtitlePresetOf,
@@ -48,7 +53,7 @@ import { copyTextToClipboard } from '../../../../core/utils/copy-text.util';
 @Component({
   selector: 'app-cg-layer-edit',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, MatButtonModule, CgMixPreview],
   templateUrl: './cg-layer-edit.html',
   styleUrl: './cg-layer-edit.scss',
 })
@@ -68,7 +73,9 @@ export class CgLayerEdit implements OnInit {
   readonly scriptAccept = '.txt,.srt,text/plain,application/x-subrip';
   readonly cutMs = CG_CUT_DURATION_MS;
   readonly maxDurationMs = CG_MAX_DURATION_MS;
+  readonly backdrops = CgPreviewBackdrop;
   readonly copyTargetId = signal('');
+  readonly backdrop = signal(CgPreviewBackdrop.Studio);
   private lastCueFadeMs = CG_DEFAULT_DURATION_MS;
 
   private readonly params = toSignal(this.route.paramMap, { requireSync: true });
@@ -296,6 +303,31 @@ export class CgLayerEdit implements OnInit {
 
   packageIsMono(): boolean {
     return isCgMono(this.cg.draftItem()?.look);
+  }
+
+  pendingLook(): CgPackageLook {
+    return this.cg.draftItem()?.look ?? CgPackageLook.Color;
+  }
+
+  onAirLook(): CgPackageLook {
+    return this.cg.onAirItem()?.look ?? CgPackageLook.Color;
+  }
+
+  packageDurationMs(): number {
+    return normalizeDurationMs(this.cg.draftItem()?.duration_ms);
+  }
+
+  onAirDurationMs(): number {
+    return normalizeDurationMs(this.cg.onAirItem()?.duration_ms);
+  }
+
+  /** This one Layer's last-saved state, wrapped as a 1-item array for
+   * CgMixPreview — empty until the Layer itself has been saved once. */
+  onAirLayerOf(clientId: string): CgLayerDraft[] {
+    const found = this.cg
+      .onAirLayers()
+      .find((row) => row.clientId === clientId);
+    return found ? [found] : [];
   }
 
   cueDurationMs(layer: CgLayerDraft): number {

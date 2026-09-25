@@ -7,6 +7,7 @@ import { AppSettingsService } from '../../../core/services/app-settings.service'
 import { PushService } from '../../../core/services/push.service';
 import { ThemeService } from '../../../core/services/theme.service';
 import { AppToolbar } from '../../../core/components/app-toolbar/app-toolbar';
+import { isCgAdminPath } from '../../../core/domains/cg/cg.util';
 
 @Component({
   selector: 'app-layout',
@@ -77,6 +78,10 @@ export class Layout {
     return url.split('?')[0].includes('/docsign/print/');
   }
 
+  private isCgAdmin(url: string): boolean {
+    return isCgAdminPath(url.split('?')[0]);
+  }
+
   private isDailyLog(url: string): boolean {
     return url.split('?')[0].startsWith('/daily-log');
   }
@@ -86,7 +91,8 @@ export class Layout {
     return (
       this.isNotWelcome(path) &&
       !this.isDocsignPrint(path) &&
-      !this.isDailyLog(path)
+      !this.isDailyLog(path) &&
+      !this.isCgAdmin(path)
     );
   }
 }

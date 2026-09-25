@@ -37,6 +37,51 @@
   color: var(--app-text-primary);
 }
 
+.cg-back {
+  // Compact icon button — explicit width/height/padding reliably
+  // overrides Material's 40x40 default (verified in dev-toggle-test).
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  flex-shrink: 0;
+  color: var(--app-text-muted);
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.cg-col-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.cg-sync {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--app-text-muted);
+
+  mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.cg-sync.unsaved {
+  color: var(--app-danger);
+}
+
+.cg-sync.ok {
+  color: var(--app-text-accent);
+}
+
 .cg-left {
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr);
@@ -63,9 +108,6 @@
   font-size: 13px;
 }
 
-.cg-right .cg-chip {
-  background: var(--app-card-bg);
-}
 
 .cg-monitors-pane {
   padding: 12px 16px;
@@ -154,27 +196,26 @@
   font: 13px var(--app-font);
 }
 
-.cg-role-btn,
-.cg-btn,
-.cg-chip {
-  border: 1px solid var(--app-card-border);
-  border-radius: 4px;
-  background: var(--app-page-bg);
-  color: var(--app-text-primary);
-  font: 13px var(--app-font);
-  cursor: pointer;
-}
-
-.cg-role-btn {
+// Compact segmented/action button — same spirit as the app-wide
+// `.shortcut-btn` (work-attendance-edit), sized down for CG's tighter
+// admin chrome. Aero glossy / Material flat rendering comes for free
+// from styles/_aero-controls.scss (button.mat-mdc-unelevated-button /
+// button.mat-mdc-outlined-button) since CG is nested inside <app-layout>.
+// `.selected` marks the active option in a toggle-style group (Channel
+// vs Source, Fade vs Cut, Color vs B&W, Alpha vs Studio) — Material
+// doesn't have a built-in "selected stroked button" state, so this one
+// small class carries that signal on top of the stock mat-stroked-button.
+.cg-seg-btn {
   height: 28px;
+  line-height: 28px;
   padding: 0 12px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   font-size: 11px;
+  font-family: var(--app-font);
 }
 
-.cg-role-btn.on,
-.cg-btn.on {
+.cg-seg-btn.selected {
   border-color: var(--app-text-accent);
   color: var(--app-text-accent);
 }
@@ -208,38 +249,6 @@
   white-space: nowrap;
   font-size: 12px;
   color: var(--app-text-muted);
-}
-
-.cg-btn {
-  height: 32px;
-  padding: 0 12px;
-  flex-shrink: 0;
-}
-
-.cg-btn.primary {
-  border-color: var(--app-accent);
-  background: var(--app-accent);
-  color: var(--app-accent-contrast);
-}
-
-.cg-btn.danger {
-  border-color: var(--app-danger);
-  color: var(--app-danger);
-}
-
-.cg-btn.file {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-
-  input {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    opacity: 0;
-    cursor: pointer;
-  }
 }
 
 .cg-program {
@@ -289,11 +298,12 @@
 
 .cg-chip {
   height: 26px;
+  line-height: 26px;
   padding: 0 8px;
-  display: inline-flex;
-  align-items: center;
   gap: 6px;
   font-size: 12px;
+  text-transform: none;
+  letter-spacing: normal;
 }
 
 .cg-chip span {

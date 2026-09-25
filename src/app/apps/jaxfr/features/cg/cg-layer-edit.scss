@@ -12,6 +12,29 @@
   min-height: 0;
 }
 
+.cg-layer-monitors {
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--app-card-border);
+}
+
+.cg-stage-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.cg-stage-toggles {
+  display: flex;
+  gap: 6px;
+}
+
+.cg-monitors {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 10px;
+}
+
 .cg-kicker {
   font-size: 10px;
   font-weight: var(--app-weight-emphasis);
@@ -27,47 +50,49 @@
   gap: 12px;
 }
 
-.cg-btn,
-.cg-switch {
-  border: 1px solid var(--app-card-border);
-  border-radius: 4px;
-  background: var(--app-card-bg);
-  color: var(--app-text-primary);
-  font: 13px var(--app-font);
-  cursor: pointer;
-}
-
-.cg-btn {
-  height: 32px;
+// Compact segmented/action button — see cg-package-edit.scss for the full
+// rationale. `.selected` marks the active option in a toggle-style group
+// (Alpha/Studio, Cue Fade/Cut, News/Show, Look Inherit/Color/B&W).
+.cg-seg-btn {
+  height: 28px;
+  line-height: 28px;
   padding: 0 12px;
-  flex-shrink: 0;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 11px;
+  font-family: var(--app-font);
 }
 
-.cg-btn.on {
+.cg-seg-btn.selected {
   border-color: var(--app-text-accent);
   color: var(--app-text-accent);
 }
 
-.cg-btn.danger {
-  border-color: var(--app-danger);
-  color: var(--app-danger);
+// File picker trigger is a real `mat-stroked-button` (Angular Material's
+// button directives don't attach to <label>, so it must be a <button> to
+// get Aero-gloss/Material-flat for free from _aero-controls.scss). Its
+// (click) just forwards to a visually-hidden sibling <input type="file">.
+.cg-file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
-.cg-btn.file {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-
-  input {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    opacity: 0;
-    cursor: pointer;
-  }
+.cg-remove-btn {
+  width: 100%;
+  text-transform: none;
+  letter-spacing: normal;
 }
 
+// On/off switch stays hand-rolled — see cg.mdc dev-toggle-test findings:
+// mat-slide-toggle doesn't shrink to this footprint via CSS custom
+// properties and has a different (checkmark-in-thumb) visual language.
 .cg-switch {
   width: 44px;
   height: 24px;
@@ -77,6 +102,7 @@
   background: var(--app-input-border);
   position: relative;
   flex-shrink: 0;
+  cursor: pointer;
   transition: background 0.2s ease;
 }
 
@@ -159,25 +185,6 @@
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-}
-
-.cg-role-btn {
-  height: 28px;
-  padding: 0 12px;
-  border: 1px solid var(--app-card-border);
-  border-radius: 4px;
-  background: var(--app-card-bg);
-  color: var(--app-text-primary);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  font-size: 11px;
-  font-family: var(--app-font);
-  cursor: pointer;
-}
-
-.cg-role-btn.on {
-  border-color: var(--app-text-accent);
-  color: var(--app-text-accent);
 }
 
 .cg-duration {
