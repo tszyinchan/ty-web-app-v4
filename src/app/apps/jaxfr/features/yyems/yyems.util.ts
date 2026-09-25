@@ -775,6 +775,96 @@ export interface SplitCurrencyTotal {
   outsidePaid: number;
 }
 
+export interface SplitPersonPaid {
+  userId: string;
+  selfPaid: number;
+  otherPaid: number;
+  bothPaid: number;
+}
+
+export interface SplitCurrencyBreakdown {
+  currency: string;
+  people: readonly [SplitPersonPaid, SplitPersonPaid];
+  /** Pair order. Paid minus borne. */
+  nets: readonly [number, number];
+  /** Positive: the first person pays the second. Negative: the second pays the first. */
+  firstPaysSecond: number;
+  outsidePaid: number;
+}
+
+/** `self` = only this person bears it, `other` = only the partner, `both` = both have a share. */
+function paidBucket(
+  userId: string,
+  shares: readonly SettleShare[],
+  pair: readonly [string, string],
+): 'self' | 'other' | 'both' | null {
+  const ids = new Set(
+    shares
+      .filter(
+        (row) =>
+          (pair as readonly string[]).includes(row.userId) &&
+          Number(row.share) > MONEY_EPSILON,
+      )
+      .map((row) => row.userId),
+  );
+  if (ids.size === 0) return null;
+  if (ids.size > 1) return 'both';
+  return [...ids][0] === userId ? 'self' : 'other';
+}
+
+/** Per person, per currency: what they paid for themselves, the other person, and both. */
+export function splitBreakdown(
+  rows: readonly {
+    currency: string;
+    shares: readonly SettleShare[];
+    result: SettleOneResult;
+  }[],
+  pair: readonly [string, string],
+): SplitCurrencyBreakdown[] {
+  const byCurrency = new Map<
+    string,
+    {
+      people: [SplitPersonPaid, SplitPersonPaid];
+      nets: [number, number];
+      firstPaysSecond: number;
+      outsidePaid: number;
+    }
+  >();
+  for (const row of rows) {
+    let bucket = byCurrency.get(row.currency);
+    if (!bucket) {
+      bucket = {
+        people: [
+          { userId: pair[0], selfPaid: 0, otherPaid: 0, bothPaid: 0 },
+          { userId: pair[1], selfPaid: 0, otherPaid: 0, bothPaid: 0 },
+        ],
+        nets: [0, 0],
+        firstPaysSecond: 0,
+        outsidePaid: 0,
+      };
+      byCurrency.set(row.currency, bucket);
+    }
+    for (const effect of row.result.effects) {
+      if (effect.paid <= MONEY_EPSILON) continue;
+      const person = bucket.people.find((item) => item.userId === effect.userId);
+      const kind = paidBucket(effect.userId, row.shares, pair);
+      if (!person || !kind) continue;
+      if (kind === 'self') person.selfPaid = money(person.selfPaid + effect.paid);
+      else if (kind === 'other') person.otherPaid = money(person.otherPaid + effect.paid);
+      else person.bothPaid = money(person.bothPaid + effect.paid);
+    }
+    bucket.nets[0] = money(bucket.nets[0] + row.result.effects[0].net);
+    bucket.nets[1] = money(bucket.nets[1] + row.result.effects[1].net);
+    bucket.firstPaysSecond = money(
+      bucket.firstPaysSecond - row.result.effects[0].net,
+    );
+    bucket.outsidePaid = money(bucket.outsidePaid + row.result.outsidePaid);
+  }
+  return [...byCurrency.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([currency, bucket]) => ({ currency, ...bucket }));
+}
+
 export function summarizeSplit(
   rows: readonly { currency: string; result: SettleOneResult }[],
   aName: string,

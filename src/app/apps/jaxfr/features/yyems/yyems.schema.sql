@@ -240,6 +240,8 @@ CREATE TABLE IF NOT EXISTS public.tyapp_yyems (
   period_start date,
   period_end date,
   created_by uuid NOT NULL REFERENCES public.tyapp_user (user_id),
+  -- Group locked at save. Excel rows (legacy_id) are the cty+frd pair, not Ownership.
+  group_id uuid REFERENCES public.tyapp_user_group (tb_tyapp_usr_grp_id),
   status smallint NOT NULL DEFAULT 1,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
@@ -262,6 +264,10 @@ CREATE INDEX IF NOT EXISTS tyapp_yyems_wallet_idx
 
 CREATE INDEX IF NOT EXISTS tyapp_yyems_ownership_idx
   ON public.tyapp_yyems (ownership_user_id)
+  WHERE deleted_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS tyapp_yyems_group_idx
+  ON public.tyapp_yyems (group_id)
   WHERE deleted_at IS NULL;
 
 -- Who bears this bill. Rows are locked at save time (not "whoever is household now").

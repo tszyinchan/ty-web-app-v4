@@ -4,6 +4,7 @@ import { RecordStatus } from '../../../../core/models/status.enum';
 import { NotificationService } from '../../../../core/services/notification.service';
 import { SupabaseService } from '../../../../core/services/supabase.service';
 import {
+  YYEMS_IN_OR_OUT,
   YyemsBill,
   YyemsBillEmbed,
   YyemsBillShare,
@@ -287,6 +288,32 @@ export class YyemsService {
     };
   }
 
+  /** Every Out bill, not one month. Pages so a long history is not cut at 1000. */
+  async queryAllOutBills(): Promise<YyemsBillEmbed[]> {
+    const pageSize = 1000;
+    const rows: YyemsBillEmbed[] = [];
+    let from = 0;
+    try {
+      for (;;) {
+        const { data, error } = await this.supabase
+          .from('tyapp_yyems')
+          .select(BILL_EMBED)
+          .is('deleted_at', null)
+          .eq('in_or_out', YYEMS_IN_OR_OUT.Out)
+          .order('tb_tyapp_yym_id', { ascending: true })
+          .range(from, from + pageSize - 1);
+        if (error) throw error;
+        const page = (data as YyemsBillEmbed[]) ?? [];
+        rows.push(...page);
+        if (page.length < pageSize) return rows;
+        from += pageSize;
+      }
+    } catch (error: unknown) {
+      this.notification.handleError('Fetch bills failed', error);
+      return [];
+    }
+  }
+
   async queryBillsInRange(
     fromIso: string,
     toIsoExclusive: string,
@@ -506,14 +533,19 @@ export class YyemsService {
 
   async fetchSharesForBills(billIds: readonly string[]): Promise<YyemsBillShare[] | null> {
     if (billIds.length === 0) return [];
+    const chunkSize = 200;
+    const rows: YyemsBillShare[] = [];
     try {
-      const { data, error } = await this.supabase
-        .from('tyapp_yyems_bill_share')
-        .select('*')
-        .in('yyems_id', [...billIds])
-        .limit(5000);
-      if (error) throw error;
-      return (data as YyemsBillShare[]) ?? [];
+      for (let index = 0; index < billIds.length; index += chunkSize) {
+        const chunk = billIds.slice(index, index + chunkSize);
+        const { data, error } = await this.supabase
+          .from('tyapp_yyems_bill_share')
+          .select('*')
+          .in('yyems_id', [...chunk]);
+        if (error) throw error;
+        rows.push(...((data as YyemsBillShare[]) ?? []));
+      }
+      return rows;
     } catch (error: unknown) {
       if (!isMissingShareTable(error)) {
         this.notification.handleError('Fetch bill shares failed', error);

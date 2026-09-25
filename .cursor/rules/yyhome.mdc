@@ -32,6 +32,12 @@ At rebuild, rename the table to `tyapp_yyhome_bill_share` and the PK to `tb_tyap
 
 Settlement amount = `wallet_amount` if set, else `amount`. For each person: `net = paid_share − borne_share`. Positive net means the other person owes them. Joint wallet pays as 50/50. Yin-owned + Yiu-wallet nets to “Yin owes Yiu the full amount”.
 
+**Group on the bill** (`group_id` → `tyapp_user_group`): written when the bill is saved. Split uses this column, not “who is on the share rows” and not “which groups the viewer belongs to today”. One group: that group. More than one: the same Group control as the bill form. Fred is only in the couple group. TY is also in other groups, so a bill borne only by TY must not be guessed into every group that contains TY.
+
+Excel import (`legacy_id` set), including Fred’s old rows whose Ownership he set to himself: stamp every one with the user group whose members are exactly the two users bound to `appsheet_525_user_id` `cty` and `frd`. Do not read Ownership to pick the group. In-app bills with no `legacy_id` keep the group chosen at save. A bill whose bearers match more than one of the viewer’s groups and has no `group_id` stays unset until someone picks once. Later membership changes do not rewrite `group_id`.
+
+Split is payback only: for that group of two, per currency, each person shows what they paid for himself, for the other person, and for both. The pay line is always the logged-in user pays the other person. A negative amount means the other person pays them. Do not add a sentence explaining the minus. A future stats page is spending analysis (category, month, currency). It does not settle debts and does not replace Split.
+
 If the household splits: deactivate the other user’s yyHome grant, stop using joint wallets, new bills are 100% one person. Do not edit historical share rows to match the new situation.
 
 ## Both on features that are not a split bill

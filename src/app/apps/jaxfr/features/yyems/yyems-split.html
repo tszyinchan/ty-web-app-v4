@@ -1,192 +1,73 @@
 <div class="standard-list-view yyems-split">
-  <section class="split-block">
-    <h2>Rule check · CAD 100</h2>
-    <p class="hint">
-      These five rows run the same function as the month total. They do not read the database.
-    </p>
-    <ul class="check-list">
-      @for (row of checks(); track row.title) {
-        <li [class.bad]="!row.ok">
-          <span class="check-title">{{ row.title }}</span>
-          <span class="check-actual">{{ row.actual }}</span>
-          @if (!row.ok) {
-            <span class="check-expected">Expected {{ row.expected }}</span>
-          }
-        </li>
-      }
-    </ul>
-    @if (checksOk()) {
-      <p class="hint ok">All 5 rules match.</p>
-    }
-  </section>
-
-  <section class="split-block">
-    <h2>Pair</h2>
-    <p class="hint">
-      Only Out bills whose share rows are these two people are added up. Other people’s bills stay out of the total.
-    </p>
-    <div class="pair-row">
-      <mat-form-field appearance="outline" subscriptSizing="dynamic">
-        <mat-label>Person A</mat-label>
-        <mat-select [(ngModel)]="personAId">
-          @for (user of people(); track user.user_id) {
-            <mat-option [value]="user.user_id">{{ displayName(user.user_id) }}</mat-option>
-          }
-        </mat-select>
-      </mat-form-field>
-      <mat-form-field appearance="outline" subscriptSizing="dynamic">
-        <mat-label>Person B</mat-label>
-        <mat-select [(ngModel)]="personBId">
-          @for (user of people(); track user.user_id) {
-            <mat-option [value]="user.user_id">{{ displayName(user.user_id) }}</mat-option>
-          }
-        </mat-select>
-      </mat-form-field>
+  @if (myGroups().length > 1) {
+    <div class="split-group">
+      <label for="split-group">Group</label>
+      <select id="split-group" [value]="groupId()" (change)="onGroup($event)">
+        @for (group of myGroups(); track group.tb_tyapp_usr_grp_id) {
+          <option [value]="group.tb_tyapp_usr_grp_id">{{ group.name }}</option>
+        }
+      </select>
     </div>
-    @if (personAId() && personAId() === personBId()) {
-      <p class="hint">Pick two different people.</p>
-    }
-  </section>
-
-  @if (needsHouseholdGrant()) {
-    <section class="split-block">
-      <p class="hint">
-        This login cannot read yyHome rows yet. Run
-        <code>yyems-household-grant.schema.patch.sql</code>
-        in the SQL editor, then Refresh.
-      </p>
-    </section>
   }
 
-  @if (sharesMissing()) {
-    <section class="split-block">
-      <p class="hint">
-        Share table is missing. Run
-        <code>yyems-bill-share.schema.patch.sql</code>
-        before saving a check bill.
-      </p>
-    </section>
+  @if (loading()) {
+    <div class="split-wait">
+      <mat-spinner diameter="28"></mat-spinner>
+    </div>
+  } @else if (myGroups().length === 0) {
+    <p class="split-empty">Join a user group to see who owes whom.</p>
+  } @else if (sharesMissing()) {
+    <p class="split-empty">
+      Share table is missing. Run
+      <code>yyems-bill-share.schema.patch.sql</code>
+      before this total can run.
+    </p>
+  } @else if (!pair()) {
+    <p class="split-empty">This page settles a group of two people.</p>
+  } @else if (totalView().currencies.length === 0) {
+    <p class="split-empty">No Out bills for this group.</p>
+  } @else {
+    <div class="dash">
+      @for (row of totalView().currencies; track row.currency) {
+        <section class="currency-board">
+          <h2>{{ row.currency }}</h2>
+          <p class="who">{{ viewerName() }} pays {{ payOtherName() }}</p>
+          <p class="amount" [class.negative]="viewerPays(row) < 0">
+            {{ plainAmount(viewerPays(row)) }}
+          </p>
+
+          <div class="paid-table">
+            <div class="paid-head"></div>
+            <div class="paid-head">Himself</div>
+            <div class="paid-head">Other</div>
+            <div class="paid-head">Both</div>
+            @for (person of peopleFor(row); track person.userId) {
+              <div class="paid-name" [class.me]="isMe(person.userId)">
+                {{ displayName(person.userId) }}
+              </div>
+              <div class="paid-num">{{ plainAmount(person.selfPaid) }}</div>
+              <div class="paid-num">{{ plainAmount(person.otherPaid) }}</div>
+              <div class="paid-num">{{ plainAmount(person.bothPaid) }}</div>
+            }
+          </div>
+          @if (row.outsidePaid > 0) {
+            <p class="board-note">
+              {{ formatAmount(row.currency, row.outsidePaid) }} was paid by someone outside this group.
+            </p>
+          }
+        </section>
+      }
+    </div>
   }
 
-  <section class="split-block">
-    <h2>Add a check bill</h2>
-    <p class="hint">
-      Who paid is the wallet owner. Joint means the pot, split 50/50 between this pair. Tap who bears it. One person is 100%. Both people are 50% each.
+  @if (!loading() && totalView().unsetCount > 0) {
+    <p class="split-footnote">
+      {{ totalView().unsetCount }} Out bills have no group, so they are not in the total.
     </p>
-    <div class="owner-toggle">
-      <button
-        type="button"
-        [class.active]="isBearer(pairUser(0))"
-        [attr.aria-pressed]="isBearer(pairUser(0))"
-        [disabled]="!pair()"
-        (click)="toggleBearer(pairUser(0))"
-      >
-        @if (isBearer(pairUser(0))) {
-          <mat-icon>check</mat-icon>
-        }
-        {{ personAName() }}
-      </button>
-      <button
-        type="button"
-        [class.active]="isBearer(pairUser(1))"
-        [attr.aria-pressed]="isBearer(pairUser(1))"
-        [disabled]="!pair()"
-        (click)="toggleBearer(pairUser(1))"
-      >
-        @if (isBearer(pairUser(1))) {
-          <mat-icon>check</mat-icon>
-        }
-        {{ personBName() }}
-      </button>
-    </div>
-    <p class="hint">{{ shareSplitHint(bearerIds().length) }}</p>
-
-    <div class="field-stack">
-      <mat-form-field appearance="outline" subscriptSizing="dynamic">
-        <mat-label>Amount</mat-label>
-        <input matInput type="number" min="0" step="0.01" [(ngModel)]="amount" />
-      </mat-form-field>
-      <mat-form-field appearance="outline" subscriptSizing="dynamic">
-        <mat-label>Vendor</mat-label>
-        <mat-select [(ngModel)]="vendorId">
-          @for (vendor of vendors(); track vendor.tb_tyapp_yvd_id) {
-            <mat-option [value]="vendor.tb_tyapp_yvd_id">{{ vendor.name }}</mat-option>
-          }
-        </mat-select>
-      </mat-form-field>
-      <mat-form-field appearance="outline" subscriptSizing="dynamic">
-        <mat-label>Wallet (who paid)</mat-label>
-        <mat-select [(ngModel)]="walletId">
-          @for (wallet of walletChoices(); track wallet.id) {
-            <mat-option [value]="wallet.id">{{ wallet.label }}</mat-option>
-          }
-        </mat-select>
-      </mat-form-field>
-      <mat-form-field appearance="outline" subscriptSizing="dynamic">
-        <mat-label>Remark</mat-label>
-        <input matInput [(ngModel)]="remark" />
-      </mat-form-field>
-    </div>
-
-    <div class="wallet-actions">
-      <button mat-stroked-button type="button" [disabled]="!pair() || yyems.loading()" (click)="addWallet('a')">
-        CAD wallet for {{ personAName() }}
-      </button>
-      <button mat-stroked-button type="button" [disabled]="!pair() || yyems.loading()" (click)="addWallet('b')">
-        CAD wallet for {{ personBName() }}
-      </button>
-      <button mat-stroked-button type="button" [disabled]="yyems.loading()" (click)="addWallet('joint')">
-        Joint CAD wallet
-      </button>
-    </div>
-
-    <button mat-flat-button type="button" [disabled]="!canSave()" (click)="saveCheck()">
-      Save check bill
-    </button>
-  </section>
-
-  <div class="ledger-chrome">
-    <div class="month-bar">
-      <button mat-icon-button type="button" (click)="shiftMonth(-1)" aria-label="Previous month">
-        <mat-icon>chevron_left</mat-icon>
-      </button>
-      <span class="month-label">{{ monthLabel() }}</span>
-      <button mat-icon-button type="button" (click)="shiftMonth(1)" aria-label="Next month">
-        <mat-icon>chevron_right</mat-icon>
-      </button>
-    </div>
-    @if (loading()) {
-      <div class="split-wait">
-        <mat-spinner diameter="28"></mat-spinner>
-      </div>
-    } @else if (needsHouseholdGrant()) {
-      <p class="hint">Month totals stay hidden until this login can read yyHome rows.</p>
-    } @else if (!pair()) {
-      <p class="hint">Pick person A and person B to see this month.</p>
-    } @else {
-      <div class="totals">
-        @for (total of monthView().totals; track total.currency) {
-          <p class="verdict">{{ total.verdict }}</p>
-        } @empty {
-          <p class="hint">No Out bills for this pair in {{ monthLabel() }}.</p>
-        }
-      </div>
-      @if (monthView().outsideCount > 0) {
-        <p class="hint">{{ monthView().outsideCount }} other Out bills this month are outside this pair.</p>
-      }
-      @if (monthView().missingShareCount > 0) {
-        <p class="hint">{{ monthView().missingShareCount }} Out bills have no share rows, so they are not in the total.</p>
-      }
-      <ul class="line-list">
-        @for (line of monthView().lines; track line.id) {
-          <li>
-            <span class="line-when">{{ line.when }}</span>
-            <span class="line-title">{{ line.title }}</span>
-            <span class="line-detail">{{ line.detail }}</span>
-            <span class="line-verdict">{{ line.verdict }}</span>
-          </li>
-        }
-      </ul>
-    }
-  </div>
+  }
+  @if (!loading() && totalView().missingShareCount > 0) {
+    <p class="split-footnote">
+      {{ totalView().missingShareCount }} bills in this group have no share rows, so they are not in the total.
+    </p>
+  }
 </div>

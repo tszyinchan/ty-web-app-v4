@@ -198,7 +198,9 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
       this.item.set(this.toForm(bill));
       const shares = await this.yyems.fetchBillShares(this.currentId);
       const bearerRows = this.bearersForExisting(bill, shares);
-      this.groupId.set(this.groupForBearers(bearerRows.map((row) => row.user_id)));
+      this.groupId.set(
+        bill.group_id || this.groupForBearers(bearerRows.map((row) => row.user_id)),
+      );
       const shown = this.presentPair(bearerRows);
       this.item.update((cur) => (cur ? { ...cur, bearers: shown } : cur));
       this.syncLookupLabels(this.item());
@@ -298,6 +300,7 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
       period_start: form.period_start || null,
       period_end: form.period_end || null,
       created_by: userId,
+      group_id: this.groupId() || null,
       status: RecordStatus.Active,
     };
     const shares = this.shareRows(form);

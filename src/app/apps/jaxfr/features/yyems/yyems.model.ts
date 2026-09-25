@@ -200,6 +200,8 @@ export interface YyemsBill {
   period_start: string | null;
   period_end: string | null;
   created_by: string;
+  /** User group locked when the bill was saved. Null until someone picks one. */
+  group_id: string | null;
   status: RecordStatus;
   created_at: string;
   updated_at: string;

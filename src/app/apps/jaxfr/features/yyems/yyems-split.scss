@@ -1,149 +1,133 @@
 .yyems-split {
-  padding-bottom: 32px;
+  padding: 12px 16px 32px;
 }
 
-.split-block {
-  padding: 8px 16px 16px;
-  border-bottom: 1px solid var(--app-border-subtle);
-}
-
-h2 {
-  margin: 8px 0;
-  font: var(--app-weight-emphasis) 16px var(--app-font);
-  color: var(--app-text-primary);
-}
-
-.hint {
-  margin: 0 0 8px;
-  font-size: 13px;
-  color: var(--app-text-muted);
-
-  &.ok {
-    color: var(--app-link);
-  }
-}
-
-code {
-  font-size: 12px;
-}
-
-.check-list,
-.line-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.check-list li,
-.line-list li {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 8px 0;
-  border-top: 1px solid var(--app-border-subtle);
-}
-
-.check-title,
-.line-title {
-  font: var(--app-weight-emphasis) 14px var(--app-font);
-  color: var(--app-text-primary);
-}
-
-.check-actual,
-.line-verdict,
-.verdict {
-  font-size: 14px;
-  color: var(--app-text-primary);
-}
-
-.check-list li.bad .check-actual,
-.check-expected {
-  color: var(--app-danger);
-}
-
-.pair-row,
-.field-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.owner-toggle {
+.split-group {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 4.5rem 1fr;
+  align-items: center;
   gap: 8px;
   margin-bottom: 12px;
-}
 
-.owner-toggle button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  font: var(--app-weight-emphasis) 14px var(--app-font);
-  color: var(--app-text-secondary);
-  background: var(--app-input-bg);
-  border: 1px solid var(--app-input-border);
-  border-radius: var(--app-radius);
-  padding: 10px 8px;
-  cursor: pointer;
-
-  mat-icon {
-    width: 18px;
-    height: 18px;
-    font-size: 18px;
+  label {
+    font-size: 13px;
+    color: var(--app-text-muted);
   }
 
-  &.active {
-    color: var(--app-accent-contrast);
-    background: var(--app-accent);
-    border-color: var(--app-accent);
+  select {
+    width: 100%;
+    font: 14px var(--app-font);
+    color: var(--app-text-primary);
+    background: var(--app-input-bg);
+    border: 1px solid var(--app-input-border);
+    border-radius: var(--app-radius);
+    padding: 8px 10px;
   }
-
-  &:disabled {
-    cursor: default;
-    opacity: 0.5;
-  }
-}
-
-.wallet-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 8px 0 12px;
-}
-
-.ledger-chrome {
-  padding: 8px 16px 0;
-}
-
-.month-bar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-}
-
-.month-label {
-  min-width: 7.5rem;
-  text-align: center;
-  font: var(--app-weight-emphasis) 16px var(--app-font);
-  color: var(--app-text-primary);
 }
 
 .split-wait {
   display: flex;
   justify-content: center;
-  padding: 16px;
+  padding: 48px 0;
 }
 
-.line-when,
-.line-detail {
-  font-size: 12px;
+.split-empty {
+  margin: 48px 0 0;
+  text-align: center;
+  font-size: 15px;
+  color: var(--app-text-secondary);
+}
+
+.dash {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.currency-board {
+  padding: 16px 0 8px;
+
+  & + & {
+    border-top: 1px solid var(--app-border-subtle);
+  }
+
+  h2 {
+    margin: 0;
+    font: var(--app-weight-emphasis) 13px var(--app-font);
+    letter-spacing: 0.08em;
+    color: var(--app-text-muted);
+  }
+}
+
+.who {
+  margin: 10px 0 0;
+  font-size: 15px;
+  color: var(--app-text-secondary);
+}
+
+.amount {
+  margin: 2px 0 0;
+  font: var(--app-weight-strong) 36px var(--app-font);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+  color: var(--app-text-primary);
+
+  &.negative {
+    color: var(--app-danger);
+  }
+}
+
+.paid-table {
+  display: grid;
+  grid-template-columns: max-content repeat(3, max-content);
+  gap: 0 28px;
+  margin-top: 18px;
+  align-items: baseline;
+}
+
+.paid-head,
+.paid-name,
+.paid-num {
+  padding: 8px 0;
+  border-top: 1px solid var(--app-border-subtle);
+}
+
+.paid-head {
+  font-size: 11px;
+  color: var(--app-text-muted);
+  text-align: right;
+}
+
+.paid-name {
+  font: var(--app-weight-emphasis) 14px var(--app-font);
+  color: var(--app-text-primary);
+
+  &.me {
+    color: var(--app-accent);
+  }
+}
+
+.paid-num {
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  color: var(--app-text-primary);
+  text-align: right;
+}
+
+.board-note,
+.split-footnote {
+  margin: 14px 0 0;
+  max-width: 36rem;
+  font-size: 13px;
+  line-height: 1.45;
   color: var(--app-text-muted);
 }
 
-.verdict {
-  margin: 8px 0;
-  font: var(--app-weight-emphasis) 16px var(--app-font);
+.split-footnote {
+  margin-top: 16px;
+  text-align: center;
+}
+
+code {
+  font-size: 12px;
 }
