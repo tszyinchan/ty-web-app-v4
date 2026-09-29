@@ -1,0 +1,22 @@
+<div class="standard-list-view">
+  <div class="list-container">
+    @for (row of rows(); track row.account.tb_tyapp_yfa_id) {
+      <a
+        class="item-link"
+        [routerLink]="['/yyems/wallets/accounts/edit', row.account.tb_tyapp_yfa_id]"
+      >
+        <div class="item-content">
+          <div class="item-info-group">
+            <span class="main-text">{{ row.account.display_name }}</span>
+            <span class="sub-text">{{ row.owner }} · {{ row.account.currency }}</span>
+          </div>
+          <mat-icon class="chevron">chevron_right</mat-icon>
+        </div>
+      </a>
+    } @empty {
+      @if (!yyems.dictsLoading()) {
+        <div class="empty-placeholder">No accounts. Create one before adding wallets.</div>
+      }
+    }
+  </div>
+</div>

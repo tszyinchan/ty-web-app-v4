@@ -70,6 +70,14 @@ export class YyemsItemList implements OnInit, OnDestroy {
       title: 'Products',
       actions: [
         {
+          label: 'Categories',
+          icon: 'category',
+          type: 'secondary',
+          disabled: isLoading,
+          onClick: () =>
+            this.router.navigateByUrl('/yyems/items/categories/list'),
+        },
+        {
           label: 'New Item',
           icon: 'add',
           type: 'primary',

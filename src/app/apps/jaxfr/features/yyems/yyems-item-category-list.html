@@ -1,0 +1,19 @@
+<div class="standard-list-view">
+  <div class="list-container">
+    @for (c of yyems.itemCategories(); track c.tb_tyapp_yic_id) {
+      <a class="item-link" [routerLink]="['/yyems/items/categories/edit', c.tb_tyapp_yic_id]">
+        <div class="item-content">
+          <div class="item-info-group">
+            <span class="main-text">{{ c.name_zh }}</span>
+            <span class="sub-text">{{ c.code }}{{ c.name_en ? ' · ' + c.name_en : '' }}</span>
+          </div>
+          <mat-icon class="chevron">chevron_right</mat-icon>
+        </div>
+      </a>
+    } @empty {
+      @if (!yyems.dictsLoading()) {
+        <div class="empty-placeholder">No product categories. Create one before adding products.</div>
+      }
+    }
+  </div>
+</div>

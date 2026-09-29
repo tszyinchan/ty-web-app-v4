@@ -5,11 +5,21 @@ import { YyemsBillEdit } from './yyems-bill-edit';
 import { YyemsBillList } from './yyems-bill-list';
 import { YyemsSplit } from './yyems-split';
 import { YyemsBuyEdit } from './yyems-buy-edit';
+import { YyemsCurrencyEdit } from './yyems-currency-edit';
+import { YyemsCurrencyList } from './yyems-currency-list';
 import { YyemsEatEdit } from './yyems-eat-edit';
+import { YyemsFinancialAccountEdit } from './yyems-financial-account-edit';
+import { YyemsFinancialAccountList } from './yyems-financial-account-list';
 import { YyemsFridge } from './yyems-fridge';
+import { YyemsFxRateEdit } from './yyems-fx-rate-edit';
+import { YyemsFxRateList } from './yyems-fx-rate-list';
 import { YyemsHome } from './yyems-home';
+import { YyemsItemCategoryEdit } from './yyems-item-category-edit';
+import { YyemsItemCategoryList } from './yyems-item-category-list';
 import { YyemsItemEdit } from './yyems-item-edit';
 import { YyemsItemList } from './yyems-item-list';
+import { YyemsVendorCategoryEdit } from './yyems-vendor-category-edit';
+import { YyemsVendorCategoryList } from './yyems-vendor-category-list';
 import { YyemsVendorEdit } from './yyems-vendor-edit';
 import { YyemsVendorList } from './yyems-vendor-list';
 import { YyemsWalletEdit } from './yyems-wallet-edit';
@@ -56,6 +66,17 @@ export const YYEMS_ROUTES: Routes = [
     component: YyemsEatEdit,
     canDeactivate: [unsavedChangesGuard],
   },
+  { path: 'items/categories/list', component: YyemsItemCategoryList },
+  {
+    path: 'items/categories/new',
+    component: YyemsItemCategoryEdit,
+    canDeactivate: [unsavedChangesGuard],
+  },
+  {
+    path: 'items/categories/edit/:id',
+    component: YyemsItemCategoryEdit,
+    canDeactivate: [unsavedChangesGuard],
+  },
   { path: 'items/list', component: YyemsItemList },
   {
     path: 'items/new',
@@ -67,6 +88,17 @@ export const YYEMS_ROUTES: Routes = [
     component: YyemsItemEdit,
     canDeactivate: [unsavedChangesGuard],
   },
+  { path: 'vendors/categories/list', component: YyemsVendorCategoryList },
+  {
+    path: 'vendors/categories/new',
+    component: YyemsVendorCategoryEdit,
+    canDeactivate: [unsavedChangesGuard],
+  },
+  {
+    path: 'vendors/categories/edit/:id',
+    component: YyemsVendorCategoryEdit,
+    canDeactivate: [unsavedChangesGuard],
+  },
   { path: 'vendors/list', component: YyemsVendorList },
   {
     path: 'vendors/new',
@@ -76,6 +108,39 @@ export const YYEMS_ROUTES: Routes = [
   {
     path: 'vendors/edit/:id',
     component: YyemsVendorEdit,
+    canDeactivate: [unsavedChangesGuard],
+  },
+  { path: 'wallets/accounts/list', component: YyemsFinancialAccountList },
+  {
+    path: 'wallets/accounts/new',
+    component: YyemsFinancialAccountEdit,
+    canDeactivate: [unsavedChangesGuard],
+  },
+  {
+    path: 'wallets/accounts/edit/:id',
+    component: YyemsFinancialAccountEdit,
+    canDeactivate: [unsavedChangesGuard],
+  },
+  { path: 'wallets/currencies/list', component: YyemsCurrencyList },
+  {
+    path: 'wallets/currencies/new',
+    component: YyemsCurrencyEdit,
+    canDeactivate: [unsavedChangesGuard],
+  },
+  {
+    path: 'wallets/currencies/edit/:code',
+    component: YyemsCurrencyEdit,
+    canDeactivate: [unsavedChangesGuard],
+  },
+  { path: 'wallets/fx/list', component: YyemsFxRateList },
+  {
+    path: 'wallets/fx/new',
+    component: YyemsFxRateEdit,
+    canDeactivate: [unsavedChangesGuard],
+  },
+  {
+    path: 'wallets/fx/edit/:id',
+    component: YyemsFxRateEdit,
     canDeactivate: [unsavedChangesGuard],
   },
   { path: 'wallets/list', component: YyemsWalletList },

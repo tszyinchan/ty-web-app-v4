@@ -1,0 +1,19 @@
+<div class="standard-list-view">
+  <div class="list-container">
+    @for (c of yyems.vendorCategories(); track c.tb_tyapp_yvc_id) {
+      <a class="item-link" [routerLink]="['/yyems/vendors/categories/edit', c.tb_tyapp_yvc_id]">
+        <div class="item-content">
+          <div class="item-info-group">
+            <span class="main-text">{{ c.display_name }}</span>
+            <span class="sub-text">{{ c.level1 }} · {{ c.level2 }} · {{ c.level3 }}</span>
+          </div>
+          <mat-icon class="chevron">chevron_right</mat-icon>
+        </div>
+      </a>
+    } @empty {
+      @if (!yyems.dictsLoading()) {
+        <div class="empty-placeholder">No vendor categories. Create one before adding vendors.</div>
+      }
+    }
+  </div>
+</div>

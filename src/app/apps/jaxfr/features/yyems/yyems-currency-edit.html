@@ -1,0 +1,18 @@
+<div class="split-workspace">
+  @if (item(); as cur) {
+    <div class="form-scroll-area">
+      <section class="form-group">
+        <h3 class="group-header">Currency</h3>
+        <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
+          <mat-label>Code</mat-label>
+          <input matInput [(ngModel)]="cur.code" required [disabled]="!!currentCode" />
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="full-width mt-16" subscriptSizing="dynamic">
+          <mat-label>Symbol</mat-label>
+          <input matInput [(ngModel)]="cur.symbol" required />
+        </mat-form-field>
+        <p class="text-muted mt-8">Code cannot be changed after create. There is no delete — unused codes can stay.</p>
+      </section>
+    </div>
+  }
+</div>

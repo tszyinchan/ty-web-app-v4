@@ -1,0 +1,19 @@
+<div class="standard-list-view">
+  <div class="list-container">
+    @for (row of rows(); track row.tb_tyapp_yfx_id) {
+      <a class="item-link" [routerLink]="['/yyems/wallets/fx/edit', row.tb_tyapp_yfx_id]">
+        <div class="item-content">
+          <div class="item-info-group">
+            <span class="main-text">{{ row.currency }} · {{ row.year }}</span>
+            <span class="sub-text">1 = {{ row.to_cad }} CAD{{ row.source ? ' · ' + row.source : '' }}</span>
+          </div>
+          <mat-icon class="chevron">chevron_right</mat-icon>
+        </div>
+      </a>
+    } @empty {
+      @if (!yyems.dictsLoading()) {
+        <div class="empty-placeholder">No FX rates. Needed when bill currency differs from the wallet.</div>
+      }
+    }
+  </div>
+</div>

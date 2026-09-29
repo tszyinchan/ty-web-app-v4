@@ -62,6 +62,14 @@ export class YyemsVendorList implements OnInit, OnDestroy {
       title: 'Vendors',
       actions: [
         {
+          label: 'Categories',
+          icon: 'category',
+          type: 'secondary',
+          disabled: isLoading,
+          onClick: () =>
+            this.router.navigateByUrl('/yyems/vendors/categories/list'),
+        },
+        {
           label: 'New Vendor',
           icon: 'add',
           type: 'primary',

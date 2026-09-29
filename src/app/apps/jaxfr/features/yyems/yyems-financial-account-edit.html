@@ -1,0 +1,37 @@
+<div class="split-workspace">
+  @if (item(); as fa) {
+    <div class="form-scroll-area">
+      <section class="form-group">
+        <h3 class="group-header">Account</h3>
+        <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
+          <mat-label>Display name</mat-label>
+          <input matInput [(ngModel)]="fa.display_name" required />
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="full-width mt-16" subscriptSizing="dynamic">
+          <mat-label>Currency</mat-label>
+          <mat-select [(ngModel)]="fa.currency" required>
+            @for (c of yyems.currencies(); track c.code) {
+              <mat-option [value]="c.code">{{ c.code }} ({{ c.symbol }})</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+        @if (yyems.currencies().length === 0) {
+          <p class="text-muted">
+            No currencies yet.
+            <a routerLink="/yyems/wallets/currencies/new">Create one</a>
+          </p>
+        }
+        <mat-form-field appearance="outline" class="full-width mt-16" subscriptSizing="dynamic">
+          <mat-label>Owner</mat-label>
+          <mat-select [(ngModel)]="fa.ownerKey">
+            <mat-option value="">Joint</mat-option>
+            @for (u of users.pickerUsers(); track u.user_id) {
+              <mat-option [value]="u.user_id">{{ u | tyDisplayName }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+        <p class="text-muted mt-8">Joint = household pot. Split uses this owner as who paid.</p>
+      </section>
+    </div>
+  }
+</div>

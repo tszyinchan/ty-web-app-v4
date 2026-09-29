@@ -1,0 +1,19 @@
+<div class="standard-list-view">
+  <div class="list-container">
+    @for (c of yyems.currencies(); track c.code) {
+      <a class="item-link" [routerLink]="['/yyems/wallets/currencies/edit', c.code]">
+        <div class="item-content">
+          <div class="item-info-group">
+            <span class="main-text">{{ c.code }}</span>
+            <span class="sub-text">{{ c.symbol }}</span>
+          </div>
+          <mat-icon class="chevron">chevron_right</mat-icon>
+        </div>
+      </a>
+    } @empty {
+      @if (!yyems.dictsLoading()) {
+        <div class="empty-placeholder">No currencies. Create CAD (and others) before accounts or bills.</div>
+      }
+    }
+  </div>
+</div>

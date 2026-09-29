@@ -20,7 +20,10 @@
           </mat-select>
         </mat-form-field>
         @if (yyems.financialAccounts().length === 0) {
-          <p class="text-muted">No financial accounts yet.</p>
+          <p class="text-muted">
+            No accounts yet.
+            <a routerLink="/yyems/wallets/accounts/new">Create one</a>
+          </p>
         }
 
         <button

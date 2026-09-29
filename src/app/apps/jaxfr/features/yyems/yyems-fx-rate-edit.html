@@ -1,0 +1,38 @@
+<div class="split-workspace">
+  @if (item(); as fx) {
+    <div class="form-scroll-area">
+      <section class="form-group">
+        <h3 class="group-header">FX rate</h3>
+        <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
+          <mat-label>Currency</mat-label>
+          <mat-select [(ngModel)]="fx.currency" required>
+            @for (c of yyems.currencies(); track c.code) {
+              <mat-option [value]="c.code">{{ c.code }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+        @if (yyems.currencies().length === 0) {
+          <p class="text-muted">
+            No currencies yet.
+            <a routerLink="/yyems/wallets/currencies/new">Create one</a>
+          </p>
+        }
+        <div class="fields-grid-2 mt-16">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Year</mat-label>
+            <input matInput type="number" [(ngModel)]="fx.year" required />
+          </mat-form-field>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>To CAD</mat-label>
+            <input matInput type="number" step="0.0001" [(ngModel)]="fx.to_cad" required />
+          </mat-form-field>
+        </div>
+        <mat-form-field appearance="outline" class="full-width mt-16" subscriptSizing="dynamic">
+          <mat-label>Source</mat-label>
+          <input matInput [(ngModel)]="fx.source" />
+        </mat-form-field>
+        <p class="text-muted mt-8">CAD per 1 unit of this currency. CAD itself can be omitted (rate is 1).</p>
+      </section>
+    </div>
+  }
+</div>

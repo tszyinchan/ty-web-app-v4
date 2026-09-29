@@ -827,6 +827,83 @@ export class YyemsService {
     ) as Promise<YyemsWallet | null>;
   }
 
+  async saveItemCategory(
+    row: Partial<YyemsItemCategory>,
+  ): Promise<YyemsItemCategory | null> {
+    return this.saveDictRow(
+      'tyapp_yyems_item_category',
+      'tb_tyapp_yic_id',
+      'tb_tyapp_yic_seq_no',
+      row,
+      'Product category',
+    ) as Promise<YyemsItemCategory | null>;
+  }
+
+  async saveVendorCategory(
+    row: Partial<YyemsVendorCategory>,
+  ): Promise<YyemsVendorCategory | null> {
+    return this.saveDictRow(
+      'tyapp_yyems_vendor_category',
+      'tb_tyapp_yvc_id',
+      'tb_tyapp_yvc_seq_no',
+      row,
+      'Vendor category',
+    ) as Promise<YyemsVendorCategory | null>;
+  }
+
+  async saveFinancialAccount(
+    row: Partial<YyemsFinancialAccount>,
+  ): Promise<YyemsFinancialAccount | null> {
+    return this.saveDictRow(
+      'tyapp_yyems_financial_account',
+      'tb_tyapp_yfa_id',
+      'tb_tyapp_yfa_seq_no',
+      row,
+      'Account',
+    ) as Promise<YyemsFinancialAccount | null>;
+  }
+
+  async saveFxRate(row: Partial<YyemsFxRate>): Promise<YyemsFxRate | null> {
+    return this.saveDictRow(
+      'tyapp_yyems_fx_rate',
+      'tb_tyapp_yfx_id',
+      'tb_tyapp_yfx_seq_no',
+      row,
+      'FX rate',
+    ) as Promise<YyemsFxRate | null>;
+  }
+
+  async saveCurrency(row: YyemsCurrency, isNew: boolean): Promise<YyemsCurrency | null> {
+    const payload = {
+      code: row.code.trim().toUpperCase(),
+      symbol: row.symbol.trim(),
+    };
+    if (!payload.code || !payload.symbol) return null;
+    this.loading.set(true);
+    const query = isNew
+      ? this.supabase.from('tyapp_yyems_currency').insert(payload).select().single()
+      : this.supabase
+          .from('tyapp_yyems_currency')
+          .update({ symbol: payload.symbol })
+          .eq('code', payload.code)
+          .select()
+          .single();
+    try {
+      const { data, error } = await query;
+      if (error) throw error;
+      this.dictsLoaded = false;
+      this.zone.run(() => {
+        this.loading.set(false);
+        this.notification.showSuccess(isNew ? 'Currency created' : 'Currency saved');
+      });
+      return data as YyemsCurrency;
+    } catch (error: unknown) {
+      this.notification.handleError('Save currency failed', error);
+      this.zone.run(() => this.loading.set(false));
+      return null;
+    }
+  }
+
   private async saveDictRow(
     table: string,
     idCol: string,
@@ -888,6 +965,37 @@ export class YyemsService {
 
   async deleteWallet(id: string): Promise<boolean> {
     return this.softDeleteRow('tyapp_yyems_wallet', 'tb_tyapp_ywl_id', id, 'Wallet');
+  }
+
+  async deleteItemCategory(id: string): Promise<boolean> {
+    return this.softDeleteRow(
+      'tyapp_yyems_item_category',
+      'tb_tyapp_yic_id',
+      id,
+      'Product category',
+    );
+  }
+
+  async deleteVendorCategory(id: string): Promise<boolean> {
+    return this.softDeleteRow(
+      'tyapp_yyems_vendor_category',
+      'tb_tyapp_yvc_id',
+      id,
+      'Vendor category',
+    );
+  }
+
+  async deleteFinancialAccount(id: string): Promise<boolean> {
+    return this.softDeleteRow(
+      'tyapp_yyems_financial_account',
+      'tb_tyapp_yfa_id',
+      id,
+      'Account',
+    );
+  }
+
+  async deleteFxRate(id: string): Promise<boolean> {
+    return this.softDeleteRow('tyapp_yyems_fx_rate', 'tb_tyapp_yfx_id', id, 'FX rate');
   }
 
   private async rpcDelete(

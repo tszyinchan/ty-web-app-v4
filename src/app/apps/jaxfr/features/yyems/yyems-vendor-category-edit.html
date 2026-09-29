@@ -1,0 +1,25 @@
+<div class="split-workspace">
+  @if (item(); as cat) {
+    <div class="form-scroll-area">
+      <section class="form-group">
+        <h3 class="group-header">Vendor category</h3>
+        <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
+          <mat-label>Level 1</mat-label>
+          <input matInput [(ngModel)]="cat.level1" required />
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="full-width mt-16" subscriptSizing="dynamic">
+          <mat-label>Level 2</mat-label>
+          <input matInput [(ngModel)]="cat.level2" required />
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="full-width mt-16" subscriptSizing="dynamic">
+          <mat-label>Level 3</mat-label>
+          <input matInput [(ngModel)]="cat.level3" required />
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="full-width mt-16" subscriptSizing="dynamic">
+          <mat-label>Display name</mat-label>
+          <input matInput [(ngModel)]="cat.display_name" placeholder="Blank = join the three levels" />
+        </mat-form-field>
+      </section>
+    </div>
+  }
+</div>

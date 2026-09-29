@@ -11,6 +11,12 @@
             }
           </mat-select>
         </mat-form-field>
+        @if (yyems.itemCategories().length === 0) {
+          <p class="text-muted">
+            No product categories yet.
+            <a routerLink="/yyems/items/categories/new">Create one</a>
+          </p>
+        }
         <div class="fields-grid-2 mt-16">
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
             <mat-label>Name (zh)</mat-label>
