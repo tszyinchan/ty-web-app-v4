@@ -15,6 +15,8 @@ export type SyncStatus = 'loading' | 'up-to-date' | 'unsaved' | 'none';
 
 export interface HeaderConfig {
   backLink?: string;
+  /** When set, the back button runs this instead of navigating to `backLink`. */
+  onBack?: () => void;
   title?: string;
   syncStatus?: Signal<SyncStatus>;
   actions?: HeaderAction[];

@@ -721,6 +721,58 @@ export class YyemsService {
     ) as Promise<YyemsVendor | null>;
   }
 
+  /**
+   * Wallet created from a bill. Reuses a financial account with the same
+   * currency and owner (`null` = joint). Creates that account only when none exists.
+   */
+  async createWalletForBill(input: {
+    name: string;
+    currency: string;
+    ownerUserId: string | null;
+  }): Promise<YyemsWallet | null> {
+    const name = input.name.trim();
+    if (!name || !input.currency) return null;
+    const existing = this.financialAccounts().find(
+      (account) =>
+        account.status === RecordStatus.Active &&
+        account.currency === input.currency &&
+        account.owner_user_id === input.ownerUserId,
+    );
+    let accountId = existing?.tb_tyapp_yfa_id ?? null;
+    if (!accountId) {
+      this.loading.set(true);
+      try {
+        const { data, error } = await this.supabase
+          .from('tyapp_yyems_financial_account')
+          .insert({
+            display_name: name,
+            currency: input.currency,
+            owner_user_id: input.ownerUserId,
+            status: RecordStatus.Active,
+          })
+          .select()
+          .single();
+        if (error) throw error;
+        accountId = (data as YyemsFinancialAccount).tb_tyapp_yfa_id;
+        this.zone.run(() => this.loading.set(false));
+      } catch (error: unknown) {
+        this.notification.handleError('Create financial account failed', error);
+        this.zone.run(() => this.loading.set(false));
+        return null;
+      }
+    }
+    const saved = await this.saveWallet({
+      name,
+      financial_account_id: accountId,
+      remarks: null,
+      sort_order: null,
+      status: RecordStatus.Active,
+    });
+    if (!saved) return null;
+    await this.fetchDicts(true);
+    return saved;
+  }
+
   /** CAD wallet whose financial account is owned by `userId`. Joint when userId is null. */
   async createOwnedCadWallet(
     userId: string | null,

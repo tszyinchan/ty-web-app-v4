@@ -30,7 +30,8 @@
   &:has(app-welcome),
   &:has(app-docsign-edit),
   &:has(app-cg-package-edit),
-  &:has(app-cg-layer-edit) {
+  &:has(app-cg-layer-edit),
+  &:has(app-yyems-bill-edit) {
     overflow: hidden;
 
     .page-container {

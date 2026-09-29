@@ -84,18 +84,6 @@ export const FEATURE_HUBS: Record<string, FeatureHubConfig> = {
     title: 'yyHome',
     links: [
       {
-        title: 'Fridge',
-        icon: 'kitchen',
-        image: '/icons/3d/fridge.png',
-        route: '/yyems/fridge',
-      },
-      {
-        title: 'Kitchen',
-        icon: 'restaurant',
-        image: '/icons/3d/house.png',
-        route: '/yyems/home',
-      },
-      {
         title: 'Bills',
         icon: 'receipt_long',
         image: '/icons/3d/payments.png',
@@ -106,6 +94,18 @@ export const FEATURE_HUBS: Record<string, FeatureHubConfig> = {
         icon: 'balance',
         image: '/icons/3d/payments.png',
         route: '/yyems/split',
+      },
+      {
+        title: 'Fridge',
+        icon: 'kitchen',
+        image: '/icons/3d/fridge.png',
+        route: '/yyems/fridge',
+      },
+      {
+        title: 'Kitchen',
+        icon: 'restaurant',
+        image: '/icons/3d/house.png',
+        route: '/yyems/home',
       },
       {
         title: 'Products',

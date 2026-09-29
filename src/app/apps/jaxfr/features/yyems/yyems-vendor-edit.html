@@ -1,8 +1,10 @@
-<div class="split-workspace">
+<div class="split-workspace" [class.embedded]="embedded()">
   @if (item(); as v) {
     <div class="form-scroll-area">
       <section class="form-group">
-        <h3 class="group-header">Vendor</h3>
+        @if (!embedded()) {
+          <h3 class="group-header">Vendor</h3>
+        }
         <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
           <mat-label>Category</mat-label>
           <mat-select [(ngModel)]="v.category_id" required>
@@ -11,21 +13,38 @@
             }
           </mat-select>
         </mat-form-field>
-        <div class="fields-grid-2 mt-16">
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>Name</mat-label>
-            <input matInput [(ngModel)]="v.name" required />
-          </mat-form-field>
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>Short name</mat-label>
-            <input matInput [(ngModel)]="v.name_short" />
-          </mat-form-field>
-        </div>
+        @if (yyems.vendorCategories().length === 0) {
+          <p class="text-muted">No vendor categories yet.</p>
+        }
         <mat-form-field appearance="outline" class="full-width mt-16" subscriptSizing="dynamic">
-          <mat-label>Sort order</mat-label>
-          <input matInput type="number" [(ngModel)]="v.sort_order" />
+          <mat-label>Name</mat-label>
+          <input matInput [(ngModel)]="v.name" required />
         </mat-form-field>
-        <p class="text-muted mt-8">Lower numbers show first when picking a vendor on a bill.</p>
+
+        <button
+          type="button"
+          class="more-heading"
+          [class.collapsed]="!moreOpen()"
+          [attr.aria-expanded]="moreOpen()"
+          (click)="moreOpen.set(!moreOpen())"
+        >
+          <span class="more-chevron" aria-hidden="true"></span>
+          <span>More</span>
+          <span class="more-rule"></span>
+        </button>
+        <div class="more-panel" [class.collapsed]="!moreOpen()">
+          <div class="more-panel-inner">
+            <mat-form-field appearance="outline" class="full-width mt-16" subscriptSizing="dynamic">
+              <mat-label>Short name</mat-label>
+              <input matInput [(ngModel)]="v.name_short" />
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="full-width mt-16" subscriptSizing="dynamic">
+              <mat-label>Sort order</mat-label>
+              <input matInput type="number" [(ngModel)]="v.sort_order" />
+            </mat-form-field>
+            <p class="text-muted mt-8">Lower numbers show first when picking a vendor on a bill.</p>
+          </div>
+        </div>
       </section>
     </div>
   }

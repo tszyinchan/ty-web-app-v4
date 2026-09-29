@@ -2,19 +2,26 @@ import { CommonModule } from '@angular/common';
 import {
   Component,
   DoCheck,
+  ElementRef,
   HostListener,
+  Injector,
   OnDestroy,
   OnInit,
+  afterNextRender,
   computed,
   inject,
   signal,
+  viewChild,
 } from '@angular/core';
+import { NgZone } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 
 import { RecordStatus } from '../../../../core/models/status.enum';
@@ -38,6 +45,8 @@ import {
   YyemsLocationTz,
 } from './yyems.model';
 import { YyemsService } from './yyems.service';
+import { YyemsVendorEdit } from './yyems-vendor-edit';
+import { YyemsWalletEdit } from './yyems-wallet-edit';
 import {
   BearerPercent,
   billFxHint,
@@ -81,8 +90,12 @@ interface BillForm {
     MatIconModule,
     MatCheckboxModule,
     MatAutocompleteModule,
+    MatFormFieldModule,
     MatInputModule,
+    MatSelectModule,
     DisplayNamePipe,
+    YyemsVendorEdit,
+    YyemsWalletEdit,
   ],
   templateUrl: './yyems-bill-edit.html',
   styleUrl: './yyems-bill-edit.scss',
@@ -96,7 +109,28 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
   readonly users = inject(UserService);
 
   readonly YYEMS_IN_OR_OUT = YYEMS_IN_OR_OUT;
+  readonly kindOptions = [
+    { value: YYEMS_IN_OR_OUT.In, label: 'In' },
+    { value: YYEMS_IN_OR_OUT.Out, label: 'Out' },
+    { value: YYEMS_IN_OR_OUT.Free, label: 'Free' },
+  ] as const;
   readonly formatSharePercent = formatSharePercent;
+  readonly vendorPane = viewChild(YyemsVendorEdit);
+  readonly walletPane = viewChild(YyemsWalletEdit);
+  readonly billPane = viewChild<ElementRef<HTMLElement>>('billPane');
+  billNudge = signal(0);
+  billTweening = signal(false);
+  private injector = inject(Injector);
+  private zone = inject(NgZone);
+  private readonly seatMs = 520;
+  narrow = signal(false);
+  private narrowQuery = window.matchMedia('(max-width: 768px)');
+  private onNarrow = (event: MediaQueryListEvent) => {
+    this.narrow.set(event.matches);
+    if (!this.quickKind()) return;
+    if (event.matches) this.queueQuickHeader();
+    else this.applyBillHeader();
+  };
   readonly shareSplitHint = shareSplitHint;
   readonly itemLabel = itemLabel;
 
@@ -105,6 +139,10 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
   buys = signal<YyemsBuyEmbed[]>([]);
   vendorQuery = signal('');
   walletQuery = signal('');
+  quickKind = signal<'vendor' | 'wallet' | null>(null);
+  quickLeaving = signal(false);
+  quickVendorName = signal('');
+  quickWalletName = signal('');
   originalDataStr = signal('');
   isDirty = signal(false);
   isSaveDisabled = signal(true);
@@ -181,6 +219,8 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
   }
 
   async ngOnInit() {
+    this.narrow.set(this.narrowQuery.matches);
+    this.narrowQuery.addEventListener('change', this.onNarrow);
     this.currentId = this.route.snapshot.paramMap.get('id');
     await Promise.all([
       this.yyems.fetchDicts(),
@@ -231,7 +271,10 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
       this.moreOpen.set(false);
     }
     this.originalDataStr.set(JSON.stringify(this.item()));
+    this.applyBillHeader();
+  }
 
+  private applyBillHeader() {
     const actions: HeaderAction[] = [];
     if (this.currentId) {
       actions.push({
@@ -484,6 +527,142 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
     bill.wallet_id = hit?.tb_tyapp_ywl_id ?? '';
   }
 
+  private quickTimer = 0;
+
+  openQuickVendor() {
+    const typed = this.vendorQuery().trim();
+    const exists = this.sortedVendors().some(
+      (row) => row.name.toLowerCase() === typed.toLowerCase(),
+    );
+    this.quickVendorName.set(exists ? '' : typed);
+    this.seatGuest('vendor');
+  }
+
+  openQuickWallet() {
+    const typed = this.walletQuery().trim();
+    const exists = this.sortedWallets().some(
+      (row) => row.name.toLowerCase() === typed.toLowerCase(),
+    );
+    this.quickWalletName.set(exists ? '' : typed);
+    this.seatGuest('wallet');
+  }
+
+  private seatGuest(kind: 'vendor' | 'wallet') {
+    const from = this.billLeft();
+    this.quickLeaving.set(false);
+    this.quickKind.set(kind);
+    this.queueQuickHeader();
+    afterNextRender(() => this.scootBill(from), { injector: this.injector });
+  }
+
+  closeQuick() {
+    if (!this.quickKind() || this.quickLeaving()) return;
+    this.quickLeaving.set(true);
+    window.clearTimeout(this.quickTimer);
+    this.quickTimer = window.setTimeout(() => this.finishQuick(), this.seatMs + 40);
+  }
+
+  onQuickDone(event: AnimationEvent) {
+    if (event.target !== event.currentTarget || !this.quickLeaving()) return;
+    if (
+      !event.animationName.includes('guest-out') &&
+      !event.animationName.includes('quick-panel-down')
+    ) {
+      return;
+    }
+    this.finishQuick();
+  }
+
+  private finishQuick() {
+    window.clearTimeout(this.quickTimer);
+    const from = this.billLeft();
+    const wasNarrow = this.narrow();
+    this.quickKind.set(null);
+    this.quickLeaving.set(false);
+    if (wasNarrow) this.applyBillHeader();
+    afterNextRender(() => this.scootBill(from), { injector: this.injector });
+  }
+
+  private billLeft(): number {
+    return this.billPane()?.nativeElement.getBoundingClientRect().left ?? 0;
+  }
+
+  private scootBill(fromLeft: number) {
+    if (this.narrow()) {
+      this.billNudge.set(0);
+      this.billTweening.set(false);
+      return;
+    }
+    const to = this.billLeft();
+    const delta = fromLeft - to;
+    if (Math.abs(delta) < 1) {
+      this.billNudge.set(0);
+      this.billTweening.set(false);
+      return;
+    }
+    this.billTweening.set(false);
+    this.billNudge.set(delta);
+    this.zone.runOutsideAngular(() => {
+      requestAnimationFrame(() => {
+        this.zone.run(() => {
+          this.billTweening.set(true);
+          this.billNudge.set(0);
+        });
+      });
+    });
+  }
+
+  private queueQuickHeader(attempt = 0) {
+    if (!this.narrow()) return;
+    window.setTimeout(() => {
+      if (!this.narrow() || !this.quickKind()) return;
+      const pane = this.quickKind() === 'vendor' ? this.vendorPane() : this.walletPane();
+      if (!pane) {
+        if (attempt < 8) this.queueQuickHeader(attempt + 1);
+        return;
+      }
+      this.header.setConfig({
+        onBack: () => this.closeQuick(),
+        title: this.quickKind() === 'vendor' ? 'New vendor' : 'New wallet',
+        actions: [
+          {
+            label: 'Create',
+            icon: 'check',
+            type: 'primary',
+            disabled: pane.isSaveDisabled,
+            onClick: () => void pane.onSave(),
+          },
+        ],
+      });
+    }, 0);
+  }
+
+  onVendorCreated(saved: { tb_tyapp_yvd_id: string; name: string }) {
+    const bill = this.item();
+    if (!bill) return;
+    bill.vendor_id = saved.tb_tyapp_yvd_id;
+    this.vendorQuery.set(saved.name);
+    this.closeQuick();
+  }
+
+  onWalletCreated(saved: { tb_tyapp_ywl_id: string; name: string }) {
+    const bill = this.item();
+    if (!bill) return;
+    bill.wallet_id = saved.tb_tyapp_ywl_id;
+    this.walletQuery.set(saved.name);
+    this.closeQuick();
+  }
+
+  saveQuick() {
+    const pane = this.quickKind() === 'vendor' ? this.vendorPane() : this.walletPane();
+    void pane?.onSave();
+  }
+
+  quickSaveDisabled(): boolean {
+    const pane = this.quickKind() === 'vendor' ? this.vendorPane() : this.walletPane();
+    return pane?.isSaveDisabled() ?? true;
+  }
+
   onCurrencyQuery(bill: BillForm, text: string) {
     const code = text.trim().toUpperCase();
     bill.currency = this.knownCurrency(code) ? code : text.trim();
@@ -625,6 +804,8 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
   }
 
   ngOnDestroy() {
+    this.narrowQuery.removeEventListener('change', this.onNarrow);
+    window.clearTimeout(this.quickTimer);
     this.header.clear();
   }
 }

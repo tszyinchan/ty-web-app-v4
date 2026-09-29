@@ -7,6 +7,8 @@ import {
   OnInit,
   computed,
   inject,
+  input,
+  output,
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -35,12 +37,17 @@ import { YyemsService } from './yyems.service';
     MatSelectModule,
   ],
   templateUrl: './yyems-vendor-edit.html',
+  styleUrl: './yyems-more.scss',
 })
 export class YyemsVendorEdit implements OnInit, OnDestroy, DoCheck {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private header = inject(HeaderService);
   readonly yyems = inject(YyemsService);
+  readonly embedded = input(false);
+  readonly seedName = input('');
+  readonly created = output<YyemsVendor>();
+  moreOpen = signal(false);
 
   currentId: string | null = null;
   item = signal<Partial<YyemsVendor> | null>(null);
@@ -79,6 +86,18 @@ export class YyemsVendorEdit implements OnInit, OnDestroy, DoCheck {
   }
 
   async ngOnInit() {
+    if (this.embedded()) {
+      await this.yyems.fetchDicts();
+      this.item.set({
+        category_id: this.yyems.vendorCategories()[0]?.tb_tyapp_yvc_id ?? '',
+        name: this.seedName(),
+        name_short: '',
+        sort_order: null,
+        status: RecordStatus.Active,
+      });
+      this.originalDataStr.set(JSON.stringify(this.item()));
+      return;
+    }
     this.currentId = this.route.snapshot.paramMap.get('id');
     await this.yyems.fetchDicts();
     if (this.currentId) {
@@ -88,6 +107,7 @@ export class YyemsVendorEdit implements OnInit, OnDestroy, DoCheck {
         return;
       }
       this.item.set({ ...found });
+      this.moreOpen.set(!!found.name_short || found.sort_order != null);
     } else {
       this.item.set({
         category_id: '',
@@ -133,6 +153,10 @@ export class YyemsVendorEdit implements OnInit, OnDestroy, DoCheck {
     });
     if (!saved) return;
     await this.yyems.fetchDicts(true);
+    if (this.embedded()) {
+      this.created.emit(saved);
+      return;
+    }
     this.originalDataStr.set(JSON.stringify(this.item()));
     this.isDirty.set(false);
     void this.router.navigateByUrl('/yyems/vendors/list');
@@ -149,6 +173,6 @@ export class YyemsVendorEdit implements OnInit, OnDestroy, DoCheck {
   }
 
   ngOnDestroy() {
-    this.header.clear();
+    if (!this.embedded()) this.header.clear();
   }
 }

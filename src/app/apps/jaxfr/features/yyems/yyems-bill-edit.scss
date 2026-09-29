@@ -1,6 +1,38 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
+.bill-stage {
+  height: 100%;
+  overflow-x: hidden;
+}
+
+.bill-stage-inner {
+  display: grid;
+  grid-template-columns: 1fr minmax(0, 720px) 1fr;
+  grid-template-rows: 1fr;
+  width: 100%;
+  height: 100%;
+}
+
+.bill-stage.quick-open .bill-stage-inner {
+  grid-template-columns: 0px minmax(0, 1fr) minmax(0, 1fr);
+}
+
 .ledger-edit.split-workspace {
+  grid-column: 2;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  margin: 0;
   padding: 16px;
-  max-width: 720px;
+  overflow: auto;
+  will-change: transform;
+}
+
+.ledger-edit.split-workspace.tweening {
+  transition: transform 520ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .kind-toggle,
@@ -11,34 +43,57 @@
   margin-bottom: 8px;
 }
 
-.kind-toggle button,
-.owner-toggle button {
-  font: var(--app-weight-emphasis) 14px var(--app-font);
-  color: var(--app-text-secondary);
-  background: var(--app-input-bg);
-  border: 1px solid var(--app-input-border);
-  border-radius: var(--app-radius);
-  padding: 10px 8px;
-  cursor: pointer;
+.kind-toggle .kind-btn {
+  width: 100%;
+  min-height: 36px;
+}
 
-  &:hover {
-    background: var(--app-tile-hover-bg);
-  }
+button.mat-mdc-unelevated-button.kind-btn.kind-in {
+  --mdc-filled-button-container-color: #2e9a4f;
+  --mdc-filled-button-label-text-color: #fff;
+}
 
-  &.active.kind-in {
-    color: var(--app-link);
-    border-color: var(--app-link);
-  }
+button.mat-mdc-unelevated-button.kind-btn.kind-out {
+  --mdc-filled-button-container-color: #a31f1f;
+  --mdc-filled-button-label-text-color: #fff;
+}
 
-  &.active.kind-out {
-    color: var(--app-danger);
-    border-color: var(--app-danger);
-  }
+button.mat-mdc-unelevated-button.kind-btn.kind-free {
+  --mdc-filled-button-container-color: #6a7278;
+  --mdc-filled-button-label-text-color: #fff;
+}
 
-  &.active.kind-free {
-    color: var(--app-text-muted);
-    border-color: var(--app-text-muted);
-  }
+:host-context(html.theme-aero) button.mat-mdc-unelevated-button.kind-btn.kind-in {
+  --mdc-filled-button-container-color: transparent;
+  background: linear-gradient(180deg, #8fe0a4 0%, #3aaa5c 48%, #2a8a48 100%);
+  border: 1px solid #1e7a3a;
+  box-shadow: var(--app-button-primary-shadow);
+}
+
+:host-context(html.theme-aero) button.mat-mdc-unelevated-button.kind-btn.kind-out {
+  --mdc-filled-button-container-color: transparent;
+  background: linear-gradient(180deg, #f0a8a8 0%, #c44545 48%, #8e1a1a 100%);
+  border: 1px solid #7a1515;
+  box-shadow: var(--app-button-primary-shadow);
+}
+
+:host-context(html.theme-aero) button.mat-mdc-unelevated-button.kind-btn.kind-free {
+  --mdc-filled-button-container-color: transparent;
+  background: linear-gradient(180deg, #d5dbe0 0%, #8a929a 48%, #5c646c 100%);
+  border: 1px solid #4a5258;
+  box-shadow: var(--app-button-primary-shadow);
+}
+
+:host-context(html.theme-aero) button.mat-mdc-unelevated-button.kind-btn.kind-in:hover:not(:disabled) {
+  background: linear-gradient(180deg, #a8eab8 0%, #48b86a 48%, #329a52 100%);
+}
+
+:host-context(html.theme-aero) button.mat-mdc-unelevated-button.kind-btn.kind-out:hover:not(:disabled) {
+  background: linear-gradient(180deg, #f5bcbc 0%, #d05555 48%, #a31f1f 100%);
+}
+
+:host-context(html.theme-aero) button.mat-mdc-unelevated-button.kind-btn.kind-free:hover:not(:disabled) {
+  background: linear-gradient(180deg, #e4e8ec 0%, #9aa2aa 48%, #6a7278 100%);
 }
 
 .owner-toggle {
@@ -51,6 +106,13 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
+  font: var(--app-weight-emphasis) 14px var(--app-font);
+  color: var(--app-text-secondary);
+  background: var(--app-input-bg);
+  border: 1px solid var(--app-input-border);
+  border-radius: var(--app-radius);
+  padding: 10px 8px;
+  cursor: pointer;
 }
 
 .owner-toggle button mat-icon {
@@ -209,6 +271,21 @@
   color: var(--app-text-muted);
 }
 
+.ledger-with-new {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+
+  .ledger-control {
+    flex: 1;
+  }
+}
+
+.ledger-new {
+  flex: 0 0 auto;
+}
+
 .ledger-control {
   width: 100%;
   min-width: 0;
@@ -280,4 +357,156 @@ select.ledger-control {
   margin: 8px 0 0;
   font-size: 13px;
   color: var(--app-text-muted);
+}
+
+.quick-slot {
+  grid-column: 3;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.quick-scrim {
+  display: none;
+}
+
+.quick-panel {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  padding: 16px;
+  background: var(--app-page-bg);
+  border-left: 1px solid var(--app-border-subtle);
+  animation: guest-in 520ms cubic-bezier(0.22, 1, 0.36, 1) 40ms both;
+
+  &.leaving {
+    animation: guest-out 480ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+}
+
+.quick-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0 0 8px;
+
+  h2 {
+    flex: 1;
+    margin: 0;
+    font: var(--app-weight-emphasis) 18px var(--app-font);
+    color: var(--app-text-primary);
+  }
+}
+
+@keyframes guest-in {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes guest-out {
+  from { transform: translateX(0); }
+  to { transform: translateX(100%); }
+}
+
+@media (max-width: 768px) {
+  .bill-stage,
+  .bill-stage.quick-open {
+    display: block;
+    height: auto;
+  }
+
+  .bill-stage-inner,
+  .bill-stage.quick-open .bill-stage-inner {
+    display: block;
+    height: auto;
+  }
+
+  .ledger-edit.split-workspace {
+    grid-column: auto;
+    max-width: 720px;
+    height: auto;
+    margin: 0 auto;
+    transition: none;
+  }
+
+  .quick-slot {
+    display: block;
+    position: fixed;
+    top: 56px;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 1;
+    overflow: hidden;
+  }
+
+  .quick-scrim {
+    display: block;
+    position: fixed;
+    top: 56px;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 0;
+    border: 0;
+    padding: 0;
+    background: color-mix(in srgb, var(--app-text-primary) 18%, transparent);
+    cursor: pointer;
+    animation: quick-scrim-in 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
+
+    &.leaving {
+      animation: quick-scrim-out 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+  }
+
+  .quick-panel {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    border-left: 0;
+    animation: quick-panel-up 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
+
+    &.leaving {
+      animation: quick-panel-down 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+  }
+
+  .quick-bar {
+    display: none;
+  }
+}
+
+@keyframes quick-panel-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes quick-panel-down {
+  from { transform: translateY(0); }
+  to { transform: translateY(100%); }
+}
+
+@keyframes quick-scrim-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes quick-scrim-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bill-stage,
+  .bill-stage-inner,
+  .ledger-edit.split-workspace,
+  .quick-scrim,
+  .quick-panel {
+    transition: none;
+    animation: none;
+  }
 }

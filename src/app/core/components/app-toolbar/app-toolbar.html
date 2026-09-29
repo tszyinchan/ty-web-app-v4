@@ -24,7 +24,11 @@
     @if (headerService.config(); as config) {
       <div class="page-toolbar-wrapper">
         <div class="left-actions">
-          @if (config.backLink) {
+          @if (config.onBack) {
+            <button mat-icon-button type="button" (click)="config.onBack()">
+              <mat-icon>west</mat-icon>
+            </button>
+          } @else if (config.backLink) {
             <button mat-icon-button [routerLink]="config.backLink">
               <mat-icon>west</mat-icon>
             </button>

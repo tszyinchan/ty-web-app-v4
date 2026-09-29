@@ -1,0 +1,60 @@
+.split-workspace.embedded {
+  padding: 0;
+  margin: 0;
+  max-width: none;
+  gap: 0;
+
+  .form-group {
+    margin-bottom: 0;
+  }
+}
+
+.more-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 16px;
+  padding: 0 0 8px;
+  border: 0;
+  background: transparent;
+  font: var(--app-weight-emphasis) 13px var(--app-font);
+  color: var(--app-text-secondary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.more-chevron {
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 6px solid var(--app-text-muted);
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.more-heading.collapsed .more-chevron {
+  transform: rotate(-90deg);
+}
+
+.more-rule {
+  flex: 1;
+  height: 1px;
+  background: var(--app-heading-rule, var(--app-border-subtle));
+}
+
+.more-panel {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 0.22s ease;
+}
+
+.more-panel.collapsed {
+  grid-template-rows: 0fr;
+}
+
+.more-panel-inner {
+  overflow: hidden;
+  min-height: 0;
+}

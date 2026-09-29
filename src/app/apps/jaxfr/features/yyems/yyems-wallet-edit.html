@@ -1,9 +1,15 @@
-<div class="split-workspace">
+<div class="split-workspace" [class.embedded]="embedded()">
   @if (item(); as w) {
     <div class="form-scroll-area">
       <section class="form-group">
-        <h3 class="group-header">Wallet</h3>
+        @if (!embedded()) {
+          <h3 class="group-header">Wallet</h3>
+        }
         <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
+          <mat-label>Name</mat-label>
+          <input matInput [(ngModel)]="w.name" required />
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="full-width mt-16" subscriptSizing="dynamic">
           <mat-label>Financial account</mat-label>
           <mat-select [(ngModel)]="w.financial_account_id" required>
             @for (fa of yyems.financialAccounts(); track fa.tb_tyapp_yfa_id) {
@@ -13,19 +19,34 @@
             }
           </mat-select>
         </mat-form-field>
-        <mat-form-field appearance="outline" class="full-width mt-16" subscriptSizing="dynamic">
-          <mat-label>Name</mat-label>
-          <input matInput [(ngModel)]="w.name" required />
-        </mat-form-field>
-        <mat-form-field appearance="outline" class="full-width mt-16" subscriptSizing="dynamic">
-          <mat-label>Sort order</mat-label>
-          <input matInput type="number" [(ngModel)]="w.sort_order" />
-        </mat-form-field>
-        <p class="text-muted mt-8">Lower numbers show first when picking a wallet on a bill.</p>
-        <mat-form-field appearance="outline" class="full-width mt-16" subscriptSizing="dynamic">
-          <mat-label>Remarks</mat-label>
-          <textarea matInput rows="2" [(ngModel)]="w.remarks"></textarea>
-        </mat-form-field>
+        @if (yyems.financialAccounts().length === 0) {
+          <p class="text-muted">No financial accounts yet.</p>
+        }
+
+        <button
+          type="button"
+          class="more-heading"
+          [class.collapsed]="!moreOpen()"
+          [attr.aria-expanded]="moreOpen()"
+          (click)="moreOpen.set(!moreOpen())"
+        >
+          <span class="more-chevron" aria-hidden="true"></span>
+          <span>More</span>
+          <span class="more-rule"></span>
+        </button>
+        <div class="more-panel" [class.collapsed]="!moreOpen()">
+          <div class="more-panel-inner">
+            <mat-form-field appearance="outline" class="full-width mt-16" subscriptSizing="dynamic">
+              <mat-label>Sort order</mat-label>
+              <input matInput type="number" [(ngModel)]="w.sort_order" />
+            </mat-form-field>
+            <p class="text-muted mt-8">Lower numbers show first when picking a wallet on a bill.</p>
+            <mat-form-field appearance="outline" class="full-width mt-16" subscriptSizing="dynamic">
+              <mat-label>Remarks</mat-label>
+              <textarea matInput rows="2" [(ngModel)]="w.remarks"></textarea>
+            </mat-form-field>
+          </div>
+        </div>
       </section>
     </div>
   }

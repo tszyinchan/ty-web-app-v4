@@ -1,35 +1,40 @@
-<div class="split-workspace ledger-edit">
+<div class="bill-stage" [class.quick-open]="!!quickKind()">
+  <div class="bill-stage-inner">
+<div class="split-workspace ledger-edit"
+  #billPane
+  [class.tweening]="billTweening()"
+  [style.transform]="'translateX(' + billNudge() + 'px)'"
+>
   @if (item(); as bill) {
     <div class="form-scroll-area">
       <section class="form-group">
         <div class="kind-toggle">
-          <button
-            type="button"
-            class="kind-in"
-            [class.active]="bill.in_or_out === YYEMS_IN_OR_OUT.In"
-            [attr.aria-pressed]="bill.in_or_out === YYEMS_IN_OR_OUT.In"
-            (click)="setFlow(bill, YYEMS_IN_OR_OUT.In)"
-          >
-            In
-          </button>
-          <button
-            type="button"
-            class="kind-out"
-            [class.active]="bill.in_or_out === YYEMS_IN_OR_OUT.Out"
-            [attr.aria-pressed]="bill.in_or_out === YYEMS_IN_OR_OUT.Out"
-            (click)="setFlow(bill, YYEMS_IN_OR_OUT.Out)"
-          >
-            Out
-          </button>
-          <button
-            type="button"
-            class="kind-free"
-            [class.active]="bill.in_or_out === YYEMS_IN_OR_OUT.Free"
-            [attr.aria-pressed]="bill.in_or_out === YYEMS_IN_OR_OUT.Free"
-            (click)="setFlow(bill, YYEMS_IN_OR_OUT.Free)"
-          >
-            Free
-          </button>
+          @for (opt of kindOptions; track opt.value) {
+            @if (bill.in_or_out === opt.value) {
+              <button
+                mat-flat-button
+                type="button"
+                class="kind-btn"
+                [class.kind-in]="opt.value === YYEMS_IN_OR_OUT.In"
+                [class.kind-out]="opt.value === YYEMS_IN_OR_OUT.Out"
+                [class.kind-free]="opt.value === YYEMS_IN_OR_OUT.Free"
+                [attr.aria-pressed]="true"
+                (click)="setFlow(bill, opt.value)"
+              >
+                {{ opt.label }}
+              </button>
+            } @else {
+              <button
+                mat-stroked-button
+                type="button"
+                class="kind-btn"
+                [attr.aria-pressed]="false"
+                (click)="setFlow(bill, opt.value)"
+              >
+                {{ opt.label }}
+              </button>
+            }
+          }
         </div>
 
         <div class="ledger-row">
@@ -100,7 +105,7 @@
 
         <div class="ledger-row">
           <span class="ledger-label">Vendor</span>
-          <div>
+          <div class="ledger-with-new">
             <input
               class="ledger-control"
               matInput
@@ -116,12 +121,15 @@
                 <mat-option [value]="v.name">{{ v.name }}</mat-option>
               }
             </mat-autocomplete>
+            <button mat-stroked-button type="button" class="ledger-new" (click)="openQuickVendor()">
+              New
+            </button>
           </div>
         </div>
 
         <div class="ledger-row">
           <span class="ledger-label">Wallet</span>
-          <div>
+          <div class="ledger-with-new">
             <input
               class="ledger-control"
               matInput
@@ -137,6 +145,9 @@
                 <mat-option [value]="w.name">{{ w.name }}</mat-option>
               }
             </mat-autocomplete>
+            <button mat-stroked-button type="button" class="ledger-new" (click)="openQuickWallet()">
+              New
+            </button>
           </div>
         </div>
 
@@ -283,4 +294,52 @@
       </section>
     </div>
   }
+</div>
+
+@if (quickKind(); as kind) {
+  <aside class="quick-slot" [class.leaving]="quickLeaving()">
+    <button
+      type="button"
+      class="quick-scrim"
+      [class.leaving]="quickLeaving()"
+      aria-label="Close"
+      (click)="closeQuick()"
+    ></button>
+    <div
+      class="quick-panel"
+      [class.leaving]="quickLeaving()"
+      (animationend)="onQuickDone($event)"
+    >
+      <header class="quick-bar">
+        <button mat-icon-button type="button" aria-label="Back" (click)="closeQuick()">
+          <mat-icon>arrow_back</mat-icon>
+        </button>
+        <h2>{{ kind === 'vendor' ? 'New vendor' : 'New wallet' }}</h2>
+        <button
+          mat-icon-button
+          type="button"
+          aria-label="Create"
+          [disabled]="quickSaveDisabled()"
+          (click)="saveQuick()"
+        >
+          <mat-icon>check</mat-icon>
+        </button>
+      </header>
+      @if (kind === 'vendor') {
+        <app-yyems-vendor-edit
+          [embedded]="true"
+          [seedName]="quickVendorName()"
+          (created)="onVendorCreated($event)"
+        />
+      } @else {
+        <app-yyems-wallet-edit
+          [embedded]="true"
+          [seedName]="quickWalletName()"
+          (created)="onWalletCreated($event)"
+        />
+      }
+    </div>
+  </aside>
+}
+  </div>
 </div>
