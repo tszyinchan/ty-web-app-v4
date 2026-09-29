@@ -1,4 +1,4 @@
-<div class="bill-stage" [class.quick-open]="!!quickKind()">
+<div class="bill-stage" [class.quick-open]="!!quickKind() && !quickLeaving()">
   <div class="bill-stage-inner">
 <div class="split-workspace ledger-edit"
   #billPane
@@ -46,10 +46,31 @@
               [(ngModel)]="bill.occurred_local"
               required
             />
-            <select class="ledger-control ledger-tz" [(ngModel)]="bill.location_tz">
-              <option value="TO">TO</option>
-              <option value="HK">HK</option>
-            </select>
+            <div class="seg-toggle tz-toggle">
+              @for (opt of tzOptions; track opt.value) {
+                @if (bill.location_tz === opt.value) {
+                  <button
+                    mat-flat-button
+                    type="button"
+                    class="seg-btn"
+                    [attr.aria-pressed]="true"
+                    (click)="setTz(bill, opt.value)"
+                  >
+                    {{ opt.label }}
+                  </button>
+                } @else {
+                  <button
+                    mat-stroked-button
+                    type="button"
+                    class="seg-btn"
+                    [attr.aria-pressed]="false"
+                    (click)="setTz(bill, opt.value)"
+                  >
+                    {{ opt.label }}
+                  </button>
+                }
+              }
+            </div>
           </div>
         </div>
 
@@ -57,22 +78,51 @@
           <span class="ledger-label">Amount</span>
           <div class="ledger-amount-stack">
             <div class="ledger-amount-line">
-              <div>
-                <input
-                  class="ledger-control ledger-currency"
-                  matInput
-                  name="billCurrency"
-                  [matAutocomplete]="currencyAuto"
-                  [ngModel]="bill.currency"
-                  (ngModelChange)="onCurrencyQuery(bill, $event)"
-                  autocomplete="off"
-                  required
-                />
-                <mat-autocomplete #currencyAuto="matAutocomplete">
-                  @for (c of currencyChoices(bill.currency); track c.code) {
-                    <mat-option [value]="c.code">{{ c.code }}</mat-option>
+              <div class="seg-toggle currency-toggle">
+                @for (code of commonCurrencies; track code) {
+                  @if (bill.currency === code && !currencyOtherOpen()) {
+                    <button
+                      mat-flat-button
+                      type="button"
+                      class="seg-btn"
+                      [attr.aria-pressed]="true"
+                      (click)="setCommonCurrency(bill, code)"
+                    >
+                      {{ code }}
+                    </button>
+                  } @else {
+                    <button
+                      mat-stroked-button
+                      type="button"
+                      class="seg-btn"
+                      [attr.aria-pressed]="false"
+                      (click)="setCommonCurrency(bill, code)"
+                    >
+                      {{ code }}
+                    </button>
                   }
-                </mat-autocomplete>
+                }
+                @if (isOtherCurrency(bill.currency) || currencyOtherOpen()) {
+                  <button
+                    mat-flat-button
+                    type="button"
+                    class="seg-btn seg-btn-other"
+                    [attr.aria-pressed]="true"
+                    (click)="openCurrencyOther(bill)"
+                  >
+                    {{ currencyOtherOpen() ? '…' : bill.currency }}
+                  </button>
+                } @else {
+                  <button
+                    mat-stroked-button
+                    type="button"
+                    class="seg-btn seg-btn-other"
+                    [attr.aria-pressed]="false"
+                    (click)="openCurrencyOther(bill)"
+                  >
+                    …
+                  </button>
+                }
               </div>
               <input
                 class="ledger-control ledger-number"
@@ -84,6 +134,30 @@
                 required
               />
             </div>
+            @if (currencyOtherOpen()) {
+              <div class="ledger-currency-other">
+                <input
+                  class="ledger-control"
+                  matInput
+                  name="billCurrencyOther"
+                  #currencyOtherInput
+                  [matAutocomplete]="currencyAuto"
+                  [ngModel]="currencyOtherQuery()"
+                  (ngModelChange)="currencyOtherQuery.set($event)"
+                  (keydown.enter)="confirmCurrencyOther(bill, $event)"
+                  placeholder="USD, EUR…"
+                  autocomplete="off"
+                />
+                <mat-autocomplete
+                  #currencyAuto="matAutocomplete"
+                  (optionSelected)="onCurrencyOtherPicked(bill, $event.option.value)"
+                >
+                  @for (c of otherCurrencyChoices(currencyOtherQuery()); track c.code) {
+                    <mat-option [value]="c.code">{{ c.code }}</mat-option>
+                  }
+                </mat-autocomplete>
+              </div>
+            }
             @if (showPaidLine(bill)) {
               <div class="ledger-amount-line">
                 <span class="ledger-wallet-cur">{{ walletCurrency(bill) }}</span>
@@ -121,8 +195,14 @@
                 <mat-option [value]="v.name">{{ v.name }}</mat-option>
               }
             </mat-autocomplete>
-            <button mat-stroked-button type="button" class="ledger-new" (click)="openQuickVendor()">
-              New
+            <button
+              mat-icon-button
+              type="button"
+              class="ledger-new"
+              aria-label="New vendor"
+              (click)="openQuickVendor()"
+            >
+              <mat-icon>add</mat-icon>
             </button>
           </div>
         </div>
@@ -145,8 +225,14 @@
                 <mat-option [value]="w.name">{{ w.name }}</mat-option>
               }
             </mat-autocomplete>
-            <button mat-stroked-button type="button" class="ledger-new" (click)="openQuickWallet()">
-              New
+            <button
+              mat-icon-button
+              type="button"
+              class="ledger-new"
+              aria-label="New wallet"
+              (click)="openQuickWallet()"
+            >
+              <mat-icon>add</mat-icon>
             </button>
           </div>
         </div>
@@ -191,8 +277,31 @@
           @if (bill.bearers.length === 2) {
             <div class="pair-split">
               <div class="pair-ends">
-                <span>{{ bearerName(bill.bearers[0].user_id) }}</span>
-                <span>{{ bearerName(bill.bearers[1].user_id) }}</span>
+                <button
+                  type="button"
+                  class="pair-name"
+                  [class.sole]="bill.bearers[0].percent >= 100"
+                  (click)="setSoleBearer(bill, 0)"
+                >
+                  {{ bearerName(bill.bearers[0].user_id) }}
+                </button>
+                <button
+                  type="button"
+                  class="pair-half"
+                  [class.active]="isHalfSplit(bill)"
+                  aria-label="Split 50 / 50"
+                  (click)="setHalfSplit(bill)"
+                >
+                  ½
+                </button>
+                <button
+                  type="button"
+                  class="pair-name"
+                  [class.sole]="bill.bearers[1].percent >= 100"
+                  (click)="setSoleBearer(bill, 1)"
+                >
+                  {{ bearerName(bill.bearers[1].user_id) }}
+                </button>
               </div>
               <div
                 class="pair-hit"
@@ -217,7 +326,7 @@
                   ></button>
                 </div>
               </div>
-              <div class="pair-ends pair-pct">
+              <div class="pair-pct">
                 <span>{{ formatSharePercent(bill.bearers[0].percent) }}%</span>
                 <span>{{ formatSharePercent(bill.bearers[1].percent) }}%</span>
               </div>

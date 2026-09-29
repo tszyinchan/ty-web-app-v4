@@ -114,10 +114,16 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
     { value: YYEMS_IN_OR_OUT.Out, label: 'Out' },
     { value: YYEMS_IN_OR_OUT.Free, label: 'Free' },
   ] as const;
+  readonly tzOptions: { value: YyemsLocationTz; label: string }[] = [
+    { value: 'TO', label: 'TO' },
+    { value: 'HK', label: 'HK' },
+  ];
+  readonly commonCurrencies = ['CAD', 'HKD'] as const;
   readonly formatSharePercent = formatSharePercent;
   readonly vendorPane = viewChild(YyemsVendorEdit);
   readonly walletPane = viewChild(YyemsWalletEdit);
   readonly billPane = viewChild<ElementRef<HTMLElement>>('billPane');
+  readonly currencyOtherInput = viewChild<ElementRef<HTMLInputElement>>('currencyOtherInput');
   billNudge = signal(0);
   billTweening = signal(false);
   private injector = inject(Injector);
@@ -139,6 +145,8 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
   buys = signal<YyemsBuyEmbed[]>([]);
   vendorQuery = signal('');
   walletQuery = signal('');
+  currencyOtherOpen = signal(false);
+  currencyOtherQuery = signal('');
   quickKind = signal<'vendor' | 'wallet' | null>(null);
   quickLeaving = signal(false);
   quickVendorName = signal('');
@@ -245,6 +253,8 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
       this.item.update((cur) => (cur ? { ...cur, bearers: shown } : cur));
       this.syncLookupLabels(this.item());
       this.noteMore(this.item());
+      this.currencyOtherOpen.set(false);
+      this.currencyOtherQuery.set('');
       this.buys.set(await this.yyems.fetchBuysForBill(this.currentId));
     } else {
       const now = new Date();
@@ -268,6 +278,8 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
       });
       this.vendorQuery.set('');
       this.walletQuery.set('');
+      this.currencyOtherOpen.set(false);
+      this.currencyOtherQuery.set('');
       this.moreOpen.set(false);
     }
     this.originalDataStr.set(JSON.stringify(this.item()));
@@ -444,6 +456,27 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
     bill.bearers = pairFromRatio(bill.bearers, next / 100);
   }
 
+  /** Tap a name → that person 100%. Tap again when already sole → back to 50/50. */
+  setSoleBearer(bill: BillForm, side: 0 | 1) {
+    if (bill.bearers.length !== 2) return;
+    if (Math.round(bill.bearers[side].percent) >= 100) {
+      bill.bearers = pairFromRatio(bill.bearers, 0.5);
+      return;
+    }
+    bill.bearers = pairFromRatio(bill.bearers, side === 0 ? 1 : 0);
+  }
+
+  setHalfSplit(bill: BillForm) {
+    if (bill.bearers.length !== 2) return;
+    bill.bearers = pairFromRatio(bill.bearers, 0.5);
+  }
+
+  isHalfSplit(bill: BillForm): boolean {
+    return (
+      bill.bearers.length === 2 && Math.round(bill.bearers[0].percent) === 50
+    );
+  }
+
   private applyPair(event: PointerEvent, bill: BillForm, lane: HTMLElement) {
     const rect = lane.getBoundingClientRect();
     if (rect.width <= 0) return;
@@ -486,10 +519,47 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
     return this.yyems.currencies().some((row) => row.code === code);
   }
 
-  currencyChoices(query: string) {
-    const rows = [...this.yyems.currencies()].sort((a, b) =>
-      a.code.localeCompare(b.code),
+  isOtherCurrency(code: string): boolean {
+    return !!code && code !== 'CAD' && code !== 'HKD';
+  }
+
+  setTz(bill: BillForm, tz: YyemsLocationTz) {
+    bill.location_tz = tz;
+  }
+
+  setCommonCurrency(bill: BillForm, code: 'CAD' | 'HKD') {
+    bill.currency = code;
+    this.currencyOtherOpen.set(false);
+    this.currencyOtherQuery.set('');
+  }
+
+  openCurrencyOther(bill: BillForm) {
+    this.currencyOtherOpen.set(true);
+    this.currencyOtherQuery.set(this.isOtherCurrency(bill.currency) ? bill.currency : '');
+    afterNextRender(
+      () => this.currencyOtherInput()?.nativeElement.focus(),
+      { injector: this.injector },
     );
+  }
+
+  onCurrencyOtherPicked(bill: BillForm, code: string) {
+    const next = code.trim().toUpperCase();
+    if (!this.knownCurrency(next)) return;
+    bill.currency = next;
+    this.currencyOtherOpen.set(false);
+    this.currencyOtherQuery.set('');
+  }
+
+  confirmCurrencyOther(bill: BillForm, event: Event) {
+    event.preventDefault();
+    this.onCurrencyOtherPicked(bill, this.currencyOtherQuery());
+  }
+
+  otherCurrencyChoices(query: string) {
+    const rows = this.yyems
+      .currencies()
+      .filter((row) => row.code !== 'CAD' && row.code !== 'HKD')
+      .sort((a, b) => a.code.localeCompare(b.code));
     return this.filterChoices(rows, query, (row) => row.code, (row) => row.code);
   }
 
@@ -557,7 +627,11 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
 
   closeQuick() {
     if (!this.quickKind() || this.quickLeaving()) return;
+    // Drop quick-open layout immediately so the bill can scoot back to
+    // center while the guest panel is still sliding out (desktop).
+    const from = this.billLeft();
     this.quickLeaving.set(true);
+    afterNextRender(() => this.scootBill(from), { injector: this.injector });
     window.clearTimeout(this.quickTimer);
     this.quickTimer = window.setTimeout(() => this.finishQuick(), this.seatMs + 40);
   }
@@ -575,12 +649,11 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
 
   private finishQuick() {
     window.clearTimeout(this.quickTimer);
-    const from = this.billLeft();
     const wasNarrow = this.narrow();
     this.quickKind.set(null);
     this.quickLeaving.set(false);
     if (wasNarrow) this.applyBillHeader();
-    afterNextRender(() => this.scootBill(from), { injector: this.injector });
+    // Bill already scooted on closeQuick (desktop); mobile never nudged.
   }
 
   private billLeft(): number {
@@ -661,11 +734,6 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
   quickSaveDisabled(): boolean {
     const pane = this.quickKind() === 'vendor' ? this.vendorPane() : this.walletPane();
     return pane?.isSaveDisabled() ?? true;
-  }
-
-  onCurrencyQuery(bill: BillForm, text: string) {
-    const code = text.trim().toUpperCase();
-    bill.currency = this.knownCurrency(code) ? code : text.trim();
   }
 
   showPaidLine(bill: BillForm): boolean {

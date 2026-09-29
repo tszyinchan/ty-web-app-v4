@@ -16,8 +16,10 @@
   height: 100%;
 }
 
+/* Keep the bill column at the same 720px cap as the centered state —
+   only shift it left; do not grow it into a half-width pane. */
 .bill-stage.quick-open .bill-stage-inner {
-  grid-template-columns: 0px minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: 0px minmax(0, 720px) minmax(0, 1fr);
 }
 
 .ledger-edit.split-workspace {
@@ -43,57 +45,94 @@
   margin-bottom: 8px;
 }
 
+/* Same base hues for Material flat + Aero gloss so In/Out/Free match across themes. */
+.kind-toggle {
+  --kind-in: #2e9a4f;
+  --kind-out: #a31f1f;
+  --kind-free: #6a7278;
+}
+
 .kind-toggle .kind-btn {
   width: 100%;
   min-height: 36px;
 }
 
 button.mat-mdc-unelevated-button.kind-btn.kind-in {
-  --mdc-filled-button-container-color: #2e9a4f;
+  --mdc-filled-button-container-color: var(--kind-in);
   --mdc-filled-button-label-text-color: #fff;
 }
 
 button.mat-mdc-unelevated-button.kind-btn.kind-out {
-  --mdc-filled-button-container-color: #a31f1f;
+  --mdc-filled-button-container-color: var(--kind-out);
   --mdc-filled-button-label-text-color: #fff;
 }
 
 button.mat-mdc-unelevated-button.kind-btn.kind-free {
-  --mdc-filled-button-container-color: #6a7278;
+  --mdc-filled-button-container-color: var(--kind-free);
   --mdc-filled-button-label-text-color: #fff;
 }
 
 :host-context(html.theme-aero) button.mat-mdc-unelevated-button.kind-btn.kind-in {
   --mdc-filled-button-container-color: transparent;
-  background: linear-gradient(180deg, #8fe0a4 0%, #3aaa5c 48%, #2a8a48 100%);
-  border: 1px solid #1e7a3a;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--kind-in) 45%, white) 0%,
+    var(--kind-in) 48%,
+    color-mix(in srgb, var(--kind-in) 72%, black) 100%
+  );
+  border: 1px solid color-mix(in srgb, var(--kind-in) 78%, black);
   box-shadow: var(--app-button-primary-shadow);
 }
 
 :host-context(html.theme-aero) button.mat-mdc-unelevated-button.kind-btn.kind-out {
   --mdc-filled-button-container-color: transparent;
-  background: linear-gradient(180deg, #f0a8a8 0%, #c44545 48%, #8e1a1a 100%);
-  border: 1px solid #7a1515;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--kind-out) 45%, white) 0%,
+    var(--kind-out) 48%,
+    color-mix(in srgb, var(--kind-out) 72%, black) 100%
+  );
+  border: 1px solid color-mix(in srgb, var(--kind-out) 78%, black);
   box-shadow: var(--app-button-primary-shadow);
 }
 
 :host-context(html.theme-aero) button.mat-mdc-unelevated-button.kind-btn.kind-free {
   --mdc-filled-button-container-color: transparent;
-  background: linear-gradient(180deg, #d5dbe0 0%, #8a929a 48%, #5c646c 100%);
-  border: 1px solid #4a5258;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--kind-free) 45%, white) 0%,
+    var(--kind-free) 48%,
+    color-mix(in srgb, var(--kind-free) 72%, black) 100%
+  );
+  border: 1px solid color-mix(in srgb, var(--kind-free) 78%, black);
   box-shadow: var(--app-button-primary-shadow);
 }
 
 :host-context(html.theme-aero) button.mat-mdc-unelevated-button.kind-btn.kind-in:hover:not(:disabled) {
-  background: linear-gradient(180deg, #a8eab8 0%, #48b86a 48%, #329a52 100%);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--kind-in) 35%, white) 0%,
+    color-mix(in srgb, var(--kind-in) 88%, white) 48%,
+    var(--kind-in) 100%
+  );
 }
 
 :host-context(html.theme-aero) button.mat-mdc-unelevated-button.kind-btn.kind-out:hover:not(:disabled) {
-  background: linear-gradient(180deg, #f5bcbc 0%, #d05555 48%, #a31f1f 100%);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--kind-out) 35%, white) 0%,
+    color-mix(in srgb, var(--kind-out) 88%, white) 48%,
+    var(--kind-out) 100%
+  );
 }
 
 :host-context(html.theme-aero) button.mat-mdc-unelevated-button.kind-btn.kind-free:hover:not(:disabled) {
-  background: linear-gradient(180deg, #e4e8ec 0%, #9aa2aa 48%, #6a7278 100%);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--kind-free) 35%, white) 0%,
+    color-mix(in srgb, var(--kind-free) 88%, white) 48%,
+    var(--kind-free) 100%
+  );
 }
 
 .owner-toggle {
@@ -138,14 +177,62 @@ button.mat-mdc-unelevated-button.kind-btn.kind-free {
 }
 
 .pair-ends {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 8px;
   font-size: 14px;
   color: var(--app-text-primary);
 }
 
+button.pair-name {
+  margin: 0;
+  padding: 4px 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  min-width: 0;
+}
+
+button.pair-name:first-child {
+  text-align: left;
+  justify-self: start;
+}
+
+button.pair-name:last-child {
+  text-align: right;
+  justify-self: end;
+}
+
+button.pair-name.sole {
+  font-weight: var(--app-weight-emphasis);
+  color: var(--app-accent);
+}
+
+button.pair-half {
+  margin: 0;
+  padding: 2px 8px;
+  border: 1px solid var(--app-input-border);
+  border-radius: var(--app-radius);
+  background: var(--app-input-bg);
+  font: var(--app-weight-emphasis) 13px var(--app-font);
+  color: var(--app-text-secondary);
+  cursor: pointer;
+  line-height: 1.2;
+}
+
+button.pair-half.active {
+  color: var(--app-accent-contrast);
+  background: var(--app-accent);
+  border-color: var(--app-accent);
+}
+
 .pair-pct {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
   font-size: 13px;
   color: var(--app-text-secondary);
 }
@@ -282,8 +369,32 @@ button.mat-mdc-unelevated-button.kind-btn.kind-free {
   }
 }
 
-.ledger-new {
+button.mat-mdc-icon-button.ledger-new {
+  --mdc-icon-button-state-layer-size: 36px;
+  --mat-icon-button-state-layer-size: 36px;
   flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  .mat-mdc-button-touch-target {
+    width: 36px;
+    height: 36px;
+  }
+
+  mat-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    font-size: 22px;
+    width: 22px;
+    height: 22px;
+    line-height: 22px;
+  }
 }
 
 .ledger-control {
@@ -315,8 +426,27 @@ select.ledger-control {
   align-items: center;
 }
 
-.ledger-tz {
-  width: 4.5rem;
+.seg-toggle {
+  display: inline-grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(2.75rem, auto);
+  gap: 4px;
+  align-items: center;
+}
+
+.seg-toggle .seg-btn {
+  min-width: 2.75rem;
+  min-height: 32px;
+  padding: 0 8px;
+  line-height: 1;
+}
+
+.seg-toggle .seg-btn-other {
+  min-width: 2.5rem;
+}
+
+.currency-toggle {
+  grid-auto-columns: minmax(2.9rem, auto);
 }
 
 .ledger-amount-stack {
@@ -328,12 +458,23 @@ select.ledger-control {
 
 .ledger-amount-line {
   display: grid;
-  grid-template-columns: 4.5rem minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr);
   gap: 8px;
   align-items: center;
 }
 
+.ledger-currency-other {
+  .ledger-control {
+    text-align: left;
+    border: 1px solid var(--app-input-border);
+    border-radius: var(--app-radius);
+    background: var(--app-input-bg);
+    padding: 8px 10px;
+  }
+}
+
 .ledger-wallet-cur {
+  min-width: 2.9rem;
   font-size: 12px;
   color: var(--app-text-muted);
   text-align: right;
@@ -382,7 +523,7 @@ select.ledger-control {
   animation: guest-in 520ms cubic-bezier(0.22, 1, 0.36, 1) 40ms both;
 
   &.leaving {
-    animation: guest-out 480ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: guest-out 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 }
 
