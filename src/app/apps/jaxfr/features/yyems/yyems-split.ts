@@ -16,13 +16,10 @@ import { formatUserDisplayName } from '../../../../core/pipes/display-name.pipe'
 import { AuthService } from '../../../../core/services/auth.service';
 import { HeaderService } from '../../../../core/services/header.service';
 import { UserService } from '../user/user.service';
-import { YYEMS_IN_OR_OUT, YyemsBillEmbed, YyemsBillShare } from './yyems.model';
 import { YyemsService } from './yyems.service';
 import {
   SplitCurrencyBreakdown,
   formatYyemsAmount,
-  settleOneBill,
-  splitBreakdown,
 } from './yyems.util';
 
 interface SplitTotalView {
@@ -58,9 +55,7 @@ export class YyemsSplit implements OnInit, OnDestroy {
   readonly formatAmount = formatYyemsAmount;
   groupId = signal('');
   loading = signal(false);
-
-  private allBills = signal<YyemsBillEmbed[]>([]);
-  private allShares = signal<YyemsBillShare[] | null>([]);
+  private total = signal<SplitTotalView>(EMPTY_TOTAL);
 
   myGroups = computed(() => {
     const me = this.auth.userProfile()?.user_id;
@@ -99,15 +94,7 @@ export class YyemsSplit implements OnInit, OnDestroy {
     return this.displayName(otherId);
   });
 
-  sharesMissing = computed(() => this.allShares() === null);
-
-  totalView = computed((): SplitTotalView => {
-    const pair = this.pair();
-    const shares = this.allShares();
-    const groupId = this.groupId();
-    if (!pair || !groupId || shares === null) return EMPTY_TOTAL;
-    return this.buildTotal(groupId, pair, this.allBills(), shares);
-  });
+  totalView = computed(() => this.total());
 
   ngOnInit() {
     const isLoading = computed(() => this.loading() || this.yyems.loading());
@@ -150,12 +137,27 @@ export class YyemsSplit implements OnInit, OnDestroy {
     return userId === this.viewerId();
   }
 
-  /** What the logged-in user bears, minus what they paid. */
+  /** Logged-in user pays the other: −net = your share − what you paid. */
   viewerPays(row: SplitCurrencyBreakdown): number {
-    const pair = this.pair();
-    const me = this.viewerId();
-    const index = pair && me === pair[1] ? 1 : 0;
-    return -row.nets[index];
+    return -row.nets[this.viewerIndex()];
+  }
+
+  /**
+   * Exact: your share − (your Himself + Other + Both) = pay balance.
+   * Example: 75.00 − (10.00 + 20.00 + 40.00) = 5.00
+   */
+  payFormula(row: SplitCurrencyBreakdown): string {
+    const me = this.peopleFor(row).find((person) => this.isMe(person.userId));
+    if (!me) return '';
+    const share = row.borne[this.viewerIndex()];
+    const result = this.viewerPays(row);
+    return (
+      `${this.plainAmount(share)} − (` +
+      `${this.plainAmount(me.selfPaid)} + ` +
+      `${this.plainAmount(me.otherPaid)} + ` +
+      `${this.plainAmount(me.bothPaid)}` +
+      `) = ${this.plainAmount(result)}`
+    );
   }
 
   peopleFor(row: SplitCurrencyBreakdown): SplitCurrencyBreakdown['people'][number][] {
@@ -168,6 +170,13 @@ export class YyemsSplit implements OnInit, OnDestroy {
 
   onGroup(event: Event) {
     this.groupId.set((event.target as HTMLSelectElement).value);
+    void this.reload();
+  }
+
+  private viewerIndex(): 0 | 1 {
+    const pair = this.pair();
+    const me = this.viewerId();
+    return pair && me === pair[1] ? 1 : 0;
   }
 
   private async start() {
@@ -179,14 +188,19 @@ export class YyemsSplit implements OnInit, OnDestroy {
   }
 
   private async reload() {
+    const groupId = this.groupId();
+    const pair = this.pair();
+    if (!groupId || !pair) {
+      this.zone.run(() => {
+        this.total.set(EMPTY_TOTAL);
+        this.loading.set(false);
+      });
+      return;
+    }
     this.loading.set(true);
-    const bills = await this.yyems.queryAllOutBills();
-    const shares = await this.yyems.fetchSharesForBills(
-      bills.map((row) => row.tb_tyapp_yym_id),
-    );
+    const rpc = await this.yyems.fetchSplitGroupTotals(groupId, pair[0], pair[1]);
     this.zone.run(() => {
-      this.allBills.set(bills);
-      this.allShares.set(shares);
+      this.total.set(rpc ?? EMPTY_TOTAL);
       this.loading.set(false);
     });
   }
@@ -208,87 +222,5 @@ export class YyemsSplit implements OnInit, OnDestroy {
         formatUserDisplayName(a).localeCompare(formatUserDisplayName(b)),
       )
       .map((user) => user.user_id);
-  }
-
-  private buildTotal(
-    groupId: string,
-    pair: readonly [string, string],
-    bills: readonly YyemsBillEmbed[],
-    shareRows: readonly YyemsBillShare[],
-  ): SplitTotalView {
-    const byBill = new Map<string, { userId: string; share: number }[]>();
-    for (const row of shareRows) {
-      const list = byBill.get(row.yyems_id) ?? [];
-      list.push({ userId: row.user_id, share: Number(row.share) });
-      byBill.set(row.yyems_id, list);
-    }
-
-    const settled: {
-      currency: string;
-      shares: { userId: string; share: number }[];
-      result: ReturnType<typeof settleOneBill>;
-    }[] = [];
-    let missingShareCount = 0;
-    let unsetCount = 0;
-
-    for (const bill of bills) {
-      if (bill.in_or_out !== YYEMS_IN_OR_OUT.Out) continue;
-      if (!bill.group_id) {
-        unsetCount += 1;
-        continue;
-      }
-      if (bill.group_id !== groupId) continue;
-      const shares = byBill.get(bill.tb_tyapp_yym_id) ?? [];
-      if (shares.length === 0) {
-        missingShareCount += 1;
-        continue;
-      }
-      const money = this.settlementMoney(bill);
-      if (!money) continue;
-      const payerUserId = this.payerUserId(bill);
-      if (payerUserId === undefined) continue;
-      const result = settleOneBill({
-        amount: money.amount,
-        payerUserId,
-        shares,
-        pair,
-      });
-      settled.push({ currency: money.currency, shares, result });
-    }
-
-    return {
-      currencies: splitBreakdown(settled, pair),
-      missingShareCount,
-      unsetCount,
-    };
-  }
-
-  /** `undefined` means the wallet owner could not be resolved. `null` is the joint pot. */
-  private payerUserId(bill: YyemsBillEmbed): string | null | undefined {
-    const wallet =
-      bill.wallet ??
-      this.yyems.wallets().find((row) => row.tb_tyapp_ywl_id === bill.wallet_id);
-    if (!wallet) return undefined;
-    const account = this.yyems
-      .financialAccounts()
-      .find((row) => row.tb_tyapp_yfa_id === wallet.financial_account_id);
-    if (!account) return undefined;
-    return account.owner_user_id;
-  }
-
-  private settlementMoney(
-    bill: YyemsBillEmbed,
-  ): { amount: number; currency: string } | null {
-    if (bill.wallet_amount != null) {
-      const wallet =
-        bill.wallet ??
-        this.yyems.wallets().find((row) => row.tb_tyapp_ywl_id === bill.wallet_id);
-      const account = this.yyems
-        .financialAccounts()
-        .find((row) => row.tb_tyapp_yfa_id === wallet?.financial_account_id);
-      if (!account) return null;
-      return { amount: Number(bill.wallet_amount), currency: account.currency };
-    }
-    return { amount: Number(bill.amount), currency: bill.currency };
   }
 }

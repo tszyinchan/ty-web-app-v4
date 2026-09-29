@@ -787,6 +787,9 @@ export interface SplitCurrencyBreakdown {
   people: readonly [SplitPersonPaid, SplitPersonPaid];
   /** Pair order. Paid minus borne. */
   nets: readonly [number, number];
+  /** Pair order. Sum of paid / borne — for the on-page formula. */
+  paid: readonly [number, number];
+  borne: readonly [number, number];
   /** Positive: the first person pays the second. Negative: the second pays the first. */
   firstPaysSecond: number;
   outsidePaid: number;
@@ -826,6 +829,8 @@ export function splitBreakdown(
     {
       people: [SplitPersonPaid, SplitPersonPaid];
       nets: [number, number];
+      paid: [number, number];
+      borne: [number, number];
       firstPaysSecond: number;
       outsidePaid: number;
     }
@@ -839,6 +844,8 @@ export function splitBreakdown(
           { userId: pair[1], selfPaid: 0, otherPaid: 0, bothPaid: 0 },
         ],
         nets: [0, 0],
+        paid: [0, 0],
+        borne: [0, 0],
         firstPaysSecond: 0,
         outsidePaid: 0,
       };
@@ -853,6 +860,10 @@ export function splitBreakdown(
       else if (kind === 'other') person.otherPaid = money(person.otherPaid + effect.paid);
       else person.bothPaid = money(person.bothPaid + effect.paid);
     }
+    bucket.paid[0] = money(bucket.paid[0] + row.result.effects[0].paid);
+    bucket.paid[1] = money(bucket.paid[1] + row.result.effects[1].paid);
+    bucket.borne[0] = money(bucket.borne[0] + row.result.effects[0].borne);
+    bucket.borne[1] = money(bucket.borne[1] + row.result.effects[1].borne);
     bucket.nets[0] = money(bucket.nets[0] + row.result.effects[0].net);
     bucket.nets[1] = money(bucket.nets[1] + row.result.effects[1].net);
     bucket.firstPaysSecond = money(

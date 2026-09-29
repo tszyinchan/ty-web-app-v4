@@ -77,6 +77,15 @@
   }
 }
 
+.formula {
+  margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  font-variant-numeric: tabular-nums;
+  color: var(--app-text-muted);
+  word-break: break-word;
+}
+
 .paid-table {
   display: grid;
   grid-template-columns: max-content repeat(3, max-content);

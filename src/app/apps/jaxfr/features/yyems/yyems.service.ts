@@ -26,6 +26,7 @@ import {
   YyemsVendorCategory,
   YyemsWallet,
 } from './yyems.model';
+import type { SplitCurrencyBreakdown } from './yyems.util';
 
 const BUY_EMBED =
   '*, price:tyapp_yyems_price(*, item:tyapp_yyems_item(*), vendor:tyapp_yyems_vendor(*))';
@@ -288,29 +289,50 @@ export class YyemsService {
     };
   }
 
-  /** Every Out bill, not one month. Pages so a long history is not cut at 1000. */
-  async queryAllOutBills(): Promise<YyemsBillEmbed[]> {
-    const pageSize = 1000;
-    const rows: YyemsBillEmbed[] = [];
-    let from = 0;
+  /**
+   * Split totals in Postgres. Requires yyems-split.schema.patch.sql.
+   */
+  async fetchSplitGroupTotals(
+    groupId: string,
+    userA: string,
+    userB: string,
+  ): Promise<{
+    currencies: SplitCurrencyBreakdown[];
+    missingShareCount: number;
+    unsetCount: number;
+  } | null> {
     try {
-      for (;;) {
-        const { data, error } = await this.supabase
-          .from('tyapp_yyems')
-          .select(BILL_EMBED)
-          .is('deleted_at', null)
-          .eq('in_or_out', YYEMS_IN_OR_OUT.Out)
-          .order('tb_tyapp_yym_id', { ascending: true })
-          .range(from, from + pageSize - 1);
-        if (error) throw error;
-        const page = (data as YyemsBillEmbed[]) ?? [];
-        rows.push(...page);
-        if (page.length < pageSize) return rows;
-        from += pageSize;
-      }
+      const { data, error } = await this.supabase.rpc(
+        'tyapp_yyems_split_group_totals',
+        {
+          p_group_id: groupId,
+          p_user_a: userA,
+          p_user_b: userB,
+        },
+      );
+      if (error) throw error;
+      const payload = data as {
+        currencies?: SplitCurrencyBreakdown[];
+        missingShareCount?: number;
+        unsetCount?: number;
+      } | null;
+      if (!payload || !Array.isArray(payload.currencies)) return null;
+      return {
+        currencies: payload.currencies.map((row) => ({
+          currency: row.currency,
+          people: row.people,
+          nets: row.nets,
+          paid: row.paid ?? ([0, 0] as const),
+          borne: row.borne ?? ([0, 0] as const),
+          firstPaysSecond: row.firstPaysSecond,
+          outsidePaid: row.outsidePaid,
+        })),
+        missingShareCount: Number(payload.missingShareCount ?? 0),
+        unsetCount: Number(payload.unsetCount ?? 0),
+      };
     } catch (error: unknown) {
-      this.notification.handleError('Fetch bills failed', error);
-      return [];
+      this.notification.handleError('Fetch split totals failed', error);
+      return null;
     }
   }
 

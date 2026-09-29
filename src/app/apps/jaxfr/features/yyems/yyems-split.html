@@ -16,12 +16,6 @@
     </div>
   } @else if (myGroups().length === 0) {
     <p class="split-empty">Join a user group to see who owes whom.</p>
-  } @else if (sharesMissing()) {
-    <p class="split-empty">
-      Share table is missing. Run
-      <code>yyems-bill-share.schema.patch.sql</code>
-      before this total can run.
-    </p>
   } @else if (!pair()) {
     <p class="split-empty">This page settles a group of two people.</p>
   } @else if (totalView().currencies.length === 0) {
@@ -35,6 +29,7 @@
           <p class="amount" [class.negative]="viewerPays(row) < 0">
             {{ plainAmount(viewerPays(row)) }}
           </p>
+          <p class="formula">{{ payFormula(row) }}</p>
 
           <div class="paid-table">
             <div class="paid-head"></div>
