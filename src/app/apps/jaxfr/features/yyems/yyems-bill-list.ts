@@ -57,9 +57,9 @@ export class YyemsBillList implements OnInit, OnDestroy {
     if (rows === null) return null;
     const map = new Map<string, { user_id: string }[]>();
     for (const row of rows) {
-      const list = map.get(row.yyems_id) ?? [];
+      const list = map.get(row.yyhome_id) ?? [];
       list.push({ user_id: row.user_id });
-      map.set(row.yyems_id, list);
+      map.set(row.yyhome_id, list);
     }
     return map;
   });
@@ -129,7 +129,7 @@ export class YyemsBillList implements OnInit, OnDestroy {
     const range = localMonthUtcRange(year, month);
     await this.yyems.fetchBills(range.from, range.to);
     const shares = await this.yyems.fetchSharesForBills(
-      this.yyems.bills().map((bill) => bill.tb_tyapp_yym_id),
+      this.yyems.bills().map((bill) => bill.tb_tyapp_yhm_id),
     );
     this.zone.run(() => this.billShares.set(shares));
   }

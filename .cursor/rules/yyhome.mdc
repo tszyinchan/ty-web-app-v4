@@ -5,7 +5,34 @@ alwaysApply: true
 
 # yyHome
 
-Display name is `yyHome`. Live code is still `features/yyems/`, route `/yyems`, tables `tyapp_yyems_*` until **Phase D**. Do **not** rename tables, PKs, files, or routes during page-by-page UI review.
+Display name is `yyHome`. Live **app** folder/routes are still `features/yyems/` and `/yyems` until a later rename pass. **Database** is Phase D: tables `tyapp_yyhome_*`, PKs `tb_tyapp_yh*`.
+
+## Phase D naming (done at wipe + rebuild)
+
+| Entity | Table | PK |
+|---|---|---|
+| Bill | `tyapp_yyhome` | `tb_tyapp_yhm_id` |
+| Item category | `tyapp_yyhome_item_category` | `tb_tyapp_yhic_id` |
+| Item | `tyapp_yyhome_item` | `tb_tyapp_yhit_id` |
+| Vendor category | `tyapp_yyhome_vendor_category` | `tb_tyapp_yhvc_id` |
+| Vendor | `tyapp_yyhome_vendor` | `tb_tyapp_yhvd_id` |
+| FA | `tyapp_yyhome_financial_account` | `tb_tyapp_yhfa_id` |
+| Wallet | `tyapp_yyhome_wallet` | `tb_tyapp_yhwl_id` |
+| FX | `tyapp_yyhome_fx_rate` | `tb_tyapp_yhfx_id` |
+| Price | `tyapp_yyhome_price` | `tb_tyapp_yhpr_id` |
+| Buy | `tyapp_yyhome_buy` | `tb_tyapp_yhby_id` |
+| Eat | `tyapp_yyhome_eat` | `tb_tyapp_yhet_id` |
+| File | `tyapp_yyhome_file` | `tb_tyapp_yhfl_id` |
+| Bill share | `tyapp_yyhome_bill_share` | `tb_tyapp_yhbs_id` |
+
+Buy→bill FK and share→bill FK are `yyhome_id`. Currency table `tyapp_yyhome_currency`, PK `code`.
+
+Rebuild order in Supabase SQL editor:
+
+1. `yyhome.drop-yyems.sql` (drops old `tyapp_yyems_*` and any half-built `tyapp_yyhome_*`)
+2. `yyems.schema.sql` (creates `tyapp_yyhome_*`)
+3. `yyems-split.schema.patch.sql` (and fridge patch when needed)
+4. Import: `import_yyems_xlsx.py --through-bills --wipe` (dicts + bills)
 
 ## After production is stable (user must say so)
 
@@ -17,18 +44,14 @@ Then remove the AppSheet leftovers — do not do this during first cutover or UI
 
 Until the user explicitly starts that cleanup: do **not** expand use of `appsheet_525_user_id`, do **not** revive archive YY525, and do **not** re-flag the YY525 token in audits (still an accepted risk until retirement).
 
-## Phase D naming (execute only at wipe + rebuild + import)
-
-Tables `tyapp_yyhome_*`. PKs `tb_tyapp_yh<entity>_id` (bill `yhm`, item cat `yhic`, item `yhit`, vendor cat `yhvc`, vendor `yhvd`, FA `yhfa`, wallet `yhwl`, fx `yhfx`, price `yhpr`, buy `yhby`, eat `yhet`, file `yhfl`). Buy→bill FK is `yyhome_id`. Currency PK stays `code`.
-
 ## Who paid vs who bears (do not invent a Both user)
 
 Two independent facts on a bill:
 
 - **Paid by** = wallet → financial account `owner_user_id` (`NULL` = joint pot, not “the couple”).
-- **Borne by** = `tyapp_yyems_bill_share` rows locked when the bill is saved (`yyems_id`, `user_id`, `share`). People come from a user group the current user belongs to. Two people: one bar, names at the ends, default 50 / 50. Drag the knob in 1% steps from 0 to 100. A 0% end is not stored (`share > 0`); that bill is one row at 1.0, and the bar still shows the other name so it can be dragged back. More than two people: tap who is on the bill and they split equally. The same two-person bar appears only when exactly two are selected. Do not add a fraction column. Cent amounts use the same remainder, so the dollars add up to the bill. There is no Both button and no fake Both user. `ownership_user_id` stays a list mirror (one person with a share, or NULL when more than one) until Phase D drops it.
+- **Borne by** = `tyapp_yyhome_bill_share` rows locked when the bill is saved (`yyhome_id`, `user_id`, `share`). People come from a user group the current user belongs to. Two people: one bar, names at the ends, default 50 / 50. Drag the knob in 1% steps from 0 to 100. A 0% end is not stored (`share > 0`); that bill is one row at 1.0, and the bar still shows the other name so it can be dragged back. More than two people: tap who is on the bill and they split equally. The same two-person bar appears only when exactly two are selected. Do not add a fraction column. Cent amounts use the same remainder, so the dollars add up to the bill. There is no Both button and no fake Both user. Phase D dropped `ownership_user_id` on the bill — list labels come from share rows only.
 
-At rebuild, rename the table to `tyapp_yyhome_bill_share` and the PK to `tb_tyapp_yhbs_id`. Both inserts two rows (0.5 / 0.5) for the two users chosen **that day**. One person inserts one row (1.0). Never re-read “current household” to interpret an old bill. Excel `Ownership`: `cty` / `frd` → 1.0 for that user; `yyems` or blank → 0.5 / 0.5.
+Both inserts two rows (0.5 / 0.5) for the two users chosen **that day**. One person inserts one row (1.0). Never re-read “current household” to interpret an old bill. Excel `Ownership`: `cty` / `frd` → 1.0 for that user; `yyems` or blank → 0.5 / 0.5.
 
 Settlement amount = `wallet_amount` if set, else `amount`. For each person: `net = paid_share − borne_share`. Positive net means the other person owes them. Joint wallet pays as 50/50. Yin-owned + Yiu-wallet nets to “Yin owes Yiu the full amount”.
 
@@ -36,7 +59,7 @@ Settlement amount = `wallet_amount` if set, else `amount`. For each person: `net
 
 Excel import (`legacy_id` set), including Fred’s old rows whose Ownership he set to himself: stamp every one with the user group whose members are exactly the two users bound to `appsheet_525_user_id` `cty` and `frd`. Do not read Ownership to pick the group. In-app bills with no `legacy_id` keep the group chosen at save. A bill whose bearers match more than one of the viewer’s groups and has no `group_id` stays unset until someone picks once. Later membership changes do not rewrite `group_id`.
 
-Split is payback only: for that group of two, per currency, each person shows what they paid for himself, for the other person, and for both. The pay line is always the logged-in user pays the other person. A negative amount means the other person pays them. Do not add a sentence explaining the minus. A future stats page is spending analysis (category, month, currency). It does not settle debts and does not replace Split.
+Split is payback only: for that group of two, per currency, **all bills in the group** (`in`, `out`, and `free`) feed the net — Out adds paid/borne, In subtracts (refunds/credits). **Exclude** vendor `legacy_id = Internal_transfer`（內部轉帳 / Internal Transfer）— wallet moves are not who-owes-whom. Each person shows what they paid for himself, for the other person, and for both. The pay line is always the logged-in user pays the other person. A negative amount means the other person pays them. Do not add a sentence explaining the minus. A future stats page is spending analysis (category, month, currency). It does not settle debts and does not replace Split.
 
 **New vendor / wallet from the bill:** the bill page embeds the same vendor and wallet edit forms. Desktop and tablet split the workspace: the bill slides left but stays the same max width as the centered form (720px); the new form fills the remaining right side. At `max-width: 768px` that form fills the screen and slides up; Back and Create move to the app toolbar. Compulsory fields stay above a Welcome-style triangle; short name, sort order, and remarks sit behind it. Create fills the bill field. The standalone `/yyems/vendors` and `/yyems/wallets` pages are the same forms, with their own toolbar Save and Delete.
 
@@ -44,7 +67,7 @@ If the household splits: deactivate the other user’s yyHome grant, stop using 
 
 ## Both on features that are not a split bill
 
-`tyapp_yyems_bill_share` stays bill-only. Do not add a party child table for housework, tracker, or eat, and do not build one generic `parent_type` table.
+`tyapp_yyhome_bill_share` stays bill-only. Do not add a party child table for housework, tracker, or eat, and do not build one generic `parent_type` table.
 
 Those rows store the people on the row itself: `who_user_ids uuid[]`, length 1 or 2, written when the row is saved.
 
@@ -52,4 +75,4 @@ Those rows store the people on the row itself: `who_user_ids uuid[]`, length 1 o
 - Yiu → `{yiu_id}`
 - Both → `{yin_id, yiu_id}` for the two people chosen that day
 
-No fake Both user, no NULL meaning Both, no stored word `'both'`. The ids are the record, so a later breakup does not rewrite old rows. UI is still three buttons. Eat’s `eaten_by_other = 'shared'` is the legacy Both string — replace it with `who_user_ids` at Phase D. Do not build Housework or Tracker during the bill UI pass.
+No fake Both user, no NULL meaning Both, no stored word `'both'`. The ids are the record, so a later breakup does not rewrite old rows. UI is still three buttons. Eat’s `eaten_by_other = 'shared'` is the legacy Both string — replace it with `who_user_ids` when Eat is rebuilt. Do not build Housework or Tracker during the bill UI pass.

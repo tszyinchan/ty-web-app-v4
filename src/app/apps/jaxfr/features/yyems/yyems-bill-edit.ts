@@ -62,7 +62,7 @@ import {
 import { formatUserDisplayName } from '../../../../core/pipes/display-name.pipe';
 
 interface BillForm {
-  tb_tyapp_yym_id?: string;
+  tb_tyapp_yhm_id?: string;
   occurred_local: string;
   location_tz: YyemsLocationTz;
   in_or_out: YyemsInOrOut;
@@ -245,7 +245,7 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
       }
       this.item.set(this.toForm(bill));
       const shares = await this.yyems.fetchBillShares(this.currentId);
-      const bearerRows = this.bearersForExisting(bill, shares);
+      const bearerRows = this.bearersForExisting(shares);
       this.groupId.set(
         bill.group_id || this.groupForBearers(bearerRows.map((row) => row.user_id)),
       );
@@ -313,7 +313,7 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
 
   private toForm(bill: YyemsBill): BillForm {
     return {
-      tb_tyapp_yym_id: bill.tb_tyapp_yym_id,
+      tb_tyapp_yhm_id: bill.tb_tyapp_yhm_id,
       occurred_local: toDateTimeLocalValue(bill.occurred_at),
       location_tz: bill.location_tz,
       in_or_out: bill.in_or_out,
@@ -339,7 +339,7 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
     if (!occurred || form.amount === null) return;
 
     const payload: Partial<YyemsBill> = {
-      tb_tyapp_yym_id: form.tb_tyapp_yym_id,
+      tb_tyapp_yhm_id: form.tb_tyapp_yhm_id,
       occurred_at: occurred,
       location_tz: form.location_tz,
       in_or_out: form.in_or_out,
@@ -347,7 +347,6 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
       currency: form.currency,
       amount: form.amount,
       wallet_id: form.wallet_id,
-      ownership_user_id: this.soleBearerId(form),
       remark: form.remark.trim() || null,
       description: form.description.trim() || null,
       reconciled: form.reconciled,
@@ -362,15 +361,15 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
     if (!shares) return;
     const saved = await this.yyems.saveBill(payload);
     if (!saved) return;
-    const sharesOk = await this.yyems.replaceBillShares(saved.tb_tyapp_yym_id, shares);
-    this.currentId = saved.tb_tyapp_yym_id;
+    const sharesOk = await this.yyems.replaceBillShares(saved.tb_tyapp_yhm_id, shares);
+    this.currentId = saved.tb_tyapp_yhm_id;
     this.item.update((cur) =>
-      cur ? { ...cur, tb_tyapp_yym_id: saved.tb_tyapp_yym_id } : cur,
+      cur ? { ...cur, tb_tyapp_yhm_id: saved.tb_tyapp_yhm_id } : cur,
     );
     if (!sharesOk) return;
     this.originalDataStr.set(JSON.stringify(this.item()));
     this.isDirty.set(false);
-    void this.router.navigate(['/yyems/bills/edit', saved.tb_tyapp_yym_id], {
+    void this.router.navigate(['/yyems/bills/edit', saved.tb_tyapp_yhm_id], {
       replaceUrl: true,
     });
   }
@@ -503,11 +502,6 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
     ];
   }
 
-  private soleBearerId(form: BillForm): string | null {
-    const active = form.bearers.filter((row) => Math.round(row.percent) > 0);
-    return active.length === 1 ? active[0].user_id : null;
-  }
-
   toggleBearer(bill: BillForm, userId: string) {
     const next = new Set(bill.bearers.map((row) => row.user_id));
     if (next.has(userId)) next.delete(userId);
@@ -586,7 +580,7 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
     const hit = this.sortedVendors().find(
       (row) => row.name.toLowerCase() === text.trim().toLowerCase(),
     );
-    bill.vendor_id = hit?.tb_tyapp_yvd_id ?? '';
+    bill.vendor_id = hit?.tb_tyapp_yhvd_id ?? '';
   }
 
   onWalletQuery(bill: BillForm, text: string) {
@@ -594,7 +588,7 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
     const hit = this.sortedWallets().find(
       (row) => row.name.toLowerCase() === text.trim().toLowerCase(),
     );
-    bill.wallet_id = hit?.tb_tyapp_ywl_id ?? '';
+    bill.wallet_id = hit?.tb_tyapp_yhwl_id ?? '';
   }
 
   private quickTimer = 0;
@@ -710,18 +704,18 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
     }, 0);
   }
 
-  onVendorCreated(saved: { tb_tyapp_yvd_id: string; name: string }) {
+  onVendorCreated(saved: { tb_tyapp_yhvd_id: string; name: string }) {
     const bill = this.item();
     if (!bill) return;
-    bill.vendor_id = saved.tb_tyapp_yvd_id;
+    bill.vendor_id = saved.tb_tyapp_yhvd_id;
     this.vendorQuery.set(saved.name);
     this.closeQuick();
   }
 
-  onWalletCreated(saved: { tb_tyapp_ywl_id: string; name: string }) {
+  onWalletCreated(saved: { tb_tyapp_yhwl_id: string; name: string }) {
     const bill = this.item();
     if (!bill) return;
-    bill.wallet_id = saved.tb_tyapp_ywl_id;
+    bill.wallet_id = saved.tb_tyapp_yhwl_id;
     this.walletQuery.set(saved.name);
     this.closeQuick();
   }
@@ -791,11 +785,8 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
     return hit?.tb_tyapp_usr_grp_id ?? this.groupId();
   }
 
-  /** Old rows with no share table still mean: one owner, or the two appsheet people. */
-  private bearersForExisting(
-    bill: YyemsBill,
-    shares: YyemsBillShare[] | null,
-  ): BearerPercent[] {
+  /** Locked share rows are the source of truth; missing shares → default bearers. */
+  private bearersForExisting(shares: YyemsBillShare[] | null): BearerPercent[] {
     if (shares && shares.length > 0) {
       const ordered = this.orderIds(shares.map((row) => row.user_id));
       const byId = new Map(shares.map((row) => [row.user_id, Number(row.share)]));
@@ -806,21 +797,13 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
         })),
       );
     }
-    if (bill.ownership_user_id) return equalBearerRows([bill.ownership_user_id]);
-    const appsheet = this.orderIds(
-      this.users
-        .users()
-        .filter((user) => !!user.appsheet_525_user_id && !user.deleted_at)
-        .map((user) => user.user_id),
-    );
-    if (appsheet.length === 2) return equalBearerRows(appsheet);
     return this.defaultBearers();
   }
 
   private syncLookupLabels(form: BillForm | null) {
     if (!form) return;
-    const vendor = this.yyems.vendors().find((row) => row.tb_tyapp_yvd_id === form.vendor_id);
-    const wallet = this.yyems.wallets().find((row) => row.tb_tyapp_ywl_id === form.wallet_id);
+    const vendor = this.yyems.vendors().find((row) => row.tb_tyapp_yhvd_id === form.vendor_id);
+    const wallet = this.yyems.wallets().find((row) => row.tb_tyapp_yhwl_id === form.wallet_id);
     this.vendorQuery.set(vendor?.name ?? '');
     this.walletQuery.set(wallet?.name ?? '');
   }
@@ -842,11 +825,11 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
   walletCurrency(bill: BillForm): string {
     const wallet = this.yyems
       .wallets()
-      .find((row) => row.tb_tyapp_ywl_id === bill.wallet_id);
+      .find((row) => row.tb_tyapp_yhwl_id === bill.wallet_id);
     if (!wallet) return '';
     const account = this.yyems
       .financialAccounts()
-      .find((row) => row.tb_tyapp_yfa_id === wallet.financial_account_id);
+      .find((row) => row.tb_tyapp_yhfa_id === wallet.financial_account_id);
     return account?.currency ?? '';
   }
 

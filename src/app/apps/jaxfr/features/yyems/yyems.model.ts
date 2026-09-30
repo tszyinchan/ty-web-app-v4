@@ -62,8 +62,8 @@ export type YyemsFileKind = 'receipt' | 'photo' | 'file';
 export type YyemsBarcodeType = 'upc' | 'plu' | 'price_embedded';
 
 export interface YyemsItemCategory {
-  tb_tyapp_yic_id: string;
-  tb_tyapp_yic_seq_no: number;
+  tb_tyapp_yhic_id: string;
+  tb_tyapp_yhic_seq_no: number;
   legacy_id: string | null;
   code: string;
   name_zh: string;
@@ -77,8 +77,8 @@ export interface YyemsItemCategory {
 }
 
 export interface YyemsItem {
-  tb_tyapp_yit_id: string;
-  tb_tyapp_yit_seq_no: number;
+  tb_tyapp_yhit_id: string;
+  tb_tyapp_yhit_seq_no: number;
   legacy_id: string | null;
   category_id: string;
   name_zh: string;
@@ -93,8 +93,8 @@ export interface YyemsItem {
 }
 
 export interface YyemsVendorCategory {
-  tb_tyapp_yvc_id: string;
-  tb_tyapp_yvc_seq_no: number;
+  tb_tyapp_yhvc_id: string;
+  tb_tyapp_yhvc_seq_no: number;
   legacy_id: string | null;
   level1: string;
   level2: string;
@@ -107,8 +107,8 @@ export interface YyemsVendorCategory {
 }
 
 export interface YyemsVendor {
-  tb_tyapp_yvd_id: string;
-  tb_tyapp_yvd_seq_no: number;
+  tb_tyapp_yhvd_id: string;
+  tb_tyapp_yhvd_seq_no: number;
   legacy_id: string | null;
   category_id: string;
   name: string;
@@ -128,8 +128,8 @@ export interface YyemsVendorEmbed extends YyemsVendor {
 }
 
 export interface YyemsFinancialAccount {
-  tb_tyapp_yfa_id: string;
-  tb_tyapp_yfa_seq_no: number;
+  tb_tyapp_yhfa_id: string;
+  tb_tyapp_yhfa_seq_no: number;
   legacy_id: string | null;
   /** Null = household/shared account (legacy Person ID yyems). */
   owner_user_id: string | null;
@@ -142,8 +142,8 @@ export interface YyemsFinancialAccount {
 }
 
 export interface YyemsWallet {
-  tb_tyapp_ywl_id: string;
-  tb_tyapp_ywl_seq_no: number;
+  tb_tyapp_yhwl_id: string;
+  tb_tyapp_yhwl_seq_no: number;
   legacy_id: string | null;
   financial_account_id: string;
   name: string;
@@ -161,8 +161,8 @@ export interface YyemsCurrency {
 }
 
 export interface YyemsFxRate {
-  tb_tyapp_yfx_id: string;
-  tb_tyapp_yfx_seq_no: number;
+  tb_tyapp_yhfx_id: string;
+  tb_tyapp_yhfx_seq_no: number;
   currency: string;
   year: number;
   to_cad: number;
@@ -174,8 +174,8 @@ export interface YyemsFxRate {
 }
 
 export interface YyemsBill {
-  tb_tyapp_yym_id: string;
-  tb_tyapp_yym_seq_no: number;
+  tb_tyapp_yhm_id: string;
+  tb_tyapp_yhm_seq_no: number;
   legacy_id: string | null;
   occurred_at: string;
   location_tz: YyemsLocationTz;
@@ -184,11 +184,6 @@ export interface YyemsBill {
   currency: string;
   amount: number;
   wallet_id: string;
-  /**
-   * Person this bill is attributed to for settlement.
-   * Null = shared 50/50 (legacy ownership yyems — not a user row).
-   */
-  ownership_user_id: string | null;
   remark: string | null;
   description: string | null;
   reconciled: boolean;
@@ -209,8 +204,8 @@ export interface YyemsBill {
 }
 
 export interface YyemsPrice {
-  tb_tyapp_ypr_id: string;
-  tb_tyapp_ypr_seq_no: number;
+  tb_tyapp_yhpr_id: string;
+  tb_tyapp_yhpr_seq_no: number;
   legacy_id: string | null;
   priced_at: string;
   vendor_id: string | null;
@@ -251,11 +246,12 @@ export interface YyemsPrice {
 }
 
 export interface YyemsBuy {
-  tb_tyapp_yby_id: string;
-  tb_tyapp_yby_seq_no: number;
+  tb_tyapp_yhby_id: string;
+  tb_tyapp_yhby_seq_no: number;
   legacy_id: string | null;
   price_id: string;
-  yyems_id: string | null;
+  /** FK to tyapp_yyhome (bill). */
+  yyhome_id: string | null;
   paid: number | null;
   home_amount: number;
   home_unit: string | null;
@@ -273,8 +269,8 @@ export interface YyemsBuy {
 }
 
 export interface YyemsEat {
-  tb_tyapp_yet_id: string;
-  tb_tyapp_yet_seq_no: number;
+  tb_tyapp_yhet_id: string;
+  tb_tyapp_yhet_seq_no: number;
   legacy_id: string | null;
   buy_id: string;
   home_amount: number;
@@ -292,10 +288,10 @@ export interface YyemsEat {
 }
 
 export interface YyemsFile {
-  tb_tyapp_yfl_id: string;
-  tb_tyapp_yfl_seq_no: number;
+  tb_tyapp_yhfl_id: string;
+  tb_tyapp_yhfl_seq_no: number;
   legacy_id: string | null;
-  yyems_id: string;
+  yyhome_id: string;
   kind: YyemsFileKind;
   /** Google Drive file id in the Jaxfr folder. Null until a legacy AppSheet path is moved. */
   drive_file_id: string | null;
@@ -313,9 +309,9 @@ export interface YyemsFile {
 export const YYEMS_OWNERSHIP_SHARED = 'shared';
 
 export interface YyemsBillShare {
-  tb_tyapp_ybs_id: string;
-  tb_tyapp_ybs_seq_no: number;
-  yyems_id: string;
+  tb_tyapp_yhbs_id: string;
+  tb_tyapp_yhbs_seq_no: number;
+  yyhome_id: string;
   user_id: string;
   share: number;
 }
@@ -349,7 +345,7 @@ export interface YyemsEatEmbed extends YyemsEat {
 }
 
 export interface YyemsEatAmount {
-  tb_tyapp_yet_id: string;
+  tb_tyapp_yhet_id: string;
   buy_id: string;
   home_amount: number;
 }
@@ -364,12 +360,12 @@ export interface YyemsFridgeRow {
 }
 
 export interface YyemsFridgeRpcRow {
-  tb_tyapp_yby_id: string;
+  tb_tyapp_yhby_id: string;
   home_amount: number;
   home_unit: string | null;
   expiry_date: string | null;
   eat_priority: number;
-  yyems_id: string | null;
+  yyhome_id: string | null;
   price_id: string;
   remaining: number;
   eaten: number;

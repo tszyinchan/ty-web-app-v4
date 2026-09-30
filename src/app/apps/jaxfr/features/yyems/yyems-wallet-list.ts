@@ -22,7 +22,7 @@ export class YyemsWalletList implements OnInit, OnDestroy {
     const fas = this.yyems.financialAccounts();
     return this.yyems.wallets().map((w) => ({
       wallet: w,
-      fa: fas.find((a) => a.tb_tyapp_yfa_id === w.financial_account_id),
+      fa: fas.find((a) => a.tb_tyapp_yhfa_id === w.financial_account_id),
     }));
   });
 

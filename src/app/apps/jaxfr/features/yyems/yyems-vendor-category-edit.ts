@@ -83,7 +83,7 @@ export class YyemsVendorCategoryEdit implements OnInit, OnDestroy, DoCheck {
     if (this.currentId) {
       const found = this.yyems
         .vendorCategories()
-        .find((row) => row.tb_tyapp_yvc_id === this.currentId);
+        .find((row) => row.tb_tyapp_yhvc_id === this.currentId);
       if (!found) {
         void this.router.navigateByUrl('/yyems/vendors/categories/list');
         return;

@@ -2,7 +2,7 @@
 -- ledger. Cursor test logins can then open Split without an appsheet_525_user_id.
 -- Safe to re-run. Paste into the Supabase SQL editor.
 
-CREATE OR REPLACE FUNCTION public.tyapp_yyems_is_household_member()
+CREATE OR REPLACE FUNCTION public.tyapp_yyhome_is_household_member()
 RETURNS boolean
 LANGUAGE sql
 STABLE

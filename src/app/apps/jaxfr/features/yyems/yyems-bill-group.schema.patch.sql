@@ -4,12 +4,12 @@
 -- exactly the two users bound to appsheet_525_user_id cty and frd.
 -- Ownership is not used. If that group is missing or not exactly those two, nothing is stamped.
 
-ALTER TABLE public.tyapp_yyems
+ALTER TABLE public.tyapp_yyhome
   ADD COLUMN IF NOT EXISTS group_id uuid
     REFERENCES public.tyapp_user_group (tb_tyapp_usr_grp_id);
 
-CREATE INDEX IF NOT EXISTS tyapp_yyems_group_idx
-  ON public.tyapp_yyems (group_id)
+CREATE INDEX IF NOT EXISTS tyapp_yyhome_group_idx
+  ON public.tyapp_yyhome (group_id)
   WHERE deleted_at IS NULL;
 
 WITH couple AS (
@@ -37,7 +37,7 @@ only_one AS (
   WHERE (SELECT count(*) FROM couple) = 2
     AND (SELECT count(*) FROM sized) = 1
 )
-UPDATE public.tyapp_yyems AS bill
+UPDATE public.tyapp_yyhome AS bill
 SET group_id = (SELECT group_id FROM only_one)
 WHERE bill.legacy_id IS NOT NULL
   AND bill.deleted_at IS NULL

@@ -1,20 +1,19 @@
-# Test-load AppSheet xlsx into tyapp_yyems_* (not the future cutover migration).
+# Load AppSheet xlsx into tyapp_yyhome_* (Phase D names).
 #
 # Prereqs:
-#   1. Paste yyems.schema.sql in Supabase (once).
+#   1. Paste yyhome.drop-yyems.sql then yyems.schema.sql (+ split/fridge patches) in Supabase.
 #   2. tyapp_user.appsheet_525_user_id is 'cty' and 'frd' for the two logins.
 #   3. pip install openpyxl supabase
 #   4. Env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
-#      (Dashboard → Settings → API → service_role; never commit this key.)
 #
 # Usage:
-#   python src/app/apps/jaxfr/features/yyems/import_yyems_xlsx.py --dry-run
-#   python src/app/apps/jaxfr/features/yyems/import_yyems_xlsx.py --wipe --xlsx "D:\\path\\backup.xlsx"
+#   python .../import_yyems_xlsx.py --dry-run --through-bills
+#   python .../import_yyems_xlsx.py --through-bills --wipe
+#   python .../import_yyems_xlsx.py --dicts-only --wipe
 #
-# --wipe runs the TRUNCATE in yyems.wipe-test-data.sql first (via PostgREST
-# deletes). If wipe fails, paste that SQL file in the editor then re-run.
-#
-# Later: wipe + drop/recreate schema + a separate cutover importer.
+# --dicts-only: A dictionaries only.
+# --through-bills: A dictionaries + B bills (+ bill_share). No prices/buys/eats/files.
+# Full import (no flag): everything including kitchen cycle.
 
 from __future__ import annotations
 
@@ -30,7 +29,7 @@ from openpyxl import load_workbook
 
 DEFAULT_XLSX = (
     r"j:\.shortcut-targets-by-id\1yqrgKWWM13JcXnN0VdIaLbLVzW7LytpH"
-    r"\6FRD\525\Appsheet data backup\20260825_000400_Items.xlsx"
+    r"\6FRD\Project\2024_YYEMS Appsheet\20260929_142600_Items.xlsx"
 )
 
 EMAIL_TO_PARTY = {
@@ -140,6 +139,28 @@ def chunked(rows: list[dict[str, Any]], size: int = BATCH):
         yield rows[i : i + size]
 
 
+def find_couple_group_id(client: Any, cty_id: str, frd_id: str) -> str | None:
+    """Group whose active members are exactly the two appsheet-bound users."""
+    members = (
+        client.table("tyapp_user_group_member")
+        .select("group_id, user_id")
+        .execute()
+        .data
+        or []
+    )
+    by_group: dict[str, set[str]] = {}
+    for row in members:
+        gid = row.get("group_id")
+        uid = row.get("user_id")
+        if gid and uid:
+            by_group.setdefault(gid, set()).add(uid)
+    want = {cty_id, frd_id}
+    for gid, ids in by_group.items():
+        if ids == want:
+            return gid
+    return None
+
+
 class Skip(Exception):
     pass
 
@@ -148,8 +169,28 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Test-import 525 xlsx into Supabase")
     parser.add_argument("--xlsx", default=DEFAULT_XLSX)
     parser.add_argument("--dry-run", action="store_true")
-    parser.add_argument("--wipe", action="store_true", help="Delete existing yyems rows first")
+    parser.add_argument(
+        "--dicts-only",
+        action="store_true",
+        help="Import dictionary tables only (no bills / prices / buys / eats / files)",
+    )
+    parser.add_argument(
+        "--through-bills",
+        action="store_true",
+        help="Dictionaries + bills + bill_share only (skip prices / buys / eats / files)",
+    )
+    parser.add_argument(
+        "--wipe",
+        action="store_true",
+        help="Delete existing yyhome rows first (scope follows --dicts-only / --through-bills)",
+    )
     args = parser.parse_args()
+    if args.dicts_only and args.through_bills:
+        print("Use only one of --dicts-only or --through-bills", file=sys.stderr)
+        return 1
+
+    load_bills = not args.dicts_only
+    load_kitchen = not args.dicts_only and not args.through_bills
 
     xlsx = Path(args.xlsx)
     if not xlsx.is_file():
@@ -172,24 +213,40 @@ def main() -> int:
     fas = sheet_rows(wb, "Financial_Accounts")
     wallets = sheet_rows(wb, "Wallet")
     fx_rows = sheet_rows(wb, "Currency_conversion")
-    bills = sheet_rows(wb, "YYEMS")
-    prices = sheet_rows(wb, "Prices")
-    buys = sheet_rows(wb, "Buy")
-    eats = sheet_rows(wb, "Eat")
-    files = sheet_rows(wb, "YYEMS_Images")
+    if load_bills:
+        bills = sheet_rows(wb, "YYEMS")
+    else:
+        bills = []
+    if load_kitchen:
+        prices = sheet_rows(wb, "Prices")
+        buys = sheet_rows(wb, "Buy")
+        eats = sheet_rows(wb, "Eat")
+        files = sheet_rows(wb, "YYEMS_Images")
+    else:
+        prices, buys, eats, files = [], [], [], []
     wb.close()
 
+    mode_label = (
+        "(dicts-only)"
+        if args.dicts_only
+        else "(through-bills)"
+        if args.through_bills
+        else "(full)"
+    )
     print(
         "rows:",
         f"cat={len(categories)} item={len(items)} vcat={len(vendor_cats)}",
         f"vendor={len(vendors)} fa={len(fas)} wallet={len(wallets)}",
+        f"fx={len(fx_rows)}",
         f"bill={len(bills)} price={len(prices)} buy={len(buys)}",
         f"eat={len(eats)} file={len(files)}",
+        mode_label,
     )
 
     client = None
     party_user: dict[str, str] = {}
     default_created_by = ""
+    couple_group_id: str | None = None
 
     if args.dry_run:
         party_user = {
@@ -197,6 +254,7 @@ def main() -> int:
             "frd": "00000000-0000-0000-0000-000000000002",
         }
         default_created_by = party_user["cty"]
+        couple_group_id = "00000000-0000-0000-0000-0000000000aa"
         print("dry-run: dummy user ids for mapping only")
     else:
         try:
@@ -226,27 +284,59 @@ def main() -> int:
         default_created_by = party_user["cty"]
         print("mapped users", party_user)
 
+        couple_group_id = find_couple_group_id(
+            client, party_user["cty"], party_user["frd"]
+        )
+        if load_bills and not couple_group_id:
+            print(
+                "No user group whose members are exactly cty+frd; "
+                "bills need group_id. Create that group first.",
+                file=sys.stderr,
+            )
+            return 1
+        if couple_group_id:
+            print("couple group_id", couple_group_id)
+
         if args.wipe:
-            wipe_tables = [
-                "tyapp_yyems_eat",
-                "tyapp_yyems_file",
-                "tyapp_yyems_buy",
-                "tyapp_yyems_price",
-                "tyapp_yyems_bill_share",
-                "tyapp_yyems",
-                "tyapp_yyems_wallet",
-                "tyapp_yyems_financial_account",
-                "tyapp_yyems_fx_rate",
-                "tyapp_yyems_vendor",
-                "tyapp_yyems_vendor_category",
-                "tyapp_yyems_item",
-                "tyapp_yyems_item_category",
+            dict_tables = [
+                "tyapp_yyhome_wallet",
+                "tyapp_yyhome_financial_account",
+                "tyapp_yyhome_fx_rate",
+                "tyapp_yyhome_vendor",
+                "tyapp_yyhome_vendor_category",
+                "tyapp_yyhome_item",
+                "tyapp_yyhome_item_category",
             ]
+            bill_tables = [
+                "tyapp_yyhome_bill_share",
+                "tyapp_yyhome",
+            ]
+            kitchen_tables = [
+                "tyapp_yyhome_eat",
+                "tyapp_yyhome_file",
+                "tyapp_yyhome_buy",
+                "tyapp_yyhome_price",
+            ]
+            if args.dicts_only:
+                wipe_tables = dict_tables
+            elif args.through_bills:
+                wipe_tables = bill_tables + dict_tables
+            else:
+                wipe_tables = kitchen_tables + bill_tables + dict_tables
+
+            # bill_share has no created_at — use PK / seq filters PostgREST accepts.
+            wipe_filter: dict[str, tuple[str, object]] = {
+                "tyapp_yyhome_bill_share": ("tb_tyapp_yhbs_seq_no", 0),
+            }
             for table in wipe_tables:
-                client.table(table).delete().gte(
-                    "created_at", "1970-01-01T00:00:00Z"
-                ).execute()
-            print("wiped existing yyems rows")
+                q = client.table(table).delete()
+                if table in wipe_filter:
+                    col, val = wipe_filter[table]
+                    q = q.gte(col, val)
+                else:
+                    q = q.gte("created_at", "1970-01-01T00:00:00Z")
+                q.execute()
+            print("wiped:", ", ".join(wipe_tables))
 
     def created_by_from_email(email: object) -> str:
         party = EMAIL_TO_PARTY.get((as_text(email) or "").lower(), "")
@@ -283,7 +373,7 @@ def main() -> int:
         cat_ids[lid] = pk
         cat_payload.append(
             {
-                "tb_tyapp_yic_id": pk,
+                "tb_tyapp_yhic_id": pk,
                 "legacy_id": lid,
                 "code": lid,
                 "name_zh": as_text(row.get("Category")) or lid,
@@ -305,7 +395,7 @@ def main() -> int:
         plan = as_bool(row.get("Plan Buy?"))
         item_payload.append(
             {
-                "tb_tyapp_yit_id": pk,
+                "tb_tyapp_yhit_id": pk,
                 "legacy_id": lid,
                 "category_id": cat_ids[cat],
                 "name_zh": as_text(row.get("Name")) or lid,
@@ -327,7 +417,7 @@ def main() -> int:
         vcat_ids[lid] = pk
         vcat_payload.append(
             {
-                "tb_tyapp_yvc_id": pk,
+                "tb_tyapp_yhvc_id": pk,
                 "legacy_id": lid,
                 "level1": as_text(row.get("一級分類")) or "",
                 "level2": as_text(row.get("二級分類")) or "",
@@ -347,7 +437,7 @@ def main() -> int:
         vendor_ids[lid] = pk
         vendor_payload.append(
             {
-                "tb_tyapp_yvd_id": pk,
+                "tb_tyapp_yhvd_id": pk,
                 "legacy_id": lid,
                 "category_id": vcat_ids[cat],
                 "name": as_text(row.get("Name")) or lid,
@@ -368,7 +458,7 @@ def main() -> int:
         person = (as_text(row.get("Person ID")) or "").lower()
         fa_payload.append(
             {
-                "tb_tyapp_yfa_id": pk,
+                "tb_tyapp_yhfa_id": pk,
                 "legacy_id": lid,
                 "owner_user_id": person_user(person),
                 "display_name": as_text(row.get("Display Name")) or lid,
@@ -387,7 +477,7 @@ def main() -> int:
         wallet_ids[lid] = pk
         wallet_payload.append(
             {
-                "tb_tyapp_ywl_id": pk,
+                "tb_tyapp_yhwl_id": pk,
                 "legacy_id": lid,
                 "financial_account_id": fa_ids[fa],
                 "name": as_text(row.get("Name")) or lid,
@@ -411,7 +501,7 @@ def main() -> int:
         seen_fx.add(key)
         fx_payload.append(
             {
-                "tb_tyapp_yfx_id": new_id(),
+                "tb_tyapp_yhfx_id": new_id(),
                 "currency": cur,
                 "year": year,
                 "to_cad": to_cad,
@@ -421,7 +511,7 @@ def main() -> int:
 
     bill_payload: list[dict[str, Any]] = []
     share_payload: list[dict[str, Any]] = []
-    for row in bills:
+    for row in bills if load_bills else []:
         lid = as_text(row.get("YYEMS ID"))
         vendor = as_text(row.get("Vendor ID"))
         wallet = as_text(row.get("Wallet"))
@@ -449,7 +539,7 @@ def main() -> int:
         tick = as_text(row.get("✔️"))
         bill_payload.append(
             {
-                "tb_tyapp_yym_id": pk,
+                "tb_tyapp_yhm_id": pk,
                 "legacy_id": lid,
                 "occurred_at": occurred,
                 "location_tz": tz,
@@ -458,7 +548,6 @@ def main() -> int:
                 "currency": cur,
                 "amount": amount,
                 "wallet_id": wallet_ids[wallet],
-                "ownership_user_id": person_user(own),
                 "remark": as_text(row.get("remark")),
                 "description": as_text(row.get("description")),
                 "reconciled": bool(tick),
@@ -466,19 +555,20 @@ def main() -> int:
                 "period_start": as_iso_date(row.get("start_date")),
                 "period_end": as_iso_date(row.get("end_date")),
                 "created_by": created_by_from_email(row.get("email_address")),
+                "group_id": couple_group_id,
             }
         )
         owner_id = person_user(own)
         if owner_id:
-            share_payload.append({"yyems_id": pk, "user_id": owner_id, "share": 1})
+            share_payload.append({"yyhome_id": pk, "user_id": owner_id, "share": 1})
         else:
             for code in ("cty", "frd"):
                 hid = party_user.get(code)
                 if hid:
-                    share_payload.append({"yyems_id": pk, "user_id": hid, "share": 0.5})
+                    share_payload.append({"yyhome_id": pk, "user_id": hid, "share": 0.5})
 
     price_payload: list[dict[str, Any]] = []
-    for row in prices:
+    for row in prices if load_kitchen else []:
         lid = as_text(row.get("Price ID"))
         item = as_text(row.get("Item ID"))
         priced = as_iso_dt(row.get("Datetime"))
@@ -496,7 +586,7 @@ def main() -> int:
         price_ids[lid] = pk
         price_payload.append(
             {
-                "tb_tyapp_ypr_id": pk,
+                "tb_tyapp_yhpr_id": pk,
                 "legacy_id": lid,
                 "priced_at": priced,
                 "vendor_id": vendor_ids.get(vendor) if vendor else None,
@@ -534,7 +624,7 @@ def main() -> int:
         )
 
     buy_payload: list[dict[str, Any]] = []
-    for row in buys:
+    for row in buys if load_kitchen else []:
         lid = as_text(row.get("Buy ID"))
         price = as_text(row.get("Price Log ID"))
         home = as_num(row.get("Home Amount"))
@@ -552,10 +642,10 @@ def main() -> int:
         ).isoformat()
         buy_payload.append(
             {
-                "tb_tyapp_yby_id": pk,
+                "tb_tyapp_yhby_id": pk,
                 "legacy_id": lid,
                 "price_id": price_ids[price],
-                "yyems_id": bill_ids.get(bill) if bill else None,
+                "yyhome_id": bill_ids.get(bill) if bill else None,
                 "paid": as_num(row.get("Paid")),
                 "home_amount": home,
                 "home_unit": as_text(row.get("Home Unit")),
@@ -571,7 +661,7 @@ def main() -> int:
         )
 
     eat_payload: list[dict[str, Any]] = []
-    for row in eats:
+    for row in eats if load_kitchen else []:
         lid = as_text(row.get("Eat ID"))
         buy = as_text(row.get("Buy ID"))
         home = as_num(row.get("Home Amount"))
@@ -601,7 +691,7 @@ def main() -> int:
         added = as_iso_dt(row.get("Add Datetime")) or eat_date
         eat_payload.append(
             {
-                "tb_tyapp_yet_id": new_id(),
+                "tb_tyapp_yhet_id": new_id(),
                 "legacy_id": lid,
                 "buy_id": buy_ids[buy],
                 "home_amount": home,
@@ -616,7 +706,7 @@ def main() -> int:
         )
 
     file_payload: list[dict[str, Any]] = []
-    for row in files:
+    for row in files if load_kitchen else []:
         lid = as_text(row.get("YYEMS Image ID"))
         bill = as_text(row.get("YYEMS ID"))
         if not lid or not bill or bill not in bill_ids:
@@ -632,9 +722,9 @@ def main() -> int:
             continue
         file_payload.append(
             {
-                "tb_tyapp_yfl_id": new_id(),
+                "tb_tyapp_yhfl_id": new_id(),
                 "legacy_id": lid,
-                "yyems_id": bill_ids[bill],
+                "yyhome_id": bill_ids[bill],
                 "kind": kind,
                 "drive_file_id": None,
                 "legacy_path": path,
@@ -672,19 +762,21 @@ def main() -> int:
             client.table(table).insert(clean).execute()
         print(f"inserted {table} {len(rows)}")
 
-    insert_all("tyapp_yyems_item_category", cat_payload)
-    insert_all("tyapp_yyems_item", item_payload)
-    insert_all("tyapp_yyems_vendor_category", vcat_payload)
-    insert_all("tyapp_yyems_vendor", vendor_payload)
-    insert_all("tyapp_yyems_financial_account", fa_payload)
-    insert_all("tyapp_yyems_wallet", wallet_payload)
-    insert_all("tyapp_yyems_fx_rate", fx_payload)
-    insert_all("tyapp_yyems", bill_payload)
-    insert_all("tyapp_yyems_bill_share", share_payload)
-    insert_all("tyapp_yyems_price", price_payload)
-    insert_all("tyapp_yyems_buy", buy_payload)
-    insert_all("tyapp_yyems_eat", eat_payload)
-    insert_all("tyapp_yyems_file", file_payload)
+    insert_all("tyapp_yyhome_item_category", cat_payload)
+    insert_all("tyapp_yyhome_item", item_payload)
+    insert_all("tyapp_yyhome_vendor_category", vcat_payload)
+    insert_all("tyapp_yyhome_vendor", vendor_payload)
+    insert_all("tyapp_yyhome_financial_account", fa_payload)
+    insert_all("tyapp_yyhome_wallet", wallet_payload)
+    insert_all("tyapp_yyhome_fx_rate", fx_payload)
+    if load_bills:
+        insert_all("tyapp_yyhome", bill_payload)
+        insert_all("tyapp_yyhome_bill_share", share_payload)
+    if load_kitchen:
+        insert_all("tyapp_yyhome_price", price_payload)
+        insert_all("tyapp_yyhome_buy", buy_payload)
+        insert_all("tyapp_yyhome_eat", eat_payload)
+        insert_all("tyapp_yyhome_file", file_payload)
     print("done")
     return 0
 

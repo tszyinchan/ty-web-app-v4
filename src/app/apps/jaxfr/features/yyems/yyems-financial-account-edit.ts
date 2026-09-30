@@ -28,7 +28,7 @@ import { YyemsService } from './yyems.service';
 const JOINT = '';
 
 interface AccountForm {
-  tb_tyapp_yfa_id?: string;
+  tb_tyapp_yhfa_id?: string;
   display_name: string;
   currency: string;
   ownerKey: string;
@@ -101,7 +101,7 @@ export class YyemsFinancialAccountEdit implements OnInit, OnDestroy, DoCheck {
     if (this.currentId) {
       const found = this.yyems
         .financialAccounts()
-        .find((row) => row.tb_tyapp_yfa_id === this.currentId);
+        .find((row) => row.tb_tyapp_yhfa_id === this.currentId);
       if (!found) {
         void this.router.navigateByUrl('/yyems/wallets/accounts/list');
         return;
@@ -141,7 +141,7 @@ export class YyemsFinancialAccountEdit implements OnInit, OnDestroy, DoCheck {
 
   private toForm(row: YyemsFinancialAccount): AccountForm {
     return {
-      tb_tyapp_yfa_id: row.tb_tyapp_yfa_id,
+      tb_tyapp_yhfa_id: row.tb_tyapp_yhfa_id,
       display_name: row.display_name,
       currency: row.currency,
       ownerKey: row.owner_user_id ?? JOINT,
@@ -152,7 +152,7 @@ export class YyemsFinancialAccountEdit implements OnInit, OnDestroy, DoCheck {
     const form = this.item();
     if (!form) return;
     const saved = await this.yyems.saveFinancialAccount({
-      tb_tyapp_yfa_id: form.tb_tyapp_yfa_id,
+      tb_tyapp_yhfa_id: form.tb_tyapp_yhfa_id,
       display_name: form.display_name.trim(),
       currency: form.currency,
       owner_user_id: form.ownerKey || null,

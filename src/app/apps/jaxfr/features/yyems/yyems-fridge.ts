@@ -75,7 +75,7 @@ export class YyemsFridge implements OnInit, OnDestroy {
 
   eatQuery(row: YyemsFridgeRow) {
     const query: Record<string, string> = {
-      buyId: row.buy.tb_tyapp_yby_id,
+      buyId: row.buy.tb_tyapp_yhby_id,
     };
     if (this.presetMeal) query['meal'] = this.presetMeal;
     if (this.presetDate) query['date'] = this.presetDate;

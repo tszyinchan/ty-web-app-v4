@@ -191,7 +191,7 @@
               required
             />
             <mat-autocomplete #vendorAuto="matAutocomplete">
-              @for (v of vendorChoices(vendorQuery()); track v.tb_tyapp_yvd_id) {
+              @for (v of vendorChoices(vendorQuery()); track v.tb_tyapp_yhvd_id) {
                 <mat-option [value]="v.name">{{ v.name }}</mat-option>
               }
             </mat-autocomplete>
@@ -221,7 +221,7 @@
               required
             />
             <mat-autocomplete #walletAuto="matAutocomplete">
-              @for (w of walletChoices(walletQuery()); track w.tb_tyapp_ywl_id) {
+              @for (w of walletChoices(walletQuery()); track w.tb_tyapp_yhwl_id) {
                 <mat-option [value]="w.name">{{ w.name }}</mat-option>
               }
             </mat-autocomplete>
@@ -380,8 +380,8 @@
             Add buy
           </button>
           <div class="list-container">
-            @for (buy of buys(); track buy.tb_tyapp_yby_id) {
-              <a class="item-link" [routerLink]="['/yyems/buys/edit', buy.tb_tyapp_yby_id]">
+            @for (buy of buys(); track buy.tb_tyapp_yhby_id) {
+              <a class="item-link" [routerLink]="['/yyems/buys/edit', buy.tb_tyapp_yhby_id]">
                 <div class="item-content">
                   <div class="item-info-group">
                     <span class="main-text">{{ itemLabel(buy.price?.item) }}</span>

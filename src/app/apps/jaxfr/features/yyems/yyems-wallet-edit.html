@@ -12,8 +12,8 @@
         <mat-form-field appearance="outline" class="full-width mt-16" subscriptSizing="dynamic">
           <mat-label>Financial account</mat-label>
           <mat-select [(ngModel)]="w.financial_account_id" required>
-            @for (fa of yyems.financialAccounts(); track fa.tb_tyapp_yfa_id) {
-              <mat-option [value]="fa.tb_tyapp_yfa_id"
+            @for (fa of yyems.financialAccounts(); track fa.tb_tyapp_yhfa_id) {
+              <mat-option [value]="fa.tb_tyapp_yhfa_id"
                 >{{ fa.display_name }} ({{ fa.currency }})</mat-option
               >
             }

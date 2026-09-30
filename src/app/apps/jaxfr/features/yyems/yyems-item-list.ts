@@ -50,7 +50,7 @@ export class YyemsItemList implements OnInit, OnDestroy {
     const cats = this.yyems.itemCategories();
     const rows = this.yyems.items().map((item) => ({
       item,
-      cat: cats.find((c) => c.tb_tyapp_yic_id === item.category_id)?.name_zh || '',
+      cat: cats.find((c) => c.tb_tyapp_yhic_id === item.category_id)?.name_zh || '',
     }));
     if (!q) return rows;
     return rows.filter((row) =>

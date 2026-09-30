@@ -90,7 +90,7 @@ export class YyemsFxRateEdit implements OnInit, OnDestroy, DoCheck {
     if (this.currentId) {
       const found = this.yyems
         .fxRates()
-        .find((row) => row.tb_tyapp_yfx_id === this.currentId);
+        .find((row) => row.tb_tyapp_yhfx_id === this.currentId);
       if (!found) {
         void this.router.navigateByUrl('/yyems/wallets/fx/list');
         return;

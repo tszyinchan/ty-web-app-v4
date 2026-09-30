@@ -3,16 +3,17 @@
 -- before a future clean migration.
 
 TRUNCATE TABLE
-  public.tyapp_yyems_eat,
-  public.tyapp_yyems_file,
-  public.tyapp_yyems_buy,
-  public.tyapp_yyems_price,
-  public.tyapp_yyems,
-  public.tyapp_yyems_wallet,
-  public.tyapp_yyems_financial_account,
-  public.tyapp_yyems_fx_rate,
-  public.tyapp_yyems_vendor,
-  public.tyapp_yyems_vendor_category,
-  public.tyapp_yyems_item,
-  public.tyapp_yyems_item_category
+  public.tyapp_yyhome_eat,
+  public.tyapp_yyhome_file,
+  public.tyapp_yyhome_buy,
+  public.tyapp_yyhome_price,
+  public.tyapp_yyhome_bill_share,
+  public.tyapp_yyhome,
+  public.tyapp_yyhome_wallet,
+  public.tyapp_yyhome_financial_account,
+  public.tyapp_yyhome_fx_rate,
+  public.tyapp_yyhome_vendor,
+  public.tyapp_yyhome_vendor_category,
+  public.tyapp_yyhome_item,
+  public.tyapp_yyhome_item_category
 RESTART IDENTITY CASCADE;

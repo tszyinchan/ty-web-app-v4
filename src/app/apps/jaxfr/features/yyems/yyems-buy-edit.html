@@ -14,8 +14,8 @@
             (ngModelChange)="onItemChange($event)"
             required
           >
-            @for (it of filteredItems(); track it.tb_tyapp_yit_id) {
-              <mat-option [value]="it.tb_tyapp_yit_id">{{ itemLabel(it) }}</mat-option>
+            @for (it of filteredItems(); track it.tb_tyapp_yhit_id) {
+              <mat-option [value]="it.tb_tyapp_yhit_id">{{ itemLabel(it) }}</mat-option>
             }
           </mat-select>
         </mat-form-field>
@@ -32,8 +32,8 @@
           <mat-form-field appearance="outline" class="full-width mt-16" subscriptSizing="dynamic">
             <mat-label>Price log</mat-label>
             <mat-select [(ngModel)]="buy.price_id">
-              @for (p of prices(); track p.tb_tyapp_ypr_id) {
-                <mat-option [value]="p.tb_tyapp_ypr_id">{{ priceCaption(p) }}</mat-option>
+              @for (p of prices(); track p.tb_tyapp_yhpr_id) {
+                <mat-option [value]="p.tb_tyapp_yhpr_id">{{ priceCaption(p) }}</mat-option>
               }
             </mat-select>
           </mat-form-field>
@@ -43,8 +43,8 @@
               <mat-label>Vendor</mat-label>
               <mat-select [(ngModel)]="buy.vendor_id">
                 <mat-option value="">—</mat-option>
-                @for (v of yyems.vendors(); track v.tb_tyapp_yvd_id) {
-                  <mat-option [value]="v.tb_tyapp_yvd_id">{{ v.name }}</mat-option>
+                @for (v of yyems.vendors(); track v.tb_tyapp_yhvd_id) {
+                  <mat-option [value]="v.tb_tyapp_yhvd_id">{{ v.name }}</mat-option>
                 }
               </mat-select>
             </mat-form-field>

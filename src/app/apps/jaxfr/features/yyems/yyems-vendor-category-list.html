@@ -1,7 +1,7 @@
 <div class="standard-list-view">
   <div class="list-container">
-    @for (c of yyems.vendorCategories(); track c.tb_tyapp_yvc_id) {
-      <a class="item-link" [routerLink]="['/yyems/vendors/categories/edit', c.tb_tyapp_yvc_id]">
+    @for (c of yyems.vendorCategories(); track c.tb_tyapp_yhvc_id) {
+      <a class="item-link" [routerLink]="['/yyems/vendors/categories/edit', c.tb_tyapp_yhvc_id]">
         <div class="item-content">
           <div class="item-info-group">
             <span class="main-text">{{ c.display_name }}</span>

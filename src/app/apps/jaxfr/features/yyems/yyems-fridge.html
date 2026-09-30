@@ -22,9 +22,9 @@
         <span>Loading fridge…</span>
       </div>
     } @else {
-    @for (row of filtered(); track row.buy.tb_tyapp_yby_id) {
+    @for (row of filtered(); track row.buy.tb_tyapp_yhby_id) {
       <div class="fridge-row">
-        <a class="item-link" [routerLink]="['/yyems/buys/edit', row.buy.tb_tyapp_yby_id]">
+        <a class="item-link" [routerLink]="['/yyems/buys/edit', row.buy.tb_tyapp_yhby_id]">
           <div class="item-content">
             <div class="item-info-group">
               <span class="main-text">{{ itemLabel(row.item) }}</span>

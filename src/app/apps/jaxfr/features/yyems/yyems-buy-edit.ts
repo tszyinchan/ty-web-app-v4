@@ -33,10 +33,10 @@ import { YyemsService } from './yyems.service';
 import { itemLabel } from './yyems.util';
 
 interface BuyForm {
-  tb_tyapp_yby_id?: string;
+  tb_tyapp_yhby_id?: string;
   item_id: string;
   price_id: string;
-  yyems_id: string;
+  yyhome_id: string;
   paid: number | null;
   home_amount: number | null;
   home_unit: string;
@@ -147,10 +147,10 @@ export class YyemsBuyEdit implements OnInit, OnDestroy, DoCheck {
       }
       const itemId = buy.price?.item_id || '';
       this.item.set({
-        tb_tyapp_yby_id: buy.tb_tyapp_yby_id,
+        tb_tyapp_yhby_id: buy.tb_tyapp_yhby_id,
         item_id: itemId,
         price_id: buy.price_id,
-        yyems_id: buy.yyems_id || billId || '',
+        yyhome_id: buy.yyhome_id || billId || '',
         paid: buy.paid,
         home_amount: buy.home_amount,
         home_unit: buy.home_unit || '',
@@ -166,12 +166,12 @@ export class YyemsBuyEdit implements OnInit, OnDestroy, DoCheck {
         currency: buy.price?.currency || 'CAD',
       });
       if (itemId) this.prices.set(await this.yyems.fetchPricesForItem(itemId));
-      if (buy.yyems_id) this.returnUrl = `/yyems/bills/edit/${buy.yyems_id}`;
+      if (buy.yyhome_id) this.returnUrl = `/yyems/bills/edit/${buy.yyhome_id}`;
     } else {
       this.item.set({
         item_id: '',
         price_id: '',
-        yyems_id: billId || '',
+        yyhome_id: billId || '',
         paid: null,
         home_amount: null,
         home_unit: '',
@@ -250,14 +250,14 @@ export class YyemsBuyEdit implements OnInit, OnDestroy, DoCheck {
       };
       const savedPrice = await this.yyems.savePrice(pricePayload);
       if (!savedPrice) return;
-      priceId = savedPrice.tb_tyapp_ypr_id;
+      priceId = savedPrice.tb_tyapp_yhpr_id;
     }
     if (!priceId) return;
 
     const payload: Partial<YyemsBuy> = {
-      tb_tyapp_yby_id: form.tb_tyapp_yby_id,
+      tb_tyapp_yhby_id: form.tb_tyapp_yhby_id,
       price_id: priceId,
-      yyems_id: form.yyems_id || null,
+      yyhome_id: form.yyhome_id || null,
       paid: form.paid,
       home_amount: form.home_amount,
       home_unit: form.home_unit.trim() || null,

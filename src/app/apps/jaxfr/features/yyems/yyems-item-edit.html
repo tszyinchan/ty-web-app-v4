@@ -6,8 +6,8 @@
         <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
           <mat-label>Category</mat-label>
           <mat-select [(ngModel)]="it.category_id" required>
-            @for (c of yyems.itemCategories(); track c.tb_tyapp_yic_id) {
-              <mat-option [value]="c.tb_tyapp_yic_id">{{ c.name_zh }} ({{ c.code }})</mat-option>
+            @for (c of yyems.itemCategories(); track c.tb_tyapp_yhic_id) {
+              <mat-option [value]="c.tb_tyapp_yhic_id">{{ c.name_zh }} ({{ c.code }})</mat-option>
             }
           </mat-select>
         </mat-form-field>

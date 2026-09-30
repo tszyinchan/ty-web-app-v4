@@ -1,12 +1,15 @@
--- Split stats: settle Out bills for one group in Postgres.
--- Same rules as settleOneBill / splitBreakdown in yyems.util.ts.
+-- Split stats: settle all bills (in / out / free) for one group in Postgres.
+-- In reverses paid and borne (refunds / credits). Same rules as settleOneBill in yyems.util.ts.
+-- Exclude vendor legacy_id Internal_transfer (內部轉帳) — wallet moves are not payback.
 -- Safe to re-run. Paste in the Supabase SQL editor.
 
-CREATE INDEX IF NOT EXISTS tyapp_yyems_out_group_idx
-  ON public.tyapp_yyems (group_id)
-  WHERE deleted_at IS NULL AND in_or_out = 'out';
+DROP INDEX IF EXISTS tyapp_yyhome_out_group_idx;
 
-CREATE OR REPLACE FUNCTION public.tyapp_yyems_split_group_totals(
+CREATE INDEX IF NOT EXISTS tyapp_yyhome_group_idx
+  ON public.tyapp_yyhome (group_id)
+  WHERE deleted_at IS NULL;
+
+CREATE OR REPLACE FUNCTION public.tyapp_yyhome_split_group_totals(
   p_group_id uuid,
   p_user_a uuid,
   p_user_b uuid
@@ -50,7 +53,7 @@ DECLARE
   v_shares uuid[];
   v_weights int[];
 BEGIN
-  IF NOT public.tyapp_yyems_is_household_member() THEN
+  IF NOT public.tyapp_yyhome_is_household_member() THEN
     RAISE EXCEPTION 'not a household member';
   END IF;
   IF p_group_id IS NULL OR p_user_a IS NULL OR p_user_b IS NULL OR p_user_a = p_user_b THEN
@@ -59,35 +62,43 @@ BEGIN
 
   SELECT count(*)::int
   INTO v_unset
-  FROM public.tyapp_yyems b
+  FROM public.tyapp_yyhome b
   WHERE b.deleted_at IS NULL
-    AND b.in_or_out = 'out'
     AND b.group_id IS NULL;
 
   FOR v_bill IN
     SELECT
-      b.tb_tyapp_yym_id,
+      b.tb_tyapp_yhm_id,
+      b.in_or_out,
       b.amount,
       b.currency,
       b.wallet_amount,
       fa.owner_user_id AS payer_user_id,
-      fa.currency AS wallet_currency
-    FROM public.tyapp_yyems b
-    LEFT JOIN public.tyapp_yyems_wallet w
-      ON w.tb_tyapp_ywl_id = b.wallet_id
+      fa.currency AS wallet_currency,
+      v.legacy_id AS vendor_legacy_id
+    FROM public.tyapp_yyhome b
+    LEFT JOIN public.tyapp_yyhome_wallet w
+      ON w.tb_tyapp_yhwl_id = b.wallet_id
      AND w.deleted_at IS NULL
-    LEFT JOIN public.tyapp_yyems_financial_account fa
-      ON fa.tb_tyapp_yfa_id = w.financial_account_id
+    LEFT JOIN public.tyapp_yyhome_financial_account fa
+      ON fa.tb_tyapp_yhfa_id = w.financial_account_id
      AND fa.deleted_at IS NULL
+    LEFT JOIN public.tyapp_yyhome_vendor v
+      ON v.tb_tyapp_yhvd_id = b.vendor_id
+     AND v.deleted_at IS NULL
     WHERE b.deleted_at IS NULL
-      AND b.in_or_out = 'out'
       AND b.group_id = p_group_id
-    ORDER BY b.tb_tyapp_yym_id
+    ORDER BY b.tb_tyapp_yhm_id
   LOOP
+    -- Wallet-to-wallet moves (Excel vendor ID Internal_transfer) are not settlement.
+    IF v_bill.vendor_legacy_id = 'Internal_transfer' THEN
+      CONTINUE;
+    END IF;
+
     SELECT count(*)::int
     INTO v_share_count
-    FROM public.tyapp_yyems_bill_share s
-    WHERE s.yyems_id = v_bill.tb_tyapp_yym_id;
+    FROM public.tyapp_yyhome_bill_share s
+    WHERE s.yyhome_id = v_bill.tb_tyapp_yhm_id;
 
     IF v_share_count = 0 THEN
       v_missing := v_missing + 1;
@@ -105,6 +116,14 @@ BEGIN
     ELSE
       v_amount := round(v_bill.amount::numeric, 2);
       v_currency := v_bill.currency;
+    END IF;
+
+    IF v_bill.in_or_out = 'in' THEN
+      v_amount := -v_amount;
+    END IF;
+
+    IF abs(v_amount) <= v_eps THEN
+      CONTINUE;
     END IF;
 
     v_payer := v_bill.payer_user_id;
@@ -127,8 +146,8 @@ BEGIN
     SELECT coalesce(array_agg(s.user_id ORDER BY s.user_id), ARRAY[]::uuid[]),
            coalesce(array_agg(GREATEST(0, round(s.share::numeric * 100))::int ORDER BY s.user_id), ARRAY[]::int[])
     INTO v_shares, v_weights
-    FROM public.tyapp_yyems_bill_share s
-    WHERE s.yyems_id = v_bill.tb_tyapp_yym_id;
+    FROM public.tyapp_yyhome_bill_share s
+    WHERE s.yyhome_id = v_bill.tb_tyapp_yhm_id;
 
     v_weight_sum := 0;
     FOR v_i IN 1 .. coalesce(array_length(v_weights, 1), 0) LOOP
@@ -161,8 +180,8 @@ BEGIN
     -- paidBucket for each of the pair (shares in pair with share > eps).
     SELECT count(*)::int
     INTO v_pair_share_n
-    FROM public.tyapp_yyems_bill_share s
-    WHERE s.yyems_id = v_bill.tb_tyapp_yym_id
+    FROM public.tyapp_yyhome_bill_share s
+    WHERE s.yyhome_id = v_bill.tb_tyapp_yhm_id
       AND s.user_id IN (p_user_a, p_user_b)
       AND s.share::numeric > v_eps;
 
@@ -175,8 +194,8 @@ BEGIN
     ELSE
       SELECT s.user_id
       INTO v_uid
-      FROM public.tyapp_yyems_bill_share s
-      WHERE s.yyems_id = v_bill.tb_tyapp_yym_id
+      FROM public.tyapp_yyhome_bill_share s
+      WHERE s.yyhome_id = v_bill.tb_tyapp_yhm_id
         AND s.user_id IN (p_user_a, p_user_b)
         AND s.share::numeric > v_eps
       LIMIT 1;
@@ -204,7 +223,7 @@ BEGIN
     v_bucket := jsonb_set(v_bucket, '{borne_b}', to_jsonb(round((v_bucket->>'borne_b')::numeric + v_borne_b, 2)));
     v_bucket := jsonb_set(v_bucket, '{outside}', to_jsonb(round((v_bucket->>'outside')::numeric + v_outside, 2)));
 
-    IF v_paid_a > v_eps AND v_kind_a IS NOT NULL THEN
+    IF abs(v_paid_a) > v_eps AND v_kind_a IS NOT NULL THEN
       IF v_kind_a = 'self' THEN
         v_bucket := jsonb_set(v_bucket, '{self_a}', to_jsonb(round((v_bucket->>'self_a')::numeric + v_paid_a, 2)));
       ELSIF v_kind_a = 'other' THEN
@@ -214,7 +233,7 @@ BEGIN
       END IF;
     END IF;
 
-    IF v_paid_b > v_eps AND v_kind_b IS NOT NULL THEN
+    IF abs(v_paid_b) > v_eps AND v_kind_b IS NOT NULL THEN
       IF v_kind_b = 'self' THEN
         v_bucket := jsonb_set(v_bucket, '{self_b}', to_jsonb(round((v_bucket->>'self_b')::numeric + v_paid_b, 2)));
       ELSIF v_kind_b = 'other' THEN
@@ -266,5 +285,5 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.tyapp_yyems_split_group_totals(uuid, uuid, uuid)
+GRANT EXECUTE ON FUNCTION public.tyapp_yyhome_split_group_totals(uuid, uuid, uuid)
   TO authenticated;

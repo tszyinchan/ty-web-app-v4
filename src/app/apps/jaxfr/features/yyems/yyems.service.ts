@@ -4,7 +4,6 @@ import { RecordStatus } from '../../../../core/models/status.enum';
 import { NotificationService } from '../../../../core/services/notification.service';
 import { SupabaseService } from '../../../../core/services/supabase.service';
 import {
-  YYEMS_IN_OR_OUT,
   YyemsBill,
   YyemsBillEmbed,
   YyemsBillShare,
@@ -29,14 +28,14 @@ import {
 import type { SplitCurrencyBreakdown } from './yyems.util';
 
 const BUY_EMBED =
-  '*, price:tyapp_yyems_price(*, item:tyapp_yyems_item(*), vendor:tyapp_yyems_vendor(*))';
+  '*, price:tyapp_yyhome_price(*, item:tyapp_yyhome_item(*), vendor:tyapp_yyhome_vendor(*))';
 
 const BILL_EMBED =
-  '*, vendor:tyapp_yyems_vendor(*, category:tyapp_yyems_vendor_category!category_id(display_name, level1, level2, level3)), wallet:tyapp_yyems_wallet(*)';
+  '*, vendor:tyapp_yyhome_vendor(*, category:tyapp_yyhome_vendor_category!category_id(display_name, level1, level2, level3)), wallet:tyapp_yyhome_wallet(*)';
 
-const EAT_EMBED = `*, buy:tyapp_yyems_buy(${BUY_EMBED})`;
+const EAT_EMBED = `*, buy:tyapp_yyhome_buy(${BUY_EMBED})`;
 const EAT_HOME_EMBED =
-  '*, buy:tyapp_yyems_buy(home_unit, price:tyapp_yyems_price(item:tyapp_yyems_item(name_zh, name_en)))';
+  '*, buy:tyapp_yyhome_buy(home_unit, price:tyapp_yyhome_price(item:tyapp_yyhome_item(name_zh, name_en)))';
 
 @Injectable({ providedIn: 'root' })
 export class YyemsService {
@@ -93,40 +92,40 @@ export class YyemsService {
         fxRates,
       ] = await Promise.all([
         this.supabase
-          .from('tyapp_yyems_item_category')
+          .from('tyapp_yyhome_item_category')
           .select('*')
           .is('deleted_at', null)
           .order('sort_order'),
         this.supabase
-          .from('tyapp_yyems_item')
+          .from('tyapp_yyhome_item')
           .select('*')
           .is('deleted_at', null)
           .order('name_zh'),
         this.supabase
-          .from('tyapp_yyems_vendor_category')
+          .from('tyapp_yyhome_vendor_category')
           .select('*')
           .is('deleted_at', null)
           .order('display_name'),
         this.supabase
-          .from('tyapp_yyems_vendor')
+          .from('tyapp_yyhome_vendor')
           .select('*')
           .is('deleted_at', null)
           .order('sort_order', { ascending: true, nullsFirst: false })
           .order('name'),
         this.supabase
-          .from('tyapp_yyems_financial_account')
+          .from('tyapp_yyhome_financial_account')
           .select('*')
           .is('deleted_at', null)
           .order('display_name'),
         this.supabase
-          .from('tyapp_yyems_wallet')
+          .from('tyapp_yyhome_wallet')
           .select('*')
           .is('deleted_at', null)
           .order('sort_order', { ascending: true, nullsFirst: false })
           .order('name'),
-        this.supabase.from('tyapp_yyems_currency').select('*'),
+        this.supabase.from('tyapp_yyhome_currency').select('*'),
         this.supabase
-          .from('tyapp_yyems_fx_rate')
+          .from('tyapp_yyhome_fx_rate')
           .select('*')
           .eq('status', RecordStatus.Active)
           .is('deleted_at', null),
@@ -168,7 +167,7 @@ export class YyemsService {
     if (this.fridgeLoaded && !force) return;
     this.fridgeLoading.set(true);
     try {
-      const { data, error } = await this.supabase.rpc('tyapp_yyems_fridge');
+      const { data, error } = await this.supabase.rpc('tyapp_yyhome_fridge');
       if (error) throw error;
       const rows = ((data as YyemsFridgeRpcRow[]) ?? []).map((row) =>
         this.fridgeRowFromRpc(row),
@@ -187,8 +186,8 @@ export class YyemsService {
   private fridgeRowFromRpc(row: YyemsFridgeRpcRow): YyemsFridgeRow {
     const item: YyemsItem | null = row.item_id
       ? {
-          tb_tyapp_yit_id: row.item_id,
-          tb_tyapp_yit_seq_no: 0,
+          tb_tyapp_yhit_id: row.item_id,
+          tb_tyapp_yhit_seq_no: 0,
           legacy_id: null,
           category_id: '',
           name_zh: row.item_name_zh || '',
@@ -204,8 +203,8 @@ export class YyemsService {
       : null;
     const vendor: YyemsVendor | null = row.vendor_id
       ? {
-          tb_tyapp_yvd_id: row.vendor_id,
-          tb_tyapp_yvd_seq_no: 0,
+          tb_tyapp_yhvd_id: row.vendor_id,
+          tb_tyapp_yhvd_seq_no: 0,
           legacy_id: null,
           category_id: '',
           name: row.vendor_name || '',
@@ -218,8 +217,8 @@ export class YyemsService {
         }
       : null;
     const price: YyemsPrice | null = {
-      tb_tyapp_ypr_id: row.price_id,
-      tb_tyapp_ypr_seq_no: 0,
+      tb_tyapp_yhpr_id: row.price_id,
+      tb_tyapp_yhpr_seq_no: 0,
       legacy_id: null,
       priced_at: '',
       vendor_id: row.vendor_id,
@@ -259,11 +258,11 @@ export class YyemsService {
       deleted_at: null,
     };
     const buy: YyemsBuy = {
-      tb_tyapp_yby_id: row.tb_tyapp_yby_id,
-      tb_tyapp_yby_seq_no: 0,
+      tb_tyapp_yhby_id: row.tb_tyapp_yhby_id,
+      tb_tyapp_yhby_seq_no: 0,
       legacy_id: null,
       price_id: row.price_id,
-      yyems_id: row.yyems_id,
+      yyhome_id: row.yyhome_id,
       paid: null,
       home_amount: Number(row.home_amount),
       home_unit: row.home_unit,
@@ -290,7 +289,8 @@ export class YyemsService {
   }
 
   /**
-   * Split totals in Postgres. Requires yyems-split.schema.patch.sql.
+   * Split totals in Postgres (in/out/free; excludes Internal_transfer vendor).
+   * Requires yyems-split.schema.patch.sql.
    */
   async fetchSplitGroupTotals(
     groupId: string,
@@ -303,7 +303,7 @@ export class YyemsService {
   } | null> {
     try {
       const { data, error } = await this.supabase.rpc(
-        'tyapp_yyems_split_group_totals',
+        'tyapp_yyhome_split_group_totals',
         {
           p_group_id: groupId,
           p_user_a: userA,
@@ -342,7 +342,7 @@ export class YyemsService {
   ): Promise<YyemsBillEmbed[]> {
     try {
       const { data, error } = await this.supabase
-        .from('tyapp_yyems')
+        .from('tyapp_yyhome')
         .select(BILL_EMBED)
         .is('deleted_at', null)
         .gte('occurred_at', fromIso)
@@ -361,7 +361,7 @@ export class YyemsService {
     this.billsLoading.set(true);
     try {
       const { data, error } = await this.supabase
-        .from('tyapp_yyems')
+        .from('tyapp_yyhome')
         .select(BILL_EMBED)
         .is('deleted_at', null)
         .gte('occurred_at', fromIso)
@@ -383,9 +383,9 @@ export class YyemsService {
     this.loading.set(true);
     try {
       const { data, error } = await this.supabase
-        .from('tyapp_yyems')
+        .from('tyapp_yyhome')
         .select(BILL_EMBED)
-        .eq('tb_tyapp_yym_id', id)
+        .eq('tb_tyapp_yhm_id', id)
         .is('deleted_at', null)
         .maybeSingle();
       if (error) throw error;
@@ -405,9 +405,9 @@ export class YyemsService {
   async fetchBuysForBill(billId: string): Promise<YyemsBuyEmbed[]> {
     try {
       const { data, error } = await this.supabase
-        .from('tyapp_yyems_buy')
+        .from('tyapp_yyhome_buy')
         .select(BUY_EMBED)
-        .eq('yyems_id', billId)
+        .eq('yyhome_id', billId)
         .is('deleted_at', null)
         .order('created_at');
       if (error) throw error;
@@ -422,9 +422,9 @@ export class YyemsService {
     this.loading.set(true);
     try {
       const { data, error } = await this.supabase
-        .from('tyapp_yyems_buy')
+        .from('tyapp_yyhome_buy')
         .select(BUY_EMBED)
-        .eq('tb_tyapp_yby_id', id)
+        .eq('tb_tyapp_yhby_id', id)
         .is('deleted_at', null)
         .maybeSingle();
       if (error) throw error;
@@ -444,8 +444,8 @@ export class YyemsService {
   async fetchEatAmountsForBuy(buyId: string): Promise<YyemsEatAmount[]> {
     try {
       const { data, error } = await this.supabase
-        .from('tyapp_yyems_eat')
-        .select('tb_tyapp_yet_id, buy_id, home_amount')
+        .from('tyapp_yyhome_eat')
+        .select('tb_tyapp_yhet_id, buy_id, home_amount')
         .eq('buy_id', buyId)
         .is('deleted_at', null);
       if (error) throw error;
@@ -460,9 +460,9 @@ export class YyemsService {
     this.loading.set(true);
     try {
       const { data, error } = await this.supabase
-        .from('tyapp_yyems_eat')
+        .from('tyapp_yyhome_eat')
         .select(EAT_EMBED)
-        .eq('tb_tyapp_yet_id', id)
+        .eq('tb_tyapp_yhet_id', id)
         .is('deleted_at', null)
         .maybeSingle();
       if (error) throw error;
@@ -483,7 +483,7 @@ export class YyemsService {
     this.homeLoading.set(true);
     try {
       const { data, error } = await this.supabase
-        .from('tyapp_yyems_eat')
+        .from('tyapp_yyhome_eat')
         .select(EAT_HOME_EMBED)
         .eq('eat_date', eatDate)
         .is('deleted_at', null)
@@ -505,8 +505,8 @@ export class YyemsService {
   async fetchPricesForItem(itemId: string): Promise<YyemsPriceWithVendor[]> {
     try {
       const { data, error } = await this.supabase
-        .from('tyapp_yyems_price')
-        .select('*, vendor:tyapp_yyems_vendor(*)')
+        .from('tyapp_yyhome_price')
+        .select('*, vendor:tyapp_yyhome_vendor(*)')
         .eq('item_id', itemId)
         .is('deleted_at', null)
         .order('priced_at', { ascending: false })
@@ -520,9 +520,9 @@ export class YyemsService {
   }
 
   async saveBill(row: Partial<YyemsBill>): Promise<YyemsBill | null> {
-    const isNew = !row.tb_tyapp_yym_id;
+    const isNew = !row.tb_tyapp_yhm_id;
     const {
-      tb_tyapp_yym_seq_no: _seq,
+      tb_tyapp_yhm_seq_no: _seq,
       created_at: _c,
       updated_at: _u,
       deleted_at: _d,
@@ -530,11 +530,11 @@ export class YyemsService {
     } = row;
     this.loading.set(true);
     const query = isNew
-      ? this.supabase.from('tyapp_yyems').insert(payload).select().single()
+      ? this.supabase.from('tyapp_yyhome').insert(payload).select().single()
       : this.supabase
-          .from('tyapp_yyems')
+          .from('tyapp_yyhome')
           .update(payload)
-          .eq('tb_tyapp_yym_id', row.tb_tyapp_yym_id)
+          .eq('tb_tyapp_yhm_id', row.tb_tyapp_yhm_id)
           .select()
           .single();
     try {
@@ -561,9 +561,9 @@ export class YyemsService {
       for (let index = 0; index < billIds.length; index += chunkSize) {
         const chunk = billIds.slice(index, index + chunkSize);
         const { data, error } = await this.supabase
-          .from('tyapp_yyems_bill_share')
+          .from('tyapp_yyhome_bill_share')
           .select('*')
-          .in('yyems_id', [...chunk]);
+          .in('yyhome_id', [...chunk]);
         if (error) throw error;
         rows.push(...((data as YyemsBillShare[]) ?? []));
       }
@@ -579,9 +579,9 @@ export class YyemsService {
   async fetchBillShares(billId: string): Promise<YyemsBillShare[] | null> {
     try {
       const { data, error } = await this.supabase
-        .from('tyapp_yyems_bill_share')
+        .from('tyapp_yyhome_bill_share')
         .select('*')
-        .eq('yyems_id', billId);
+        .eq('yyhome_id', billId);
       if (error) throw error;
       return (data as YyemsBillShare[]) ?? [];
     } catch (error: unknown) {
@@ -599,14 +599,14 @@ export class YyemsService {
   ): Promise<boolean> {
     try {
       const { error: deleteError } = await this.supabase
-        .from('tyapp_yyems_bill_share')
+        .from('tyapp_yyhome_bill_share')
         .delete()
-        .eq('yyems_id', billId);
+        .eq('yyhome_id', billId);
       if (deleteError) throw deleteError;
       if (rows.length === 0) return true;
-      const { error } = await this.supabase.from('tyapp_yyems_bill_share').insert(
+      const { error } = await this.supabase.from('tyapp_yyhome_bill_share').insert(
         rows.map((row) => ({
-          yyems_id: billId,
+          yyhome_id: billId,
           user_id: row.user_id,
           share: row.share,
         })),
@@ -623,9 +623,9 @@ export class YyemsService {
   }
 
   async savePrice(row: Partial<YyemsPrice>): Promise<YyemsPrice | null> {
-    const isNew = !row.tb_tyapp_ypr_id;
+    const isNew = !row.tb_tyapp_yhpr_id;
     const {
-      tb_tyapp_ypr_seq_no: _seq,
+      tb_tyapp_yhpr_seq_no: _seq,
       created_at: _c,
       updated_at: _u,
       deleted_at: _d,
@@ -633,11 +633,11 @@ export class YyemsService {
     } = row;
     this.loading.set(true);
     const query = isNew
-      ? this.supabase.from('tyapp_yyems_price').insert(payload).select().single()
+      ? this.supabase.from('tyapp_yyhome_price').insert(payload).select().single()
       : this.supabase
-          .from('tyapp_yyems_price')
+          .from('tyapp_yyhome_price')
           .update(payload)
-          .eq('tb_tyapp_ypr_id', row.tb_tyapp_ypr_id)
+          .eq('tb_tyapp_yhpr_id', row.tb_tyapp_yhpr_id)
           .select()
           .single();
     try {
@@ -656,9 +656,9 @@ export class YyemsService {
   }
 
   async saveBuy(row: Partial<YyemsBuy>): Promise<YyemsBuy | null> {
-    const isNew = !row.tb_tyapp_yby_id;
+    const isNew = !row.tb_tyapp_yhby_id;
     const {
-      tb_tyapp_yby_seq_no: _seq,
+      tb_tyapp_yhby_seq_no: _seq,
       created_at: _c,
       updated_at: _u,
       deleted_at: _d,
@@ -666,11 +666,11 @@ export class YyemsService {
     } = row;
     this.loading.set(true);
     const query = isNew
-      ? this.supabase.from('tyapp_yyems_buy').insert(payload).select().single()
+      ? this.supabase.from('tyapp_yyhome_buy').insert(payload).select().single()
       : this.supabase
-          .from('tyapp_yyems_buy')
+          .from('tyapp_yyhome_buy')
           .update(payload)
-          .eq('tb_tyapp_yby_id', row.tb_tyapp_yby_id)
+          .eq('tb_tyapp_yhby_id', row.tb_tyapp_yhby_id)
           .select()
           .single();
     try {
@@ -690,9 +690,9 @@ export class YyemsService {
   }
 
   async saveEat(row: Partial<YyemsEat>): Promise<YyemsEat | null> {
-    const isNew = !row.tb_tyapp_yet_id;
+    const isNew = !row.tb_tyapp_yhet_id;
     const {
-      tb_tyapp_yet_seq_no: _seq,
+      tb_tyapp_yhet_seq_no: _seq,
       created_at: _c,
       updated_at: _u,
       deleted_at: _d,
@@ -700,11 +700,11 @@ export class YyemsService {
     } = row;
     this.loading.set(true);
     const query = isNew
-      ? this.supabase.from('tyapp_yyems_eat').insert(payload).select().single()
+      ? this.supabase.from('tyapp_yyhome_eat').insert(payload).select().single()
       : this.supabase
-          .from('tyapp_yyems_eat')
+          .from('tyapp_yyhome_eat')
           .update(payload)
-          .eq('tb_tyapp_yet_id', row.tb_tyapp_yet_id)
+          .eq('tb_tyapp_yhet_id', row.tb_tyapp_yhet_id)
           .select()
           .single();
     try {
@@ -725,9 +725,9 @@ export class YyemsService {
 
   async saveItem(row: Partial<YyemsItem>): Promise<YyemsItem | null> {
     return this.saveDictRow(
-      'tyapp_yyems_item',
-      'tb_tyapp_yit_id',
-      'tb_tyapp_yit_seq_no',
+      'tyapp_yyhome_item',
+      'tb_tyapp_yhit_id',
+      'tb_tyapp_yhit_seq_no',
       row,
       'Item',
     ) as Promise<YyemsItem | null>;
@@ -735,9 +735,9 @@ export class YyemsService {
 
   async saveVendor(row: Partial<YyemsVendor>): Promise<YyemsVendor | null> {
     return this.saveDictRow(
-      'tyapp_yyems_vendor',
-      'tb_tyapp_yvd_id',
-      'tb_tyapp_yvd_seq_no',
+      'tyapp_yyhome_vendor',
+      'tb_tyapp_yhvd_id',
+      'tb_tyapp_yhvd_seq_no',
       row,
       'Vendor',
     ) as Promise<YyemsVendor | null>;
@@ -760,12 +760,12 @@ export class YyemsService {
         account.currency === input.currency &&
         account.owner_user_id === input.ownerUserId,
     );
-    let accountId = existing?.tb_tyapp_yfa_id ?? null;
+    let accountId = existing?.tb_tyapp_yhfa_id ?? null;
     if (!accountId) {
       this.loading.set(true);
       try {
         const { data, error } = await this.supabase
-          .from('tyapp_yyems_financial_account')
+          .from('tyapp_yyhome_financial_account')
           .insert({
             display_name: name,
             currency: input.currency,
@@ -775,7 +775,7 @@ export class YyemsService {
           .select()
           .single();
         if (error) throw error;
-        accountId = (data as YyemsFinancialAccount).tb_tyapp_yfa_id;
+        accountId = (data as YyemsFinancialAccount).tb_tyapp_yhfa_id;
         this.zone.run(() => this.loading.set(false));
       } catch (error: unknown) {
         this.notification.handleError('Create financial account failed', error);
@@ -803,7 +803,7 @@ export class YyemsService {
     this.loading.set(true);
     try {
       const { data: accountRow, error: accountError } = await this.supabase
-        .from('tyapp_yyems_financial_account')
+        .from('tyapp_yyhome_financial_account')
         .insert({
           display_name: label,
           currency: 'CAD',
@@ -815,10 +815,10 @@ export class YyemsService {
       if (accountError) throw accountError;
       const account = accountRow as YyemsFinancialAccount;
       const { data: walletRow, error: walletError } = await this.supabase
-        .from('tyapp_yyems_wallet')
+        .from('tyapp_yyhome_wallet')
         .insert({
           name: label,
-          financial_account_id: account.tb_tyapp_yfa_id,
+          financial_account_id: account.tb_tyapp_yhfa_id,
           status: RecordStatus.Active,
         })
         .select()
@@ -831,7 +831,7 @@ export class YyemsService {
         this.loading.set(false);
         this.notification.showSuccess('Test wallet created');
       });
-      return wallet.tb_tyapp_ywl_id;
+      return wallet.tb_tyapp_yhwl_id;
     } catch (error: unknown) {
       this.notification.handleError('Create test wallet failed', error);
       this.zone.run(() => this.loading.set(false));
@@ -841,9 +841,9 @@ export class YyemsService {
 
   async saveWallet(row: Partial<YyemsWallet>): Promise<YyemsWallet | null> {
     return this.saveDictRow(
-      'tyapp_yyems_wallet',
-      'tb_tyapp_ywl_id',
-      'tb_tyapp_ywl_seq_no',
+      'tyapp_yyhome_wallet',
+      'tb_tyapp_yhwl_id',
+      'tb_tyapp_yhwl_seq_no',
       row,
       'Wallet',
     ) as Promise<YyemsWallet | null>;
@@ -853,9 +853,9 @@ export class YyemsService {
     row: Partial<YyemsItemCategory>,
   ): Promise<YyemsItemCategory | null> {
     return this.saveDictRow(
-      'tyapp_yyems_item_category',
-      'tb_tyapp_yic_id',
-      'tb_tyapp_yic_seq_no',
+      'tyapp_yyhome_item_category',
+      'tb_tyapp_yhic_id',
+      'tb_tyapp_yhic_seq_no',
       row,
       'Product category',
     ) as Promise<YyemsItemCategory | null>;
@@ -865,9 +865,9 @@ export class YyemsService {
     row: Partial<YyemsVendorCategory>,
   ): Promise<YyemsVendorCategory | null> {
     return this.saveDictRow(
-      'tyapp_yyems_vendor_category',
-      'tb_tyapp_yvc_id',
-      'tb_tyapp_yvc_seq_no',
+      'tyapp_yyhome_vendor_category',
+      'tb_tyapp_yhvc_id',
+      'tb_tyapp_yhvc_seq_no',
       row,
       'Vendor category',
     ) as Promise<YyemsVendorCategory | null>;
@@ -877,9 +877,9 @@ export class YyemsService {
     row: Partial<YyemsFinancialAccount>,
   ): Promise<YyemsFinancialAccount | null> {
     return this.saveDictRow(
-      'tyapp_yyems_financial_account',
-      'tb_tyapp_yfa_id',
-      'tb_tyapp_yfa_seq_no',
+      'tyapp_yyhome_financial_account',
+      'tb_tyapp_yhfa_id',
+      'tb_tyapp_yhfa_seq_no',
       row,
       'Account',
     ) as Promise<YyemsFinancialAccount | null>;
@@ -887,9 +887,9 @@ export class YyemsService {
 
   async saveFxRate(row: Partial<YyemsFxRate>): Promise<YyemsFxRate | null> {
     return this.saveDictRow(
-      'tyapp_yyems_fx_rate',
-      'tb_tyapp_yfx_id',
-      'tb_tyapp_yfx_seq_no',
+      'tyapp_yyhome_fx_rate',
+      'tb_tyapp_yhfx_id',
+      'tb_tyapp_yhfx_seq_no',
       row,
       'FX rate',
     ) as Promise<YyemsFxRate | null>;
@@ -903,9 +903,9 @@ export class YyemsService {
     if (!payload.code || !payload.symbol) return null;
     this.loading.set(true);
     const query = isNew
-      ? this.supabase.from('tyapp_yyems_currency').insert(payload).select().single()
+      ? this.supabase.from('tyapp_yyhome_currency').insert(payload).select().single()
       : this.supabase
-          .from('tyapp_yyems_currency')
+          .from('tyapp_yyhome_currency')
           .update({ symbol: payload.symbol })
           .eq('code', payload.code)
           .select()
@@ -960,39 +960,39 @@ export class YyemsService {
   }
 
   async deleteBill(id: string): Promise<boolean> {
-    return this.rpcDelete('tyapp_yyems_soft_delete_single_record', id, 'Bill', () => {
-      this.bills.update((list) => list.filter((b) => b.tb_tyapp_yym_id !== id));
+    return this.rpcDelete('tyapp_yyhome_soft_delete_single_record', id, 'Bill', () => {
+      this.bills.update((list) => list.filter((b) => b.tb_tyapp_yhm_id !== id));
     });
   }
 
   async deleteBuy(id: string): Promise<boolean> {
-    return this.rpcDelete('tyapp_yyems_buy_soft_delete_single_record', id, 'Buy', () => {
+    return this.rpcDelete('tyapp_yyhome_buy_soft_delete_single_record', id, 'Buy', () => {
       this.fridgeLoaded = false;
     });
   }
 
   async deleteEat(id: string): Promise<boolean> {
-    return this.rpcDelete('tyapp_yyems_eat_soft_delete_single_record', id, 'Eat', () => {
+    return this.rpcDelete('tyapp_yyhome_eat_soft_delete_single_record', id, 'Eat', () => {
       this.fridgeLoaded = false;
     });
   }
 
   async deleteItem(id: string): Promise<boolean> {
-    return this.softDeleteRow('tyapp_yyems_item', 'tb_tyapp_yit_id', id, 'Item');
+    return this.softDeleteRow('tyapp_yyhome_item', 'tb_tyapp_yhit_id', id, 'Item');
   }
 
   async deleteVendor(id: string): Promise<boolean> {
-    return this.softDeleteRow('tyapp_yyems_vendor', 'tb_tyapp_yvd_id', id, 'Vendor');
+    return this.softDeleteRow('tyapp_yyhome_vendor', 'tb_tyapp_yhvd_id', id, 'Vendor');
   }
 
   async deleteWallet(id: string): Promise<boolean> {
-    return this.softDeleteRow('tyapp_yyems_wallet', 'tb_tyapp_ywl_id', id, 'Wallet');
+    return this.softDeleteRow('tyapp_yyhome_wallet', 'tb_tyapp_yhwl_id', id, 'Wallet');
   }
 
   async deleteItemCategory(id: string): Promise<boolean> {
     return this.softDeleteRow(
-      'tyapp_yyems_item_category',
-      'tb_tyapp_yic_id',
+      'tyapp_yyhome_item_category',
+      'tb_tyapp_yhic_id',
       id,
       'Product category',
     );
@@ -1000,8 +1000,8 @@ export class YyemsService {
 
   async deleteVendorCategory(id: string): Promise<boolean> {
     return this.softDeleteRow(
-      'tyapp_yyems_vendor_category',
-      'tb_tyapp_yvc_id',
+      'tyapp_yyhome_vendor_category',
+      'tb_tyapp_yhvc_id',
       id,
       'Vendor category',
     );
@@ -1009,15 +1009,15 @@ export class YyemsService {
 
   async deleteFinancialAccount(id: string): Promise<boolean> {
     return this.softDeleteRow(
-      'tyapp_yyems_financial_account',
-      'tb_tyapp_yfa_id',
+      'tyapp_yyhome_financial_account',
+      'tb_tyapp_yhfa_id',
       id,
       'Account',
     );
   }
 
   async deleteFxRate(id: string): Promise<boolean> {
-    return this.softDeleteRow('tyapp_yyems_fx_rate', 'tb_tyapp_yfx_id', id, 'FX rate');
+    return this.softDeleteRow('tyapp_yyhome_fx_rate', 'tb_tyapp_yhfx_id', id, 'FX rate');
   }
 
   private async rpcDelete(
@@ -1083,6 +1083,6 @@ function isMissingShareTable(error: unknown): boolean {
   return (
     code === 'PGRST205' ||
     code === '42P01' ||
-    message.includes('tyapp_yyems_bill_share')
+    message.includes('tyapp_yyhome_bill_share')
   );
 }

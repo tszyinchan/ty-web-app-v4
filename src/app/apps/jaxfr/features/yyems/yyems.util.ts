@@ -32,7 +32,7 @@ export function remainingOf(
   exceptEatId?: string | null,
 ): number {
   const eaten = eats
-    .filter((row) => !exceptEatId || row.tb_tyapp_yet_id !== exceptEatId)
+    .filter((row) => !exceptEatId || row.tb_tyapp_yhet_id !== exceptEatId)
     .reduce((sum, row) => sum + Number(row.home_amount || 0), 0);
   return Math.round((homeAmount - eaten) * 1000) / 1000;
 }
@@ -47,25 +47,6 @@ export function eatenByLabel(
   const user = users.find((u) => u.user_id === eat.eaten_by_user_id);
   if (!user) return '—';
   return formatUserDisplayName(user);
-}
-
-export function ownershipLabel(
-  ownershipUserId: string | null,
-  users: readonly TyappUser[],
-): string {
-  if (!ownershipUserId) return 'Both';
-  const user = users.find((u) => u.user_id === ownershipUserId);
-  if (!user) return '—';
-  return formatUserDisplayName(user);
-}
-
-export function ownershipKey(ownershipUserId: string | null): string {
-  return ownershipUserId ?? YYEMS_OWNERSHIP_SHARED;
-}
-
-export function ownershipUserIdFromKey(key: string | null | undefined): string | null {
-  if (!key || key === YYEMS_OWNERSHIP_SHARED) return null;
-  return key;
 }
 
 const PERCENT_UNITS = 100;
@@ -253,9 +234,9 @@ export function billFxHint(input: {
   return { text, off, suggest };
 }
 
+/** Display hint from bill_share rows only (Phase D dropped bill.ownership_user_id). */
 export function bearerNames(
   shares: readonly { user_id: string }[] | undefined,
-  ownershipUserId: string | null,
   users: readonly TyappUser[],
 ): string {
   if (shares && shares.length > 0) {
@@ -267,7 +248,7 @@ export function bearerNames(
       .sort((a, b) => a.localeCompare(b))
       .join(' · ');
   }
-  return ownershipLabel(ownershipUserId, users);
+  return '—';
 }
 
 /** Map locked share rows back to the Yin / Yiu / Both control. */
@@ -477,11 +458,7 @@ export function buildBillLedger(
     ? bills.filter((bill) =>
         billHaystack(
           bill,
-          bearerNames(
-            sharesByBill?.get(bill.tb_tyapp_yym_id),
-            bill.ownership_user_id,
-            users,
-          ),
+          bearerNames(sharesByBill?.get(bill.tb_tyapp_yhm_id), users),
         ).includes(needle),
       )
     : bills;
@@ -492,11 +469,7 @@ export function buildBillLedger(
     const dateKey = local.slice(0, 10);
     if (!dateKey) continue;
     const cat = vendorCategoryLines(bill.vendor);
-    const owner = bearerNames(
-      sharesByBill?.get(bill.tb_tyapp_yym_id),
-      bill.ownership_user_id,
-      users,
-    );
+    const owner = bearerNames(sharesByBill?.get(bill.tb_tyapp_yhm_id), users);
     const wallet = bill.wallet?.name || '—';
     const row: YyemsBillLedgerRow = {
       bill,
@@ -610,7 +583,36 @@ export function allocateByShare(
 }
 
 /**
- * One expense between a chosen pair.
+ * Magnitude and currency for Split (matches tyapp_yyhome_split_group_totals).
+ * Out = positive; In = negative (refund / credit); Free is usually 0.
+ */
+export function billSplitSettlementAmount(input: {
+  inOrOut: YyemsInOrOut;
+  amount: number;
+  walletAmount: number | null;
+  billCurrency: string;
+  walletCurrency: string | null;
+}): { amount: number; currency: string } | null {
+  if (input.walletCurrency === null) return null;
+  const magnitude =
+    input.walletAmount !== null && input.walletAmount !== undefined
+      ? money(Math.abs(input.walletAmount))
+      : money(Math.abs(input.amount));
+  const currency =
+    input.walletAmount !== null && input.walletAmount !== undefined
+      ? input.walletCurrency
+      : input.billCurrency;
+  if (input.inOrOut === YYEMS_IN_OR_OUT.In) {
+    return { amount: money(-magnitude), currency };
+  }
+  if (input.inOrOut === YYEMS_IN_OR_OUT.Free) {
+    return magnitude <= MONEY_EPSILON ? null : { amount: magnitude, currency };
+  }
+  return { amount: magnitude, currency };
+}
+
+/**
+ * One ledger row between a chosen pair (signed amount: Out +, In −).
  * Paid by = wallet owner (`null` = joint pot, 50/50 of this pair).
  * Borne by = share rows. Net = paid − borne. Positive means the other person owes them.
  */

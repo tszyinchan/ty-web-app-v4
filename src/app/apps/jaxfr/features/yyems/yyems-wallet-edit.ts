@@ -89,7 +89,7 @@ export class YyemsWalletEdit implements OnInit, OnDestroy, DoCheck {
     if (this.embedded()) {
       await this.yyems.fetchDicts();
       this.item.set({
-        financial_account_id: this.yyems.financialAccounts()[0]?.tb_tyapp_yfa_id ?? '',
+        financial_account_id: this.yyems.financialAccounts()[0]?.tb_tyapp_yhfa_id ?? '',
         name: this.seedName(),
         remarks: '',
         sort_order: null,
@@ -101,7 +101,7 @@ export class YyemsWalletEdit implements OnInit, OnDestroy, DoCheck {
     this.currentId = this.route.snapshot.paramMap.get('id');
     await this.yyems.fetchDicts();
     if (this.currentId) {
-      const found = this.yyems.wallets().find((w) => w.tb_tyapp_ywl_id === this.currentId);
+      const found = this.yyems.wallets().find((w) => w.tb_tyapp_yhwl_id === this.currentId);
       if (!found) {
         void this.router.navigateByUrl('/yyems/wallets/list');
         return;

@@ -82,7 +82,7 @@ export class YyemsItemCategoryEdit implements OnInit, OnDestroy, DoCheck {
     if (this.currentId) {
       const found = this.yyems
         .itemCategories()
-        .find((row) => row.tb_tyapp_yic_id === this.currentId);
+        .find((row) => row.tb_tyapp_yhic_id === this.currentId);
       if (!found) {
         void this.router.navigateByUrl('/yyems/items/categories/list');
         return;

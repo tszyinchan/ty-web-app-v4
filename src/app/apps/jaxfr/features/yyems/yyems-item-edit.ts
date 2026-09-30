@@ -84,7 +84,7 @@ export class YyemsItemEdit implements OnInit, OnDestroy, DoCheck {
     this.currentId = this.route.snapshot.paramMap.get('id');
     await this.yyems.fetchDicts();
     if (this.currentId) {
-      const found = this.yyems.items().find((i) => i.tb_tyapp_yit_id === this.currentId);
+      const found = this.yyems.items().find((i) => i.tb_tyapp_yhit_id === this.currentId);
       if (!found) {
         void this.router.navigateByUrl('/yyems/items/list');
         return;

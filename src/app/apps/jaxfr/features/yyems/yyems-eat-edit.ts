@@ -41,7 +41,7 @@ import {
 } from './yyems.util';
 
 interface EatForm {
-  tb_tyapp_yet_id?: string;
+  tb_tyapp_yhet_id?: string;
   buy_id: string;
   home_amount: number | null;
   meal: YyemsMeal;
@@ -145,9 +145,9 @@ export class YyemsEatEdit implements OnInit, OnDestroy, DoCheck {
       this.buyLabel.set(itemLabel(eat.buy?.price?.item));
       const amounts = await this.yyems.fetchEatAmountsForBuy(eat.buy_id);
       const buyAmt = Number(eat.buy?.home_amount ?? 0);
-      this.remaining.set(remainingOf(buyAmt, amounts, eat.tb_tyapp_yet_id));
+      this.remaining.set(remainingOf(buyAmt, amounts, eat.tb_tyapp_yhet_id));
       this.item.set({
-        tb_tyapp_yet_id: eat.tb_tyapp_yet_id,
+        tb_tyapp_yhet_id: eat.tb_tyapp_yhet_id,
         buy_id: eat.buy_id,
         home_amount: eat.home_amount,
         meal: eat.meal,
@@ -210,7 +210,7 @@ export class YyemsEatEdit implements OnInit, OnDestroy, DoCheck {
     if (!form || !userId || form.home_amount === null) return;
     const who = parseEatenByKey(form.eaten_by_key);
     const payload: Partial<YyemsEat> = {
-      tb_tyapp_yet_id: form.tb_tyapp_yet_id,
+      tb_tyapp_yhet_id: form.tb_tyapp_yhet_id,
       buy_id: form.buy_id,
       home_amount: form.home_amount,
       meal: form.meal,

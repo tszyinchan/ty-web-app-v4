@@ -89,7 +89,7 @@ export class YyemsVendorEdit implements OnInit, OnDestroy, DoCheck {
     if (this.embedded()) {
       await this.yyems.fetchDicts();
       this.item.set({
-        category_id: this.yyems.vendorCategories()[0]?.tb_tyapp_yvc_id ?? '',
+        category_id: this.yyems.vendorCategories()[0]?.tb_tyapp_yhvc_id ?? '',
         name: this.seedName(),
         name_short: '',
         sort_order: null,
@@ -101,7 +101,7 @@ export class YyemsVendorEdit implements OnInit, OnDestroy, DoCheck {
     this.currentId = this.route.snapshot.paramMap.get('id');
     await this.yyems.fetchDicts();
     if (this.currentId) {
-      const found = this.yyems.vendors().find((v) => v.tb_tyapp_yvd_id === this.currentId);
+      const found = this.yyems.vendors().find((v) => v.tb_tyapp_yhvd_id === this.currentId);
       if (!found) {
         void this.router.navigateByUrl('/yyems/vendors/list');
         return;

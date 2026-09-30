@@ -13,8 +13,8 @@
         <span>Loading items…</span>
       </div>
     } @else {
-    @for (row of paged(); track row.item.tb_tyapp_yit_id) {
-      <a class="item-link" [routerLink]="['../edit', row.item.tb_tyapp_yit_id]">
+    @for (row of paged(); track row.item.tb_tyapp_yhit_id) {
+      <a class="item-link" [routerLink]="['../edit', row.item.tb_tyapp_yhit_id]">
         <div class="item-content">
           <div class="item-info-group">
             <span class="main-text">{{ itemLabel(row.item) }}</span>

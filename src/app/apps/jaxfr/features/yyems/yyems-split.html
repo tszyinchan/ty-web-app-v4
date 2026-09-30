@@ -19,7 +19,7 @@
   } @else if (!pair()) {
     <p class="split-empty">This page settles a group of two people.</p>
   } @else if (totalView().currencies.length === 0) {
-    <p class="split-empty">No Out bills for this group.</p>
+    <p class="split-empty">No bills for this group.</p>
   } @else {
     <div class="dash">
       @for (row of totalView().currencies; track row.currency) {
@@ -57,7 +57,7 @@
 
   @if (!loading() && totalView().unsetCount > 0) {
     <p class="split-footnote">
-      {{ totalView().unsetCount }} Out bills have no group, so they are not in the total.
+      {{ totalView().unsetCount }} bills have no group, so they are not in the total.
     </p>
   }
   @if (!loading() && totalView().missingShareCount > 0) {
