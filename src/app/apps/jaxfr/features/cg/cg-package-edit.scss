@@ -268,6 +268,7 @@
 // vs Source, Fade vs Cut, Color vs B&W, Alpha vs Dim) — Material
 // doesn't have a built-in "selected stroked button" state, so this one
 // small class carries that signal on top of the stock mat-stroked-button.
+// Fill matches App Log's major/minor/patch `mat-button-toggle` checked look.
 button.mat-mdc-unelevated-button.cg-seg-btn,
 button.mat-mdc-outlined-button.cg-seg-btn {
   height: 28px;
@@ -289,9 +290,14 @@ button.mat-mdc-outlined-button.cg-seg-btn .mdc-button__label {
   line-height: 28px;
 }
 
-.cg-seg-btn.selected {
-  border-color: var(--app-text-accent);
-  color: var(--app-text-accent);
+button.mat-mdc-outlined-button.cg-seg-btn.selected {
+  background: var(--app-button-primary-bg);
+  border-color: var(--app-button-primary-border);
+  color: var(--app-accent-contrast);
+  box-shadow: var(--app-button-primary-shadow);
+  --mdc-outlined-button-label-text-color: var(--app-accent-contrast);
+  --mdc-outlined-button-outline-color: transparent;
+  --mdc-outlined-button-hover-label-text-color: var(--app-accent-contrast);
 }
 
 .cg-icon-btn {

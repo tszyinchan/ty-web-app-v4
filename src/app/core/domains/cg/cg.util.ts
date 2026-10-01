@@ -654,6 +654,15 @@ export function isCgAdminPath(path: string): boolean {
   return path === '/cg' || path.startsWith('/cg/');
 }
 
+/** Panel / Layer desk only — list keeps the normal AppToolbar. */
+export function isCgPanelPath(path: string): boolean {
+  return (
+    path === '/cg/new' ||
+    path.startsWith('/cg/new/') ||
+    path.startsWith('/cg/edit/')
+  );
+}
+
 export function isSameCgPackageUrl(fromUrl: string, toUrl: string): boolean {
   const path = (url: string) => url.split('?')[0].replace(/\/+$/, '') || '/';
   const from = path(fromUrl);

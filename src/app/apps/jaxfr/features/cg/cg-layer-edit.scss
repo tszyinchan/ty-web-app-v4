@@ -64,6 +64,7 @@
 // Compact segmented/action button — see cg-package-edit.scss for the full
 // rationale. `.selected` marks the active option in a toggle-style group
 // (Alpha/Dim backdrop, Cue Fade/Cut, News/Show, Look Inherit/Color/B&W).
+// Fill matches App Log's major/minor/patch checked toggle.
 .cg-seg-btn {
   height: 28px;
   line-height: 28px;
@@ -80,9 +81,14 @@
   white-space: nowrap;
 }
 
-.cg-seg-btn.selected {
-  border-color: var(--app-text-accent);
-  color: var(--app-text-accent);
+button.mat-mdc-outlined-button.cg-seg-btn.selected {
+  background: var(--app-button-primary-bg);
+  border-color: var(--app-button-primary-border);
+  color: var(--app-accent-contrast);
+  box-shadow: var(--app-button-primary-shadow);
+  --mdc-outlined-button-label-text-color: var(--app-accent-contrast);
+  --mdc-outlined-button-outline-color: transparent;
+  --mdc-outlined-button-hover-label-text-color: var(--app-accent-contrast);
 }
 
 .cg-icon-btn {

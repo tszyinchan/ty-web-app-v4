@@ -1,66 +1,63 @@
-<div class="cg-list">
-  <header class="cg-list-head">
-    <a
-      mat-icon-button
-      class="cg-home"
-      routerLink="/welcome"
-      title="Home"
-    >
-      <mat-icon>home</mat-icon>
-    </a>
-    <h1 class="cg-list-title">CG</h1>
-    <div class="cg-list-actions">
-      <button
-        mat-stroked-button
-        type="button"
-        class="cg-seg-btn"
-        [disabled]="cg.loading()"
-        (click)="refresh()"
-      >
-        <mat-icon>refresh</mat-icon>
-        Refresh
-      </button>
-      <button
-        mat-flat-button
-        color="primary"
-        type="button"
-        class="cg-seg-btn"
-        [disabled]="cg.loading()"
-        (click)="newPackage()"
-      >
-        <mat-icon>add</mat-icon>
-        New package
-      </button>
-    </div>
-  </header>
+<div class="standard-list-view">
+  <div class="list-search-container">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="list-search-input">
+      <mat-icon matPrefix>search</mat-icon>
+      <mat-label>Search packages by name…</mat-label>
+      <input matInput [(ngModel)]="searchQuery" />
+      @if (searchQuery()) {
+        <button
+          mat-icon-button
+          matSuffix
+          type="button"
+          (click)="searchQuery.set('')"
+        >
+          <mat-icon>close</mat-icon>
+        </button>
+      }
+    </mat-form-field>
+  </div>
 
-  <label class="cg-search">
-    <mat-icon>search</mat-icon>
-    <input
-      type="search"
-      [(ngModel)]="searchQuery"
-      placeholder="Search packages"
-    />
-  </label>
-
-  <div class="cg-list-grid">
+  <div class="list-container">
     @for (item of listVm(); track item.tb_tyapp_cgpk_id) {
-      <a class="cg-pkg-card" [routerLink]="['../edit', item.tb_tyapp_cgpk_id]">
-        <div class="cg-pkg-card-top">
-          <span class="cg-pkg-name">{{ item.name }}</span>
-          <span class="cg-role" [class.source]="item.role === Source">
-            {{ item.roleLabel }}
-          </span>
+      <a class="item-link" [routerLink]="['../edit', item.tb_tyapp_cgpk_id]">
+        <div class="item-content">
+          <div class="item-info-group">
+            <span class="main-text">{{ item.name }}</span>
+            <span class="sub-text">{{ item.layerSummary || 'No layers' }}</span>
+          </div>
+          <div class="item-status-group">
+            <span
+              class="status-tag"
+              [class.source]="item.role === Source"
+            >
+              {{ item.roleLabel }}
+            </span>
+            <mat-icon class="chevron">chevron_right</mat-icon>
+          </div>
         </div>
-        <p class="cg-pkg-layers">{{ item.layerSummary }}</p>
       </a>
     } @empty {
       @if (!cg.loading()) {
-        <p class="cg-empty">
-          No packages yet. Make CH36, News SNG, or any other package — they
-          pick Elements from the same catalog.
-        </p>
+        <div class="empty-placeholder">
+          @if (searchQuery()) {
+            No packages found matching your criteria.
+          } @else {
+            No packages yet. Make CH36, News SNG, or any other package — they
+            pick Elements from the same catalog.
+          }
+        </div>
       }
     }
   </div>
+
+  <footer
+    class="list-footer"
+    [hidden]="cg.loading() || listVm().length === 0"
+  >
+    <div class="divider"></div>
+    <span class="count-text">TOTAL {{ listVm().length }} ITEMS</span>
+    @if (cg.loading()) {
+      <mat-spinner diameter="16"></mat-spinner>
+    }
+  </footer>
 </div>

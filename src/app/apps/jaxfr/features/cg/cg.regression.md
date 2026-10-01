@@ -53,7 +53,7 @@
 
 | # | 操作 | 預期 |
 |---|---|---|
-| A1 | Welcome 點 **CG**，或開 `/cg/list` | 進入 package 清單。**沒有** 200ms 整頁 crossfade（Welcome → CG、以及 CG 裡 list / Panel 換頁都是瞬間）。其他 feature（例如 Welcome → Chat）Aero 仍有淡入。清單與 Panel 在窄螢幕仍是桌面排法（viewport `width=1280`，可 pinch），不是直向堆疊。**沒有**全域頂列 toolbar；清單自己的頁首有 Home（回 Welcome）、Refresh、New package。CG 按鈕**沒有**固定配色 — 跟著使用者自己的 Aero/Material 面板選擇換（Aero 是立體光澤按鈕，Material 是扁平藥丸按鈕），切 light/dark 也一起換。用 `Ctrl+Alt+H` 打開 Dev HUD 可以在畫面上直接切換確認 |
+| A1 | Welcome 點 **CG**，或開 `/cg/list` | 進入 package 清單。**有**全域 AppToolbar（跟 Attendance / Article 一樣：標題 CG、回 Welcome、Refresh、New package）。內容是 `standard-list-view` 列 + Article 同款 `mat-form-field` 搜尋（不是自製卡片格子）。**沒有** 200ms 整頁 crossfade。Panel（`/cg/edit`）仍**沒有**全域 toolbar。清單不再鎖 `width=1280`；進 Panel 才鎖桌面寬 |
 | A2 | 點 **New package**。預設 **Studio mode**。Name = `PKG_A`。頂列順序：**Take/Create** 在雲端狀態**左邊**。點 **Create** | 建立成功；狀態變 **On air**；📋 可用 |
 | A3 | 再 New，Name = `PKG_B`，Role = Source，Create | 兩個 package 並存 |
 
@@ -63,11 +63,11 @@
 |---|---|---|
 | B0 | 打開 `PKG_A`（Studio mode 開）。關掉 **Studio mode** switch（在監看區上方） | 單監看 176px；**Take** 隱藏（留 spacer）。再開 → 兩監看與 **Take**（在 On air 狀態左邊）回來 |
 | B0a | Studio mode **關**（Direct）：撥 Logo On/Off，或改 Look | ~0.5s auto-save；無 Take 鈕 |
-| B1 | Studio mode 開。監看區上方：Studio mode switch、緊挨右邊的 **Take**、右側 ☁ On air。頂列只有 Back + Package。左下 Backdrop ⬚/🌑、Delete package、📋。點 Logo tile | desk 監看跟模式一致 |
+| B1 | Studio mode 開。監看區上方：Studio mode switch、緊挨右邊的 **Take**、右側 ☁ On air。頂列只有 Back + Package。左下 Backdrop ⬚/⬛、Delete package、📋。點 Logo tile | desk 監看跟模式一致 |
 | B1a | `PKG_A`（Studio）加新 Logo（未 Take）。看 desk 小監看 | Pending 有內容；On air 空白。Take 後兩塊一樣 |
 | B1b | Choose local image | Pending 換圖；On air 仍舊（Studio）。Storage URL |
 | B2 | 改 X/Y/Width/Scale（Studio） | Pending 動；On air 不動 |
-| B3 | 左下 **Backdrop** 切 ⬚ / 🌑 | 監看底換（棋盤 / 暗底）。title 仍寫 Alpha、Dim |
+| B3 | 左下 **Backdrop** 切 ⬚ / ⬛ | 監看底換（棋盤 / 暗底）。title 仍寫 Alpha、Dim |
 | B4 | Studio mode：撥 Logo On/Off | tile 變淡。Pending 淡出。On air 先不變 |
 | B5 | **Take**（Studio） | On air 追上 Pending |
 | B6 | 點 catalog 裡灰色的 Clock / Title | 不能加（soon）。**Logo** 與 **Subtitle** 能加 |
