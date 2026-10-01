@@ -242,9 +242,7 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
       void this.router.navigate(this.panelCommands());
       return;
     }
-    void this.router.navigate(['layer', layer.clientId], {
-      relativeTo: this.route,
-    });
+    void this.router.navigate(this.layerCommands(layer.clientId));
   }
 
   toggleVisible(layer: CgLayerDraft, event: Event): void {
@@ -406,8 +404,7 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
       return;
     }
     if (previousClientId && nextLayerId && nextLayerId !== previousClientId) {
-      await this.router.navigate(['layer', nextLayerId], {
-        relativeTo: this.route,
+      await this.router.navigate(this.layerCommands(nextLayerId), {
         replaceUrl: true,
       });
     }
@@ -467,6 +464,10 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
   private panelCommands(): (string | number)[] {
     const id = this.packageId ?? this.route.snapshot.paramMap.get('id');
     return id ? ['/cg/edit', id] : ['/cg/new'];
+  }
+
+  private layerCommands(layerId: string): (string | number)[] {
+    return [...this.panelCommands(), 'layer', layerId];
   }
 
   private dropMissingLayerRoute(): void {

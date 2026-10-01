@@ -19,7 +19,7 @@
 
   <div class="list-container">
     @for (item of listVm(); track item.tb_tyapp_cgpk_id) {
-      <a class="item-link" [routerLink]="['../edit', item.tb_tyapp_cgpk_id]">
+      <a class="item-link" [routerLink]="['/cg/edit', item.tb_tyapp_cgpk_id]">
         <div class="item-content">
           <div class="item-info-group">
             <span class="main-text">{{ item.name }}</span>

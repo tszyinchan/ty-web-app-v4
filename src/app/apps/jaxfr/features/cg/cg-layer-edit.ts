@@ -406,6 +406,9 @@ export class CgLayerEdit implements OnInit {
     this.cg.draftLayers.update((list) =>
       list.filter((row) => row.clientId !== layer.clientId),
     );
-    void this.router.navigate(['..'], { relativeTo: this.route });
+    // Absolute path — relative `..` under /cg lazy routes can miss the
+    // package URL and hit app `**` → /login.
+    const id = this.packageId;
+    void this.router.navigate(id ? ['/cg/edit', id] : ['/cg/new']);
   }
 }
