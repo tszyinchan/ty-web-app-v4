@@ -3,7 +3,9 @@ import { RecordStatus } from '../../models/status.enum';
 import {
   CG_CUT_DURATION_MS,
   CG_DEFAULT_DURATION_MS,
+  CG_DEFAULT_PACKAGE_EDIT_MODE,
   CG_DESKTOP_VIEWPORT,
+  CG_EDIT_MODE_STORAGE_PREFIX,
   CG_OVERLAY_CHANNEL_PREFIX,
   CG_ELEMENT_CATALOG,
   CG_MAX_DURATION_MS,
@@ -18,6 +20,7 @@ import {
   CgLayerLook,
   CgLayoutUnit,
   CgOutputKind,
+  CgPackageEditMode,
   CgPackageLook,
   CgPackageRole,
   CgSubtitlePreset,
@@ -565,6 +568,33 @@ export function isLocalDevHost(hostname: string): boolean {
     hostname === '127.0.0.1' ||
     hostname.endsWith('.localhost')
   );
+}
+
+export function readPackageEditMode(packageId: string | null): CgPackageEditMode {
+  if (!packageId || typeof localStorage === 'undefined') {
+    return CG_DEFAULT_PACKAGE_EDIT_MODE;
+  }
+  try {
+    const raw = localStorage.getItem(`${CG_EDIT_MODE_STORAGE_PREFIX}${packageId}`);
+    if (raw === CgPackageEditMode.Direct || raw === CgPackageEditMode.Studio) {
+      return raw;
+    }
+  } catch {
+    /* private mode / quota */
+  }
+  return CG_DEFAULT_PACKAGE_EDIT_MODE;
+}
+
+export function writePackageEditMode(
+  packageId: string | null,
+  mode: CgPackageEditMode,
+): void {
+  if (!packageId || typeof localStorage === 'undefined') return;
+  try {
+    localStorage.setItem(`${CG_EDIT_MODE_STORAGE_PREFIX}${packageId}`, mode);
+  } catch {
+    /* private mode / quota */
+  }
 }
 
 export function isEmbeddedImageUrl(url: string): boolean {

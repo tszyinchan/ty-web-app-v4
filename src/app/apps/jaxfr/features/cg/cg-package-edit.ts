@@ -38,6 +38,7 @@ import {
   CG_MAX_DURATION_MS,
   CG_PACKAGE_ROLE_OPTIONS,
   CgElementType,
+  CgPackageEditMode,
   CgPackageLook,
   CgPackageRole,
   CgPreviewBackdrop,
@@ -59,6 +60,9 @@ import {
 } from '../../../../core/domains/cg/cg.util';
 import { NotificationService } from '../../../../core/services/notification.service';
 import { copyTextToClipboard } from '../../../../core/utils/copy-text.util';
+
+/** Debounce Direct-mode auto-save so typing a name does not hammer the DB. */
+const DIRECT_AUTOSAVE_MS = 450;
 
 @Component({
   selector: 'app-cg-package-edit',
@@ -99,6 +103,7 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
   readonly layers = this.cg.draftLayers;
   readonly onAirItem = this.cg.onAirItem;
   readonly onAirLayers = this.cg.onAirLayers;
+  readonly editMode = this.cg.editMode;
   readonly selectedLayerId = toSignal(
     this.router.events.pipe(
       filter((event): event is NavigationEnd => event instanceof NavigationEnd),
@@ -112,9 +117,11 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
   );
   isDirty = signal(false);
   isSaveDisabled = signal(true);
-  backdrop = signal(CgPreviewBackdrop.Studio);
+  backdrop = signal(CgPreviewBackdrop.Dim);
   private lastFadeMs = CG_DEFAULT_DURATION_MS;
   private layerDragged = false;
+  private autoSaveTimer = 0;
+  private autoSaveInFlight = false;
 
   syncStatus = computed<'loading' | 'up-to-date' | 'unsaved' | 'none'>(() => {
     if (this.cg.loading()) return 'loading';
@@ -126,6 +133,20 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
   get packageId(): string | null {
     const key = this.cg.draftKey();
     return typeof key === 'string' ? key : null;
+  }
+
+  isDirectMode(): boolean {
+    return this.cg.isDirectEditMode();
+  }
+
+  isStudioMode(): boolean {
+    return this.editMode() === CgPackageEditMode.Studio;
+  }
+
+  toggleStudioMode(): void {
+    this.setEditMode(
+      this.isStudioMode() ? CgPackageEditMode.Direct : CgPackageEditMode.Studio,
+    );
   }
 
   @HostListener('window:beforeunload', ['$event'])
@@ -151,6 +172,7 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
     if (this.isSaveDisabled() !== disabled) {
       this.isSaveDisabled.set(disabled);
     }
+    this.scheduleDirectAutoSave(currentlyDirty, invalid);
   }
 
   async ngOnInit(): Promise<void> {
@@ -174,10 +196,24 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
   }
 
   ngOnDestroy(): void {
+    window.clearTimeout(this.autoSaveTimer);
     setCgDesktopViewport(this.document, false);
   }
 
   elementLabel = elementLabel;
+
+  setEditMode(mode: CgPackageEditMode): void {
+    if (this.editMode() === mode) return;
+    this.cg.setEditMode(mode, this.packageId);
+    if (
+      mode === CgPackageEditMode.Direct &&
+      this.packageId &&
+      this.isDirty() &&
+      !packageHasUnsavedIdentity(this.item() as Pick<CgPackage, 'name'>)
+    ) {
+      void this.onSave();
+    }
+  }
 
   addElement(type: CgElementType): void {
     const def = this.catalog.find((item) => item.type === type);
@@ -309,30 +345,35 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
     const url = this.packageOutputUrl();
     if (!url) {
       this.notification.handleError(
-        'Package Output',
-        'Save the package first to get the OBS URL.',
+        'Package output',
+        'Create the package first to get the OBS URL.',
       );
       return;
     }
     try {
       await copyTextToClipboard(url);
-      this.notification.showSuccess('Package Output copied');
+      this.notification.showSuccess('OBS URL copied');
     } catch (error: unknown) {
       this.notification.handleError('Copy failed', error);
     }
   }
 
-  async onSave(): Promise<void> {
+  async onSave(options?: { quiet?: boolean }): Promise<void> {
     const data = this.item();
     if (!data || packageHasUnsavedIdentity(data as Pick<CgPackage, 'name'>)) {
       return;
     }
+    window.clearTimeout(this.autoSaveTimer);
     const previousClientId = this.selectedLayerId();
     const previousToken = this.layers().find(
       (row) => row.clientId === previousClientId,
     )?.public_token;
-    const id = await this.cg.savePackage(data, this.layers());
+    const hadPackageId = !!this.route.snapshot.paramMap.get('id');
+    const previousEditMode = this.editMode();
+    const id = await this.cg.savePackage(data, this.layers(), options);
     if (!id) return;
+    // Persist Direct/Studio against the real package id after first Create.
+    this.cg.setEditMode(previousEditMode, id);
     const fresh = await this.cg.fetchPackageById(id);
     let nextLayerId = previousClientId;
     this.zone.run(() => {
@@ -351,7 +392,6 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
         this.isDirty.set(false);
       }
     });
-    const hadPackageId = !!this.route.snapshot.paramMap.get('id');
     if (!hadPackageId) {
       if (nextLayerId) {
         await this.router.navigate(['/cg/edit', id, 'layer', nextLayerId], {
@@ -379,6 +419,45 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
       this.isDirty.set(false);
       this.cg.clearDraft();
       this.router.navigateByUrl(this.returnUrl);
+    }
+  }
+
+  private scheduleDirectAutoSave(dirty: boolean, invalid: boolean): void {
+    window.clearTimeout(this.autoSaveTimer);
+    if (
+      !this.isDirectMode() ||
+      !this.packageId ||
+      !dirty ||
+      invalid ||
+      this.cg.loading() ||
+      this.autoSaveInFlight
+    ) {
+      return;
+    }
+    this.autoSaveTimer = window.setTimeout(() => {
+      void this.runDirectAutoSave();
+    }, DIRECT_AUTOSAVE_MS);
+  }
+
+  private async runDirectAutoSave(): Promise<void> {
+    if (
+      !this.isDirectMode() ||
+      !this.packageId ||
+      !this.isDirty() ||
+      this.cg.loading() ||
+      this.autoSaveInFlight
+    ) {
+      return;
+    }
+    const data = this.item();
+    if (!data || packageHasUnsavedIdentity(data as Pick<CgPackage, 'name'>)) {
+      return;
+    }
+    this.autoSaveInFlight = true;
+    try {
+      await this.onSave({ quiet: true });
+    } finally {
+      this.autoSaveInFlight = false;
     }
   }
 

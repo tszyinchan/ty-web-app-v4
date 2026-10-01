@@ -8,6 +8,7 @@ import {
   CG_LOGO_BUCKET,
   CG_OVERLAY_BROADCAST_EVENT,
   CgElementType,
+  CgPackageEditMode,
   CgPackageLook,
   CgPackageRole,
 } from './cg.constants';
@@ -25,6 +26,8 @@ import {
   normalizeLook,
   normalizePackage,
   normalizePublicOutput,
+  readPackageEditMode,
+  writePackageEditMode,
 } from './cg.util';
 
 @Injectable({ providedIn: 'root' })
@@ -48,6 +51,21 @@ export class CgService {
   /** Last Save (+ live cue). Empty until the package exists in DB. */
   onAirItem = signal<Partial<CgPackage> | null>(null);
   onAirLayers = signal<CgLayerDraft[]>([]);
+  /** Direct = live to air; Studio = Pending then Save. Per package in localStorage. */
+  editMode = signal(CgPackageEditMode.Studio);
+
+  loadEditModeForPackage(packageId: string | null): void {
+    this.editMode.set(readPackageEditMode(packageId));
+  }
+
+  setEditMode(mode: CgPackageEditMode, packageId: string | null): void {
+    this.editMode.set(mode);
+    writePackageEditMode(packageId, mode);
+  }
+
+  isDirectEditMode(): boolean {
+    return this.editMode() === CgPackageEditMode.Direct;
+  }
 
   async fetchAllPackages(force = false): Promise<void> {
     if (this.packages().length > 0 && !force) return;
@@ -138,6 +156,7 @@ export class CgService {
   async savePackage(
     pkg: Partial<CgPackage>,
     drafts: CgLayerDraft[],
+    options?: { quiet?: boolean },
   ): Promise<string | null> {
     const isNew = !pkg.tb_tyapp_cgpk_id;
     const {
@@ -247,7 +266,9 @@ export class CgService {
           ...savedLayers,
         ]);
         this.loading.set(false);
-        this.notification.showSuccess('Package saved');
+        if (!options?.quiet) {
+          this.notification.showSuccess(isNew ? 'Package created' : 'On air');
+        }
         void this.publishOverlayOutputs([
           saved.public_token,
           ...savedLayers.map((layer) => layer.public_token),
@@ -319,6 +340,7 @@ export class CgService {
     this.draftLayers.set([logo]);
     this.clearOnAir();
     this.markDraftClean();
+    this.loadEditModeForPackage(null);
   }
 
   async loadSavedDraft(id: string): Promise<boolean> {
@@ -326,6 +348,7 @@ export class CgService {
     const fresh = await this.fetchPackageById(id);
     if (!fresh) return false;
     this.applyDraft(fresh.package, fresh.layers.map((layer) => layerToDraft(layer)));
+    this.loadEditModeForPackage(id);
     void this.ensureOverlaySendChannel(fresh.package.public_token);
     return true;
   }

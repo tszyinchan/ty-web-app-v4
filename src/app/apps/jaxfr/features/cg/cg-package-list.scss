@@ -36,8 +36,8 @@
   margin: 0;
   flex: 1;
   font: var(--app-weight-emphasis) 15px / 1.2 var(--app-font);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  text-transform: none;
 }
 
 .cg-list-actions {
@@ -125,8 +125,8 @@
   border: 1px solid var(--app-card-border);
   border-radius: 99px;
   font-size: 11px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  text-transform: none;
   color: var(--app-text-secondary);
 }
 

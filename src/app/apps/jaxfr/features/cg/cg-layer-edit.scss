@@ -19,9 +19,18 @@
 
 .cg-stage-toolbar {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
+  gap: 12px;
   margin-bottom: 8px;
+}
+
+.cg-backdrop {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  min-width: 0;
 }
 
 .cg-stage-toggles {
@@ -35,11 +44,13 @@
   gap: 10px;
 }
 
+/* Same fixed width as Package monitors — Direct must not stretch. */
+
 .cg-kicker {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: var(--app-weight-emphasis);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  text-transform: none;
   color: var(--app-text-muted);
 }
 
@@ -52,20 +63,33 @@
 
 // Compact segmented/action button — see cg-package-edit.scss for the full
 // rationale. `.selected` marks the active option in a toggle-style group
-// (Alpha/Studio, Cue Fade/Cut, News/Show, Look Inherit/Color/B&W).
+// (Alpha/Dim backdrop, Cue Fade/Cut, News/Show, Look Inherit/Color/B&W).
 .cg-seg-btn {
   height: 28px;
   line-height: 28px;
   padding: 0 12px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  font-size: 11px;
+  letter-spacing: 0.01em;
+  text-transform: none;
+  font-size: 12px;
   font-family: var(--app-font);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.cg-seg-btn .mdc-button__label {
+  white-space: nowrap;
 }
 
 .cg-seg-btn.selected {
   border-color: var(--app-text-accent);
   color: var(--app-text-accent);
+}
+
+.cg-icon-btn {
+  min-width: 28px;
+  padding: 0 8px;
+  font-size: 14px;
+  line-height: 28px;
 }
 
 // File picker trigger is a real `mat-stroked-button` (Angular Material's
@@ -197,8 +221,8 @@
 
 .cg-duration span {
   font-size: 11px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  text-transform: none;
   color: var(--app-text-muted);
 }
 
@@ -219,14 +243,10 @@
 }
 
 .cg-layer-output {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 6px 8px;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-}
-
-.cg-layer-output .cg-kicker {
-  grid-column: 1 / -1;
+  gap: 8px;
 }
 
 .cg-url,

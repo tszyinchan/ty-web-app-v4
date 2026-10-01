@@ -53,8 +53,26 @@ export enum CgAnchor {
 
 export enum CgPreviewBackdrop {
   Checkerboard = 'checkerboard',
+  /** Dark preview plate — not Studio mode (edit mode). */
+  Dim = 'dim',
+}
+
+/**
+ * Package Panel edit mode (OBS Studio Mode idea):
+ * - Direct = edit Program live (one On air monitor; auto-save)
+ * - Studio = Preview + Program (Pending | On air; Save to air)
+ * Not the Alpha/Dim stage backdrop.
+ */
+export enum CgPackageEditMode {
+  Direct = 'direct',
   Studio = 'studio',
 }
+
+/** localStorage key prefix — value is per package id. */
+export const CG_EDIT_MODE_STORAGE_PREFIX = 'cg-package-edit-mode:';
+
+/** Default for new / unknown packages — safer (Save before air). */
+export const CG_DEFAULT_PACKAGE_EDIT_MODE = CgPackageEditMode.Studio;
 
 export interface CgElementDef {
   type: CgElementType;

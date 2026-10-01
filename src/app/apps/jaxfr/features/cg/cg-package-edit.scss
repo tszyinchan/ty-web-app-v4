@@ -22,35 +22,54 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  min-height: 44px;
-  padding: 8px 16px;
+  min-height: 48px;
+  padding: 0 16px;
   box-sizing: border-box;
   border-bottom: 1px solid var(--app-card-border);
+}
+
+/* Package header only — Take show/hide must not change row height. */
+.cg-left > .cg-col-head {
+  height: 48px;
+  max-height: 48px;
+  overflow: hidden;
 }
 
 .cg-col-title {
   margin: 0;
   flex-shrink: 0;
   font: var(--app-weight-emphasis) 15px / 1.2 var(--app-font);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  text-transform: none;
   color: var(--app-text-primary);
 }
 
 .cg-back {
-  // Compact icon button — explicit width/height/padding reliably
-  // overrides Material's 40x40 default (verified in dev-toggle-test).
+  // Plain link (not mat-icon-button) so the hit circle matches the arrow.
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 28px;
   height: 28px;
   padding: 0;
   flex-shrink: 0;
+  border-radius: 50%;
   color: var(--app-text-muted);
+  text-decoration: none;
+  box-sizing: border-box;
 
   mat-icon {
+    display: block;
     font-size: 18px;
     width: 18px;
     height: 18px;
+    line-height: 18px;
   }
+}
+
+.cg-back:hover {
+  color: var(--app-text-primary);
+  background: color-mix(in srgb, var(--app-text-muted) 14%, transparent);
 }
 
 .cg-col-actions {
@@ -58,19 +77,31 @@
   align-items: center;
   gap: 10px;
   margin-left: auto;
+  flex-shrink: 0;
+  height: 28px;
+}
+
+.cg-action-spacer {
+  display: inline-block;
+  width: 56px;
+  height: 28px;
+  flex-shrink: 0;
 }
 
 .cg-sync {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  height: 28px;
   font-size: 12px;
+  line-height: 28px;
   color: var(--app-text-muted);
 
   mat-icon {
     font-size: 16px;
     width: 16px;
     height: 16px;
+    line-height: 16px;
   }
 }
 
@@ -82,9 +113,14 @@
   color: var(--app-text-accent);
 }
 
+.cg-sync-placeholder {
+  width: 72px;
+  visibility: hidden;
+}
+
 .cg-left {
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
   min-width: 0;
   min-height: 0;
   background: var(--app-card-bg);
@@ -112,6 +148,33 @@
 .cg-monitors-pane {
   padding: 12px 16px;
   border-bottom: 1px solid var(--app-card-border);
+}
+
+.cg-monitor-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  height: 28px;
+  margin-bottom: 10px;
+}
+
+.cg-mode {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.cg-mode-label {
+  font-size: 12px;
+  color: var(--app-text-muted);
+  white-space: nowrap;
+}
+
+.cg-mode .cg-seg-btn,
+.cg-mode .cg-action-spacer {
+  margin-left: 4px;
 }
 
 .cg-package-pane {
@@ -180,8 +243,8 @@
 
 .cg-duration span {
   font-size: 11px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  text-transform: none;
   color: var(--app-text-muted);
 }
 
@@ -202,17 +265,28 @@
 // from styles/_aero-controls.scss (button.mat-mdc-unelevated-button /
 // button.mat-mdc-outlined-button) since CG is nested inside <app-layout>.
 // `.selected` marks the active option in a toggle-style group (Channel
-// vs Source, Fade vs Cut, Color vs B&W, Alpha vs Studio) — Material
+// vs Source, Fade vs Cut, Color vs B&W, Alpha vs Dim) — Material
 // doesn't have a built-in "selected stroked button" state, so this one
 // small class carries that signal on top of the stock mat-stroked-button.
-.cg-seg-btn {
+button.mat-mdc-unelevated-button.cg-seg-btn,
+button.mat-mdc-outlined-button.cg-seg-btn {
   height: 28px;
+  min-height: 28px;
+  max-height: 28px;
   line-height: 28px;
   padding: 0 12px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  font-size: 11px;
+  letter-spacing: 0.01em;
+  text-transform: none;
+  font-size: 12px;
   font-family: var(--app-font);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+button.mat-mdc-unelevated-button.cg-seg-btn .mdc-button__label,
+button.mat-mdc-outlined-button.cg-seg-btn .mdc-button__label {
+  white-space: nowrap;
+  line-height: 28px;
 }
 
 .cg-seg-btn.selected {
@@ -220,34 +294,43 @@
   color: var(--app-text-accent);
 }
 
-.cg-output {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 8px 10px;
+.cg-icon-btn {
+  min-width: 28px;
+  padding: 0 8px;
+  font-size: 14px;
+  line-height: 28px;
+}
+
+.cg-left-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px 16px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--app-card-border);
+}
+
+.cg-backdrop {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.cg-foot-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-left: auto;
   align-items: center;
 }
 
 .cg-kicker {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: var(--app-weight-emphasis);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--app-text-muted);
-}
-
-.cg-output .cg-kicker,
-.cg-layer-output .cg-kicker,
-.cg-inspector > .cg-kicker {
-  grid-column: 1 / -1;
-}
-
-.cg-url,
-.cg-url-placeholder {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 12px;
+  letter-spacing: 0.02em;
+  text-transform: none;
   color: var(--app-text-muted);
 }
 
@@ -260,6 +343,8 @@
   flex-wrap: nowrap;
   gap: 10px;
 }
+
+/* Direct and Studio mode keep the same per-monitor width (176px host). */
 
 .cg-stage-toolbar {
   display: flex;

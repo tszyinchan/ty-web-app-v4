@@ -21,7 +21,7 @@ export class CgMixPreview {
   readonly layers = input<CgLayerDraft[]>([]);
   readonly packageLook = input(CgPackageLook.Color);
   readonly durationMs = input(CG_DEFAULT_DURATION_MS);
-  readonly backdrop = input(CgPreviewBackdrop.Studio);
+  readonly backdrop = input(CgPreviewBackdrop.Dim);
   readonly layerIsMono = layerIsMono;
 
   layoutSnapshot(layer: CgLayerDraft): CgLayerDraft['layout'] {

@@ -3,90 +3,100 @@
     <div class="cg-left">
       <header class="cg-col-head">
         <a
-          mat-icon-button
           class="cg-back"
           [routerLink]="returnUrl"
           title="Back to CG list"
+          aria-label="Back to CG list"
         >
           <mat-icon>west</mat-icon>
         </a>
         <h2 class="cg-col-title">Package</h2>
-        <div class="cg-col-actions">
-          @if (syncStatus() === 'unsaved') {
-            <span class="cg-sync unsaved">
-              <mat-icon>error_outline</mat-icon>
-              Unsaved
-            </span>
-          } @else if (syncStatus() === 'loading') {
-            <span class="cg-sync">Saving…</span>
-          } @else if (syncStatus() === 'up-to-date') {
-            <span class="cg-sync ok">
-              <mat-icon>cloud_done</mat-icon>
-              Saved
-            </span>
-          }
-          @if (packageId) {
-            <button
-              mat-stroked-button
-              color="warn"
-              type="button"
-              class="cg-seg-btn"
-              (click)="onDelete()"
-            >
-              Delete
-            </button>
-          }
-          <button
-            mat-flat-button
-            color="primary"
-            type="button"
-            class="cg-seg-btn"
-            [disabled]="isSaveDisabled()"
-            (click)="onSave()"
-          >
-            {{ packageId ? 'Save changes' : 'Create package' }}
-          </button>
-        </div>
       </header>
+
       <section class="cg-monitors-pane">
-        <div class="cg-stage-toolbar">
-          <span class="cg-kicker">Stage</span>
-          <div class="cg-stage-toggles">
+        <div class="cg-monitor-toolbar">
+          <div class="cg-mode">
+            <span class="cg-mode-label">Studio mode</span>
             <button
-              mat-stroked-button
               type="button"
-              class="cg-seg-btn"
-              [class.selected]="backdrop() === backdrops.Checkerboard"
-              (click)="backdrop.set(backdrops.Checkerboard)"
+              class="cg-switch"
+              [class.on]="isStudioMode()"
+              role="switch"
+              [attr.aria-checked]="isStudioMode()"
+              aria-label="Studio mode"
+              (click)="toggleStudioMode()"
             >
-              Alpha
+              <span class="cg-switch-thumb"></span>
             </button>
-            <button
-              mat-stroked-button
-              type="button"
-              class="cg-seg-btn"
-              [class.selected]="backdrop() === backdrops.Studio"
-              (click)="backdrop.set(backdrops.Studio)"
-            >
-              Studio
-            </button>
+            @if (!packageId) {
+              <button
+                mat-flat-button
+                color="primary"
+                type="button"
+                class="cg-seg-btn"
+                [disabled]="isSaveDisabled()"
+                (click)="onSave()"
+              >
+                Create
+              </button>
+            } @else if (isStudioMode()) {
+              <button
+                mat-flat-button
+                color="primary"
+                type="button"
+                class="cg-seg-btn"
+                [disabled]="isSaveDisabled()"
+                (click)="onSave()"
+              >
+                Take
+              </button>
+            } @else {
+              <span class="cg-action-spacer" aria-hidden="true"></span>
+            }
+          </div>
+          <div class="cg-col-actions">
+            @if (syncStatus() === 'unsaved') {
+              <span class="cg-sync unsaved">
+                <mat-icon>error_outline</mat-icon>
+                Unsaved
+              </span>
+            } @else if (syncStatus() === 'loading') {
+              <span class="cg-sync">{{ packageId ? 'Taking…' : 'Creating…' }}</span>
+            } @else if (syncStatus() === 'up-to-date') {
+              <span class="cg-sync ok">
+                <mat-icon>cloud_done</mat-icon>
+                On air
+              </span>
+            } @else {
+              <span class="cg-sync cg-sync-placeholder" aria-hidden="true"></span>
+            }
           </div>
         </div>
         <div class="cg-monitors">
-          <app-cg-mix-preview
-            label="Pending"
-            [layers]="layers()"
-            [packageLook]="pendingLook()"
-            [durationMs]="packageDurationMs()"
-            [backdrop]="backdrop()"
-          />
-          <app-cg-mix-preview
-            label="On air"
-            [layers]="onAirLayers()"
-            [packageLook]="onAirLook()"
-            [durationMs]="onAirDurationMs()"
-            [backdrop]="backdrop()"
-          />
+          @if (isDirectMode()) {
+            <app-cg-mix-preview
+              label="On air"
+              [layers]="layers()"
+              [packageLook]="pendingLook()"
+              [durationMs]="packageDurationMs()"
+              [backdrop]="backdrop()"
+            />
+          } @else {
+            <app-cg-mix-preview
+              label="Pending"
+              [layers]="layers()"
+              [packageLook]="pendingLook()"
+              [durationMs]="packageDurationMs()"
+              [backdrop]="backdrop()"
+            />
+            <app-cg-mix-preview
+              label="On air"
+              [layers]="onAirLayers()"
+              [packageLook]="onAirLook()"
+              [durationMs]="onAirDurationMs()"
+              [backdrop]="backdrop()"
+            />
+          }
         </div>
       </section>
 
@@ -168,24 +178,61 @@
             </button>
           </div>
         </div>
-        <div class="cg-output">
-          <span class="cg-kicker">Package Output</span>
-          @if (packageOutputUrl(); as url) {
-            <code class="cg-url" [title]="url">{{ url }}</code>
+      </section>
+
+      <footer class="cg-left-foot">
+        <div class="cg-backdrop">
+          <span class="cg-kicker">Backdrop</span>
+          <div class="cg-stage-toggles">
             <button
-              mat-flat-button
-              color="primary"
+              mat-stroked-button
+              type="button"
+              class="cg-seg-btn cg-icon-btn"
+              [class.selected]="backdrop() === backdrops.Checkerboard"
+              title="Alpha"
+              aria-label="Alpha backdrop"
+              (click)="backdrop.set(backdrops.Checkerboard)"
+            >
+              ⬚
+            </button>
+            <button
+              mat-stroked-button
+              type="button"
+              class="cg-seg-btn cg-icon-btn"
+              [class.selected]="backdrop() === backdrops.Dim"
+              title="Dim"
+              aria-label="Dim backdrop"
+              (click)="backdrop.set(backdrops.Dim)"
+            >
+              🌑
+            </button>
+          </div>
+        </div>
+        <div class="cg-foot-actions">
+          @if (packageId) {
+            <button
+              mat-stroked-button
+              color="warn"
               type="button"
               class="cg-seg-btn"
-              (click)="copyPackageOutput()"
+              (click)="onDelete()"
             >
-              Copy OBS URL
+              Delete package
             </button>
-          } @else {
-            <span class="cg-url-placeholder">Save to get the default OBS URL</span>
           }
+          <button
+            mat-stroked-button
+            type="button"
+            class="cg-seg-btn cg-icon-btn"
+            [disabled]="!packageOutputUrl()"
+            title="Copy OBS URL"
+            aria-label="Copy OBS URL"
+            (click)="copyPackageOutput()"
+          >
+            📋
+          </button>
         </div>
-      </section>
+      </footer>
     </div>
 
     <div class="cg-right">

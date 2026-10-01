@@ -74,7 +74,7 @@ export class CgLayerEdit implements OnInit {
   readonly maxDurationMs = CG_MAX_DURATION_MS;
   readonly backdrops = CgPreviewBackdrop;
   readonly copyTargetId = signal('');
-  readonly backdrop = signal(CgPreviewBackdrop.Studio);
+  readonly backdrop = signal(CgPreviewBackdrop.Dim);
   private lastCueFadeMs = CG_DEFAULT_DURATION_MS;
 
   private readonly params = toSignal(this.route.paramMap, { requireSync: true });
@@ -150,6 +150,10 @@ export class CgLayerEdit implements OnInit {
   }
 
   elementLabel = elementLabel;
+
+  isDirectMode(): boolean {
+    return this.cg.isDirectEditMode();
+  }
 
   toggleVisible(layer: CgLayerDraft): void {
     void this.cg.setLayerVisible(layer.clientId, !layer.visible);

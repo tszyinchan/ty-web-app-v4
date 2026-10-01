@@ -2,43 +2,60 @@
   <section class="cg-layer-form">
     <div class="cg-layer-monitors">
       <div class="cg-stage-toolbar">
-        <span class="cg-kicker">This Layer</span>
-        <div class="cg-stage-toggles">
-          <button
-            mat-stroked-button
-            type="button"
-            class="cg-seg-btn"
-            [class.selected]="backdrop() === backdrops.Checkerboard"
-            (click)="backdrop.set(backdrops.Checkerboard)"
-          >
-            Alpha
-          </button>
-          <button
-            mat-stroked-button
-            type="button"
-            class="cg-seg-btn"
-            [class.selected]="backdrop() === backdrops.Studio"
-            (click)="backdrop.set(backdrops.Studio)"
-          >
-            Studio
-          </button>
+        <span class="cg-kicker">This layer</span>
+        <div class="cg-backdrop">
+          <span class="cg-kicker">Backdrop</span>
+          <div class="cg-stage-toggles">
+            <button
+              mat-stroked-button
+              type="button"
+              class="cg-seg-btn cg-icon-btn"
+              [class.selected]="backdrop() === backdrops.Checkerboard"
+              title="Alpha"
+              aria-label="Alpha backdrop"
+              (click)="backdrop.set(backdrops.Checkerboard)"
+            >
+              ⬚
+            </button>
+            <button
+              mat-stroked-button
+              type="button"
+              class="cg-seg-btn cg-icon-btn"
+              [class.selected]="backdrop() === backdrops.Dim"
+              title="Dim"
+              aria-label="Dim backdrop"
+              (click)="backdrop.set(backdrops.Dim)"
+            >
+              🌑
+            </button>
+          </div>
         </div>
       </div>
       <div class="cg-monitors">
-        <app-cg-mix-preview
-          label="Pending"
-          [layers]="[layer]"
-          [packageLook]="pendingLook()"
-          [durationMs]="packageDurationMs()"
-          [backdrop]="backdrop()"
-        />
-        <app-cg-mix-preview
-          label="On air"
-          [layers]="onAirLayerOf(layer.clientId)"
-          [packageLook]="onAirLook()"
-          [durationMs]="onAirDurationMs()"
-          [backdrop]="backdrop()"
-        />
+        @if (isDirectMode()) {
+          <app-cg-mix-preview
+            label="On air"
+            [layers]="[layer]"
+            [packageLook]="pendingLook()"
+            [durationMs]="packageDurationMs()"
+            [backdrop]="backdrop()"
+          />
+        } @else {
+          <app-cg-mix-preview
+            label="Pending"
+            [layers]="[layer]"
+            [packageLook]="pendingLook()"
+            [durationMs]="packageDurationMs()"
+            [backdrop]="backdrop()"
+          />
+          <app-cg-mix-preview
+            label="On air"
+            [layers]="onAirLayerOf(layer.clientId)"
+            [packageLook]="onAirLook()"
+            [durationMs]="onAirDurationMs()"
+            [backdrop]="backdrop()"
+          />
+        }
       </div>
     </div>
 
@@ -367,17 +384,17 @@
       }
     </div>
     <div class="cg-layer-output">
-      <span class="cg-kicker">Layer Output</span>
+      <span class="cg-kicker">Layer output</span>
       @if (layerOutputUrl(layer); as url) {
-        <code class="cg-url" [title]="url">{{ url }}</code>
         <button
-          mat-flat-button
-          color="primary"
+          mat-stroked-button
           type="button"
-          class="cg-seg-btn"
+          class="cg-seg-btn cg-icon-btn"
+          title="Copy layer OBS URL"
+          aria-label="Copy layer OBS URL"
           (click)="copyLayerOutput(layer)"
         >
-          Copy
+          📋
         </button>
       } @else {
         <span class="cg-url-placeholder">Save first</span>
