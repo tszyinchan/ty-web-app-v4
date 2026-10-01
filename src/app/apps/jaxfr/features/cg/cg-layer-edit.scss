@@ -65,8 +65,12 @@
 // rationale. `.selected` marks the active option in a toggle-style group
 // (Alpha/Dim backdrop, Cue Fade/Cut, News/Show, Look Inherit/Color/B&W).
 // Fill matches App Log's major/minor/patch checked toggle.
-.cg-seg-btn {
+// Same 28px as Package Panel — beat Aero flat `min-height: 32px`.
+:host button.mat-mdc-button-base.mat-mdc-unelevated-button.cg-seg-btn,
+:host button.mat-mdc-button-base.mat-mdc-outlined-button.cg-seg-btn {
   height: 28px;
+  min-height: 28px;
+  max-height: 28px;
   line-height: 28px;
   padding: 0 12px;
   letter-spacing: 0.01em;
@@ -77,11 +81,13 @@
   flex-shrink: 0;
 }
 
-.cg-seg-btn .mdc-button__label {
+:host button.mat-mdc-button-base.mat-mdc-unelevated-button.cg-seg-btn .mdc-button__label,
+:host button.mat-mdc-button-base.mat-mdc-outlined-button.cg-seg-btn .mdc-button__label {
   white-space: nowrap;
+  line-height: 28px;
 }
 
-button.mat-mdc-outlined-button.cg-seg-btn.selected {
+:host button.mat-mdc-button-base.mat-mdc-outlined-button.cg-seg-btn.selected {
   background: var(--app-button-primary-bg);
   border-color: var(--app-button-primary-border);
   color: var(--app-accent-contrast);

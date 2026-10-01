@@ -30,6 +30,9 @@ import {
   writePackageEditMode,
 } from './cg.util';
 
+/** Debounce Layer-desk content writes (Studio Package still waits for Take). */
+const LAYER_CONTENT_AUTOSAVE_MS = 450;
+
 @Injectable({ providedIn: 'root' })
 export class CgService {
   private supabase = inject(SupabaseService).client;
@@ -38,6 +41,8 @@ export class CgService {
   private overlayListenChannel: RealtimeChannel | null = null;
   private overlaySendChannels = new Map<string, RealtimeChannel>();
   private overlaySendJoins = new Map<string, Promise<RealtimeChannel | null>>();
+  private layerContentPersistTimers = new Map<string, number>();
+  private layerContentPersistInFlight = new Set<string>();
 
   packages = signal<CgPackage[]>([]);
   layers = signal<CgLayer[]>([]);
@@ -403,6 +408,64 @@ export class CgService {
     );
   }
 
+  /**
+   * Layer desk is always Direct: layout / Look / payload go to DB + On air
+   * even while Package Studio is waiting for Take (visibility / z-order /
+   * package fields still wait). Skipped in Package Direct — full autosave
+   * already covers it. No-op until the layer row exists in DB.
+   */
+  schedulePersistLayerContent(clientId: string): void {
+    if (this.isDirectEditMode()) return;
+    const previous = this.layerContentPersistTimers.get(clientId);
+    if (previous !== undefined) window.clearTimeout(previous);
+    const handle = window.setTimeout(() => {
+      this.layerContentPersistTimers.delete(clientId);
+      void this.persistLayerContent(clientId);
+    }, LAYER_CONTENT_AUTOSAVE_MS);
+    this.layerContentPersistTimers.set(clientId, handle);
+  }
+
+  async persistLayerContent(clientId: string): Promise<boolean> {
+    if (this.isDirectEditMode()) return false;
+    const current = this.draftLayers().find((layer) => layer.clientId === clientId);
+    if (!current?.tb_tyapp_cgly_id) return false;
+    if (this.layerContentPersistInFlight.has(clientId)) {
+      this.schedulePersistLayerContent(clientId);
+      return false;
+    }
+
+    const layout = structuredClone(current.layout);
+    const look = normalizeLayerLook(current.look);
+    const payload = normalizeLayerPayload(current.element_type, current.payload);
+
+    this.layerContentPersistInFlight.add(clientId);
+    try {
+      const { error } = await this.supabase
+        .from('tyapp_cg_layer')
+        .update({
+          layout,
+          look,
+          payload,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('tb_tyapp_cgly_id', current.tb_tyapp_cgly_id);
+      if (error) throw error;
+      this.zone.run(() => {
+        this.rememberLayerContent(clientId, { layout, look, payload });
+      });
+      void this.publishOverlayOutputs([
+        this.draftItem()?.public_token,
+        current.public_token,
+      ]);
+      return true;
+    } catch (error: unknown) {
+      this.notification.handleError('Layer update failed', error);
+      return false;
+    } finally {
+      this.layerContentPersistInFlight.delete(clientId);
+    }
+  }
+
   setLayerVisible(clientId: string, visible: boolean): void {
     const previous = this.draftLayers().find((layer) => layer.clientId === clientId);
     if (!previous || previous.visible === visible) return;
@@ -732,6 +795,44 @@ export class CgService {
             }
           : layer,
       );
+      this.draftOriginal.set(JSON.stringify(snapshot));
+    } catch {
+      return;
+    }
+  }
+
+  /** After Layer Direct content save: keep package dirty only for mix fields. */
+  private rememberLayerContent(
+    clientId: string,
+    next: {
+      layout: CgLayerDraft['layout'];
+      look: CgLayerDraft['look'];
+      payload: CgLayerPayload;
+    },
+  ): void {
+    const apply = (layer: CgLayerDraft): CgLayerDraft =>
+      layer.clientId === clientId
+        ? {
+            ...layer,
+            layout: structuredClone(next.layout),
+            look: next.look,
+            payload: {
+              ...next.payload,
+              lines: [...next.payload.lines],
+            },
+          }
+        : layer;
+
+    this.onAirLayers.update((list) => list.map(apply));
+
+    const raw = this.draftOriginal();
+    if (!raw) return;
+    try {
+      const snapshot = JSON.parse(raw) as {
+        package: Partial<CgPackage> | null;
+        layers: CgLayerDraft[];
+      };
+      snapshot.layers = snapshot.layers.map(apply);
       this.draftOriginal.set(JSON.stringify(snapshot));
     } catch {
       return;

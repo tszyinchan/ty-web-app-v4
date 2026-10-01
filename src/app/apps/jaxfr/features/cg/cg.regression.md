@@ -63,23 +63,23 @@
 |---|---|---|
 | B0 | 打開 `PKG_A`（Studio mode 開）。關掉 **Studio mode** switch（在監看區上方） | 單監看 176px；**Take** 隱藏（留 spacer）。再開 → 兩監看與 **Take**（在 On air 狀態左邊）回來 |
 | B0a | Studio mode **關**（Direct）：撥 Logo On/Off，或改 Look | ~0.5s auto-save；無 Take 鈕 |
-| B1 | Studio mode 開。監看區上方：Studio mode switch、緊挨右邊的 **Take**、右側 ☁ On air。頂列只有 Back + Package。左下 Backdrop ⬚/⬛、Delete package、📋。點 Logo tile | desk 監看跟模式一致 |
-| B1a | `PKG_A`（Studio）加新 Logo（未 Take）。看 desk 小監看 | Pending 有內容；On air 空白。Take 後兩塊一樣 |
-| B1b | Choose local image | Pending 換圖；On air 仍舊（Studio）。Storage URL |
-| B2 | 改 X/Y/Width/Scale（Studio） | Pending 動；On air 不動 |
+| B1 | Studio mode 開。監看區上方：Studio mode switch、緊挨右邊的 **Take**、右側 ☁ On air。頂列只有 Back + Package。左下 Backdrop ⬚/⬛、Delete package、📋。點 Logo tile | desk **永遠單 On air**（Layer Direct），不是 Pending\|On air |
+| B1a | `PKG_A`（Studio）加新 Logo（未 Take）。看 desk 小監看 | desk 可預覽草稿；**尚未有 DB id 前** Layer Direct 不會寫上氣。Take 後才有 layer id，之後改內容才 live |
+| B1b | 已 Take 過的 Logo：Choose local image | ~0.5s 後 Package **On air** 與 overlay 換圖（不必再 Take）。Storage URL |
+| B2 | 改 X/Y/Width/Scale（Studio，已有 layer id） | Package Pending 與 **On air** 都動；不必 Take |
 | B3 | 左下 **Backdrop** 切 ⬚ / ⬛ | 監看底換（棋盤 / 暗底）。title 仍寫 Alpha、Dim |
-| B4 | Studio mode：撥 Logo On/Off | tile 變淡。Pending 淡出。On air 先不變 |
-| B5 | **Take**（Studio） | On air 追上 Pending |
+| B4 | Studio mode：撥 Logo On/Off | tile 變淡。Pending 淡出。On air 先不變（混音仍等 Take） |
+| B5 | **Take**（Studio） | On air 追上 Pending（On/Off、排序、Package 欄位） |
 | B6 | 點 catalog 裡灰色的 Clock / Title | 不能加（soon）。**Logo** 與 **Subtitle** 能加 |
-| B6b | 加 Subtitle，Cue 上氣，**不要 Take** | overlay 立刻換句。Layout / Look / Style 在 Studio 仍要 Take |
+| B6b | 加 Subtitle，Cue 上氣，**不要 Take** | overlay 立刻換句。Layout / Layer Look / Style 在有 id 後也立刻上氣（Layer Direct） |
 | B7 | 兩層 Logo On，Take。再開 overlay。Off 一層再 Take | 那層淡出；另一層不眨眼 |
 | B8 | Appear = Cut，Take。On/Off 再 Take | Host 瞬間切 |
 | B9 | 拖排序（Studio），再 Take | 沒 Take 前 On air / overlay 不變 |
-| B10 | Look = B&W（Studio），再 Take | Take 前 On air 仍彩色 |
+| B10 | Package Look = B&W（Studio），再 Take | Take 前 On air 仍彩色（Package 欄位） |
 | B11 | Subtitle Look = Color，Package B&W，Take | 全部仍灰 |
-| B12 | Style = Show，不要 Take | On air 仍 News |
+| B12 | Style = Show，不要 Take（已有 id） | Package On air / overlay 改 Show（Layer Direct） |
 | B13 | Subtitle Copy to `PKG_B` | 新 Layer、Blank |
-| B14 | 未 Take 改 Scale（Studio） | Pending 變；On air 不變 |
+| B14 | 未 Take 改 Scale（Studio，已有 id） | Package On air 也變（Layer Direct）；On/Off 仍要 Take |
 | B15 | Cue = Cut。Down | 字幕瞬間換句 |
 | B16 | 視窗縮到手機寬 | 仍是桌面三欄 |
 
@@ -88,7 +88,7 @@
 | # | 操作 | 預期 |
 |---|---|---|
 | C1 | 點 📋 **Copy OBS URL**，另開分頁 | `cg.localhost:4200/o/…`（或正式 `cg.tszyin.com`）。真透明。壞 token 空白 |
-| C2 | Studio：改 Scale，不要 Take，看 overlay | overlay / On air 不變。Take 後 broadcast 立刻更新 |
+| C2 | Studio：改 Scale（已有 id），不要 Take，看 overlay | overlay / Package On air **立刻**變（Layer Direct） |
 | C3 | Layer desk 點 📋（Layer output） | 只畫那層 |
 
 ### CLEANUP

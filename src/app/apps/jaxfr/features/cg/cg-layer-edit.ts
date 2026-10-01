@@ -151,8 +151,10 @@ export class CgLayerEdit implements OnInit {
 
   elementLabel = elementLabel;
 
-  isDirectMode(): boolean {
-    return this.cg.isDirectEditMode();
+  touchPreview(): void {
+    this.cg.touchPreview();
+    const id = this.layer()?.clientId;
+    if (id) this.cg.schedulePersistLayerContent(id);
   }
 
   toggleVisible(layer: CgLayerDraft): void {
@@ -162,7 +164,7 @@ export class CgLayerEdit implements OnInit {
   useSampleLogo(layer: CgLayerDraft): void {
     layer.payload.imageUrl = CG_SAMPLE_LOGO_URL;
     delete layer.payload.fileName;
-    this.cg.touchPreview();
+    this.touchPreview();
   }
 
   isEmbeddedLogo(layer: CgLayerDraft): boolean {
@@ -186,7 +188,7 @@ export class CgLayerEdit implements OnInit {
       layer.payload.imageUrl = '';
     }
     delete layer.payload.fileName;
-    this.cg.touchPreview();
+    this.touchPreview();
   }
 
   async onLogoFile(layer: CgLayerDraft, event: Event): Promise<void> {
@@ -211,11 +213,7 @@ export class CgLayerEdit implements OnInit {
     if (!url) return; // cg.service already reported the error
     layer.payload.imageUrl = url;
     layer.payload.fileName = file.name;
-    this.cg.touchPreview();
-  }
-
-  touchPreview(): void {
-    this.cg.touchPreview();
+    this.touchPreview();
   }
 
   cue(direction: 1 | -1): void {
@@ -314,29 +312,19 @@ export class CgLayerEdit implements OnInit {
     return isCgMono(this.cg.draftItem()?.look);
   }
 
-  pendingLook(): CgPackageLook {
-    return this.cg.draftItem()?.look ?? CgPackageLook.Color;
+  /** Package Look / Appear still follow Studio Take — use On air when set. */
+  airPackageLook(): CgPackageLook {
+    return (
+      this.cg.onAirItem()?.look ??
+      this.cg.draftItem()?.look ??
+      CgPackageLook.Color
+    );
   }
 
-  onAirLook(): CgPackageLook {
-    return this.cg.onAirItem()?.look ?? CgPackageLook.Color;
-  }
-
-  packageDurationMs(): number {
-    return normalizeDurationMs(this.cg.draftItem()?.duration_ms);
-  }
-
-  onAirDurationMs(): number {
-    return normalizeDurationMs(this.cg.onAirItem()?.duration_ms);
-  }
-
-  /** This one Layer's last-saved state, wrapped as a 1-item array for
-   * CgMixPreview — empty until the Layer itself has been saved once. */
-  onAirLayerOf(clientId: string): CgLayerDraft[] {
-    const found = this.cg
-      .onAirLayers()
-      .find((row) => row.clientId === clientId);
-    return found ? [found] : [];
+  airPackageDurationMs(): number {
+    return normalizeDurationMs(
+      this.cg.onAirItem()?.duration_ms ?? this.cg.draftItem()?.duration_ms,
+    );
   }
 
   cueDurationMs(layer: CgLayerDraft): number {
@@ -368,6 +356,7 @@ export class CgLayerEdit implements OnInit {
     const layer = this.layer();
     if (!layer) return;
     layer.look = look;
+    this.touchPreview();
   }
 
   setPreset(preset: CgSubtitlePreset): void {

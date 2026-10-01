@@ -269,8 +269,11 @@
 // doesn't have a built-in "selected stroked button" state, so this one
 // small class carries that signal on top of the stock mat-stroked-button.
 // Fill matches App Log's major/minor/patch `mat-button-toggle` checked look.
-button.mat-mdc-unelevated-button.cg-seg-btn,
-button.mat-mdc-outlined-button.cg-seg-btn {
+// Height must beat `_aero-controls.scss`
+// `html.theme-aero app-layout button.mat-mdc-*:not(.action-btn) { min-height: 32px }`
+// so Take / Create (flat) match Channel / Delete (stroked) at 28px.
+:host button.mat-mdc-button-base.mat-mdc-unelevated-button.cg-seg-btn,
+:host button.mat-mdc-button-base.mat-mdc-outlined-button.cg-seg-btn {
   height: 28px;
   min-height: 28px;
   max-height: 28px;
@@ -284,13 +287,13 @@ button.mat-mdc-outlined-button.cg-seg-btn {
   flex-shrink: 0;
 }
 
-button.mat-mdc-unelevated-button.cg-seg-btn .mdc-button__label,
-button.mat-mdc-outlined-button.cg-seg-btn .mdc-button__label {
+:host button.mat-mdc-button-base.mat-mdc-unelevated-button.cg-seg-btn .mdc-button__label,
+:host button.mat-mdc-button-base.mat-mdc-outlined-button.cg-seg-btn .mdc-button__label {
   white-space: nowrap;
   line-height: 28px;
 }
 
-button.mat-mdc-outlined-button.cg-seg-btn.selected {
+:host button.mat-mdc-button-base.mat-mdc-outlined-button.cg-seg-btn.selected {
   background: var(--app-button-primary-bg);
   border-color: var(--app-button-primary-border);
   color: var(--app-accent-contrast);
@@ -388,8 +391,6 @@ button.mat-mdc-outlined-button.cg-seg-btn.selected {
 }
 
 .cg-chip {
-  height: 26px;
-  line-height: 26px;
   padding: 0 8px;
   gap: 6px;
   font-size: 12px;

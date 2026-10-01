@@ -32,30 +32,13 @@
         </div>
       </div>
       <div class="cg-monitors">
-        @if (isDirectMode()) {
-          <app-cg-mix-preview
-            label="On air"
-            [layers]="[layer]"
-            [packageLook]="pendingLook()"
-            [durationMs]="packageDurationMs()"
-            [backdrop]="backdrop()"
-          />
-        } @else {
-          <app-cg-mix-preview
-            label="Pending"
-            [layers]="[layer]"
-            [packageLook]="pendingLook()"
-            [durationMs]="packageDurationMs()"
-            [backdrop]="backdrop()"
-          />
-          <app-cg-mix-preview
-            label="On air"
-            [layers]="onAirLayerOf(layer.clientId)"
-            [packageLook]="onAirLook()"
-            [durationMs]="onAirDurationMs()"
-            [backdrop]="backdrop()"
-          />
-        }
+        <app-cg-mix-preview
+          label="On air"
+          [layers]="[layer]"
+          [packageLook]="airPackageLook()"
+          [durationMs]="airPackageDurationMs()"
+          [backdrop]="backdrop()"
+        />
       </div>
     </div>
 
