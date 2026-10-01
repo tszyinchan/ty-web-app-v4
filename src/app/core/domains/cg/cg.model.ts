@@ -67,6 +67,7 @@ export interface CgLayer {
   package_id: string;
   element_type: CgElementType;
   public_token: string;
+  name: string;
   layout: CgLayout;
   payload: CgLayerPayload;
   visible: boolean;
@@ -83,6 +84,7 @@ export interface CgLayerDraft {
   tb_tyapp_cgly_id?: string;
   element_type: CgElementType;
   public_token: string;
+  name: string;
   layout: CgLayout;
   payload: CgLayerPayload;
   visible: boolean;

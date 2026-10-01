@@ -5,6 +5,12 @@
   min-width: 0;
 }
 
+:host.wide {
+  width: 100%;
+  flex: 0 0 auto;
+  max-width: none;
+}
+
 .cg-monitor-head {
   margin-bottom: 6px;
 }

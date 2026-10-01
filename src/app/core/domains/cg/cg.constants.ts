@@ -168,7 +168,6 @@ export const CG_LAYER_LOOK_OPTIONS: ReadonlyArray<{
   value: CgLayerLook;
   label: string;
 }> = [
-  { value: CgLayerLook.Inherit, label: 'Inherit' },
   { value: CgLayerLook.Color, label: 'Color' },
   { value: CgLayerLook.Mono, label: 'B&W' },
 ];

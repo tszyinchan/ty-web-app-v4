@@ -51,6 +51,7 @@ import {
   elementLabel,
   isCgCut,
   isCgMono,
+  layerDisplayName,
   layerIsMono,
   layerToDraft,
   normalizeDurationMs,
@@ -201,6 +202,7 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
   }
 
   elementLabel = elementLabel;
+  layerDisplayName = layerDisplayName;
 
   setEditMode(mode: CgPackageEditMode): void {
     if (this.editMode() === mode) return;

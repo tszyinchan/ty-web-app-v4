@@ -75,10 +75,11 @@ export function createEmptyLogoLayer(sortOrder: number): CgLayerDraft {
     clientId: `temp-${crypto.randomUUID()}`,
     element_type: CgElementType.Logo,
     public_token: createCgPublicToken(),
+    name: '',
     layout: { ...DEFAULT_LOGO_LAYOUT },
     payload: emptyLogoPayload(CG_SAMPLE_LOGO_URL),
     visible: true,
-    look: CgLayerLook.Inherit,
+    look: CgLayerLook.Color,
     sort_order: sortOrder,
     status: RecordStatus.Active,
   };
@@ -89,10 +90,11 @@ export function createEmptySubtitleLayer(sortOrder: number): CgLayerDraft {
     clientId: `temp-${crypto.randomUUID()}`,
     element_type: CgElementType.Subtitle,
     public_token: createCgPublicToken(),
+    name: '',
     layout: { ...DEFAULT_SUBTITLE_LAYOUT },
     payload: emptySubtitlePayload([...CG_SAMPLE_SUBTITLE_LINES], 0),
     visible: true,
-    look: CgLayerLook.Inherit,
+    look: CgLayerLook.Color,
     sort_order: sortOrder,
     status: RecordStatus.Active,
   };
@@ -234,6 +236,14 @@ export function elementLabel(type: CgElementType): string {
   return elementDef(type)?.label ?? type;
 }
 
+/** Tile / title: custom name if set, else Element label (Logo, Subtitle…). */
+export function layerDisplayName(
+  layer: Pick<CgLayerDraft, 'name' | 'element_type'>,
+): string {
+  const custom = layer.name?.trim();
+  return custom || elementLabel(layer.element_type);
+}
+
 export function isLogoPayload(payload: unknown): payload is CgLogoPayload {
   return (
     typeof payload === 'object' &&
@@ -265,9 +275,10 @@ export function isCgMono(look: unknown): boolean {
 }
 
 export function normalizeLayerLook(raw: unknown): CgLayerLook {
-  if (raw === CgLayerLook.Color) return CgLayerLook.Color;
   if (raw === CgLayerLook.Mono) return CgLayerLook.Mono;
-  return CgLayerLook.Inherit;
+  // Legacy `inherit` and anything else → Color. Package Look is the master
+  // bus (Package B&W greys every Layer); Layer only picks Color vs B&W.
+  return CgLayerLook.Color;
 }
 
 export function layerIsMono(
@@ -418,6 +429,7 @@ export function layerToDraft(layer: CgLayer): CgLayerDraft {
     tb_tyapp_cgly_id: layer.tb_tyapp_cgly_id,
     element_type: layer.element_type,
     public_token: layer.public_token,
+    name: layer.name,
     layout: normalizeLayout(layer.layout),
     payload: normalizeLayerPayload(layer.element_type, layer.payload),
     visible: layer.visible,
@@ -444,6 +456,7 @@ export function normalizeLayer(raw: unknown): CgLayer | null {
     package_id: packageId,
     element_type: elementType,
     public_token: token,
+    name: asString(value['name']),
     layout: normalizeLayout(value['layout']),
     payload: normalizeLayerPayload(elementType, value['payload']),
     visible: value['visible'] !== false,

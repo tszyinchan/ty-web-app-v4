@@ -15,13 +15,18 @@ import { innerDurationMs, layerIsMono, subtitlePresetOf } from './cg.util';
   imports: [CgStage, CgLayerView],
   templateUrl: './cg-mix-preview.html',
   styleUrl: './cg-mix-preview.scss',
+  host: {
+    '[class.wide]': 'wide()',
+  },
 })
 export class CgMixPreview {
-  readonly label = input.required<string>();
+  readonly label = input('');
   readonly layers = input<CgLayerDraft[]>([]);
   readonly packageLook = input(CgPackageLook.Color);
   readonly durationMs = input(CG_DEFAULT_DURATION_MS);
   readonly backdrop = input(CgPreviewBackdrop.Dim);
+  /** Layer desk hero — wider than Package's 176px pair. */
+  readonly wide = input(false);
   readonly layerIsMono = layerIsMono;
 
   layoutSnapshot(layer: CgLayerDraft): CgLayerDraft['layout'] {

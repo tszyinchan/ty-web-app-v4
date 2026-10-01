@@ -234,6 +234,7 @@ export class CgService {
           package_id: packageId,
           element_type: draft.element_type,
           public_token: draft.public_token,
+          name: draft.name?.trim() ?? '',
           layout: draft.layout,
           payload: draft.payload,
           visible: draft.visible,
@@ -436,6 +437,7 @@ export class CgService {
 
     const layout = structuredClone(current.layout);
     const look = normalizeLayerLook(current.look);
+    const name = current.name?.trim() ?? '';
     const payload = normalizeLayerPayload(current.element_type, current.payload);
 
     this.layerContentPersistInFlight.add(clientId);
@@ -443,6 +445,7 @@ export class CgService {
       const { error } = await this.supabase
         .from('tyapp_cg_layer')
         .update({
+          name,
           layout,
           look,
           payload,
@@ -451,7 +454,7 @@ export class CgService {
         .eq('tb_tyapp_cgly_id', current.tb_tyapp_cgly_id);
       if (error) throw error;
       this.zone.run(() => {
-        this.rememberLayerContent(clientId, { layout, look, payload });
+        this.rememberLayerContent(clientId, { name, layout, look, payload });
       });
       void this.publishOverlayOutputs([
         this.draftItem()?.public_token,
@@ -655,6 +658,7 @@ export class CgService {
       package_id: targetPackageId,
       element_type: source.element_type,
       public_token: createCgPublicToken(),
+      name: source.name?.trim() ?? '',
       layout: { ...source.layout },
       payload: copiedPayload,
       visible: source.visible,
@@ -805,6 +809,7 @@ export class CgService {
   private rememberLayerContent(
     clientId: string,
     next: {
+      name: string;
       layout: CgLayerDraft['layout'];
       look: CgLayerDraft['look'];
       payload: CgLayerPayload;
@@ -814,6 +819,7 @@ export class CgService {
       layer.clientId === clientId
         ? {
             ...layer,
+            name: next.name,
             layout: structuredClone(next.layout),
             look: next.look,
             payload: {

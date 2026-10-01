@@ -1,6 +1,8 @@
-<div class="cg-monitor-head">
-  <span class="cg-kicker">{{ label() }}</span>
-</div>
+@if (label()) {
+  <div class="cg-monitor-head">
+    <span class="cg-kicker">{{ label() }}</span>
+  </div>
+}
 <app-cg-stage [preview]="true" [backdrop]="backdrop()">
   @for (layer of layers(); track layer.clientId) {
     <app-cg-layer-view
