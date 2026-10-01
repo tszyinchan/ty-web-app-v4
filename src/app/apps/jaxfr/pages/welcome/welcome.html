@@ -3,7 +3,21 @@
     <header class="aero-chrome">
       <img [src]="chromeLogoSrc()" alt="Jaxfr" class="chrome-logo" />
       <div class="chrome-meta">
-        <p class="welcome-meta">Version: {{ appVersion() }} ({{ versionDate }})</p>
+        <p
+          class="welcome-meta"
+          [class.welcome-meta-lag]="deployLag()"
+          [attr.title]="deployLag()
+            ? 'Running build is 2+ changelog versions behind — Cloudflare deploy may have failed'
+            : null"
+        >
+          Version: {{ appVersion() }} ({{ versionDate }})
+          @if (latestLogVersion(); as logVer) {
+            <span> · Log: {{ logVer }}</span>
+          }
+          @if (deployLag()) {
+            <span class="welcome-lag-flag"> · Deploy lag?</span>
+          }
+        </p>
         @if (userProfile(); as user) {
           <p class="welcome-meta chrome-user">Logged in as: {{ user | tyDisplayName }}</p>
         }

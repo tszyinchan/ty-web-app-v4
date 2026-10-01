@@ -18,6 +18,12 @@ import { UserPreferenceService } from '../../features/settings/user-preference.s
 import { FeatureHubLink, FEATURE_HUBS } from '../feature-hub/feature-hub.config';
 import { AppFeature } from '../../features/development/app-feature/app-feature.model';
 import { AppFeatureService } from '../../features/development/app-feature/app-feature.service';
+import { AppLogService } from '../../features/development/app-log/app-log.service';
+import {
+  formatVersion,
+  isDeployLag,
+  resolveLatestLogVersion,
+} from '../../features/development/app-log/app-log.util';
 import { ChatService } from '../../features/chat/chat.service';
 import { formatUnreadBadge, totalUnreadCount } from '../../features/chat/chat.util';
 import { formatCountBadge } from '../../../../core/utils/badge.util';
@@ -99,6 +105,7 @@ export class Welcome implements OnInit, OnDestroy {
   private readonly theme = inject(ThemeService);
   private readonly chat = inject(ChatService);
   private readonly docsign = inject(DocsignService);
+  private readonly appLogs = inject(AppLogService);
 
   readonly versionDate = APP_CONFIG.versionDate;
   readonly userProfile = this.auth.userProfile;
@@ -113,10 +120,17 @@ export class Welcome implements OnInit, OnDestroy {
     ),
   );
 
-  readonly appVersion = computed(() => {
-    const { major, minor, patch } = APP_CONFIG.version;
-    return `${major}.${minor}.${patch}`;
+  readonly appVersion = computed(() => formatVersion(APP_CONFIG.version));
+
+  readonly latestLogVersion = computed(() => {
+    const latest = resolveLatestLogVersion(this.appLogs.logs());
+    return latest ? formatVersion(latest) : null;
   });
+
+  /** True when changelog has 2+ distinct versions newer than this build. */
+  readonly deployLag = computed(() =>
+    isDeployLag(this.appLogs.logs(), APP_CONFIG.version),
+  );
 
   readonly showArchive = this.auth.isSuperAdmin;
   readonly featuresOpen = signal(true);
@@ -276,6 +290,7 @@ export class Welcome implements OnInit, OnDestroy {
     void this.apps.fetchAllApps();
     void this.access.fetchMyAccess();
     void this.docsign.fetchAllDocuments();
+    void this.appLogs.fetchAllLogs();
   }
 
   ngOnDestroy() {

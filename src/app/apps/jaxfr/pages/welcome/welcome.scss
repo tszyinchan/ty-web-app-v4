@@ -36,6 +36,15 @@
   color: var(--app-text-secondary);
 }
 
+.welcome-meta-lag {
+  color: var(--app-danger);
+  font-weight: 600;
+}
+
+.welcome-lag-flag {
+  white-space: nowrap;
+}
+
 .chrome-meta .welcome-meta:first-child {
   margin-top: 0;
 }
