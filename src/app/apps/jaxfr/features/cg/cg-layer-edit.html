@@ -26,19 +26,18 @@
         </label>
         <div class="cg-block look">
           <h3 class="cg-block-title">Look</h3>
-          <div class="cg-roles">
+          <mat-button-toggle-group
+            class="cg-seg-toggle"
+            [value]="layer.look"
+            (change)="onLayerLookToggle($event)"
+            hideSingleSelectionIndicator
+          >
             @for (option of lookOptions; track option.value) {
-              <button
-                mat-stroked-button
-                type="button"
-                class="cg-seg-btn"
-                [class.selected]="layer.look === option.value"
-                (click)="setLayerLook(option.value)"
-              >
+              <mat-button-toggle [value]="option.value">
                 {{ option.label }}
-              </button>
+              </mat-button-toggle>
             }
-          </div>
+          </mat-button-toggle-group>
           @if (packageIsMono()) {
             <p class="cg-hint">
               Package is B&amp;W — every Layer stays grey until Package is Color.
@@ -48,10 +47,9 @@
         <footer class="cg-desk-foot">
           <div class="cg-foot-actions">
             <button
-              mat-stroked-button
-              color="warn"
+              mat-flat-button
               type="button"
-              class="cg-seg-btn"
+              class="cg-seg-btn danger-btn"
               (click)="removeLayer(layer)"
             >
               Delete layer
@@ -65,7 +63,7 @@
               aria-label="Copy layer OBS URL"
               (click)="copyLayerOutput(layer)"
             >
-              📋
+              <mat-icon>content_copy</mat-icon>
             </button>
           </div>
         </footer>
@@ -85,8 +83,7 @@
             }
             <div class="cg-inline">
               <button
-                mat-flat-button
-                color="primary"
+                mat-stroked-button
                 type="button"
                 class="cg-seg-btn"
                 (click)="logoFileInput.click()"
@@ -194,11 +191,25 @@
           </section>
         } @else if (layer.element_type === Subtitle) {
           <div class="cg-cue-bar">
-            <button mat-stroked-button type="button" class="cg-seg-btn" (click)="cue(-1)">
-              Up
+            <button
+              mat-stroked-button
+              type="button"
+              class="cg-seg-btn cg-icon-btn"
+              title="Cue up"
+              aria-label="Cue up"
+              (click)="cue(-1)"
+            >
+              <mat-icon>keyboard_arrow_up</mat-icon>
             </button>
-            <button mat-stroked-button type="button" class="cg-seg-btn" (click)="cue(1)">
-              Down
+            <button
+              mat-stroked-button
+              type="button"
+              class="cg-seg-btn cg-icon-btn"
+              title="Cue down"
+              aria-label="Cue down"
+              (click)="cue(1)"
+            >
+              <mat-icon>keyboard_arrow_down</mat-icon>
             </button>
             <button
               mat-stroked-button
@@ -209,51 +220,15 @@
             >
               Blank
             </button>
-          </div>
-          <div class="cg-appear cue">
-            <span class="cg-kicker">Cue</span>
-            <div class="cg-roles">
-              <button
-                mat-stroked-button
-                type="button"
-                class="cg-seg-btn"
-                [class.selected]="!isCueCut(layer)"
-                (click)="setCueFade(layer)"
-              >
-                Fade
-              </button>
-              <button
-                mat-stroked-button
-                type="button"
-                class="cg-seg-btn"
-                [class.selected]="isCueCut(layer)"
-                (click)="setCueCut(layer)"
-              >
-                Cut
-              </button>
-            </div>
-            @if (!isCueCut(layer)) {
-              <label class="cg-field cg-duration">
-                <span>ms</span>
-                <input
-                  type="number"
-                  [min]="cutMs"
-                  [max]="maxDurationMs"
-                  step="50"
-                  [ngModel]="cueDurationMs(layer)"
-                  (ngModelChange)="onCueDurationMsChange(layer, $event)"
-                />
-              </label>
-            }
-          </div>
-          <div class="cg-inline">
             <button
               mat-stroked-button
               type="button"
-              class="cg-seg-btn"
+              class="cg-seg-btn cg-icon-btn"
+              title="Paste script"
+              aria-label="Paste script"
               (click)="pasteScript()"
             >
-              Paste
+              <mat-icon>content_paste</mat-icon>
             </button>
             <button
               mat-stroked-button
@@ -271,24 +246,48 @@
               (change)="onScriptFile(layer, $event)"
             />
           </div>
+          <div class="cg-appear cue">
+            <span class="cg-kicker">Cue</span>
+            <mat-button-toggle-group
+              class="cg-seg-toggle"
+              [value]="isCueCut(layer) ? 'cut' : 'fade'"
+              (change)="onCueAppearToggle(layer, $event)"
+              hideSingleSelectionIndicator
+            >
+              <mat-button-toggle value="fade">Fade</mat-button-toggle>
+              <mat-button-toggle value="cut">Cut</mat-button-toggle>
+            </mat-button-toggle-group>
+            @if (!isCueCut(layer)) {
+              <label class="cg-field cg-duration">
+                <span>ms</span>
+                <input
+                  type="number"
+                  [min]="cutMs"
+                  [max]="maxDurationMs"
+                  step="50"
+                  [ngModel]="cueDurationMs(layer)"
+                  (ngModelChange)="onCueDurationMsChange(layer, $event)"
+                />
+              </label>
+            }
+          </div>
           @if (!packageId) {
             <p class="cg-hint">Save the package once so cue goes to OBS.</p>
           }
           <div class="cg-appear">
             <span class="cg-kicker">Style</span>
-            <div class="cg-roles">
+            <mat-button-toggle-group
+              class="cg-seg-toggle"
+              [value]="subtitlePresetOf(layer.payload)"
+              (change)="onPresetToggle($event)"
+              hideSingleSelectionIndicator
+            >
               @for (option of presetOptions; track option.value) {
-                <button
-                  mat-stroked-button
-                  type="button"
-                  class="cg-seg-btn"
-                  [class.selected]="isPreset(option.value)"
-                  (click)="setPreset(option.value)"
-                >
+                <mat-button-toggle [value]="option.value">
                   {{ option.label }}
-                </button>
+                </mat-button-toggle>
               }
-            </div>
+            </mat-button-toggle-group>
           </div>
           <div class="cg-queue" role="listbox" aria-label="Caption queue">
             @for (line of layer.payload.lines; track $index) {
@@ -362,8 +361,7 @@
                   }
                 </select>
                 <button
-                  mat-flat-button
-                  color="primary"
+                  mat-stroked-button
                   type="button"
                   class="cg-seg-btn"
                   [disabled]="!copyTargetId() || cg.loading()"

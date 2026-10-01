@@ -54,7 +54,7 @@
 | # | 操作 | 預期 |
 |---|---|---|
 | A1 | Welcome 點 **CG**，或開 `/cg/list` | 進入 package 清單。**有**全域 AppToolbar（跟 Attendance / Article 一樣：標題 CG、回 Welcome、Refresh、New package）。內容是 `standard-list-view` 列 + Article 同款 `mat-form-field` 搜尋（不是自製卡片格子）。**沒有** 200ms 整頁 crossfade。Panel（`/cg/edit`）仍**沒有**全域 toolbar。清單不再鎖 `width=1280`；進 Panel 才鎖桌面寬 |
-| A2 | 點 **New package**。預設 **Studio mode**。Name = `PKG_A`。頂列順序：**Take/Create** 在雲端狀態**左邊**。點 **Create** | 建立成功；狀態變 **On air**；📋 可用 |
+| A2 | 點 **New package**。預設 **Studio mode**。Name = `PKG_A`。頂列順序：**Take/Create** 在雲端狀態**左邊**。點 **Create** | 建立成功；狀態變 **On air**；Copy OBS（content_copy）可用 |
 | A3 | 再 New，Name = `PKG_B`，Role = Source，Create | 兩個 package 並存 |
 
 ### B — Panel On/Off，定位在 Stage 上
@@ -63,13 +63,13 @@
 |---|---|---|
 | B0 | 打開 `PKG_A`（Studio mode 開）。關掉 **Studio mode** switch（在監看區上方） | 單監看 176px；**Take** 隱藏（留 spacer）。再開 → 兩監看與 **Take**（在 On air 狀態左邊）回來 |
 | B0a | Studio mode **關**（Direct）：撥 Logo On/Off，或改 Look | ~0.5s auto-save；無 Take 鈕 |
-| B1 | Studio mode 開。監看區上方：Studio mode switch、緊挨右邊的 **Take**、右側 ☁ On air。頂列 Back + Package + ⬚/⬛。左下 Delete package、📋。Layers 標題旁也有 ⬚/⬛。點 Logo tile | tile：**上** ⠿+序號+On-Off，**下** 名稱。desk **左**較大無標籤 Stage + Name + Look + Delete layer / 📋；**右** Source/Place。無 Backdrop 標題 |
+| B1 | Studio mode 開。監看區上方：Studio mode switch、緊挨右邊的 **Take**、右側 ☁ On air。頂列 Back + Package + Alpha/Dim + Copy OBS。左下深紅白字 Delete package。Layers 標題旁 Alpha/Dim。點 Logo tile | tile：**上** drag_indicator+序號+On-Off，**下** 名稱。desk **左** Stage + Name + Look + 深紅白字 Delete layer + Copy layer OBS；**右** Source/Place |
 | B1b | 開任一 Layer desk → Delete layer → confirm | 留在同一 Package Panel（`/cg/edit/:id`），**不要**跳 `/login`。draft 少一 tile；Studio 下需 Take 才寫 DB |
 | B1c | List 點 package → Panel；點 tile 開 desk → 再點同 tile 關；Back → list；New package | URL 皆為絕對 `/cg/…`，不要進 `/login`。Overlay 複製鈕產生 `cg.*.tszyin.com/o/…`（或 localhost） |
 | B1a | `PKG_A`（Studio）加新 Logo（未 Take）。看 desk 小監看 | desk 可預覽草稿；**尚未有 DB id 前** Layer Direct 不會寫上氣。Take 後才有 layer id，之後改內容才 live |
 | B1b | 已 Take 過的 Logo：Choose local image | ~0.5s 後 Package **On air** 與 overlay 換圖（不必再 Take）。Storage URL |
 | B2 | 改 X/Y/Width/Scale（Studio，已有 layer id） | Package Pending 與 **On air** 都動；不必 Take |
-| B3 | 左下 **Backdrop** 切 ⬚ / ⬛ | 監看底換（棋盤 / 暗底）。title 仍寫 Alpha、Dim |
+| B3 | 頂列 Package / Layers 標題旁 **Alpha / Dim** | 監看底換（棋盤 / 暗底） |
 | B4 | Studio mode：撥 Logo On/Off | tile 變淡。Pending 淡出。On air 先不變（混音仍等 Take） |
 | B5 | **Take**（Studio） | On air 追上 Pending（On/Off、排序、Package 欄位） |
 | B6 | 點 catalog 裡灰色的 Clock / Title | 不能加（soon）。**Logo** 與 **Subtitle** 能加 |
@@ -82,16 +82,16 @@
 | B12 | Style = Show，不要 Take（已有 id） | Package On air / overlay 改 Show（Layer Direct） |
 | B13 | Subtitle Copy to `PKG_B` | 新 Layer、Blank |
 | B14 | 未 Take 改 Scale（Studio，已有 id） | Package On air 也變（Layer Direct）；On/Off 仍要 Take |
-| B15 | Cue = Cut。Down | 字幕瞬間換句 |
+| B15 | Cue = Cut。↓（cue down） | 字幕瞬間換句 |
 | B16 | 視窗縮到手機寬 | 仍是桌面三欄 |
 
 ### C — Package Output
 
 | # | 操作 | 預期 |
 |---|---|---|
-| C1 | 點 📋 **Copy OBS URL**，另開分頁 | `cg.localhost:4200/o/…`（或正式 `cg.tszyin.com`）。真透明。壞 token 空白 |
+| C1 | 點 Copy OBS（content_copy），另開分頁 | `cg.localhost:4200/o/…`（或正式 `cg.tszyin.com`）。真透明。壞 token 空白 |
 | C2 | Studio：改 Scale（已有 id），不要 Take，看 overlay | overlay / Package On air **立刻**變（Layer Direct） |
-| C3 | Layer desk 點 📋（Layer output） | 只畫那層 |
+| C3 | Layer desk 點 Copy OBS（Layer output） | 只畫那層 |
 
 ### CLEANUP
 

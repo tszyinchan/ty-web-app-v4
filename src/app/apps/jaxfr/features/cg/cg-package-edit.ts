@@ -26,6 +26,7 @@ import {
   RouterOutlet,
 } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
+import { MatButtonToggleChange, MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatIconModule } from '@angular/material/icon';
 import { filter, map, startWith } from 'rxjs/operators';
 import { CgLayerView } from '../../../../core/domains/cg/cg-layer-view';
@@ -73,6 +74,7 @@ const DIRECT_AUTOSAVE_MS = 450;
     RouterLink,
     RouterOutlet,
     MatButtonModule,
+    MatButtonToggleModule,
     MatIconModule,
     CdkDropList,
     CdkDrag,
@@ -262,6 +264,25 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
     const pkg = this.item();
     if (!pkg) return;
     pkg.role = role;
+  }
+
+  onRoleToggle(event: MatButtonToggleChange): void {
+    const value = event.value;
+    if (value === CgPackageRole.Channel || value === CgPackageRole.Source) {
+      this.setRole(value);
+    }
+  }
+
+  onAppearToggle(event: MatButtonToggleChange): void {
+    if (event.value === 'cut') this.setCut();
+    else this.setFade();
+  }
+
+  onLookToggle(event: MatButtonToggleChange): void {
+    const value = event.value;
+    if (value === CgPackageLook.Color || value === CgPackageLook.Mono) {
+      this.setLook(value);
+    }
   }
 
   isCut(): boolean {

@@ -133,6 +133,23 @@
   box-shadow: var(--app-button-primary-pressed-shadow);
 }
 
+@mixin gloss-danger-surface {
+  border: 1px solid var(--app-button-danger-border);
+  border-radius: var(--app-radius);
+  background: var(--app-button-danger-bg);
+  color: var(--app-button-danger-text);
+  box-shadow: var(--app-button-danger-shadow);
+}
+
+@mixin gloss-danger-surface-hover {
+  background: var(--app-button-danger-bg-hover);
+}
+
+@mixin gloss-danger-pressed-surface {
+  background: var(--app-button-danger-bg-pressed);
+  box-shadow: var(--app-button-danger-pressed-shadow);
+}
+
 .gloss-btn {
   min-width: 74px;
   height: 26px;
@@ -151,7 +168,8 @@
 }
 
 .gloss-btn:disabled,
-.gloss-btn.primary:disabled {
+.gloss-btn.primary:disabled,
+.gloss-btn.danger:disabled {
   @include gloss-disabled-surface;
 }
 
@@ -166,4 +184,17 @@
 
 .gloss-btn.primary:active:not(:disabled) {
   @include gloss-primary-pressed-surface;
+}
+
+.gloss-btn.danger {
+  @include gloss-danger-surface;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
+}
+
+.gloss-btn.danger:hover:not(:disabled) {
+  @include gloss-danger-surface-hover;
+}
+
+.gloss-btn.danger:active:not(:disabled) {
+  @include gloss-danger-pressed-surface;
 }

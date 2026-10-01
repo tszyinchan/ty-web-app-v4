@@ -3,7 +3,7 @@
 html.theme-aero {
   app-layout,
   app-portal-layout {
-    button.mat-mdc-unelevated-button:not(.action-btn) {
+    button.mat-mdc-unelevated-button:not(.action-btn):not(.danger-btn) {
       min-height: 32px;
       @include aero.gloss-primary-surface;
       font-family: var(--app-font);
@@ -14,12 +14,31 @@ html.theme-aero {
       transition: background 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
     }
 
-    button.mat-mdc-unelevated-button:not(.action-btn):hover:not(:disabled) {
+    button.mat-mdc-unelevated-button:not(.action-btn):not(.danger-btn):hover:not(:disabled) {
       @include aero.gloss-primary-surface-hover;
     }
 
-    button.mat-mdc-unelevated-button:not(.action-btn):active:not(:disabled) {
+    button.mat-mdc-unelevated-button:not(.action-btn):not(.danger-btn):active:not(:disabled) {
       @include aero.gloss-primary-pressed-surface;
+    }
+
+    button.mat-mdc-unelevated-button.danger-btn:not(.action-btn) {
+      min-height: 32px;
+      @include aero.gloss-danger-surface;
+      font-family: var(--app-font);
+      --mdc-filled-button-container-color: transparent;
+      --mdc-filled-button-label-text-color: var(--app-button-danger-text);
+      --mdc-filled-button-icon-color: var(--app-button-danger-text);
+      --mdc-filled-button-disabled-container-color: transparent;
+      transition: background 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+    }
+
+    button.mat-mdc-unelevated-button.danger-btn:not(.action-btn):hover:not(:disabled) {
+      @include aero.gloss-danger-surface-hover;
+    }
+
+    button.mat-mdc-unelevated-button.danger-btn:not(.action-btn):active:not(:disabled) {
+      @include aero.gloss-danger-pressed-surface;
     }
 
     button.mat-mdc-unelevated-button:not(.action-btn):disabled {

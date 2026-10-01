@@ -1,3 +1,5 @@
+@use "@angular/material" as mat;
+
 :host {
   display: flex;
   flex-direction: column;
@@ -135,11 +137,8 @@
   color: var(--app-text-muted);
 }
 
-// Compact segmented/action button — see cg-package-edit.scss for the full
-// rationale. `.selected` marks the active option in a toggle-style group
-// (Alpha/Dim backdrop, Cue Fade/Cut, News/Show, Look Inherit/Color/B&W).
-// Fill matches App Log's major/minor/patch checked toggle.
-// Same 28px as Package Panel — beat Aero flat `min-height: 32px`.
+// Compact action button — see cg-package-edit.scss. Either-choice groups
+// use `mat-button-toggle-group.cg-seg-toggle` (App Log style).
 :host button.mat-mdc-button-base.mat-mdc-unelevated-button.cg-seg-btn,
 :host button.mat-mdc-button-base.mat-mdc-outlined-button.cg-seg-btn {
   height: 28px;
@@ -161,21 +160,60 @@
   line-height: 28px;
 }
 
-:host button.mat-mdc-button-base.mat-mdc-outlined-button.cg-seg-btn.selected {
-  background: var(--app-button-primary-bg);
-  border-color: var(--app-button-primary-border);
-  color: var(--app-accent-contrast);
-  box-shadow: var(--app-button-primary-shadow);
-  --mdc-outlined-button-label-text-color: var(--app-accent-contrast);
-  --mdc-outlined-button-outline-color: transparent;
-  --mdc-outlined-button-hover-label-text-color: var(--app-accent-contrast);
+mat-button-toggle-group.cg-seg-toggle {
+  flex-shrink: 0;
+  align-self: flex-start;
+  width: max-content;
+  max-width: 100%;
+  border: 1px solid var(--app-button-border);
+  border-radius: var(--app-radius);
+  overflow: hidden;
+  box-shadow: var(--app-button-shadow);
+  @include mat.button-toggle-overrides(
+    (
+      shape: 0,
+      height: 28px,
+      background-color: transparent,
+      text-color: var(--app-text-primary),
+      divider-color: var(--app-button-border),
+      selected-state-background-color: var(--app-accent),
+      selected-state-text-color: var(--app-accent-contrast),
+    )
+  );
+
+  mat-button-toggle {
+    background: var(--app-button-bg);
+    font-family: var(--app-font);
+    font-size: 12px;
+  }
+
+  mat-button-toggle.mat-button-toggle-checked {
+    background: var(--app-button-primary-bg);
+  }
 }
 
-.cg-icon-btn {
+:host button.mat-mdc-button-base.mat-mdc-outlined-button.cg-seg-btn.cg-icon-btn {
+  width: 28px;
   min-width: 28px;
-  padding: 0 8px;
-  font-size: 14px;
-  line-height: 28px;
+  max-width: 28px;
+  padding: 0;
+}
+
+:host button.mat-mdc-button-base.mat-mdc-outlined-button.cg-seg-btn.cg-icon-btn .mdc-button__label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 0;
+  line-height: 1;
+}
+
+:host button.mat-mdc-button-base.mat-mdc-outlined-button.cg-seg-btn.cg-icon-btn mat-icon {
+  width: 16px;
+  height: 16px;
+  font-size: 16px;
+  line-height: 16px;
+  margin: 0;
 }
 
 // File picker trigger is a real `mat-stroked-button` (Angular Material's
@@ -289,12 +327,6 @@
 
 .cg-appear.cue .cg-kicker {
   flex: 0 0 100%;
-}
-
-.cg-roles {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
 }
 
 .cg-duration {

@@ -202,6 +202,14 @@ body {
   color: var(--mat-sys-outline);
 }
 
+// App-wide destructive CTA: dark red fill + white label.
+// Use with `mat-flat-button` + class `danger-btn` (Aero gets gloss via _aero-controls).
+button.mat-mdc-unelevated-button.danger-btn {
+  --mdc-filled-button-container-color: var(--app-danger);
+  --mdc-filled-button-label-text-color: var(--app-button-danger-text, #fff);
+  --mdc-filled-button-icon-color: var(--app-button-danger-text, #fff);
+}
+
 .icon-16 {
   font-size: 16px;
   width: 16px;

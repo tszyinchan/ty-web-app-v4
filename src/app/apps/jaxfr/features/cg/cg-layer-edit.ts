@@ -13,6 +13,8 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
+import { MatButtonToggleChange, MatButtonToggleModule } from '@angular/material/button-toggle';
+import { MatIconModule } from '@angular/material/icon';
 import { CgMixPreview } from '../../../../core/domains/cg/cg-mix-preview';
 import {
   CG_ANCHOR_OPTIONS,
@@ -51,7 +53,13 @@ import { copyTextToClipboard } from '../../../../core/utils/copy-text.util';
 @Component({
   selector: 'app-cg-layer-edit',
   standalone: true,
-  imports: [FormsModule, MatButtonModule, CgMixPreview],
+  imports: [
+    FormsModule,
+    MatButtonModule,
+    MatButtonToggleModule,
+    MatIconModule,
+    CgMixPreview,
+  ],
   templateUrl: './cg-layer-edit.html',
   styleUrl: './cg-layer-edit.scss',
 })
@@ -148,6 +156,7 @@ export class CgLayerEdit implements OnInit {
   }
 
   elementLabel = elementLabel;
+  subtitlePresetOf = subtitlePresetOf;
 
   touchPreview(): void {
     this.cg.touchPreview();
@@ -355,6 +364,25 @@ export class CgLayerEdit implements OnInit {
     if (!layer) return;
     layer.look = look;
     this.touchPreview();
+  }
+
+  onLayerLookToggle(event: MatButtonToggleChange): void {
+    const value = event.value;
+    if (value === CgLayerLook.Color || value === CgLayerLook.Mono) {
+      this.setLayerLook(value);
+    }
+  }
+
+  onCueAppearToggle(layer: CgLayerDraft, event: MatButtonToggleChange): void {
+    if (event.value === 'cut') this.setCueCut(layer);
+    else this.setCueFade(layer);
+  }
+
+  onPresetToggle(event: MatButtonToggleChange): void {
+    const value = event.value;
+    if (value === CgSubtitlePreset.News || value === CgSubtitlePreset.Show) {
+      this.setPreset(value);
+    }
   }
 
   setPreset(preset: CgSubtitlePreset): void {

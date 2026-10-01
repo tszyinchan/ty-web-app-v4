@@ -65,6 +65,15 @@ html {
     inset 0 1px 0 rgba(255, 255, 255, 0.35),
     0 1px 1px rgba(0, 0, 0, 0.12);
   --app-button-primary-pressed-shadow: inset 0 2px 4px rgba(0, 20, 50, 0.4);
+  --app-button-danger-bg: linear-gradient(180deg, #d45a5a 0%, #a31f1f 48%, #7a1515 100%);
+  --app-button-danger-bg-hover: linear-gradient(180deg, #e07070 0%, #b52828 48%, #8c1c1c 100%);
+  --app-button-danger-bg-pressed: linear-gradient(180deg, #7a1515 0%, #8c1c1c 48%, #5c1010 100%);
+  --app-button-danger-border: #6b1212;
+  --app-button-danger-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 1px 1px rgba(0, 0, 0, 0.16);
+  --app-button-danger-pressed-shadow: inset 0 2px 4px rgba(40, 0, 0, 0.45);
+  --app-button-danger-text: #ffffff;
   --app-tile-pressed-bg: linear-gradient(180deg, #c5dceb 0%, #b0cee4 100%);
   --app-button-disabled-bg: linear-gradient(180deg, #f4f5f6 0%, #e4e6e8 48%, #d0d3d6 100%);
   --app-button-disabled-border: #b4bac0;
@@ -154,6 +163,15 @@ html.theme-aero.mode-dark {
   --app-button-primary-bg-hover: linear-gradient(180deg, #7ec4f5 0%, #3b8fe0 48%, #226bb8 100%);
   --app-button-primary-bg-pressed: linear-gradient(180deg, #1b5fa8 0%, #185090 48%, #124078 100%);
   --app-button-primary-pressed-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+  --app-button-danger-bg: linear-gradient(180deg, #c85858 0%, #9a2a2a 48%, #6e1a1a 100%);
+  --app-button-danger-bg-hover: linear-gradient(180deg, #d87070 0%, #b03434 48%, #802020 100%);
+  --app-button-danger-bg-pressed: linear-gradient(180deg, #6e1a1a 0%, #802020 48%, #501414 100%);
+  --app-button-danger-border: #5a1818;
+  --app-button-danger-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 1px 1px rgba(0, 0, 0, 0.32);
+  --app-button-danger-pressed-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.55);
+  --app-button-danger-text: #ffffff;
   --app-button-disabled-bg: linear-gradient(180deg, #2a3440 0%, #222a33 48%, #1b222a 100%);
   --app-button-disabled-border: #4a5560;
   --app-button-disabled-text: #7a858f;
@@ -217,6 +235,13 @@ html.theme-material {
   --app-button-primary-bg-hover: var(--mat-sys-primary);
   --app-button-primary-border: var(--mat-sys-primary);
   --app-button-primary-shadow: none;
+  --app-button-danger-bg: var(--mat-sys-error);
+  --app-button-danger-bg-hover: var(--mat-sys-error);
+  --app-button-danger-bg-pressed: var(--mat-sys-error);
+  --app-button-danger-border: var(--mat-sys-error);
+  --app-button-danger-shadow: none;
+  --app-button-danger-pressed-shadow: none;
+  --app-button-danger-text: var(--mat-sys-on-error);
   --app-button-disabled-bg: var(--mat-sys-surface-container);
   --app-button-disabled-border: var(--mat-sys-outline-variant);
   --app-button-disabled-text: var(--mat-sys-outline);

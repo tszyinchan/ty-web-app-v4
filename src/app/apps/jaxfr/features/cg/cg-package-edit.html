@@ -11,30 +11,29 @@
           <mat-icon>west</mat-icon>
         </a>
         <h2 class="cg-col-title">Package</h2>
-        <div class="cg-stage-toggles" role="group" aria-label="Package stage backdrop">
-          <button
-            mat-stroked-button
-            type="button"
-            class="cg-seg-btn cg-icon-btn"
-            [class.selected]="packageBackdrop() === backdrops.Checkerboard"
-            title="Alpha"
-            aria-label="Alpha backdrop"
-            (click)="packageBackdrop.set(backdrops.Checkerboard)"
-          >
-            ⬚
-          </button>
-          <button
-            mat-stroked-button
-            type="button"
-            class="cg-seg-btn cg-icon-btn"
-            [class.selected]="packageBackdrop() === backdrops.Dim"
-            title="Dim"
-            aria-label="Dim backdrop"
-            (click)="packageBackdrop.set(backdrops.Dim)"
-          >
-            ⬛
-          </button>
-        </div>
+        <mat-button-toggle-group
+          class="cg-seg-toggle"
+          [value]="packageBackdrop()"
+          (change)="packageBackdrop.set($event.value)"
+          hideSingleSelectionIndicator
+          aria-label="Package stage backdrop"
+        >
+          <mat-button-toggle [value]="backdrops.Checkerboard">
+            Alpha
+          </mat-button-toggle>
+          <mat-button-toggle [value]="backdrops.Dim">Dim</mat-button-toggle>
+        </mat-button-toggle-group>
+        <button
+          mat-stroked-button
+          type="button"
+          class="cg-seg-btn cg-icon-btn"
+          [disabled]="!packageOutputUrl()"
+          title="Copy OBS URL"
+          aria-label="Copy OBS URL"
+          (click)="copyPackageOutput()"
+        >
+          <mat-icon>content_copy</mat-icon>
+        </button>
       </header>
 
       <section class="cg-monitors-pane">
@@ -130,41 +129,29 @@
           [(ngModel)]="pkg.name"
           placeholder="CH36, News SNG, Live show…"
         />
-        <div class="cg-roles">
+        <mat-button-toggle-group
+          class="cg-seg-toggle"
+          [value]="pkg.role"
+          (change)="onRoleToggle($event)"
+          hideSingleSelectionIndicator
+        >
           @for (option of roleOptions; track option.value) {
-            <button
-              mat-stroked-button
-              type="button"
-              class="cg-seg-btn"
-              [class.selected]="pkg.role === option.value"
-              (click)="setRole(option.value)"
-            >
+            <mat-button-toggle [value]="option.value">
               {{ option.label }}
-            </button>
+            </mat-button-toggle>
           }
-        </div>
+        </mat-button-toggle-group>
         <div class="cg-appear">
           <span class="cg-kicker">Appear</span>
-          <div class="cg-roles">
-            <button
-              mat-stroked-button
-              type="button"
-              class="cg-seg-btn"
-              [class.selected]="!isCut()"
-              (click)="setFade()"
-            >
-              Fade
-            </button>
-            <button
-              mat-stroked-button
-              type="button"
-              class="cg-seg-btn"
-              [class.selected]="isCut()"
-              (click)="setCut()"
-            >
-              Cut
-            </button>
-          </div>
+          <mat-button-toggle-group
+            class="cg-seg-toggle"
+            [value]="isCut() ? 'cut' : 'fade'"
+            (change)="onAppearToggle($event)"
+            hideSingleSelectionIndicator
+          >
+            <mat-button-toggle value="fade">Fade</mat-button-toggle>
+            <mat-button-toggle value="cut">Cut</mat-button-toggle>
+          </mat-button-toggle-group>
           @if (!isCut()) {
             <label class="cg-field cg-duration">
               <span>ms</span>
@@ -181,26 +168,15 @@
         </div>
         <div class="cg-appear">
           <span class="cg-kicker">Look</span>
-          <div class="cg-roles">
-            <button
-              mat-stroked-button
-              type="button"
-              class="cg-seg-btn"
-              [class.selected]="!isMono()"
-              (click)="setLook(looks.Color)"
-            >
-              Color
-            </button>
-            <button
-              mat-stroked-button
-              type="button"
-              class="cg-seg-btn"
-              [class.selected]="isMono()"
-              (click)="setLook(looks.Mono)"
-            >
-              B&amp;W
-            </button>
-          </div>
+          <mat-button-toggle-group
+            class="cg-seg-toggle"
+            [value]="pkg.look"
+            (change)="onLookToggle($event)"
+            hideSingleSelectionIndicator
+          >
+            <mat-button-toggle [value]="looks.Color">Color</mat-button-toggle>
+            <mat-button-toggle [value]="looks.Mono">B&amp;W</mat-button-toggle>
+          </mat-button-toggle-group>
         </div>
       </section>
 
@@ -208,26 +184,14 @@
         <div class="cg-foot-actions">
           @if (packageId) {
             <button
-              mat-stroked-button
-              color="warn"
+              mat-flat-button
               type="button"
-              class="cg-seg-btn"
+              class="cg-seg-btn danger-btn"
               (click)="onDelete()"
             >
               Delete package
             </button>
           }
-          <button
-            mat-stroked-button
-            type="button"
-            class="cg-seg-btn cg-icon-btn"
-            [disabled]="!packageOutputUrl()"
-            title="Copy OBS URL"
-            aria-label="Copy OBS URL"
-            (click)="copyPackageOutput()"
-          >
-            📋
-          </button>
         </div>
       </footer>
     </div>
@@ -235,30 +199,18 @@
     <div class="cg-right">
       <header class="cg-col-head">
         <h2 class="cg-col-title">Layers</h2>
-        <div class="cg-stage-toggles" role="group" aria-label="Layers stage backdrop">
-          <button
-            mat-stroked-button
-            type="button"
-            class="cg-seg-btn cg-icon-btn"
-            [class.selected]="layersBackdrop() === backdrops.Checkerboard"
-            title="Alpha"
-            aria-label="Alpha backdrop"
-            (click)="layersBackdrop.set(backdrops.Checkerboard)"
-          >
-            ⬚
-          </button>
-          <button
-            mat-stroked-button
-            type="button"
-            class="cg-seg-btn cg-icon-btn"
-            [class.selected]="layersBackdrop() === backdrops.Dim"
-            title="Dim"
-            aria-label="Dim backdrop"
-            (click)="layersBackdrop.set(backdrops.Dim)"
-          >
-            ⬛
-          </button>
-        </div>
+        <mat-button-toggle-group
+          class="cg-seg-toggle"
+          [value]="layersBackdrop()"
+          (change)="layersBackdrop.set($event.value)"
+          hideSingleSelectionIndicator
+          aria-label="Layers stage backdrop"
+        >
+          <mat-button-toggle [value]="backdrops.Checkerboard">
+            Alpha
+          </mat-button-toggle>
+          <mat-button-toggle [value]="backdrops.Dim">Dim</mat-button-toggle>
+        </mat-button-toggle-group>
         <div class="cg-catalog">
           @for (el of catalog; track el.type) {
             <button
@@ -305,7 +257,7 @@
                   (click)="$event.stopPropagation()"
                   aria-label="Reorder layer"
                 >
-                  <span class="cg-drag-dots"></span>
+                  <mat-icon>drag_indicator</mat-icon>
                 </button>
                 <span class="cg-tile-z">{{ layer.sort_order + 1 }}</span>
                 <button
