@@ -1,16 +1,19 @@
 import { Injectable, NgZone, inject, signal } from '@angular/core';
+import { RealtimeChannel } from '@supabase/supabase-js';
 import { RecordStatus } from '../../models/status.enum';
 import { NotificationService } from '../../services/notification.service';
 import { SupabaseService } from '../../services/supabase.service';
 import {
   CG_DEFAULT_DURATION_MS,
   CG_LOGO_BUCKET,
+  CG_OVERLAY_BROADCAST_EVENT,
   CgElementType,
   CgPackageLook,
   CgPackageRole,
 } from './cg.constants';
 import { CgLayer, CgLayerDraft, CgLayerPayload, CgPackage, CgPublicOutput } from './cg.model';
 import {
+  cgOutputChannelName,
   createCgPublicToken,
   createEmptyLogoLayer,
   emptySubtitlePayload,
@@ -29,6 +32,9 @@ export class CgService {
   private supabase = inject(SupabaseService).client;
   private notification = inject(NotificationService);
   private zone = inject(NgZone);
+  private overlayListenChannel: RealtimeChannel | null = null;
+  private overlaySendChannels = new Map<string, RealtimeChannel>();
+  private overlaySendJoins = new Map<string, Promise<RealtimeChannel | null>>();
 
   packages = signal<CgPackage[]>([]);
   layers = signal<CgLayer[]>([]);
@@ -242,6 +248,10 @@ export class CgService {
         ]);
         this.loading.set(false);
         this.notification.showSuccess('Package saved');
+        void this.publishOverlayOutputs([
+          saved.public_token,
+          ...savedLayers.map((layer) => layer.public_token),
+        ]);
         return packageId;
       });
     } catch (error: unknown) {
@@ -262,6 +272,11 @@ export class CgService {
       );
       if (error) throw error;
 
+      const removed = this.packages().find((item) => item.tb_tyapp_cgpk_id === id);
+      const removedLayerTokens = this.layers()
+        .filter((layer) => layer.package_id === id)
+        .map((layer) => layer.public_token);
+
       return this.zone.run(() => {
         this.packages.update((list) =>
           list.filter((item) => item.tb_tyapp_cgpk_id !== id),
@@ -271,6 +286,12 @@ export class CgService {
         );
         this.loading.set(false);
         this.notification.showSuccess('Package deleted');
+        if (removed) {
+          void this.publishOverlayOutputs([
+            removed.public_token,
+            ...removedLayerTokens,
+          ]);
+        }
         return true;
       });
     } catch (error: unknown) {
@@ -305,6 +326,7 @@ export class CgService {
     const fresh = await this.fetchPackageById(id);
     if (!fresh) return false;
     this.applyDraft(fresh.package, fresh.layers.map((layer) => layerToDraft(layer)));
+    void this.ensureOverlaySendChannel(fresh.package.public_token);
     return true;
   }
 
@@ -431,6 +453,10 @@ export class CgService {
         .eq('tb_tyapp_cgly_id', layerId);
       if (error) throw error;
       this.zone.run(() => this.rememberLayerCue(clientId, nextSaved));
+      void this.publishOverlayOutputs([
+        this.draftItem()?.public_token,
+        current.public_token,
+      ]);
       return true;
     } catch (error: unknown) {
       this.notification.handleError('Cue subtitle failed', error);
@@ -495,6 +521,10 @@ export class CgService {
         .eq('tb_tyapp_cgly_id', layerId);
       if (error) throw error;
       this.zone.run(() => this.rememberLayerTransition(clientId, ms));
+      void this.publishOverlayOutputs([
+        this.draftItem()?.public_token,
+        current.public_token,
+      ]);
       return true;
     } catch (error: unknown) {
       this.notification.handleError('Cue fade failed', error);
@@ -712,5 +742,93 @@ export class CgService {
     } catch {
       return null;
     }
+  }
+
+  subscribeOverlayOutput(
+    token: string,
+    onSync: (output: CgPublicOutput | null) => void,
+  ): void {
+    void this.unsubscribeOverlayOutput();
+    if (!token) return;
+    this.overlayListenChannel = this.supabase
+      .channel(cgOutputChannelName(token))
+      .on(
+        'broadcast',
+        { event: CG_OVERLAY_BROADCAST_EVENT },
+        (message: { payload?: unknown }) => {
+          const output = normalizePublicOutput(message.payload);
+          this.zone.run(() => onSync(output));
+        },
+      )
+      .subscribe();
+  }
+
+  async unsubscribeOverlayOutput(): Promise<void> {
+    if (!this.overlayListenChannel) return;
+    const channel = this.overlayListenChannel;
+    this.overlayListenChannel = null;
+    await this.supabase.removeChannel(channel);
+  }
+
+  private async publishOverlayOutputs(
+    tokens: Array<string | null | undefined>,
+  ): Promise<void> {
+    const unique = [...new Set(tokens.filter((token): token is string => !!token))];
+    await Promise.all(unique.map((token) => this.publishOverlayOutput(token)));
+  }
+
+  private async publishOverlayOutput(token: string): Promise<void> {
+    const channel = await this.ensureOverlaySendChannel(token);
+    if (!channel) return;
+    const output = await this.fetchPublicOutput(token);
+    await channel.send({
+      type: 'broadcast',
+      event: CG_OVERLAY_BROADCAST_EVENT,
+      payload: output ?? {},
+    });
+  }
+
+  private async ensureOverlaySendChannel(
+    token: string,
+  ): Promise<RealtimeChannel | null> {
+    const existing = this.overlaySendChannels.get(token);
+    if (existing) return existing;
+    const pending = this.overlaySendJoins.get(token);
+    if (pending) return pending;
+
+    const join = this.joinOverlaySendChannel(token);
+    this.overlaySendJoins.set(token, join);
+    try {
+      return await join;
+    } finally {
+      this.overlaySendJoins.delete(token);
+    }
+  }
+
+  private async joinOverlaySendChannel(
+    token: string,
+  ): Promise<RealtimeChannel | null> {
+    const channel = this.supabase.channel(cgOutputChannelName(token));
+    const joined = await new Promise<boolean>((resolve) => {
+      const timer = window.setTimeout(() => resolve(false), 4000);
+      channel.subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          window.clearTimeout(timer);
+          resolve(true);
+          return;
+        }
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          window.clearTimeout(timer);
+          this.overlaySendChannels.delete(token);
+          resolve(false);
+        }
+      });
+    });
+    if (!joined) {
+      void this.supabase.removeChannel(channel);
+      return null;
+    }
+    this.overlaySendChannels.set(token, channel);
+    return channel;
   }
 }

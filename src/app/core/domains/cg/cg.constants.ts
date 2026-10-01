@@ -108,7 +108,11 @@ export const CG_ELEMENT_CATALOG: ReadonlyArray<CgElementDef> = [
   },
 ];
 
-export const CG_OVERLAY_POLL_MS = 300;
+/** Realtime broadcast topic is `cg-output:{public_token}` — same secret as `/o/:token`. */
+export const CG_OVERLAY_CHANNEL_PREFIX = 'cg-output:';
+export const CG_OVERLAY_BROADCAST_EVENT = 'sync';
+/** If Realtime drops a packet, overlay re-fetches. Not the live cue path. */
+export const CG_OVERLAY_SAFETY_POLL_MS = 30_000;
 
 /** Admin UI is always the desktop 3-pane. Phones/tablets get this layout (pinch-zoom), not a stacked reflow. Overlay `/o` and `/cg-live` stay device-width. */
 export const CG_DESKTOP_MIN_WIDTH_PX = 1280;
@@ -203,9 +207,9 @@ export const CG_LOGO_ACCEPT = 'image/png,image/webp';
 export const CG_LOGO_MAX_BYTES = 1_500_000;
 
 // Public Supabase Storage bucket — Logo images upload here instead of being
-// embedded as base64 in `payload.imageUrl`. The overlay polls its RPC every
-// CG_OVERLAY_POLL_MS forever (by design, left open in OBS); embedding the
-// image meant every poll re-transmitted the whole file via PostgREST
-// (uncached egress). A Storage URL is a few bytes and the browser caches
-// the actual image after the first load. See supabase/sql/cg-logo-storage.sql.
+// embedded as base64 in `payload.imageUrl`. Overlay used to poll the RPC
+// every 300ms with the file inside `payload` (uncached PostgREST egress).
+// A Storage URL is a few bytes; the browser caches the image. Overlay now
+// listens on Realtime and only re-fetches the RPC on connect / safety poll.
+// See supabase/sql/cg-logo-storage.sql.
 export const CG_LOGO_BUCKET = 'cg-logo';

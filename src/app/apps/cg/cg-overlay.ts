@@ -14,10 +14,10 @@ import { CgStage } from '../../core/domains/cg/cg-stage';
 import {
   CG_CUT_DURATION_MS,
   CG_DEFAULT_DURATION_MS,
-  CG_OVERLAY_POLL_MS,
+  CG_OVERLAY_SAFETY_POLL_MS,
   CgPackageLook,
 } from '../../core/domains/cg/cg.constants';
-import { CgLayer } from '../../core/domains/cg/cg.model';
+import { CgLayer, CgPublicOutput } from '../../core/domains/cg/cg.model';
 import { CgService } from '../../core/domains/cg/cg.service';
 import {
   layerIsMono,
@@ -46,7 +46,7 @@ export class CgOverlay implements OnInit, OnDestroy {
   readonly look = signal(CgPackageLook.Color);
   readonly layerIsMono = layerIsMono;
 
-  private pollId = 0;
+  private safetyPollId = 0;
   private fadeId = 0;
   private token = '';
   private lastHash = '';
@@ -56,35 +56,37 @@ export class CgOverlay implements OnInit, OnDestroy {
     this.document.documentElement.classList.add(OVERLAY_HTML_CLASS);
     this.title.setTitle('');
     this.token = this.route.snapshot.paramMap.get('token') ?? '';
+    this.cg.subscribeOverlayOutput(this.token, (output) => {
+      this.applyOutput(output, false);
+    });
     void this.refresh();
-    this.pollId = window.setInterval(() => {
+    this.safetyPollId = window.setInterval(() => {
       void this.refresh();
-    }, CG_OVERLAY_POLL_MS);
+    }, CG_OVERLAY_SAFETY_POLL_MS);
   }
 
   ngOnDestroy(): void {
-    window.clearInterval(this.pollId);
+    window.clearInterval(this.safetyPollId);
     window.clearTimeout(this.fadeId);
+    void this.cg.unsubscribeOverlayOutput();
     this.document.documentElement.classList.remove(OVERLAY_HTML_CLASS);
   }
 
   private async refresh(): Promise<void> {
     if (!this.token) {
-      this.durationMs.set(CG_DEFAULT_DURATION_MS);
-      this.setLook(CgPackageLook.Color);
-      this.applyIncoming([], true, CG_DEFAULT_DURATION_MS);
+      this.applyOutput(null, true);
       return;
     }
     const live = await this.cg.fetchPublicOutput(this.token);
-    const durationMs = normalizeDurationMs(live?.durationMs);
-    this.durationMs.set(durationMs);
-    this.setLook(normalizeLook(live?.look));
-    this.applyIncoming(live?.layers ?? [], this.firstPaint, durationMs);
+    this.applyOutput(live, this.firstPaint);
     this.firstPaint = false;
   }
 
-  private setLook(look: CgPackageLook): void {
-    this.look.set(look);
+  private applyOutput(live: CgPublicOutput | null, instant: boolean): void {
+    const durationMs = normalizeDurationMs(live?.durationMs);
+    this.durationMs.set(durationMs);
+    this.look.set(normalizeLook(live?.look));
+    this.applyIncoming(live?.layers ?? [], instant, durationMs);
   }
 
   private applyIncoming(

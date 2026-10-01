@@ -69,7 +69,7 @@
 | B4 | 回到 Panel，撥 Logo 的 On/Off toggle | tile 變淡但圖還在。**Pending** 依 Package Appear 淡出或 cut。**On air** 與 Package Output **先不要變**（還沒 Save） |
 | B5 | Save | 成功。**On air** 追上 **Pending**。約 **300ms** 內 **只有這次有變的 layer** 用 Package `duration_ms` 淡入/淡出（`0` = 瞬間 cut）。已經 On 的 layer 維持原樣，不會整場閃一次。重整後位置、圖、On/Off、Appear 還在 |
 | B6 | 點 catalog 裡灰色的 Clock / Title | 不能加（soon）。**Logo** 與 **Subtitle** 能加；加完右欄出現該 Layer 設定 |
-| B6b | `PKG_A` 加 **Subtitle**。Paste 或 Load **.txt / .srt**。點 queue 上氣。**Blank**：氣上沒字，queue 仍記住那一句並捲到該句。再 Down 從下一句繼續；Up 把剛那句拉回來。**不要 Save** | **On air** / overlay 約 300ms 換成亮起的那句，並用 **這一層 Cue** crossfade（預設 Fade 400）。**不是** Package Appear。Cue Fade / Cut **立刻**上氣（不必 Save）。字級 Scale 1 ≈ ffmpeg 16.1（畫面高 5.6%），白字、黑邊是一圈（後面 stroke、前面填色）。Subtitle desk：Up/Down/Blank 下面就是 Cue Fade/Cut + ms，然後 News/Show。Layout / On/Off / Look / Style 仍要 Save |
+| B6b | `PKG_A` 加 **Subtitle**。Paste 或 Load **.txt / .srt**。點 queue 上氣。**Blank**：氣上沒字，queue 仍記住那一句並捲到該句。再 Down 從下一句繼續；Up 把剛那句拉回來。**不要 Save** | **On air** / overlay **立刻**換成亮起的那句（Realtime broadcast，不是每 300ms poll），並用 **這一層 Cue** crossfade（預設 Fade 400）。**不是** Package Appear。Cue Fade / Cut **立刻**上氣（不必 Save）。字級 Scale 1 ≈ ffmpeg 16.1（畫面高 5.6%），白字、黑邊是一圈（後面 stroke、前面填色）。Subtitle desk：Up/Down/Blank 下面就是 Cue Fade/Cut + ms，然後 News/Show。Layout / On/Off / Look / Style 仍要 Save |
 | B7 | `PKG_A` 加第二層 Logo，兩層都 On，Save。再開 overlay。然後只 Off 其中一層，Save | overlay 裡那一層淡出；另一層 Logo **一直在、不眨眼** |
 | B8 | `PKG_A` 改 Appear = **Cut**（或 Fade ms = `0`），Save。再開 overlay，On/Off 一層再 Save | overlay **瞬間**切 Host，沒有 400ms fade。**Cue 仍 Fade**（除非那層 Cue 也是 Cut）。改回 Fade 400、Save，之後 Host 又是淡入淡出 |
 | B9 | `PKG_A` 兩層 Logo。拖第二層到第一格，看 **Pending**：後拖到前面的那層應蓋在上面。Save，overlay 順序一樣 | 沒 Save 前 **On air** / overlay 不變。數字 1 = 最後面 |
@@ -86,7 +86,7 @@
 | # | 操作 | 預期 |
 |---|---|---|
 | C1 | Copy **Package Output**，新分頁打開 | URL 是 `http://cg.localhost:4200/o/…`（正式是 `cg.tszyin.com/o/…`）。真透明底 + package 裡所有 On 的 layer。壞 token 是空白，不是 Jaxfr 登入頁 |
-| C2 | 回到後台改 Scale，**先不要 Save**，看 overlay 與 **On air** | overlay 與 On air **不變**。**Pending** 變。Save 之後約 300ms，**這一層** 更新；其他 On 的 layer 不動 |
+| C2 | 回到後台改 Scale，**先不要 Save**，看 overlay 與 **On air** | overlay 與 On air **不變**。**Pending** 變。Save 之後 overlay **立刻**更新（broadcast）；其他 On 的 layer 不動 |
 | C3 | Copy Logo 的 **Layer Output**，另開分頁 | 同樣全幅透明，只畫那顆 Logo |
 
 ### CLEANUP

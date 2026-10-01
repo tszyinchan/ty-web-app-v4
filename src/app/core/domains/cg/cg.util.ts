@@ -4,6 +4,7 @@ import {
   CG_CUT_DURATION_MS,
   CG_DEFAULT_DURATION_MS,
   CG_DESKTOP_VIEWPORT,
+  CG_OVERLAY_CHANNEL_PREFIX,
   CG_ELEMENT_CATALOG,
   CG_MAX_DURATION_MS,
   CG_PAGE_VIEWPORT,
@@ -540,6 +541,10 @@ function layoutBoxCss(
     css['height'] = `${layout.height}${unit}`;
   }
   return css;
+}
+
+export function cgOutputChannelName(token: string): string {
+  return `${CG_OVERLAY_CHANNEL_PREFIX}${token}`;
 }
 
 export function buildCgOverlayUrl(token: string, location: Location): string {

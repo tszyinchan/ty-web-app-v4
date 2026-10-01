@@ -173,12 +173,11 @@ export class CgLayerEdit implements OnInit {
       );
       layer.payload.imageUrl = '';
     } else if (isEmbeddedImageUrl(layer.payload.imageUrl)) {
-      // Never allow a pasted data: URL back in — the overlay polls this
-      // row forever, so an embedded image gets re-transmitted every poll.
-      // Use "Choose local image" instead, which uploads to Storage.
+      // Never allow a pasted data: URL — payload is sent to OBS on Save/cue
+      // (and a 30s safety RPC). Use "Choose local image" (Storage URL).
       this.notification.handleError(
         'Embedded image',
-        'Pasting an embedded image here would resend it on every overlay poll. Use Choose local image instead.',
+        'Pasting an embedded image here would put the file in payload. Use Choose local image instead.',
       );
       layer.payload.imageUrl = '';
     }
