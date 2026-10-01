@@ -36,7 +36,7 @@ This is the locked vocabulary for code, UI copy, DB, routes, and the subdomain. 
 
 **Channel / Source** stay on the Package as `role`. Clock is not Timer. Overlay is the public page implementation, not a product noun. Welcome → CG and every CG subpage (list / Panel) skip the Jaxfr page crossfade — instant swap, no 200ms fade. Other Jaxfr features keep the Aero transition. UI copy is **sentence case** (no `text-transform: uppercase` kickers/buttons). **Studio mode** (edit) is not the **Alpha / Dim** stage backdrop.
 
-**Panel layout:** one page, two columns. Left is the **Package** (main): header (Back + Package only), then **monitor section** (Studio mode switch + Take/Create + On air status, then Pending|On air or single On air), then Name / Role / Appear / Look, then a **bottom footer** with Backdrop (Alpha | Dim) on the left and Delete package / Copy OBS URL on the right (no URL text shown). Right is **Layers** (catalog + tiles + selected Layer desk). Click the selected tile again to close the desk. Package title is heavier than Layers.
+**Panel layout:** one page, two columns. Left is the **Package** (main): header (Back + Package + Alpha/Dim stage toggles, no Backdrop label), then **monitor section** (Studio mode switch + Take/Create + On air status, then Pending|On air or single On air), then Name / Role / Appear / Look, then a **bottom footer** with Delete package / Copy OBS URL on the right (no URL text shown). Right is **Layers** (Layers title + Alpha/Dim toggles + catalog + tiles + selected Layer desk). Click the selected tile again to close the desk. Package title is heavier than Layers.
 
 **Edit mode (per package, localStorage `cg-package-edit-mode:{id}`):**
 - **Studio mode** ON (default): two monitors Pending \| On air on the **Package** column. Package mix waits for **Take**: name, role, Appear, Package Look, Layer existence / On-Off / z-order. **Layer desk is always Direct** — layout, Layer Look, image, News/Show, and cue write through to DB + On air immediately (debounced), even while Package Studio is on. Subtitle cue stays the live path it already was.
@@ -78,7 +78,7 @@ RPCs: `tyapp_cg_package_soft_delete_single_record`, `tyapp_cg_layer_soft_delete_
 **On air / Pending:**
 - **Studio mode:** two small 16:9 Stages — **Pending left**, **On air right**. On air = last Save (OBS). Pending = draft. Save copies Pending onto On air. New unsaved Package: On air empty.
 - **Direct:** one On air Stage (draft === air). Auto-save + broadcast on change.
-- Live cue (Up / Down / Blank / Paste / Load) **and Cue Fade / Cut** always update On air immediately in both modes. Alpha / Dim backdrop toggle lives under **Backdrop** in the left footer (Package) and on the Layer desk.
+- Live cue (Up / Down / Blank / Paste / Load) **and Cue Fade / Cut** always update On air immediately in both modes. Alpha / Dim stage toggles sit next to **Package** (left monitors) and **Layers** (tiles + Layer desk) — no Backdrop label.
 
 **Save scope:**
 - **Studio mode:** **Take** applies name, role, Appear, Package Look, and every Layer's existence / On-Off / z-order — not instant. Layer desk content (layout, Layer Look, image, News/Show) and subtitle cue already write through without Take.
@@ -86,7 +86,7 @@ RPCs: `tyapp_cg_package_soft_delete_single_record`, `tyapp_cg_layer_soft_delete_
 
 **Layer desk monitors:** always a single **On air** preview for that one Layer (Layer is always Direct — not a second Studio switch). Own local Alpha/Dim backdrop; does not replace Package monitors. Package Look/Appear on that preview follow last Take (On air package) when Studio is on.
 
-**Logo / Layer desk shell:** Tiles = chrome on top (⠿ + z + On/Off), Stage thumb in the middle, **name** on the bottom (custom `name`, or Element type if blank). Desk splits left/right: left = settings (larger unlabeled On air Stage ~450px, Name, Look Color/B&W, then a Package-style footer: Backdrop | Delete layer / 📋); right = visual config (Source / Place for Logo, Cue / Style for Subtitle). Package Look is the master bus — Package B&W greys every Layer even if Layer is Color. No Inherit / Follow package. Additive SQL: `supabase/sql/cg-layer-name.sql`.
+**Logo / Layer desk shell:** Tiles = chrome on top (⠿ + z + On/Off), Stage thumb in the middle, **name** on the bottom (custom `name`, or Element type if blank). Desk splits left/right: left = settings (larger unlabeled Stage ~450px, Name, Look Color/B&W, footer Delete layer / 📋); right = visual config (Source / Place for Logo, Cue / Style for Subtitle). Layers column header holds Alpha/Dim for tiles + desk. Package Look is the master bus — Package B&W greys every Layer even if Layer is Color. No Inherit / Follow package. Additive SQL: `supabase/sql/cg-layer-name.sql`.
 
 Greyscale is per-layer host filter with Package `duration_ms`; it must not change z-order.
 

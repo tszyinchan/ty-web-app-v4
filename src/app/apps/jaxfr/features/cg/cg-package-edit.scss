@@ -322,24 +322,16 @@
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 12px 16px;
   padding: 10px 16px;
   border-top: 1px solid var(--app-card-border);
-}
-
-.cg-backdrop {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 0;
 }
 
 .cg-foot-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-left: auto;
   align-items: center;
 }
 
@@ -373,6 +365,7 @@
 .cg-stage-toggles {
   display: flex;
   gap: 6px;
+  flex-shrink: 0;
 }
 
 .cg-body {

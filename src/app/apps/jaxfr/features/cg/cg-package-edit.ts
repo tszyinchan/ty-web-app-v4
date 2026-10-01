@@ -118,7 +118,8 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
   );
   isDirty = signal(false);
   isSaveDisabled = signal(true);
-  backdrop = signal(CgPreviewBackdrop.Dim);
+  readonly packageBackdrop = this.cg.packageBackdrop;
+  readonly layersBackdrop = this.cg.layersBackdrop;
   private lastFadeMs = CG_DEFAULT_DURATION_MS;
   private layerDragged = false;
   private autoSaveTimer = 0;

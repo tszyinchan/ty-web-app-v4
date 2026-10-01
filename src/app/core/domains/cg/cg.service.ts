@@ -11,6 +11,7 @@ import {
   CgPackageEditMode,
   CgPackageLook,
   CgPackageRole,
+  CgPreviewBackdrop,
 } from './cg.constants';
 import { CgLayer, CgLayerDraft, CgLayerPayload, CgPackage, CgPublicOutput } from './cg.model';
 import {
@@ -58,6 +59,10 @@ export class CgService {
   onAirLayers = signal<CgLayerDraft[]>([]);
   /** Direct = live to air; Studio = Pending then Save. Per package in localStorage. */
   editMode = signal(CgPackageEditMode.Studio);
+  /** Panel Stage checkerboard / dim — Package column monitors. */
+  packageBackdrop = signal(CgPreviewBackdrop.Dim);
+  /** Panel Stage checkerboard / dim — Layers tiles + Layer desk. */
+  layersBackdrop = signal(CgPreviewBackdrop.Dim);
 
   loadEditModeForPackage(packageId: string | null): void {
     this.editMode.set(readPackageEditMode(packageId));

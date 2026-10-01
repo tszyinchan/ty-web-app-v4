@@ -63,7 +63,7 @@
 |---|---|---|
 | B0 | 打開 `PKG_A`（Studio mode 開）。關掉 **Studio mode** switch（在監看區上方） | 單監看 176px；**Take** 隱藏（留 spacer）。再開 → 兩監看與 **Take**（在 On air 狀態左邊）回來 |
 | B0a | Studio mode **關**（Direct）：撥 Logo On/Off，或改 Look | ~0.5s auto-save；無 Take 鈕 |
-| B1 | Studio mode 開。監看區上方：Studio mode switch、緊挨右邊的 **Take**、右側 ☁ On air。頂列只有 Back + Package。左下 Backdrop ⬚/⬛、Delete package、📋。點 Logo tile | tile：**上** ⠿+序號+On-Off，**下** 名稱（無自訂則顯示 Logo）。desk **左**較大無標籤 Stage（~450px）+ Name + Look（Color/B&W）+ 底 footer（Backdrop \| Delete layer / 📋）；**右** Source/Place |
+| B1 | Studio mode 開。監看區上方：Studio mode switch、緊挨右邊的 **Take**、右側 ☁ On air。頂列 Back + Package + ⬚/⬛。左下 Delete package、📋。Layers 標題旁也有 ⬚/⬛。點 Logo tile | tile：**上** ⠿+序號+On-Off，**下** 名稱。desk **左**較大無標籤 Stage + Name + Look + Delete layer / 📋；**右** Source/Place。無 Backdrop 標題 |
 | B1a | `PKG_A`（Studio）加新 Logo（未 Take）。看 desk 小監看 | desk 可預覽草稿；**尚未有 DB id 前** Layer Direct 不會寫上氣。Take 後才有 layer id，之後改內容才 live |
 | B1b | 已 Take 過的 Logo：Choose local image | ~0.5s 後 Package **On air** 與 overlay 換圖（不必再 Take）。Storage URL |
 | B2 | 改 X/Y/Width/Scale（Studio，已有 layer id） | Package Pending 與 **On air** 都動；不必 Take |

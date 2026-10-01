@@ -28,7 +28,6 @@ import {
   CgElementType,
   CgLayerLook,
   CgPackageLook,
-  CgPreviewBackdrop,
   CgSubtitlePreset,
 } from '../../../../core/domains/cg/cg.constants';
 import { CgLayerDraft } from '../../../../core/domains/cg/cg.model';
@@ -72,9 +71,8 @@ export class CgLayerEdit implements OnInit {
   readonly scriptAccept = '.txt,.srt,text/plain,application/x-subrip';
   readonly cutMs = CG_CUT_DURATION_MS;
   readonly maxDurationMs = CG_MAX_DURATION_MS;
-  readonly backdrops = CgPreviewBackdrop;
+  readonly layersBackdrop = this.cg.layersBackdrop;
   readonly copyTargetId = signal('');
-  readonly backdrop = signal(CgPreviewBackdrop.Dim);
   private lastCueFadeMs = CG_DEFAULT_DURATION_MS;
 
   private readonly params = toSignal(this.route.paramMap, { requireSync: true });

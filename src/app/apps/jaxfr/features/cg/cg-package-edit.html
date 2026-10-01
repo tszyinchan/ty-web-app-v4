@@ -11,6 +11,30 @@
           <mat-icon>west</mat-icon>
         </a>
         <h2 class="cg-col-title">Package</h2>
+        <div class="cg-stage-toggles" role="group" aria-label="Package stage backdrop">
+          <button
+            mat-stroked-button
+            type="button"
+            class="cg-seg-btn cg-icon-btn"
+            [class.selected]="packageBackdrop() === backdrops.Checkerboard"
+            title="Alpha"
+            aria-label="Alpha backdrop"
+            (click)="packageBackdrop.set(backdrops.Checkerboard)"
+          >
+            ⬚
+          </button>
+          <button
+            mat-stroked-button
+            type="button"
+            class="cg-seg-btn cg-icon-btn"
+            [class.selected]="packageBackdrop() === backdrops.Dim"
+            title="Dim"
+            aria-label="Dim backdrop"
+            (click)="packageBackdrop.set(backdrops.Dim)"
+          >
+            ⬛
+          </button>
+        </div>
       </header>
 
       <section class="cg-monitors-pane">
@@ -79,7 +103,7 @@
               [layers]="layers()"
               [packageLook]="pendingLook()"
               [durationMs]="packageDurationMs()"
-              [backdrop]="backdrop()"
+              [backdrop]="packageBackdrop()"
             />
           } @else {
             <app-cg-mix-preview
@@ -87,14 +111,14 @@
               [layers]="layers()"
               [packageLook]="pendingLook()"
               [durationMs]="packageDurationMs()"
-              [backdrop]="backdrop()"
+              [backdrop]="packageBackdrop()"
             />
             <app-cg-mix-preview
               label="On air"
               [layers]="onAirLayers()"
               [packageLook]="onAirLook()"
               [durationMs]="onAirDurationMs()"
-              [backdrop]="backdrop()"
+              [backdrop]="packageBackdrop()"
             />
           }
         </div>
@@ -181,33 +205,6 @@
       </section>
 
       <footer class="cg-left-foot">
-        <div class="cg-backdrop">
-          <span class="cg-kicker">Backdrop</span>
-          <div class="cg-stage-toggles">
-            <button
-              mat-stroked-button
-              type="button"
-              class="cg-seg-btn cg-icon-btn"
-              [class.selected]="backdrop() === backdrops.Checkerboard"
-              title="Alpha"
-              aria-label="Alpha backdrop"
-              (click)="backdrop.set(backdrops.Checkerboard)"
-            >
-              ⬚
-            </button>
-            <button
-              mat-stroked-button
-              type="button"
-              class="cg-seg-btn cg-icon-btn"
-              [class.selected]="backdrop() === backdrops.Dim"
-              title="Dim"
-              aria-label="Dim backdrop"
-              (click)="backdrop.set(backdrops.Dim)"
-            >
-              ⬛
-            </button>
-          </div>
-        </div>
         <div class="cg-foot-actions">
           @if (packageId) {
             <button
@@ -238,6 +235,30 @@
     <div class="cg-right">
       <header class="cg-col-head">
         <h2 class="cg-col-title">Layers</h2>
+        <div class="cg-stage-toggles" role="group" aria-label="Layers stage backdrop">
+          <button
+            mat-stroked-button
+            type="button"
+            class="cg-seg-btn cg-icon-btn"
+            [class.selected]="layersBackdrop() === backdrops.Checkerboard"
+            title="Alpha"
+            aria-label="Alpha backdrop"
+            (click)="layersBackdrop.set(backdrops.Checkerboard)"
+          >
+            ⬚
+          </button>
+          <button
+            mat-stroked-button
+            type="button"
+            class="cg-seg-btn cg-icon-btn"
+            [class.selected]="layersBackdrop() === backdrops.Dim"
+            title="Dim"
+            aria-label="Dim backdrop"
+            (click)="layersBackdrop.set(backdrops.Dim)"
+          >
+            ⬛
+          </button>
+        </div>
         <div class="cg-catalog">
           @for (el of catalog; track el.type) {
             <button
@@ -299,7 +320,7 @@
                 </button>
               </div>
               <div class="cg-tile-stage">
-                <app-cg-stage [preview]="true" [backdrop]="backdrop()">
+                <app-cg-stage [preview]="true" [backdrop]="layersBackdrop()">
                   <app-cg-layer-view
                     [elementType]="layer.element_type"
                     [layout]="layoutSnapshot(layer)"

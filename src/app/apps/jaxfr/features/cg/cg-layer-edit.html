@@ -12,7 +12,7 @@
             [layers]="[layer]"
             [packageLook]="airPackageLook()"
             [durationMs]="airPackageDurationMs()"
-            [backdrop]="backdrop()"
+            [backdrop]="layersBackdrop()"
           />
         </div>
         <label class="cg-field cg-layer-name">
@@ -46,33 +46,6 @@
           }
         </div>
         <footer class="cg-desk-foot">
-          <div class="cg-backdrop">
-            <span class="cg-kicker">Backdrop</span>
-            <div class="cg-stage-toggles">
-              <button
-                mat-stroked-button
-                type="button"
-                class="cg-seg-btn cg-icon-btn"
-                [class.selected]="backdrop() === backdrops.Checkerboard"
-                title="Alpha"
-                aria-label="Alpha backdrop"
-                (click)="backdrop.set(backdrops.Checkerboard)"
-              >
-                ⬚
-              </button>
-              <button
-                mat-stroked-button
-                type="button"
-                class="cg-seg-btn cg-icon-btn"
-                [class.selected]="backdrop() === backdrops.Dim"
-                title="Dim"
-                aria-label="Dim backdrop"
-                (click)="backdrop.set(backdrops.Dim)"
-              >
-                ⬛
-              </button>
-            </div>
-          </div>
           <div class="cg-foot-actions">
             <button
               mat-stroked-button
