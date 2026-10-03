@@ -27,6 +27,11 @@ export class CgMixPreview {
   readonly backdrop = input(CgPreviewBackdrop.Dim);
   /** Layer desk hero — wider than Package's 176px pair. */
   readonly wide = input(false);
+  /**
+   * Desk preview: show the layer even when Package On/Off is Off,
+   * so you can still edit while it's hidden from the mix / OBS.
+   */
+  readonly forceVisible = input(false);
   readonly layerIsMono = layerIsMono;
 
   layoutSnapshot(layer: CgLayerDraft): CgLayerDraft['layout'] {

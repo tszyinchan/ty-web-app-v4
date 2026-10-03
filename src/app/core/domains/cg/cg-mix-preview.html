@@ -9,7 +9,7 @@
       [elementType]="layer.element_type"
       [layout]="layoutSnapshot(layer)"
       [payload]="payloadSnapshot(layer)"
-      [visible]="layer.visible"
+      [visible]="forceVisible() || layer.visible"
       [durationMs]="durationMs()"
       [sortOrder]="layer.sort_order"
       [mono]="layerIsMono(layer.look, packageLook())"

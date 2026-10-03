@@ -31,7 +31,7 @@ import {
   writePackageEditMode,
 } from './cg.util';
 
-/** Debounce Layer-desk content writes (Studio Package still waits for Take). */
+/** Debounce Layer content writes (always Direct — not Package Take). */
 const LAYER_CONTENT_AUTOSAVE_MS = 450;
 
 @Injectable({ providedIn: 'root' })
@@ -53,6 +53,11 @@ export class CgService {
   draftKey = signal<string | null | undefined>(undefined);
   draftItem = signal<Partial<CgPackage> | null>(null);
   draftLayers = signal<CgLayerDraft[]>([]);
+  /**
+   * Clean baseline for Package Unsaved / Take — mix only (package fields +
+   * layer membership / visible / order). Layer content is never in here;
+   * it is always Direct and does not dirty the Package.
+   */
   draftOriginal = signal('');
   /** Last Save (+ live cue). Empty until the package exists in DB. */
   onAirItem = signal<Partial<CgPackage> | null>(null);
@@ -168,6 +173,10 @@ export class CgService {
     drafts: CgLayerDraft[],
     options?: { quiet?: boolean },
   ): Promise<string | null> {
+    // Layer content is always Direct — flush pending desk writes before
+    // mix Take/Create so a reload cannot clobber unsaved content.
+    await this.flushPendingLayerContent();
+
     const isNew = !pkg.tb_tyapp_cgpk_id;
     const {
       tb_tyapp_cgpk_seq_no,
@@ -235,28 +244,37 @@ export class CgService {
 
       const savedLayers: CgLayer[] = [];
       for (const [index, draft] of drafts.entries()) {
-        const row = {
-          package_id: packageId,
-          element_type: draft.element_type,
-          public_token: draft.public_token,
-          name: draft.name?.trim() ?? '',
-          layout: draft.layout,
-          payload: draft.payload,
-          visible: draft.visible,
-          look: normalizeLayerLook(draft.look),
-          sort_order: index,
-          status: draft.status,
-          updated_at: new Date().toISOString(),
-        };
-
+        // Take / Package autosave owns mix only for existing rows. New rows
+        // still need a full insert (first Create). Content edits after that
+        // go through persistLayerContent / cue patches — never Take.
         const layerQuery = draft.tb_tyapp_cgly_id
           ? this.supabase
               .from('tyapp_cg_layer')
-              .update(row)
+              .update({
+                visible: draft.visible,
+                sort_order: index,
+                status: draft.status,
+                updated_at: new Date().toISOString(),
+              })
               .eq('tb_tyapp_cgly_id', draft.tb_tyapp_cgly_id)
               .select()
               .single()
-          : this.supabase.from('tyapp_cg_layer').insert(row).select().single();
+          : this.supabase
+              .from('tyapp_cg_layer')
+              .insert({
+                package_id: packageId,
+                element_type: draft.element_type,
+                public_token: draft.public_token,
+                name: draft.name?.trim() ?? '',
+                layout: draft.layout,
+                payload: draft.payload,
+                visible: draft.visible,
+                look: normalizeLayerLook(draft.look),
+                sort_order: index,
+                status: draft.status,
+              })
+              .select()
+              .single();
 
         const { data, error } = await layerQuery;
         if (error) throw error;
@@ -380,18 +398,54 @@ export class CgService {
     this.clearOnAir();
   }
 
-  draftSnapshot(): {
-    package: Partial<CgPackage> | null;
-    layers: CgLayerDraft[];
+  /**
+   * Package Unsaved / Take baseline — mix only. Layer name / layout /
+   * look / payload are never compared here (always Direct).
+   */
+  mixSnapshot(): {
+    package: {
+      name: string;
+      role: CgPackage['role'];
+      duration_ms: number;
+      look: CgPackage['look'];
+      status: CgPackage['status'];
+    } | null;
+    layers: Array<{
+      clientId: string;
+      tb_tyapp_cgly_id: string | null;
+      element_type: CgLayerDraft['element_type'];
+      visible: boolean;
+      sort_order: number;
+    }>;
   } {
+    const pkg = this.draftItem();
     return {
-      package: this.draftItem(),
-      layers: this.draftLayers(),
+      package: pkg
+        ? {
+            name: pkg.name?.trim() ?? '',
+            role: pkg.role ?? CgPackageRole.Channel,
+            duration_ms: normalizeDurationMs(pkg.duration_ms),
+            look: normalizeLook(pkg.look),
+            status: pkg.status ?? RecordStatus.Active,
+          }
+        : null,
+      layers: this.draftLayers().map((layer, index) => ({
+        clientId: layer.clientId,
+        tb_tyapp_cgly_id: layer.tb_tyapp_cgly_id ?? null,
+        element_type: layer.element_type,
+        visible: layer.visible,
+        sort_order: index,
+      })),
     };
   }
 
+  /** @deprecated Prefer mixSnapshot — kept name for call sites that mean mix. */
+  draftSnapshot(): ReturnType<CgService['mixSnapshot']> {
+    return this.mixSnapshot();
+  }
+
   markDraftClean(): void {
-    this.draftOriginal.set(JSON.stringify(this.draftSnapshot()));
+    this.draftOriginal.set(JSON.stringify(this.mixSnapshot()));
   }
 
   private captureOnAir(): void {
@@ -415,13 +469,15 @@ export class CgService {
   }
 
   /**
-   * Layer desk is always Direct: layout / Look / payload go to DB + On air
-   * even while Package Studio is waiting for Take (visibility / z-order /
-   * package fields still wait). Skipped in Package Direct — full autosave
-   * already covers it. No-op until the layer row exists in DB.
+   * Layer content is always Direct — layout / Look / payload / name go to
+   * DB + On air whether Package Studio is waiting for Take or not. Mix
+   * (visible / z-order / package fields) still waits for Take in Studio.
+   * No-op until the layer row exists in DB.
    */
   schedulePersistLayerContent(clientId: string): void {
-    if (this.isDirectEditMode()) return;
+    // Layer Direct: Package On air / desk mirrors content immediately;
+    // DB write stays debounced. Mix (visible / z-order) is untouched.
+    this.mirrorLayerContentToOnAir(clientId);
     const previous = this.layerContentPersistTimers.get(clientId);
     if (previous !== undefined) window.clearTimeout(previous);
     const handle = window.setTimeout(() => {
@@ -431,8 +487,21 @@ export class CgService {
     this.layerContentPersistTimers.set(clientId, handle);
   }
 
+  /** Run any debounced desk content writes now (before mix Take/Create). */
+  async flushPendingLayerContent(): Promise<void> {
+    const pending = [...this.layerContentPersistTimers.keys()];
+    for (const clientId of pending) {
+      const handle = this.layerContentPersistTimers.get(clientId);
+      if (handle !== undefined) window.clearTimeout(handle);
+      this.layerContentPersistTimers.delete(clientId);
+    }
+    await Promise.all(pending.map((id) => this.persistLayerContent(id)));
+    for (let i = 0; i < 40 && this.layerContentPersistInFlight.size > 0; i++) {
+      await new Promise<void>((resolve) => window.setTimeout(resolve, 50));
+    }
+  }
+
   async persistLayerContent(clientId: string): Promise<boolean> {
-    if (this.isDirectEditMode()) return false;
     const current = this.draftLayers().find((layer) => layer.clientId === clientId);
     if (!current?.tb_tyapp_cgly_id) return false;
     if (this.layerContentPersistInFlight.has(clientId)) {
@@ -529,9 +598,11 @@ export class CgService {
     const layerId = current.tb_tyapp_cgly_id;
     if (!layerId) return true;
 
-    const originalPayload = this.originalLayerPayload(clientId) ?? current.payload;
+    // Baseline = last On air content so a racing Style edit that has not
+    // finished Layer Direct yet is not promoted by a cue click.
+    const baseline = this.airLayerPayload(clientId) ?? current.payload;
     const nextSaved: CgLayerPayload = {
-      ...originalPayload,
+      ...baseline,
       lines: [...payload.lines],
       index: payload.index,
       cursor: payload.cursor,
@@ -599,9 +670,9 @@ export class CgService {
       return true;
     }
 
-    const originalPayload = this.originalLayerPayload(clientId) ?? current.payload;
+    const baseline = this.airLayerPayload(clientId) ?? current.payload;
     const nextSaved: CgLayerPayload = {
-      ...originalPayload,
+      ...baseline,
       transition: { duration_ms: ms },
     };
 
@@ -729,29 +800,17 @@ export class CgService {
     }
   }
 
-  private originalLayerPayload(clientId: string): CgLayerPayload | null {
-    const raw = this.draftOriginal();
-    if (!raw) return null;
-    try {
-      const snapshot = JSON.parse(raw) as { layers: CgLayerDraft[] };
-      const layer = snapshot.layers.find((row) => row.clientId === clientId);
-      return layer
-        ? { ...layer.payload, lines: [...layer.payload.lines] }
-        : null;
-    } catch {
-      return null;
-    }
+  /** Last On-air payload for this layer (cue merges into this, not mix baseline). */
+  private airLayerPayload(clientId: string): CgLayerPayload | null {
+    const layer = this.onAirLayers().find((row) => row.clientId === clientId);
+    return layer
+      ? { ...layer.payload, lines: [...layer.payload.lines] }
+      : null;
   }
 
   private rememberLayerCue(clientId: string, payload: CgLayerPayload): void {
-    const raw = this.draftOriginal();
-    if (!raw) return;
-    try {
-      const snapshot = JSON.parse(raw) as {
-        package: Partial<CgPackage> | null;
-        layers: CgLayerDraft[];
-      };
-      snapshot.layers = snapshot.layers.map((layer) =>
+    this.onAirLayers.update((list) =>
+      list.map((layer) =>
         layer.clientId === clientId
           ? {
               ...layer,
@@ -763,37 +822,13 @@ export class CgService {
               },
             }
           : layer,
-      );
-      this.draftOriginal.set(JSON.stringify(snapshot));
-      this.onAirLayers.update((list) =>
-        list.map((layer) =>
-          layer.clientId === clientId
-            ? {
-                ...layer,
-                payload: {
-                  ...layer.payload,
-                  lines: [...payload.lines],
-                  index: payload.index,
-                  cursor: payload.cursor,
-                },
-              }
-            : layer,
-        ),
-      );
-    } catch {
-      return;
-    }
+      ),
+    );
   }
 
   private rememberLayerTransition(clientId: string, durationMs: number): void {
-    const raw = this.draftOriginal();
-    if (!raw) return;
-    try {
-      const snapshot = JSON.parse(raw) as {
-        package: Partial<CgPackage> | null;
-        layers: CgLayerDraft[];
-      };
-      snapshot.layers = snapshot.layers.map((layer) =>
+    this.onAirLayers.update((list) =>
+      list.map((layer) =>
         layer.clientId === clientId
           ? {
               ...layer,
@@ -803,14 +838,23 @@ export class CgService {
               },
             }
           : layer,
-      );
-      this.draftOriginal.set(JSON.stringify(snapshot));
-    } catch {
-      return;
-    }
+      ),
+    );
   }
 
-  /** After Layer Direct content save: keep package dirty only for mix fields. */
+  /** Push draft content onto On air without touching mix (visible / sort). */
+  private mirrorLayerContentToOnAir(clientId: string): void {
+    const current = this.draftLayers().find((layer) => layer.clientId === clientId);
+    if (!current) return;
+    this.rememberLayerContent(clientId, {
+      name: current.name?.trim() ?? '',
+      layout: current.layout,
+      look: normalizeLayerLook(current.look),
+      payload: normalizeLayerPayload(current.element_type, current.payload),
+    });
+  }
+
+  /** After Layer Direct content save: promote content on air (mix unchanged). */
   private rememberLayerContent(
     clientId: string,
     next: {
@@ -835,30 +879,23 @@ export class CgService {
         : layer;
 
     this.onAirLayers.update((list) => list.map(apply));
-
-    const raw = this.draftOriginal();
-    if (!raw) return;
-    try {
-      const snapshot = JSON.parse(raw) as {
-        package: Partial<CgPackage> | null;
-        layers: CgLayerDraft[];
-      };
-      snapshot.layers = snapshot.layers.map(apply);
-      this.draftOriginal.set(JSON.stringify(snapshot));
-    } catch {
-      return;
-    }
   }
 
   private appendOriginalLayer(draft: CgLayerDraft): void {
     const raw = this.draftOriginal();
     if (!raw) return;
     try {
-      const snapshot = JSON.parse(raw) as {
-        package: Partial<CgPackage> | null;
-        layers: CgLayerDraft[];
-      };
-      snapshot.layers = [...snapshot.layers, structuredClone(draft)];
+      const snapshot = JSON.parse(raw) as ReturnType<CgService['mixSnapshot']>;
+      snapshot.layers = [
+        ...snapshot.layers,
+        {
+          clientId: draft.clientId,
+          tb_tyapp_cgly_id: draft.tb_tyapp_cgly_id ?? null,
+          element_type: draft.element_type,
+          visible: draft.visible,
+          sort_order: snapshot.layers.length,
+        },
+      ];
       this.draftOriginal.set(JSON.stringify(snapshot));
       this.onAirLayers.update((list) => [...list, structuredClone(draft)]);
     } catch {

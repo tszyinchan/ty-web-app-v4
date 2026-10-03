@@ -316,7 +316,7 @@ export class CgLayerEdit implements OnInit {
   }
 
   packageIsMono(): boolean {
-    return isCgMono(this.cg.draftItem()?.look);
+    return isCgMono(this.airPackageLook());
   }
 
   /** Package Look / Appear still follow Studio Take — use On air when set. */

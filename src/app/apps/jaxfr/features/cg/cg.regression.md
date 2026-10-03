@@ -67,11 +67,13 @@
 | B1b | 開任一 Layer desk → Delete layer → confirm | 留在同一 Package Panel（`/cg/edit/:id`），**不要**跳 `/login`。draft 少一 tile；Studio 下需 Take 才寫 DB |
 | B1c | List 點 package → Panel；點 tile 開 desk → 再點同 tile 關；Back → list；New package | URL 皆為絕對 `/cg/…`，不要進 `/login`。Overlay 複製鈕產生 `cg.*.tszyin.com/o/…`（或 localhost） |
 | B1a | `PKG_A`（Studio）加新 Logo（未 Take）。看 desk 小監看 | desk 可預覽草稿；**尚未有 DB id 前** Layer Direct 不會寫上氣。Take 後才有 layer id，之後改內容才 live |
+| B1d | Studio：改已有 id 的 Logo Scale／圖。**不要**碰 On/Off | Package **不**變 Unsaved／Take；Package On air／overlay 內容立刻變 |
+| B1e | Studio：Off Logo → Take → 開 desk 改 Scale | Package Pending／On air **不**畫該層；desk 監看**仍**顯示。改完 On → Take 才回混音 |
 | B1b | 已 Take 過的 Logo：Choose local image | ~0.5s 後 Package **On air** 與 overlay 換圖（不必再 Take）。Storage URL |
-| B2 | 改 X/Y/Width/Scale（Studio，已有 layer id） | Package Pending 與 **On air** 都動；不必 Take |
+| B2 | 改 X/Y/Width/Scale（Studio，已有 layer id） | Package Pending 與 **On air** 都動（內容 Direct）；不必 Take；Package 不 Unsaved |
 | B3 | 頂列 Package / Layers 標題旁 **Alpha / Dim** | 監看底換（棋盤 / 暗底） |
-| B4 | Studio mode：撥 Logo On/Off | tile 變淡。Pending 淡出。On air 先不變（混音仍等 Take） |
-| B5 | **Take**（Studio） | On air 追上 Pending（On/Off、排序、Package 欄位） |
+| B4 | Studio mode：撥 Logo On/Off | tile 變淡但仍看得到縮圖。Pending 淡出。On air 先不變（混音仍等 Take）。開 desk：監看**仍顯示**該層。Package **變** Unsaved |
+| B5 | **Take**（Studio） | On air 追上 Pending 的 On/Off、排序、Package 欄位；**不**靠 Take 重寫 Layer 內容 |
 | B6 | 點 catalog 裡灰色的 Clock / Title | 不能加（soon）。**Logo** 與 **Subtitle** 能加 |
 | B6b | 加 Subtitle，Cue 上氣，**不要 Take** | overlay 立刻換句。Layout / Layer Look / Style 在有 id 後也立刻上氣（Layer Direct） |
 | B7 | 兩層 Logo On，Take。再開 overlay。Off 一層再 Take | 那層淡出；另一層不眨眼 |
@@ -79,9 +81,9 @@
 | B9 | 拖排序（Studio），再 Take | 沒 Take 前 On air / overlay 不變 |
 | B10 | Package Look = B&W（Studio），再 Take | Take 前 On air 仍彩色（Package 欄位） |
 | B11 | Subtitle Look = Color，Package B&W，Take | 全部仍灰 |
-| B12 | Style = Show，不要 Take（已有 id） | Package On air / overlay 改 Show（Layer Direct） |
+| B12 | Style = Show，不要 Take（已有 id） | Package On air / overlay 改 Show（Layer Direct）；Package 不 Unsaved |
 | B13 | Subtitle Copy to `PKG_B` | 新 Layer、Blank |
-| B14 | 未 Take 改 Scale（Studio，已有 id） | Package On air 也變（Layer Direct）；On/Off 仍要 Take |
+| B14 | 未 Take 改 Scale（Studio，已有 id） | Package On air 也變（Layer Direct）；On/Off 仍要 Take；Package 不因 Scale 而 Unsaved |
 | B15 | Cue = Cut。↓（cue down） | 字幕瞬間換句 |
 | B16 | 視窗縮到手機寬 | 仍是桌面三欄 |
 

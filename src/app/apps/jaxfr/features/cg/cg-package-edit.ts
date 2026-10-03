@@ -165,7 +165,9 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
   ngDoCheck(): void {
     const original = this.cg.draftOriginal();
     if (!original || !this.item()) return;
-    const currentlyDirty = JSON.stringify(this.cg.draftSnapshot()) !== original;
+    // Mix only — Layer content never dirties Package / Take.
+    const currentlyDirty =
+      JSON.stringify(this.cg.mixSnapshot()) !== original;
     if (this.isDirty() !== currentlyDirty) {
       this.isDirty.set(currentlyDirty);
     }
