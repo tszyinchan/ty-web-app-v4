@@ -63,7 +63,7 @@
 |---|---|---|
 | B0 | 打開 `PKG_A`（Studio mode 開）。關掉 **Studio mode** switch（在監看區上方） | 單監看 176px；**Take** 隱藏（留 spacer）。再開 → 兩監看與 **Take**（在 On air 狀態左邊）回來 |
 | B0a | Studio mode **關**（Direct）：撥 Logo On/Off，或改 Look | ~0.5s auto-save；無 Take 鈕 |
-| B1 | Studio mode 開。監看區上方：Studio mode switch、緊挨右邊的 **Take**、右側 ☁ On air。頂列 Back + Package + Alpha/Dim + Copy OBS。左下深紅白字 Delete package。Layers 標題旁 Alpha/Dim。點 Logo tile | tile：**上** drag_indicator+序號+On-Off，**下** 名稱。desk **左** Stage + Name + Look + 深紅白字 Delete layer + Copy layer OBS；**右** Source/Place |
+| B1 | Studio mode 開。監看區上方：Studio mode switch、緊挨右邊的 **Take**、右側 ☁ On air。頂列 Back + Package + Alpha/Dim + Copy OBS。左下深紅白字 Delete package。Layers 標題旁 Alpha/Dim。點 Logo tile | tile：**上** drag_indicator+序號+On-Off，**下** 名稱。desk **左** Stage + Name\|Look 並排 + Source + Copy to package + 深紅白字 Delete layer + Copy layer OBS；**右** Place |
 | B1b | 開任一 Layer desk → Delete layer → confirm | 留在同一 Package Panel（`/cg/edit/:id`），**不要**跳 `/login`。draft 少一 tile；Studio 下需 Take 才寫 DB |
 | B1c | List 點 package → Panel；點 tile 開 desk → 再點同 tile 關；Back → list；New package | URL 皆為絕對 `/cg/…`，不要進 `/login`。Overlay 複製鈕產生 `cg.*.tszyin.com/o/…`（或 localhost） |
 | B1a | `PKG_A`（Studio）加新 Logo（未 Take）。看 desk 小監看 | desk 可預覽草稿；**尚未有 DB id 前** Layer Direct 不會寫上氣。Take 後才有 layer id，之後改內容才 live |
@@ -78,6 +78,8 @@
 | B6b | 加 Subtitle，Cue 上氣，**不要 Take** | overlay 立刻換句。Layout / Layer Look / Style 在有 id 後也立刻上氣（Layer Direct） |
 | B7 | 兩層 Logo On，Take。再開 overlay。Off 一層再 Take | 那層淡出；另一層不眨眼 |
 | B8 | Appear = Cut，Take。On/Off 再 Take | Host 瞬間切 |
+| B8a | Package Appear = Fade。切 Logo Look Color↔B&W（不要改 On/Off） | Look **瞬間**切（不跟 Package Fade）；On/Off 仍用 Package Appear |
+| B8b | Package Look = B&W（已 Take）。Layer Look = Color。看 tile 與 desk | tile／Package 監看／OBS **灰**；desk 大監看仍 **彩色**（Layer Look only） |
 | B9 | 拖排序（Studio），再 Take | 沒 Take 前 On air / overlay 不變 |
 | B10 | Package Look = B&W（Studio），再 Take | Take 前 On air 仍彩色（Package 欄位） |
 | B11 | Subtitle Look = Color，Package B&W，Take | 全部仍灰 |

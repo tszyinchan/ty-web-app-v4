@@ -10,41 +10,106 @@
             label=""
             [wide]="true"
             [forceVisible]="true"
+            [layerLookOnly]="true"
             [layers]="[layer]"
-            [packageLook]="airPackageLook()"
-            [durationMs]="airPackageDurationMs()"
             [backdrop]="layersBackdrop()"
           />
         </div>
-        <label class="cg-field cg-layer-name">
-          <span>Name</span>
-          <input
-            type="text"
-            [(ngModel)]="layer.name"
-            (ngModelChange)="touchPreview()"
-            [placeholder]="elementLabel(layer.element_type)"
-          />
-        </label>
-        <div class="cg-block look">
-          <h3 class="cg-block-title">Look</h3>
-          <mat-button-toggle-group
-            class="cg-seg-toggle"
-            [value]="layer.look"
-            (change)="onLayerLookToggle($event)"
-            hideSingleSelectionIndicator
-          >
-            @for (option of lookOptions; track option.value) {
-              <mat-button-toggle [value]="option.value">
-                {{ option.label }}
-              </mat-button-toggle>
-            }
-          </mat-button-toggle-group>
-          @if (packageIsMono()) {
-            <p class="cg-hint">
-              Package is B&amp;W — every Layer stays grey until Package is Color.
-            </p>
-          }
+        <div class="cg-name-look">
+          <section class="cg-block cg-layer-name">
+            <h3 class="cg-block-title">Name</h3>
+            <input
+              type="text"
+              [(ngModel)]="layer.name"
+              (ngModelChange)="touchPreview()"
+              [placeholder]="elementLabel(layer.element_type)"
+            />
+          </section>
+          <section class="cg-block look">
+            <h3 class="cg-block-title">Look</h3>
+            <mat-button-toggle-group
+              class="cg-seg-toggle"
+              [value]="layer.look"
+              (change)="onLayerLookToggle($event)"
+              hideSingleSelectionIndicator
+            >
+              @for (option of lookOptions; track option.value) {
+                <mat-button-toggle [value]="option.value">
+                  {{ option.label }}
+                </mat-button-toggle>
+              }
+            </mat-button-toggle-group>
+          </section>
         </div>
+        @if (layer.element_type === Logo) {
+          <section class="cg-block">
+            <h3 class="cg-block-title">Source</h3>
+            @if (isEmbeddedLogo(layer)) {
+              <p class="cg-hint">
+                This leftover embedded image will not save. Use Choose local
+                image.
+              </p>
+            }
+            <div class="cg-inline cg-source-pick">
+              <button
+                mat-stroked-button
+                type="button"
+                class="cg-seg-btn"
+                (click)="logoFileInput.click()"
+              >
+                Choose local image
+              </button>
+              <input
+                #logoFileInput
+                class="cg-file-input"
+                type="file"
+                [accept]="logoAccept"
+                (change)="onLogoFile(layer, $event)"
+              />
+              @if (layer.payload.fileName) {
+                <span class="cg-file-name">{{ layer.payload.fileName }}</span>
+              }
+            </div>
+            @if (!isEmbeddedLogo(layer)) {
+              <input
+                class="cg-source-url"
+                type="text"
+                [(ngModel)]="layer.payload.imageUrl"
+                (ngModelChange)="onImageUrlChange(layer)"
+                placeholder="/icons/3d/apps.png or https://…"
+                aria-label="Image URL"
+              />
+            }
+          </section>
+        }
+        <section class="cg-block">
+          <h3 class="cg-block-title">Copy to package</h3>
+          @if (copyTargets().length > 0) {
+            <div class="cg-inline">
+              <select
+                class="cg-copy-select"
+                [ngModel]="copyTargetId()"
+                (ngModelChange)="copyTargetId.set($event)"
+              >
+                <option value="">Choose…</option>
+                @for (pkg of copyTargets(); track pkg.tb_tyapp_cgpk_id) {
+                  <option [value]="pkg.tb_tyapp_cgpk_id">{{ pkg.name }}</option>
+                }
+              </select>
+              <button
+                mat-stroked-button
+                type="button"
+                class="cg-seg-btn"
+                [disabled]="!copyTargetId() || cg.loading()"
+                (click)="copyToPackage()"
+              >
+                Copy
+              </button>
+            </div>
+          } @else {
+            <span class="cg-url-placeholder">Need another saved package</span>
+          }
+        </section>
         <footer class="cg-desk-foot">
           <div class="cg-foot-actions">
             <button
@@ -72,59 +137,6 @@
 
       <div class="cg-desk-config">
         @if (layer.element_type === Logo) {
-          <section class="cg-block">
-            <h3 class="cg-block-title">Source</h3>
-            @if (isEmbeddedLogo(layer)) {
-              <p class="cg-hint">
-                This leftover embedded image will not save. Use Choose local
-                image.
-              </p>
-            } @else if (layer.payload.fileName) {
-              <p class="cg-file-name">{{ layer.payload.fileName }}</p>
-            }
-            <div class="cg-inline">
-              <button
-                mat-stroked-button
-                type="button"
-                class="cg-seg-btn"
-                (click)="logoFileInput.click()"
-              >
-                Choose local image
-              </button>
-              <input
-                #logoFileInput
-                class="cg-file-input"
-                type="file"
-                [accept]="logoAccept"
-                (change)="onLogoFile(layer, $event)"
-              />
-            </div>
-            <details class="cg-advanced">
-              <summary>Advanced</summary>
-              @if (!isEmbeddedLogo(layer)) {
-                <label class="cg-field">
-                  <span>Image URL</span>
-                  <input
-                    type="text"
-                    [(ngModel)]="layer.payload.imageUrl"
-                    (ngModelChange)="onImageUrlChange(layer)"
-                    placeholder="/icons/3d/apps.png or https://…"
-                  />
-                </label>
-              }
-              <div class="cg-inline">
-                <button
-                  mat-stroked-button
-                  type="button"
-                  class="cg-seg-btn"
-                  (click)="useSampleLogo(layer)"
-                >
-                  Sample PNG
-                </button>
-              </div>
-            </details>
-          </section>
-
           <section class="cg-block">
             <h3 class="cg-block-title">Place</h3>
             <div class="cg-fields place">
@@ -344,38 +356,6 @@
             wrap.
           </p>
         }
-
-        <details class="cg-advanced cg-footer-advanced">
-          <summary>More</summary>
-          <div class="cg-layer-output">
-            <span class="cg-kicker">Copy to package</span>
-            @if (copyTargets().length > 0) {
-              <div class="cg-inline">
-                <select
-                  class="cg-copy-select"
-                  [ngModel]="copyTargetId()"
-                  (ngModelChange)="copyTargetId.set($event)"
-                >
-                  <option value="">Choose…</option>
-                  @for (pkg of copyTargets(); track pkg.tb_tyapp_cgpk_id) {
-                    <option [value]="pkg.tb_tyapp_cgpk_id">{{ pkg.name }}</option>
-                  }
-                </select>
-                <button
-                  mat-stroked-button
-                  type="button"
-                  class="cg-seg-btn"
-                  [disabled]="!copyTargetId() || cg.loading()"
-                  (click)="copyToPackage()"
-                >
-                  Copy
-                </button>
-              </div>
-            } @else {
-              <span class="cg-url-placeholder">Need another saved package</span>
-            }
-          </div>
-        </details>
       </div>
     </div>
   </section>

@@ -25,11 +25,9 @@ import {
   CG_LOGO_ACCEPT,
   CG_LOGO_MAX_BYTES,
   CG_MAX_DURATION_MS,
-  CG_SAMPLE_LOGO_URL,
   CG_SUBTITLE_PRESET_OPTIONS,
   CgElementType,
   CgLayerLook,
-  CgPackageLook,
   CgSubtitlePreset,
 } from '../../../../core/domains/cg/cg.constants';
 import { CgLayerDraft } from '../../../../core/domains/cg/cg.model';
@@ -40,10 +38,8 @@ import {
   elementLabel,
   innerDurationMs,
   isCgCut,
-  isCgMono,
   isEmbeddedImageUrl,
   isLocalFilesystemPath,
-  normalizeDurationMs,
   parseSubtitleScript,
   subtitlePresetOf,
 } from '../../../../core/domains/cg/cg.util';
@@ -166,12 +162,6 @@ export class CgLayerEdit implements OnInit {
 
   toggleVisible(layer: CgLayerDraft): void {
     void this.cg.setLayerVisible(layer.clientId, !layer.visible);
-  }
-
-  useSampleLogo(layer: CgLayerDraft): void {
-    layer.payload.imageUrl = CG_SAMPLE_LOGO_URL;
-    delete layer.payload.fileName;
-    this.touchPreview();
   }
 
   isEmbeddedLogo(layer: CgLayerDraft): boolean {
@@ -313,25 +303,6 @@ export class CgLayerEdit implements OnInit {
       index,
       cursor,
     });
-  }
-
-  packageIsMono(): boolean {
-    return isCgMono(this.airPackageLook());
-  }
-
-  /** Package Look / Appear still follow Studio Take — use On air when set. */
-  airPackageLook(): CgPackageLook {
-    return (
-      this.cg.onAirItem()?.look ??
-      this.cg.draftItem()?.look ??
-      CgPackageLook.Color
-    );
-  }
-
-  airPackageDurationMs(): number {
-    return normalizeDurationMs(
-      this.cg.onAirItem()?.duration_ms ?? this.cg.draftItem()?.duration_ms,
-    );
   }
 
   cueDurationMs(layer: CgLayerDraft): number {

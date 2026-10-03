@@ -73,10 +73,58 @@
   align-items: center;
 }
 
+.cg-name-look {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+  min-width: 0;
+}
+
+/* Panel control height — same as cg-seg-btn (28px). */
+$cg-control-height: 28px;
+
 .cg-layer-name input {
-  height: 36px;
-  font: var(--app-weight-emphasis) 15px / 1.2 var(--app-font);
+  width: 100%;
+  box-sizing: border-box;
+  height: $cg-control-height;
+  padding: 0 10px;
+  border: 1px solid var(--app-input-border);
+  border-radius: 4px;
+  background: var(--app-input-bg);
+  font: var(--app-weight-emphasis) 13px / 1.2 var(--app-font);
   color: var(--app-text-primary);
+}
+
+.cg-layer-name input:focus {
+  outline: 1px solid var(--app-accent);
+}
+
+.cg-source-pick {
+  flex-wrap: nowrap;
+  align-items: center;
+  min-width: 0;
+}
+
+.cg-source-pick .cg-file-name {
+  flex: 1;
+  min-width: 0;
+}
+
+.cg-source-url {
+  width: 100%;
+  box-sizing: border-box;
+  height: $cg-control-height;
+  padding: 0 10px;
+  font: 12px / 1.2 var(--app-font);
+  color: var(--app-text-primary);
+  border: 1px solid var(--app-input-border);
+  border-radius: 4px;
+  background: var(--app-input-bg);
+}
+
+.cg-source-url:focus {
+  outline: 1px solid var(--app-accent);
 }
 
 .cg-block {
@@ -141,10 +189,10 @@
 // use `mat-button-toggle-group.cg-seg-toggle` (App Log style).
 :host button.mat-mdc-button-base.mat-mdc-unelevated-button.cg-seg-btn,
 :host button.mat-mdc-button-base.mat-mdc-outlined-button.cg-seg-btn {
-  height: 28px;
-  min-height: 28px;
-  max-height: 28px;
-  line-height: 28px;
+  height: $cg-control-height;
+  min-height: $cg-control-height;
+  max-height: $cg-control-height;
+  line-height: $cg-control-height;
   padding: 0 12px;
   letter-spacing: 0.01em;
   text-transform: none;
@@ -157,7 +205,7 @@
 :host button.mat-mdc-button-base.mat-mdc-unelevated-button.cg-seg-btn .mdc-button__label,
 :host button.mat-mdc-button-base.mat-mdc-outlined-button.cg-seg-btn .mdc-button__label {
   white-space: nowrap;
-  line-height: 28px;
+  line-height: $cg-control-height;
 }
 
 mat-button-toggle-group.cg-seg-toggle {
@@ -165,6 +213,10 @@ mat-button-toggle-group.cg-seg-toggle {
   align-self: flex-start;
   width: max-content;
   max-width: 100%;
+  height: $cg-control-height;
+  min-height: $cg-control-height;
+  max-height: $cg-control-height;
+  box-sizing: border-box;
   border: 1px solid var(--app-button-border);
   border-radius: var(--app-radius);
   overflow: hidden;
@@ -172,7 +224,8 @@ mat-button-toggle-group.cg-seg-toggle {
   @include mat.button-toggle-overrides(
     (
       shape: 0,
-      height: 28px,
+      /* Inner face fits inside 1px group border for 28px outer. */
+      height: 26px,
       background-color: transparent,
       text-color: var(--app-text-primary),
       divider-color: var(--app-button-border),
@@ -193,9 +246,9 @@ mat-button-toggle-group.cg-seg-toggle {
 }
 
 :host button.mat-mdc-button-base.mat-mdc-outlined-button.cg-seg-btn.cg-icon-btn {
-  width: 28px;
-  min-width: 28px;
-  max-width: 28px;
+  width: $cg-control-height;
+  min-width: $cg-control-height;
+  max-width: $cg-control-height;
   padding: 0;
 }
 
@@ -285,7 +338,7 @@ mat-button-toggle-group.cg-seg-toggle {
     width: 100%;
     box-sizing: border-box;
     min-width: 0;
-    height: 32px;
+    height: $cg-control-height;
     padding: 0 8px;
     border: 1px solid var(--app-input-border);
     border-radius: 4px;
@@ -346,18 +399,24 @@ mat-button-toggle-group.cg-seg-toggle {
 
 .cg-duration input {
   width: 88px;
+  height: $cg-control-height;
 }
 
 .cg-copy-select {
   flex: 1;
   min-width: 0;
-  height: 32px;
-  border: 1px solid var(--app-card-border);
+  box-sizing: border-box;
+  height: $cg-control-height;
+  border: 1px solid var(--app-input-border);
   border-radius: 4px;
-  background: var(--app-card-bg);
+  background: var(--app-input-bg);
   color: var(--app-text-primary);
   font: 13px var(--app-font);
   padding: 0 8px;
+}
+
+.cg-copy-select:focus {
+  outline: 1px solid var(--app-accent);
 }
 
 .cg-layer-output {

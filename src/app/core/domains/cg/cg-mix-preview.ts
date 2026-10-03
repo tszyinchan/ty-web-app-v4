@@ -32,7 +32,19 @@ export class CgMixPreview {
    * so you can still edit while it's hidden from the mix / OBS.
    */
   readonly forceVisible = input(false);
+  /**
+   * Desk editing monitor: Color/B&W from Layer Look only.
+   * Package Look still greys tiles, Package monitors, and OBS.
+   */
+  readonly layerLookOnly = input(false);
   readonly layerIsMono = layerIsMono;
+
+  isMono(layer: CgLayerDraft): boolean {
+    if (this.layerLookOnly()) {
+      return layerIsMono(layer.look, CgPackageLook.Color);
+    }
+    return layerIsMono(layer.look, this.packageLook());
+  }
 
   layoutSnapshot(layer: CgLayerDraft): CgLayerDraft['layout'] {
     return { ...layer.layout };

@@ -39,9 +39,8 @@ import { subtitleLine, subtitlePresetOf, innerDurationMs } from './cg.util';
       pointer-events: none;
       opacity: 1;
       filter: none;
-      transition:
-        opacity var(--cg-duration-ms, 400ms) ease,
-        filter var(--cg-duration-ms, 400ms) ease;
+      /* Opacity = Package Appear. Look Color/B&W is always cut (Layer content). */
+      transition: opacity var(--cg-duration-ms, 400ms) ease;
     }
 
     :host.off {

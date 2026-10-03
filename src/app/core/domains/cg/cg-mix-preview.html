@@ -12,7 +12,7 @@
       [visible]="forceVisible() || layer.visible"
       [durationMs]="durationMs()"
       [sortOrder]="layer.sort_order"
-      [mono]="layerIsMono(layer.look, packageLook())"
+      [mono]="isMono(layer)"
     />
   }
 </app-cg-stage>
