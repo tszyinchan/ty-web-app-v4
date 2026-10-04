@@ -3,13 +3,13 @@ export const APP_CONFIG = {
   version: {
     major: 4,
     minor: 106,
-    patch: 11,
+    patch: 12,
   },
-  versionDate: '2026-10-02',
+  versionDate: '2026-10-03',
 };
 
 export const WORK_SCHEDULE_NEW_RECORD_SHORTCUT = {
-  mplm_id: 'd1d3bc00-acee-4e9d-9c2f-e0a22f44e1be',
+  mplm_id: '514d00ce-4d86-4b35-a21c-cba806370a38',
   planned_start_time: '09:00',
   planned_end_time: '17:00',
   planned_meal_minutes: 30,
