@@ -350,6 +350,21 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
     return buildCgOverlayUrl(token, window.location);
   }
 
+  /**
+   * For the top-right layer items bar (tiles):
+   * When a layer has an on-air / committed version, the tile displays that
+   * saved version rather than any unapplied draft edits from the desk,
+   * until the user explicitly saves / applies.
+   */
+  tileLayer(layer: CgLayerDraft): CgLayerDraft {
+    const onAir = this.onAirLayers().find(
+      (row) =>
+        row.clientId === layer.clientId ||
+        (!!layer.tb_tyapp_cgly_id && row.tb_tyapp_cgly_id === layer.tb_tyapp_cgly_id),
+    );
+    return onAir ?? layer;
+  }
+
   layoutSnapshot(layer: CgLayerDraft): CgLayerDraft['layout'] {
     return { ...layer.layout };
   }

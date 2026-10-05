@@ -21,4 +21,12 @@
   &.off {
     opacity: 0;
   }
+
+  /* Desk placement guide — yellow rim, red outer shadow, square. */
+  &.outline {
+    outline: 3px solid #ffe600;
+    outline-offset: 0;
+    border-radius: 0;
+    box-shadow: 0 0 0 3px #ff1a1a;
+  }
 }

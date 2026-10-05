@@ -19,6 +19,7 @@ import { subtitleLine, subtitlePresetOf, innerDurationMs } from './cg.util';
           [imageUrl]="payload().imageUrl"
           [layout]="layout()"
           [visible]="true"
+          [outline]="outline()"
         />
       }
       @case (Subtitle) {
@@ -71,4 +72,5 @@ export class CgLayerView {
   readonly durationMs = input(CG_DEFAULT_DURATION_MS);
   readonly sortOrder = input(0);
   readonly mono = input(false);
+  readonly outline = input(false);
 }

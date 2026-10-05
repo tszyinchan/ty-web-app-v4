@@ -2,7 +2,7 @@ import { NgStyle } from '@angular/common';
 import { Component, computed, input } from '@angular/core';
 import { DEFAULT_LOGO_LAYOUT } from './cg.constants';
 import { CgLayout } from './cg.model';
-import { layoutToCss } from './cg.util';
+import { logoLayoutToCss } from './cg.util';
 
 @Component({
   selector: 'app-cg-logo',
@@ -15,8 +15,10 @@ export class CgLogo {
   readonly imageUrl = input('');
   readonly layout = input<CgLayout>({ ...DEFAULT_LOGO_LAYOUT });
   readonly visible = input(true);
+  /** Desk-only placement guide — not written to OBS. */
+  readonly outline = input(false);
 
-  readonly css = computed(() => layoutToCss(this.layout()));
+  readonly css = computed(() => logoLayoutToCss(this.layout()));
   readonly hasFixedWidth = computed(
     () => this.layout().width != null && Number.isFinite(this.layout().width),
   );

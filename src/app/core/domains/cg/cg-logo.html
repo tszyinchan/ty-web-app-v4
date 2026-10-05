@@ -3,6 +3,7 @@
     class="logo-box"
     [class.natural]="!hasFixedWidth()"
     [class.off]="!visible()"
+    [class.outline]="outline()"
     [ngStyle]="css()"
   >
     <img [src]="imageUrl()" alt="" />

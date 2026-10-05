@@ -322,7 +322,9 @@ mat-button-toggle-group.cg-seg-toggle {
 // Height must beat `_aero-controls.scss`
 // `html.theme-aero app-layout button.mat-mdc-*:not(.action-btn) { min-height: 32px }`.
 :host button.mat-mdc-button-base.mat-mdc-unelevated-button.cg-seg-btn,
-:host button.mat-mdc-button-base.mat-mdc-outlined-button.cg-seg-btn {
+:host button.mat-mdc-button-base.mat-mdc-outlined-button.cg-seg-btn,
+:host-context(html.theme-aero) button.mat-mdc-button-base.mat-mdc-unelevated-button.cg-seg-btn,
+:host-context(html.theme-aero) button.mat-mdc-button-base.mat-mdc-outlined-button.cg-seg-btn {
   height: 28px;
   min-height: 28px;
   max-height: 28px;
@@ -334,6 +336,7 @@ mat-button-toggle-group.cg-seg-toggle {
   font-family: var(--app-font);
   white-space: nowrap;
   flex-shrink: 0;
+  box-sizing: border-box;
 }
 
 :host button.mat-mdc-button-base.mat-mdc-unelevated-button.cg-seg-btn .mdc-button__label,

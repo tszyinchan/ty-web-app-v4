@@ -37,6 +37,8 @@ export class CgMixPreview {
    * Package Look still greys tiles, Package monitors, and OBS.
    */
   readonly layerLookOnly = input(false);
+  /** Desk-only Logo placement outline. */
+  readonly outline = input(false);
   readonly layerIsMono = layerIsMono;
 
   isMono(layer: CgLayerDraft): boolean {

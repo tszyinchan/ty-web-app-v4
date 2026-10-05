@@ -487,6 +487,24 @@ export class CgService {
     this.layerContentPersistTimers.set(clientId, handle);
   }
 
+  /** Drop a pending Live write (Logo Studio Draft, or before Apply). */
+  cancelPersistLayerContent(clientId: string): void {
+    const previous = this.layerContentPersistTimers.get(clientId);
+    if (previous === undefined) return;
+    window.clearTimeout(previous);
+    this.layerContentPersistTimers.delete(clientId);
+  }
+
+  /**
+   * Logo Studio Apply: push desk content to On air + DB now.
+   * Does not touch mix (visible / z-order).
+   */
+  async applyLayerContent(clientId: string): Promise<boolean> {
+    this.cancelPersistLayerContent(clientId);
+    this.mirrorLayerContentToOnAir(clientId);
+    return this.persistLayerContent(clientId);
+  }
+
   /** Run any debounced desk content writes now (before mix Take/Create). */
   async flushPendingLayerContent(): Promise<void> {
     const pending = [...this.layerContentPersistTimers.keys()];

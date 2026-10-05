@@ -74,6 +74,23 @@ export const CG_EDIT_MODE_STORAGE_PREFIX = 'cg-package-edit-mode:';
 /** Default for new / unknown packages — safer (Save before air). */
 export const CG_DEFAULT_PACKAGE_EDIT_MODE = CgPackageEditMode.Studio;
 
+/**
+ * Logo Layer desk edit mode (content only — not Package mix):
+ * - Direct = Live: desk edits write through to On air / OBS
+ * - Studio = Draft: edit on desk, Apply to air, Discard / leave to drop
+ * Not Package Studio mode; no second monitor.
+ */
+export enum CgLayerEditMode {
+  Direct = 'direct',
+  Studio = 'studio',
+}
+
+/** localStorage key prefix — value is per Logo layer id. */
+export const CG_LAYER_STUDIO_STORAGE_PREFIX = 'cg-layer-studio:';
+
+/** Default for Logo desk — Live (same as today’s Direct content). */
+export const CG_DEFAULT_LAYER_EDIT_MODE = CgLayerEditMode.Direct;
+
 export interface CgElementDef {
   type: CgElementType;
   label: string;
@@ -142,13 +159,13 @@ export const CG_CUT_DURATION_MS = 0;
 export const CG_DEFAULT_DURATION_MS = 400;
 export const CG_MAX_DURATION_MS = 5000;
 
+/** Logo Place uses inset-from-anchor: X/Y are offsets from the Anchor edges. */
 export const DEFAULT_LOGO_LAYOUT = {
-  x: 2.4,
-  y: 3.2,
-  unit: CgLayoutUnit.Percent,
+  x: 24,
+  y: 24,
+  unit: CgLayoutUnit.Pixel,
   anchor: CgAnchor.TopLeft,
   scale: 1,
-  width: 11,
 } as const;
 
 export const DEFAULT_SUBTITLE_LAYOUT = {
@@ -201,6 +218,22 @@ export const CG_ANCHOR_OPTIONS: ReadonlyArray<{
   { value: CgAnchor.BottomLeft, label: 'Bottom left' },
   { value: CgAnchor.BottomCenter, label: 'Bottom center' },
   { value: CgAnchor.BottomRight, label: 'Bottom right' },
+];
+
+export const CG_ANCHOR_GRID_OPTIONS: ReadonlyArray<{
+  value: CgAnchor;
+  label: string;
+  icon: string;
+}> = [
+  { value: CgAnchor.TopLeft, label: 'Top left', icon: 'north_west' },
+  { value: CgAnchor.TopCenter, label: 'Top center', icon: 'north' },
+  { value: CgAnchor.TopRight, label: 'Top right', icon: 'north_east' },
+  { value: CgAnchor.CenterLeft, label: 'Center left', icon: 'west' },
+  { value: CgAnchor.Center, label: 'Center', icon: 'fiber_manual_record' },
+  { value: CgAnchor.CenterRight, label: 'Center right', icon: 'east' },
+  { value: CgAnchor.BottomLeft, label: 'Bottom left', icon: 'south_west' },
+  { value: CgAnchor.BottomCenter, label: 'Bottom center', icon: 'south' },
+  { value: CgAnchor.BottomRight, label: 'Bottom right', icon: 'south_east' },
 ];
 
 export const CG_LAYOUT_UNIT_OPTIONS: ReadonlyArray<{

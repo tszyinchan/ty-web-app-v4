@@ -5,12 +5,56 @@
   >
     <div class="cg-desk-split">
       <aside class="cg-desk-preview">
+        <div class="cg-monitor-toolbar">
+          @if (layer.element_type === Logo) {
+            <div class="cg-mode">
+              <span class="cg-mode-label">Studio mode</span>
+              <button
+                type="button"
+                class="cg-switch"
+                [class.on]="isLayerStudio()"
+                [class.disabled]="isLayerOnAir()"
+                [disabled]="isLayerOnAir()"
+                role="switch"
+                [attr.aria-checked]="isLayerStudio()"
+                [attr.aria-disabled]="isLayerOnAir()"
+                [attr.title]="isLayerOnAir() ? 'Studio mode disabled while layer is on air' : 'Studio mode'"
+                aria-label="Studio mode"
+                (click)="toggleLayerStudio()"
+              >
+                <span class="cg-switch-thumb"></span>
+              </button>
+              @if (isLayerStudio()) {
+                <button
+                  mat-flat-button
+                  color="primary"
+                  type="button"
+                  class="cg-seg-btn"
+                  [disabled]="!layerContentDirty() || cg.loading()"
+                  (click)="applyLayerContent()"
+                >
+                  Apply
+                </button>
+                <button
+                  mat-stroked-button
+                  type="button"
+                  class="cg-seg-btn"
+                  [disabled]="!layerContentDirty()"
+                  (click)="discardLayerContent()"
+                >
+                  Discard
+                </button>
+              }
+            </div>
+          }
+        </div>
         <div class="cg-monitors">
           <app-cg-mix-preview
             label=""
             [wide]="true"
             [forceVisible]="true"
             [layerLookOnly]="true"
+            [outline]="logoOutline()"
             [layers]="[layer]"
             [backdrop]="layersBackdrop()"
           />
@@ -139,68 +183,73 @@
         @if (layer.element_type === Logo) {
           <section class="cg-block">
             <h3 class="cg-block-title">Place</h3>
-            <div class="cg-fields place">
-              <label class="cg-field">
+            <p class="cg-hint">
+              X and Y are inset from the Anchor edge (e.g. Top right + 5, 5 =
+              5 from the right and top).
+            </p>
+            <div class="cg-anchor-field">
+              <span class="cg-anchor-title">Anchor</span>
+              <mat-button-toggle-group
+                class="cg-anchor-toggle-group"
+                [value]="layer.layout.anchor"
+                (change)="onAnchorToggle(layer, $event)"
+                hideSingleSelectionIndicator
+                aria-label="Anchor position"
+              >
+                @for (option of anchorGridOptions; track option.value) {
+                  <mat-button-toggle
+                    [value]="option.value"
+                    [attr.title]="option.label"
+                    [attr.aria-label]="option.label"
+                  >
+                    <mat-icon [class.cg-anchor-dot]="option.value === 'center'">{{ option.icon }}</mat-icon>
+                  </mat-button-toggle>
+                }
+              </mat-button-toggle-group>
+            </div>
+            <div class="cg-place-row">
+              <label class="cg-field cg-control-field">
                 <span>X</span>
                 <input
                   type="number"
                   [(ngModel)]="layer.layout.x"
                   (ngModelChange)="touchPreview()"
+                  (wheel)="onPlaceWheel($event, layer, 'x')"
                 />
               </label>
-              <label class="cg-field">
+              <label class="cg-field cg-control-field">
                 <span>Y</span>
                 <input
                   type="number"
                   [(ngModel)]="layer.layout.y"
                   (ngModelChange)="touchPreview()"
+                  (wheel)="onPlaceWheel($event, layer, 'y')"
                 />
               </label>
-              <label class="cg-field">
-                <span>Width</span>
-                <input
-                  type="number"
-                  [(ngModel)]="layer.layout.width"
-                  (ngModelChange)="touchPreview()"
-                />
-              </label>
-              <label class="cg-field">
+              <label class="cg-field cg-control-field">
                 <span>Scale</span>
                 <input
                   type="number"
                   step="0.05"
                   [(ngModel)]="layer.layout.scale"
                   (ngModelChange)="touchPreview()"
+                  (wheel)="onPlaceWheel($event, layer, 'scale')"
                 />
               </label>
             </div>
-            <details class="cg-advanced">
-              <summary>Anchor and unit</summary>
-              <div class="cg-fields place">
-                <label class="cg-field">
-                  <span>Anchor</span>
-                  <select
-                    [(ngModel)]="layer.layout.anchor"
-                    (ngModelChange)="touchPreview()"
-                  >
-                    @for (option of anchorOptions; track option.value) {
-                      <option [ngValue]="option.value">{{ option.label }}</option>
-                    }
-                  </select>
-                </label>
-                <label class="cg-field">
-                  <span>Unit</span>
-                  <select
-                    [(ngModel)]="layer.layout.unit"
-                    (ngModelChange)="touchPreview()"
-                  >
-                    @for (option of unitOptions; track option.value) {
-                      <option [ngValue]="option.value">{{ option.label }}</option>
-                    }
-                  </select>
-                </label>
-              </div>
-            </details>
+            <div class="cg-outline-row">
+              <button
+                type="button"
+                class="cg-switch"
+                [class.on]="logoOutline()"
+                role="switch"
+                [attr.aria-checked]="logoOutline()"
+                (click)="logoOutline.set(!logoOutline())"
+              >
+                <span class="cg-switch-thumb"></span>
+              </button>
+              <span class="cg-outline-label">Outline</span>
+            </div>
           </section>
         } @else if (layer.element_type === Subtitle) {
           <div class="cg-cue-bar">

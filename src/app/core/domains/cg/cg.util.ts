@@ -3,9 +3,11 @@ import { RecordStatus } from '../../models/status.enum';
 import {
   CG_CUT_DURATION_MS,
   CG_DEFAULT_DURATION_MS,
+  CG_DEFAULT_LAYER_EDIT_MODE,
   CG_DEFAULT_PACKAGE_EDIT_MODE,
   CG_DESKTOP_VIEWPORT,
   CG_EDIT_MODE_STORAGE_PREFIX,
+  CG_LAYER_STUDIO_STORAGE_PREFIX,
   CG_OVERLAY_CHANNEL_PREFIX,
   CG_ELEMENT_CATALOG,
   CG_MAX_DURATION_MS,
@@ -17,6 +19,7 @@ import {
   CgAnchor,
   CgElementDef,
   CgElementType,
+  CgLayerEditMode,
   CgLayerLook,
   CgLayoutUnit,
   CgOutputKind,
@@ -520,6 +523,80 @@ export function layoutToCss(layout: CgLayout): Record<string, string> {
   return layoutBoxCss(layout, true);
 }
 
+/**
+ * Logo Place: X/Y are insets from the Anchor edges (not stage top-left).
+ * Top right + X=5 Y=5 → 5 from the right, 5 from the top.
+ */
+export function logoLayoutToCss(layout: CgLayout): Record<string, string> {
+  const unit = layout.unit === CgLayoutUnit.Pixel ? 'px' : '%';
+  const x = Number.isFinite(layout.x) ? layout.x : 0;
+  const y = Number.isFinite(layout.y) ? layout.y : 0;
+  const scale = Number.isFinite(layout.scale) ? layout.scale : 1;
+  const anchor = layout.anchor;
+  const css: Record<string, string> = {
+    position: 'absolute',
+    transformOrigin: ANCHOR_ORIGIN[anchor],
+  };
+
+  const fromRight =
+    anchor === CgAnchor.TopRight ||
+    anchor === CgAnchor.CenterRight ||
+    anchor === CgAnchor.BottomRight;
+  const fromBottom =
+    anchor === CgAnchor.BottomLeft ||
+    anchor === CgAnchor.BottomCenter ||
+    anchor === CgAnchor.BottomRight;
+  const centerX =
+    anchor === CgAnchor.TopCenter ||
+    anchor === CgAnchor.Center ||
+    anchor === CgAnchor.BottomCenter;
+  const centerY =
+    anchor === CgAnchor.CenterLeft ||
+    anchor === CgAnchor.Center ||
+    anchor === CgAnchor.CenterRight;
+
+  // Always set both edges so ngStyle does not keep a stale left/right.
+  if (fromRight) {
+    css['right'] = `${x}${unit}`;
+    css['left'] = 'auto';
+  } else if (centerX) {
+    css['left'] = `calc(50% + ${x}${unit})`;
+    css['right'] = 'auto';
+  } else {
+    css['left'] = `${x}${unit}`;
+    css['right'] = 'auto';
+  }
+
+  if (fromBottom) {
+    css['bottom'] = `${y}${unit}`;
+    css['top'] = 'auto';
+  } else if (centerY) {
+    css['top'] = `calc(50% + ${y}${unit})`;
+    css['bottom'] = 'auto';
+  } else {
+    css['top'] = `${y}${unit}`;
+    css['bottom'] = 'auto';
+  }
+
+  const shiftX = centerX ? '-50%' : '0';
+  const shiftY = centerY ? '-50%' : '0';
+  const shift =
+    shiftX === '0' && shiftY === '0'
+      ? ''
+      : `translate(${shiftX}, ${shiftY})`;
+  css['transform'] = shift
+    ? `${shift} scale(${scale})`
+    : `scale(${scale})`;
+
+  if (layout.width != null && Number.isFinite(layout.width)) {
+    css['width'] = `${layout.width}${unit}`;
+  }
+  if (layout.height != null && Number.isFinite(layout.height)) {
+    css['height'] = `${layout.height}${unit}`;
+  }
+  return css;
+}
+
 /** Subtitle Scale is type size, not a CSS transform of the caption box. */
 export function subtitleLayoutToCss(
   layout: CgLayout,
@@ -535,6 +612,7 @@ export function subtitleLayoutToCss(
   return css;
 }
 
+/** Point-in-frame model (Subtitle): (x,y) is where the Anchor sits on Stage. */
 function layoutBoxCss(
   layout: CgLayout,
   scaleAsTransform: boolean,
@@ -605,6 +683,43 @@ export function writePackageEditMode(
   if (!packageId || typeof localStorage === 'undefined') return;
   try {
     localStorage.setItem(`${CG_EDIT_MODE_STORAGE_PREFIX}${packageId}`, mode);
+  } catch {
+    /* private mode / quota */
+  }
+}
+
+/** Stable key for Logo Studio preference — DB id when known, else clientId. */
+export function layerStudioStorageKey(layer: {
+  tb_tyapp_cgly_id?: string;
+  clientId: string;
+}): string {
+  return layer.tb_tyapp_cgly_id || layer.clientId;
+}
+
+export function readLayerEditMode(layerKey: string | null): CgLayerEditMode {
+  if (!layerKey || typeof localStorage === 'undefined') {
+    return CG_DEFAULT_LAYER_EDIT_MODE;
+  }
+  try {
+    const raw = localStorage.getItem(
+      `${CG_LAYER_STUDIO_STORAGE_PREFIX}${layerKey}`,
+    );
+    if (raw === CgLayerEditMode.Direct || raw === CgLayerEditMode.Studio) {
+      return raw;
+    }
+  } catch {
+    /* private mode / quota */
+  }
+  return CG_DEFAULT_LAYER_EDIT_MODE;
+}
+
+export function writeLayerEditMode(
+  layerKey: string | null,
+  mode: CgLayerEditMode,
+): void {
+  if (!layerKey || typeof localStorage === 'undefined') return;
+  try {
+    localStorage.setItem(`${CG_LAYER_STUDIO_STORAGE_PREFIX}${layerKey}`, mode);
   } catch {
     /* private mode / quota */
   }
