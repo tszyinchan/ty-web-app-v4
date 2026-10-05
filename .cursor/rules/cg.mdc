@@ -1,6 +1,11 @@
 ---
 description: CG feature naming — locked. Package / Element / Layer / Panel / Output / Stage.
-alwaysApply: true
+globs:
+  - src/app/core/domains/cg/**
+  - src/app/apps/cg/**
+  - src/app/apps/jaxfr/features/cg/**
+  - supabase/sql/*cg*.sql
+alwaysApply: false
 ---
 
 # CG

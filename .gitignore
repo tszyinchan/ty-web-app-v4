@@ -21,6 +21,9 @@ yarn-error.log
 # Cursor agent regression run reports (scripts live in each feature folder)
 .cursor/regression/runs/
 
+# Cursor temporary analysis / scratchpad scripts
+.cursor/tmp-*
+
 
 # IDEs and editors
 .idea/

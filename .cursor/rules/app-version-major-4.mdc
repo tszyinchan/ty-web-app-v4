@@ -1,6 +1,8 @@
 ---
 description: Jaxfr app version stays 4.x.x — never bump major to 5
-alwaysApply: true
+globs:
+  - src/app/app.constants.ts
+alwaysApply: false
 ---
 
 # App version stays 4.x.x

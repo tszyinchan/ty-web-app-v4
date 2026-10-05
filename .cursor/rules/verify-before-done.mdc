@@ -1,13 +1,15 @@
 ---
-description: After UI/behavior changes, invent test scenarios, run them, and report expected vs actual before claiming done
-alwaysApply: true
+description: Verification and browser testing playbook — executed when user requests testing/verification or for high-risk flows
+alwaysApply: false
 ---
 
-# Verify before done
+# Verification (On-Demand / When Requested)
 
 This is how Jaxfr is tested. Do **not** add `.spec.ts` / Playwright / Cypress files.
 
-After any change that affects UI, layout, routing, client state, or data behavior:
+Browser verification is **on-demand**: run it when the user asks to test, or when confirming complex, high-risk UI/behavior changes. For routine edits, verify via static analysis (`npm run lint` / TypeScript checks / logic trace).
+
+When running verification:
 
 1. **Invent scenarios** covering: the main path, empty/error/edge states, and other screens that share the same state or components.
 2. **Run them** in the Cursor browser like a user (click, type, submit, navigate). A screenshot is not verification. The pane must be **visible** to the user — follow `.cursor/rules/browser-must-be-visible.mdc`. Do not test in a hidden tab.

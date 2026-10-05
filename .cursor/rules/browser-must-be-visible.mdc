@@ -1,6 +1,6 @@
 ---
-description: Cursor browser must be visible to the user whenever the agent clicks or types in the app
-alwaysApply: true
+description: Cursor browser automation guidelines (visible tab, handshake, lock) when performing browser tests
+alwaysApply: false
 ---
 
 # Browser must be visible

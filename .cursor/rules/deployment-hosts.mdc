@@ -1,6 +1,17 @@
 ---
 description: Production hostnames for Jaxfr and sibling apps on tszyin.com
-alwaysApply: true
+globs:
+  - src/environments/**
+  - src/app/core/guards/**
+  - src/app/app.routes.ts
+  - src/app/apps/share/**
+  - src/app/apps/filelink/**
+  - src/app/apps/time/**
+  - src/app/apps/cg/**
+  - src/app/apps/jaxfr/features/auth/**
+  - src/app/pages/login/**
+  - src/app/pages/reset-password/**
+alwaysApply: false
 ---
 
 # Production hosts

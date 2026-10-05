@@ -1,6 +1,8 @@
 ---
 description: Before any version bump or commit, fetch origin and read the latest APP_CONFIG — never reuse a version from chat
-alwaysApply: true
+globs:
+  - src/app/app.constants.ts
+alwaysApply: false
 ---
 
 # Latest app version before commit

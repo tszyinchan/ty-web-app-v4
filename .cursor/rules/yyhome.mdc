@@ -1,6 +1,10 @@
 ---
 description: yyHome cutover naming and leftover AppSheet/YY525 retirement
-alwaysApply: true
+globs:
+  - src/app/apps/jaxfr/features/yyems/**
+  - src/app/apps/jaxfr/archive/features/yy525/**
+  - supabase/sql/*yy*.sql
+alwaysApply: false
 ---
 
 # yyHome

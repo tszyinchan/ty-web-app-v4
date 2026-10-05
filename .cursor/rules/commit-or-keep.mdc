@@ -1,6 +1,6 @@
 ---
-description: After each code change, ask push-now vs keep accumulating; bump version only when committing
-alwaysApply: true
+description: Guideline for asking push-now vs keep accumulating when a task or code batch is completed
+alwaysApply: false
 ---
 
 # Commit now or keep going

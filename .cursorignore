@@ -1,0 +1,51 @@
+# Dependencies & Package Managers
+node_modules/
+package-lock.json
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Angular & Build Output
+.angular/
+dist/
+tmp/
+out-tsc/
+bazel-out/
+.sass-cache/
+
+# Deprecated Archive Module (per .cursorrules Section 10)
+src/app/apps/jaxfr/archive/
+
+# Cursor Internal & Transient Files
+.cursor/regression/runs/
+.cursor/test-credentials.local.json
+.cursor/tmp-*
+.cursor/*.csv
+
+# Supabase Local Temp & Secrets
+supabase/.temp/
+supabase/.env
+
+# Binary Assets & Images (prevents indexing raw binary/asset data)
+public/icons/3d/
+public/**/*.png
+public/**/*.jpg
+public/**/*.jpeg
+public/**/*.gif
+public/**/*.webp
+public/**/*.ico
+public/**/*.pdf
+
+# IDE & OS Files
+.idea/
+.vscode/
+.history/
+*.launch
+*.sublime-workspace
+.DS_Store
+Thumbs.db
+
+# Logs & Cache
+coverage/
+*.log
+*.lock
