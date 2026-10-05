@@ -36,7 +36,7 @@ interface BuyForm {
   tb_tyapp_yhby_id?: string;
   item_id: string;
   price_id: string;
-  yyhome_id: string;
+  bill_id: string;
   paid: number | null;
   home_amount: number | null;
   home_unit: string;
@@ -150,7 +150,7 @@ export class YyemsBuyEdit implements OnInit, OnDestroy, DoCheck {
         tb_tyapp_yhby_id: buy.tb_tyapp_yhby_id,
         item_id: itemId,
         price_id: buy.price_id,
-        yyhome_id: buy.yyhome_id || billId || '',
+        bill_id: buy.bill_id || billId || '',
         paid: buy.paid,
         home_amount: buy.home_amount,
         home_unit: buy.home_unit || '',
@@ -166,12 +166,12 @@ export class YyemsBuyEdit implements OnInit, OnDestroy, DoCheck {
         currency: buy.price?.currency || 'CAD',
       });
       if (itemId) this.prices.set(await this.yyems.fetchPricesForItem(itemId));
-      if (buy.yyhome_id) this.returnUrl = `/yyems/bills/edit/${buy.yyhome_id}`;
+      if (buy.bill_id) this.returnUrl = `/yyems/bills/edit/${buy.bill_id}`;
     } else {
       this.item.set({
         item_id: '',
         price_id: '',
-        yyhome_id: billId || '',
+        bill_id: billId || '',
         paid: null,
         home_amount: null,
         home_unit: '',
@@ -257,7 +257,7 @@ export class YyemsBuyEdit implements OnInit, OnDestroy, DoCheck {
     const payload: Partial<YyemsBuy> = {
       tb_tyapp_yhby_id: form.tb_tyapp_yhby_id,
       price_id: priceId,
-      yyhome_id: form.yyhome_id || null,
+      bill_id: form.bill_id || null,
       paid: form.paid,
       home_amount: form.home_amount,
       home_unit: form.home_unit.trim() || null,

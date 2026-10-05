@@ -6,7 +6,6 @@ import { SupabaseService } from '../../../../core/services/supabase.service';
 import {
   YyemsBill,
   YyemsBillEmbed,
-  YyemsBillShare,
   YyemsBuy,
   YyemsBuyEmbed,
   YyemsCurrency,
@@ -262,7 +261,7 @@ export class YyemsService {
       tb_tyapp_yhby_seq_no: 0,
       legacy_id: null,
       price_id: row.price_id,
-      yyhome_id: row.yyhome_id,
+      bill_id: row.bill_id,
       paid: null,
       home_amount: Number(row.home_amount),
       home_unit: row.home_unit,
@@ -289,7 +288,7 @@ export class YyemsService {
   }
 
   /**
-   * Split totals in Postgres (in/out/free; excludes Internal_transfer vendor).
+   * Split = AppSheet Stat: Ownership=yyems only, (paid_a − paid_b)/2 per currency.
    * Requires yyems-split.schema.patch.sql.
    */
   async fetchSplitGroupTotals(
@@ -342,7 +341,7 @@ export class YyemsService {
   ): Promise<YyemsBillEmbed[]> {
     try {
       const { data, error } = await this.supabase
-        .from('tyapp_yyhome')
+        .from('tyapp_yyhome_bill')
         .select(BILL_EMBED)
         .is('deleted_at', null)
         .gte('occurred_at', fromIso)
@@ -361,7 +360,7 @@ export class YyemsService {
     this.billsLoading.set(true);
     try {
       const { data, error } = await this.supabase
-        .from('tyapp_yyhome')
+        .from('tyapp_yyhome_bill')
         .select(BILL_EMBED)
         .is('deleted_at', null)
         .gte('occurred_at', fromIso)
@@ -383,9 +382,9 @@ export class YyemsService {
     this.loading.set(true);
     try {
       const { data, error } = await this.supabase
-        .from('tyapp_yyhome')
+        .from('tyapp_yyhome_bill')
         .select(BILL_EMBED)
-        .eq('tb_tyapp_yhm_id', id)
+        .eq('tb_tyapp_yhbl_id', id)
         .is('deleted_at', null)
         .maybeSingle();
       if (error) throw error;
@@ -407,7 +406,7 @@ export class YyemsService {
       const { data, error } = await this.supabase
         .from('tyapp_yyhome_buy')
         .select(BUY_EMBED)
-        .eq('yyhome_id', billId)
+        .eq('bill_id', billId)
         .is('deleted_at', null)
         .order('created_at');
       if (error) throw error;
@@ -520,9 +519,9 @@ export class YyemsService {
   }
 
   async saveBill(row: Partial<YyemsBill>): Promise<YyemsBill | null> {
-    const isNew = !row.tb_tyapp_yhm_id;
+    const isNew = !row.tb_tyapp_yhbl_id;
     const {
-      tb_tyapp_yhm_seq_no: _seq,
+      tb_tyapp_yhbl_seq_no: _seq,
       created_at: _c,
       updated_at: _u,
       deleted_at: _d,
@@ -530,11 +529,11 @@ export class YyemsService {
     } = row;
     this.loading.set(true);
     const query = isNew
-      ? this.supabase.from('tyapp_yyhome').insert(payload).select().single()
+      ? this.supabase.from('tyapp_yyhome_bill').insert(payload).select().single()
       : this.supabase
-          .from('tyapp_yyhome')
+          .from('tyapp_yyhome_bill')
           .update(payload)
-          .eq('tb_tyapp_yhm_id', row.tb_tyapp_yhm_id)
+          .eq('tb_tyapp_yhbl_id', row.tb_tyapp_yhbl_id)
           .select()
           .single();
     try {
@@ -550,75 +549,6 @@ export class YyemsService {
       this.notification.handleError('Save bill failed', error);
       this.zone.run(() => this.loading.set(false));
       return null;
-    }
-  }
-
-  async fetchSharesForBills(billIds: readonly string[]): Promise<YyemsBillShare[] | null> {
-    if (billIds.length === 0) return [];
-    const chunkSize = 200;
-    const rows: YyemsBillShare[] = [];
-    try {
-      for (let index = 0; index < billIds.length; index += chunkSize) {
-        const chunk = billIds.slice(index, index + chunkSize);
-        const { data, error } = await this.supabase
-          .from('tyapp_yyhome_bill_share')
-          .select('*')
-          .in('yyhome_id', [...chunk]);
-        if (error) throw error;
-        rows.push(...((data as YyemsBillShare[]) ?? []));
-      }
-      return rows;
-    } catch (error: unknown) {
-      if (!isMissingShareTable(error)) {
-        this.notification.handleError('Fetch bill shares failed', error);
-      }
-      return null;
-    }
-  }
-
-  async fetchBillShares(billId: string): Promise<YyemsBillShare[] | null> {
-    try {
-      const { data, error } = await this.supabase
-        .from('tyapp_yyhome_bill_share')
-        .select('*')
-        .eq('yyhome_id', billId);
-      if (error) throw error;
-      return (data as YyemsBillShare[]) ?? [];
-    } catch (error: unknown) {
-      if (!isMissingShareTable(error)) {
-        this.notification.handleError('Fetch bill shares failed', error);
-      }
-      return null;
-    }
-  }
-
-  /** Replace the share set for one bill. Junction-style delete then insert. */
-  async replaceBillShares(
-    billId: string,
-    rows: readonly { user_id: string; share: number }[],
-  ): Promise<boolean> {
-    try {
-      const { error: deleteError } = await this.supabase
-        .from('tyapp_yyhome_bill_share')
-        .delete()
-        .eq('yyhome_id', billId);
-      if (deleteError) throw deleteError;
-      if (rows.length === 0) return true;
-      const { error } = await this.supabase.from('tyapp_yyhome_bill_share').insert(
-        rows.map((row) => ({
-          yyhome_id: billId,
-          user_id: row.user_id,
-          share: row.share,
-        })),
-      );
-      if (error) throw error;
-      return true;
-    } catch (error: unknown) {
-      const detail = isMissingShareTable(error)
-        ? 'Run yyems-bill-share.schema.patch.sql in the SQL editor, then save again.'
-        : error;
-      this.notification.handleError('Save bill shares failed', detail);
-      return false;
     }
   }
 
@@ -960,8 +890,8 @@ export class YyemsService {
   }
 
   async deleteBill(id: string): Promise<boolean> {
-    return this.rpcDelete('tyapp_yyhome_soft_delete_single_record', id, 'Bill', () => {
-      this.bills.update((list) => list.filter((b) => b.tb_tyapp_yhm_id !== id));
+    return this.rpcDelete('tyapp_yyhome_bill_soft_delete_single_record', id, 'Bill', () => {
+      this.bills.update((list) => list.filter((b) => b.tb_tyapp_yhbl_id !== id));
     });
   }
 
@@ -1073,16 +1003,4 @@ export class YyemsService {
       });
     }
   }
-}
-
-function isMissingShareTable(error: unknown): boolean {
-  if (!error || typeof error !== 'object') return false;
-  const row = error as { code?: unknown; message?: unknown };
-  const code = String(row.code ?? '');
-  const message = String(row.message ?? '');
-  return (
-    code === 'PGRST205' ||
-    code === '42P01' ||
-    message.includes('tyapp_yyhome_bill_share')
-  );
 }

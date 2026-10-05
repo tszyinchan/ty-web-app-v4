@@ -30,7 +30,7 @@ import {
   HeaderAction,
   HeaderService,
 } from '../../../../core/services/header.service';
-import { DisplayNamePipe } from '../../../../core/pipes/display-name.pipe';
+import { formatUserDisplayName } from '../../../../core/pipes/display-name.pipe';
 import { UserService } from '../user/user.service';
 import {
   fromDateTimeLocalValue,
@@ -38,31 +38,24 @@ import {
 } from '../../../../core/utils/date-time.util';
 import {
   YYEMS_IN_OR_OUT,
+  YYEMS_OWNERSHIP,
   YyemsBill,
-  YyemsBillShare,
   YyemsBuyEmbed,
   YyemsInOrOut,
   YyemsLocationTz,
+  YyemsOwnership,
 } from './yyems.model';
 import { YyemsService } from './yyems.service';
 import { YyemsVendorEdit } from './yyems-vendor-edit';
 import { YyemsWalletEdit } from './yyems-wallet-edit';
 import {
-  BearerPercent,
   billFxHint,
-  equalBearerRows,
   itemLabel,
-  percentsFromShares,
-  pairFromRatio,
-  rowsToShares,
   sortByOrderThenName,
-  formatSharePercent,
-  shareSplitHint,
 } from './yyems.util';
-import { formatUserDisplayName } from '../../../../core/pipes/display-name.pipe';
 
 interface BillForm {
-  tb_tyapp_yhm_id?: string;
+  tb_tyapp_yhbl_id?: string;
   occurred_local: string;
   location_tz: YyemsLocationTz;
   in_or_out: YyemsInOrOut;
@@ -70,7 +63,7 @@ interface BillForm {
   currency: string;
   amount: number | null;
   wallet_id: string;
-  bearers: BearerPercent[];
+  ownership: YyemsOwnership;
   remark: string;
   description: string;
   reconciled: boolean;
@@ -93,7 +86,6 @@ interface BillForm {
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
-    DisplayNamePipe,
     YyemsVendorEdit,
     YyemsWalletEdit,
   ],
@@ -109,6 +101,7 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
   readonly users = inject(UserService);
 
   readonly YYEMS_IN_OR_OUT = YYEMS_IN_OR_OUT;
+  readonly YYEMS_OWNERSHIP = YYEMS_OWNERSHIP;
   readonly kindOptions = [
     { value: YYEMS_IN_OR_OUT.In, label: 'In' },
     { value: YYEMS_IN_OR_OUT.Out, label: 'Out' },
@@ -119,7 +112,6 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
     { value: 'HK', label: 'HK' },
   ];
   readonly commonCurrencies = ['CAD', 'HKD'] as const;
-  readonly formatSharePercent = formatSharePercent;
   readonly vendorPane = viewChild(YyemsVendorEdit);
   readonly walletPane = viewChild(YyemsWalletEdit);
   readonly billPane = viewChild<ElementRef<HTMLElement>>('billPane');
@@ -137,7 +129,6 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
     if (event.matches) this.queueQuickHeader();
     else this.applyBillHeader();
   };
-  readonly shareSplitHint = shareSplitHint;
   readonly itemLabel = itemLabel;
 
   currentId: string | null = null;
@@ -177,15 +168,29 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
       );
   });
 
-  bearers = computed(() => {
-    const ids = new Set(this.memberIds(this.groupId()));
-    for (const row of this.item()?.bearers ?? []) ids.add(row.user_id);
-    return this.users
-      .users()
-      .filter((user) => ids.has(user.user_id) && !user.deleted_at)
-      .sort((a, b) =>
-        formatUserDisplayName(a).localeCompare(formatUserDisplayName(b)),
-      );
+  /** AppSheet Ownership buttons: cty / frd display names + Both. */
+  ownershipOptions = computed(() => {
+    const byCode = (code: string) =>
+      this.users
+        .users()
+        .find(
+          (user) =>
+            !user.deleted_at &&
+            (user.appsheet_525_user_id || '').trim().toLowerCase() === code,
+        ) ?? null;
+    const cty = byCode(YYEMS_OWNERSHIP.Cty);
+    const frd = byCode(YYEMS_OWNERSHIP.Frd);
+    return [
+      {
+        value: YYEMS_OWNERSHIP.Cty as YyemsOwnership,
+        label: cty ? formatUserDisplayName(cty) : 'cty',
+      },
+      {
+        value: YYEMS_OWNERSHIP.Frd as YyemsOwnership,
+        label: frd ? formatUserDisplayName(frd) : 'frd',
+      },
+      { value: YYEMS_OWNERSHIP.Yyems as YyemsOwnership, label: 'Both' },
+    ];
   });
 
   sortedVendors = computed(() => sortByOrderThenName(this.yyems.vendors()));
@@ -222,7 +227,7 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
       !this.knownCurrency(current.currency) ||
       current.amount === null ||
       current.amount === undefined ||
-      !this.shareRows(current);
+      !current.ownership;
     if (this.isSaveDisabled() !== disabled) this.isSaveDisabled.set(disabled);
   }
 
@@ -244,13 +249,7 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
         return;
       }
       this.item.set(this.toForm(bill));
-      const shares = await this.yyems.fetchBillShares(this.currentId);
-      const bearerRows = this.bearersForExisting(shares);
-      this.groupId.set(
-        bill.group_id || this.groupForBearers(bearerRows.map((row) => row.user_id)),
-      );
-      const shown = this.presentPair(bearerRows);
-      this.item.update((cur) => (cur ? { ...cur, bearers: shown } : cur));
+      this.groupId.set(bill.group_id || this.groupId());
       this.syncLookupLabels(this.item());
       this.noteMore(this.item());
       this.currencyOtherOpen.set(false);
@@ -268,7 +267,7 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
         currency: 'CAD',
         amount: null,
         wallet_id: '',
-        bearers: this.defaultBearers(),
+        ownership: YYEMS_OWNERSHIP.Yyems,
         remark: '',
         description: '',
         reconciled: false,
@@ -313,7 +312,7 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
 
   private toForm(bill: YyemsBill): BillForm {
     return {
-      tb_tyapp_yhm_id: bill.tb_tyapp_yhm_id,
+      tb_tyapp_yhbl_id: bill.tb_tyapp_yhbl_id,
       occurred_local: toDateTimeLocalValue(bill.occurred_at),
       location_tz: bill.location_tz,
       in_or_out: bill.in_or_out,
@@ -321,7 +320,7 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
       currency: bill.currency,
       amount: bill.amount,
       wallet_id: bill.wallet_id,
-      bearers: [],
+      ownership: bill.ownership || YYEMS_OWNERSHIP.Yyems,
       remark: bill.remark || '',
       description: bill.description || '',
       reconciled: bill.reconciled,
@@ -339,10 +338,11 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
     if (!occurred || form.amount === null) return;
 
     const payload: Partial<YyemsBill> = {
-      tb_tyapp_yhm_id: form.tb_tyapp_yhm_id,
+      tb_tyapp_yhbl_id: form.tb_tyapp_yhbl_id,
       occurred_at: occurred,
       location_tz: form.location_tz,
       in_or_out: form.in_or_out,
+      ownership: form.ownership,
       vendor_id: form.vendor_id,
       currency: form.currency,
       amount: form.amount,
@@ -357,19 +357,15 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
       group_id: this.groupId() || null,
       status: RecordStatus.Active,
     };
-    const shares = this.shareRows(form);
-    if (!shares) return;
     const saved = await this.yyems.saveBill(payload);
     if (!saved) return;
-    const sharesOk = await this.yyems.replaceBillShares(saved.tb_tyapp_yhm_id, shares);
-    this.currentId = saved.tb_tyapp_yhm_id;
+    this.currentId = saved.tb_tyapp_yhbl_id;
     this.item.update((cur) =>
-      cur ? { ...cur, tb_tyapp_yhm_id: saved.tb_tyapp_yhm_id } : cur,
+      cur ? { ...cur, tb_tyapp_yhbl_id: saved.tb_tyapp_yhbl_id } : cur,
     );
-    if (!sharesOk) return;
     this.originalDataStr.set(JSON.stringify(this.item()));
     this.isDirty.set(false);
-    void this.router.navigate(['/yyems/bills/edit', saved.tb_tyapp_yhm_id], {
+    void this.router.navigate(['/yyems/bills/edit', saved.tb_tyapp_yhbl_id], {
       replaceUrl: true,
     });
   }
@@ -406,107 +402,11 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
   }
 
   onGroup(event: Event) {
-    const groupId = (event.target as HTMLSelectElement).value;
-    this.groupId.set(groupId);
-    const form = this.item();
-    if (!form) return;
-    const allowed = new Set(this.memberIds(groupId));
-    const kept = form.bearers
-      .map((row) => row.user_id)
-      .filter((id) => allowed.has(id));
-    form.bearers = this.presentPair(equalBearerRows(this.orderIds(kept)));
+    this.groupId.set((event.target as HTMLSelectElement).value);
   }
 
-  isBearer(bill: BillForm, userId: string): boolean {
-    return bill.bearers.some((row) => row.user_id === userId);
-  }
-
-  bearerName(userId: string): string {
-    const user = this.users.users().find((row) => row.user_id === userId);
-    return user ? formatUserDisplayName(user) : '';
-  }
-
-  private pairDrag = false;
-
-  onPairDown(event: PointerEvent, bill: BillForm, lane: HTMLElement) {
-    if (event.button !== 0 || bill.bearers.length !== 2) return;
-    event.preventDefault();
-    event.stopPropagation();
-    (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
-    this.pairDrag = true;
-    this.applyPair(event, bill, lane);
-  }
-
-  onPairMove(event: PointerEvent, bill: BillForm, lane: HTMLElement) {
-    const host = event.currentTarget as HTMLElement;
-    if (!this.pairDrag || !host.hasPointerCapture(event.pointerId)) return;
-    this.applyPair(event, bill, lane);
-  }
-
-  onPairUp() {
-    this.pairDrag = false;
-  }
-
-  onPairKey(event: KeyboardEvent, bill: BillForm) {
-    const delta = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
-    if (delta === 0 || bill.bearers.length !== 2) return;
-    event.preventDefault();
-    const next = Math.round(bill.bearers[0].percent) + delta;
-    bill.bearers = pairFromRatio(bill.bearers, next / 100);
-  }
-
-  /** Tap a name → that person 100%. Tap again when already sole → back to 50/50. */
-  setSoleBearer(bill: BillForm, side: 0 | 1) {
-    if (bill.bearers.length !== 2) return;
-    if (Math.round(bill.bearers[side].percent) >= 100) {
-      bill.bearers = pairFromRatio(bill.bearers, 0.5);
-      return;
-    }
-    bill.bearers = pairFromRatio(bill.bearers, side === 0 ? 1 : 0);
-  }
-
-  setHalfSplit(bill: BillForm) {
-    if (bill.bearers.length !== 2) return;
-    bill.bearers = pairFromRatio(bill.bearers, 0.5);
-  }
-
-  isHalfSplit(bill: BillForm): boolean {
-    return (
-      bill.bearers.length === 2 && Math.round(bill.bearers[0].percent) === 50
-    );
-  }
-
-  private applyPair(event: PointerEvent, bill: BillForm, lane: HTMLElement) {
-    const rect = lane.getBoundingClientRect();
-    if (rect.width <= 0) return;
-    const ratio = (event.clientX - rect.left) / rect.width;
-    bill.bearers = pairFromRatio(bill.bearers, ratio);
-  }
-
-  /** A two-person group always keeps both names on the bar, including 0 / 100. */
-  private presentPair(rows: BearerPercent[]): BearerPercent[] {
-    const members = this.orderIds(this.memberIds(this.groupId()));
-    if (members.length !== 2) return rows;
-    const memberSet = new Set(members);
-    if (rows.some((row) => !memberSet.has(row.user_id))) return rows;
-    if (rows.length === 0) return equalBearerRows(members);
-    const byId = new Map(rows.map((row) => [row.user_id, Math.round(row.percent)]));
-    const left = byId.get(members[0]) ?? 0;
-    const right = byId.get(members[1]) ?? 0;
-    if (left <= 0 && right <= 0) return equalBearerRows(members);
-    const total = left + right;
-    const leftPct = Math.round((left / total) * 100);
-    return [
-      { user_id: members[0], percent: leftPct },
-      { user_id: members[1], percent: 100 - leftPct },
-    ];
-  }
-
-  toggleBearer(bill: BillForm, userId: string) {
-    const next = new Set(bill.bearers.map((row) => row.user_id));
-    if (next.has(userId)) next.delete(userId);
-    else next.add(userId);
-    bill.bearers = equalBearerRows(this.orderIds([...next]));
+  setOwnership(bill: BillForm, value: YyemsOwnership) {
+    bill.ownership = value;
   }
 
   knownCurrency(code: string): boolean {
@@ -735,69 +635,9 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
     return !!walletCode && walletCode !== bill.currency;
   }
 
-  private shareRows(
-    form: BillForm,
-  ): { user_id: string; share: number }[] | null {
-    const rows = rowsToShares(form.bearers);
-    return rows.length > 0 ? rows : null;
-  }
-
   private pickInitialGroup() {
     const first = this.myGroups()[0];
     if (first) this.groupId.set(first.tb_tyapp_usr_grp_id);
-  }
-
-  private memberIds(groupId: string): string[] {
-    if (!groupId) return [];
-    return [
-      ...new Set(
-        this.users
-          .groupMembers()
-          .filter((member) => member.group_id === groupId)
-          .map((member) => member.user_id),
-      ),
-    ];
-  }
-
-  private defaultBearers(): BearerPercent[] {
-    const ids = this.orderIds(this.memberIds(this.groupId()));
-    return ids.length === 2 ? equalBearerRows(ids) : [];
-  }
-
-  private orderIds(ids: readonly string[]): string[] {
-    const wanted = new Set(ids);
-    const known = this.users
-      .users()
-      .filter((user) => wanted.has(user.user_id) && !user.deleted_at)
-      .sort((a, b) =>
-        formatUserDisplayName(a).localeCompare(formatUserDisplayName(b)),
-      )
-      .map((user) => user.user_id);
-    const missing = ids.filter((id) => !known.includes(id));
-    return [...known, ...missing];
-  }
-
-  private groupForBearers(ids: readonly string[]): string {
-    const hit = this.myGroups().find((group) => {
-      const members = new Set(this.memberIds(group.tb_tyapp_usr_grp_id));
-      return ids.length > 0 && ids.every((id) => members.has(id));
-    });
-    return hit?.tb_tyapp_usr_grp_id ?? this.groupId();
-  }
-
-  /** Locked share rows are the source of truth; missing shares → default bearers. */
-  private bearersForExisting(shares: YyemsBillShare[] | null): BearerPercent[] {
-    if (shares && shares.length > 0) {
-      const ordered = this.orderIds(shares.map((row) => row.user_id));
-      const byId = new Map(shares.map((row) => [row.user_id, Number(row.share)]));
-      return percentsFromShares(
-        ordered.map((userId) => ({
-          user_id: userId,
-          share: byId.get(userId) ?? 0,
-        })),
-      );
-    }
-    return this.defaultBearers();
   }
 
   private syncLookupLabels(form: BillForm | null) {

@@ -72,8 +72,8 @@
               <span class="sum-out">{{ day.outLabel }}</span>
             </div>
           </div>
-          @for (row of day.rows; track row.bill.tb_tyapp_yhm_id) {
-            <a class="item-link bill-link" [routerLink]="['../edit', row.bill.tb_tyapp_yhm_id]">
+          @for (row of day.rows; track row.bill.tb_tyapp_yhbl_id) {
+            <a class="item-link bill-link" [routerLink]="['../edit', row.bill.tb_tyapp_yhbl_id]">
               <div class="bill-row">
                 <div class="bill-cat">
                   <span>{{ row.categoryTop }}</span>

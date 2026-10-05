@@ -1,34 +1,34 @@
-# yyHome HITL — weird historical bills
+# yyHome HITL — 歷史異常帳單
 
-Source: `20260929_142600_Items.xlsx` / YYEMS
-Full table: `yyhome-hitl-weird-bills.csv` (fill column `your_answer`).
+來源：`20260929_142600_Items.xlsx`／YYEMS  
+完整表：`yyhome-hitl-weird-bills.csv`（請填 `your_answer` 欄）。
 
-## How to answer
+## 怎麼回答
 
-| Answer | Meaning |
+| 答案 | 意思 |
 |---|---|
-| `KEEP_DEBT` | Real unpaid debt — leave share as-is (付≠扛). |
-| `FORCE_OWN_EQ_PAY` | Should not affect Split — set share so 扛=付的人. |
-| `HAS_PAYBACK_PAIR` | Already repaid via Internal_transfer — point to pair / we will force clean. |
-| `KEEP_YYEMS` | Joint payback transfer — keep 0.5/0.5. |
-| `SET_CTY` / `SET_FRD` / `SET_YYEMS` | For blank ownership only. |
-| `OTHER` | Write note in remark or tell me in chat. |
+| `KEEP_DEBT` | 真的還沒還的債 — share 維持現狀（付≠扛）。 |
+| `FORCE_OWN_EQ_PAY` | 不該影響 Split — 把 share 改成「扛 = 付的人」。 |
+| `HAS_PAYBACK_PAIR` | 已用內部轉帳還過 — 可註明對應那一對；我們會清成不進債務。 |
+| `KEEP_YYEMS` | 共同還款轉帳 — 維持 0.5／0.5。 |
+| `SET_CTY`／`SET_FRD`／`SET_YYEMS` | 僅用於 Ownership 空白。 |
+| `OTHER` | 在 remark 寫說明，或在聊天告訴我。 |
 
-## Counts
+## 筆數統計
 
-- **C_expense_own_ne_pay**: 104 rows, sum cty_net_effect ≈ 8895.63
-- **A_xfer_own_ne_pay**: 33 rows, sum cty_net_effect ≈ -23498.01
-- **B_xfer_yyems**: 2 rows, sum cty_net_effect ≈ -12076.0
-- **Total flagged**: 139
+- **C_expense_own_ne_pay**：104 筆，cty_net_effect 合計 ≈ 8895.63
+- **A_xfer_own_ne_pay**：33 筆，cty_net_effect 合計 ≈ -23498.01
+- **B_xfer_yyems**：2 筆，cty_net_effect 合計 ≈ -12076.0
+- **合計標註**：139 筆
 
-### Flag meanings
+### 旗標意思
 
-- `A_xfer_own_ne_pay` — Internal_transfer where Ownership ≠ wallet owner
-- `B_xfer_yyems` — Internal_transfer marked joint (yyems)
-- `C_expense_own_ne_pay` — Normal bill, private ownership, other person paid (creates Split debt)
-- `D_blank_ownership` — Ownership empty
+- `A_xfer_own_ne_pay` — 內部轉帳，Ownership ≠ wallet 主人
+- `B_xfer_yyems` — 內部轉帳標成共同（yyems）
+- `C_expense_own_ne_pay` — 一般消費、私人 Ownership、別人付款（會產生 Split 債務）
+- `D_blank_ownership` — Ownership 空白
 
-## Top CAD private expenses (C_) for quick review
+## CAD 私人消費（C_）快速檢視
 
 - `20250513-2208add-06` 2024-07-11 15:24:04 own=frd pay=cty out net=146.89 CAD | Mountain Warehouse | 冬天羽絨Mountain Warehouse，一年保養， 如果遇到咩問題可以拎住張電子單（在電郵）就可以去問
 - `YYEMS-20250522-2cc06094` 2025-05-22 17:33:00 own=frd pay=cty out net=101.37 CAD | Uniqlo | 
@@ -42,7 +42,7 @@ Full table: `yyhome-hitl-weird-bills.csv` (fill column `your_answer`).
 - `YYEMS-20260311-6d6c2064` 2026-03-11 09:58:14 own=frd pay=cty out net=25.0 CAD | U solo Hair Salon | FRD剪髮，原價$25，9折後$22.5，連Tips $25。
 - `YYEMS-20250126-c61977e7` 2025-01-26 14:23:00 own=cty pay=frd out net=-14.68 CAD | Marshalls Homesense | Yin:襪
 
-## Top HKD private expenses (C_) by |net|
+## HKD 私人消費（C_）依 |net| 排序
 
 - `20250513add-FrdSelfDev-03` 2024-08-15 11:18:02 own=frd pay=cty out net=1683.56 HKD | Volunteer/Course in general | ASISTtraining. HKD1683.56 (未計回贈)
 - `20250513add-2017` 2023-11-10 22:54:35 own=frd pay=cty out net=1045.0 HKD | NA | 酒店
@@ -70,7 +70,7 @@ Full table: `yyhome-hitl-weird-bills.csv` (fill column `your_answer`).
 - `20250513add-2014` 2023-10-29 04:01:59 own=frd pay=cty out net=102.0 HKD | MoneyManager_食物_下午茶 | 
 - `20250513add-2008` 2023-10-07 08:14:17 own=frd pay=cty out net=99.0 HKD | MoneyManager_食物_晚餐 | 
 
-## All A_xfer_own_ne_pay (internal transfer cross)
+## 全部 A_xfer_own_ne_pay（內部轉帳且付≠扛）
 
 - `20250513add-2102` 2024-06-19 11:44:09 in own=frd pay=cty -36036.01 HKD | Kelly (Yin mum) AXA insurance（7月6日 彦已還）
 - `20250513add-2132` 2024-07-06 15:00:18 out own=frd pay=cty 36036.01 HKD | 彦還錢比Frd
@@ -106,7 +106,7 @@ Full table: `yyhome-hitl-weird-bills.csv` (fill column `your_answer`).
 - `20250513-transfer-08` 2024-09-08 14:02:25 out own=frd pay=cty 3.96 CAD | 月尾彦信用卡找數(彦耀私人項目)
 - `YYEMS-20260612-cce5583f` 2025-02-22 12:57:00 in own=frd pay=cty -3.25 CAD | TNT退錢，耀比返CTY
 
-## B_xfer_yyems
+## B_xfer_yyems（內部轉帳且標共同）
 
 - `YYEMS-20260225-001d6a2b` 2026-02-25 14:31:25 out pay=frd 12076.0 HKD | 彦用MMPOWER付款HKD12076(2人機票來回多倫多和香港），耀即時匯豐過錢HKD12076比彦
 - `YYEMS-20260225-9979598d` 2026-02-25 14:31:25 in pay=cty -12076.0 HKD | 彦用MMPOWER付款HKD12076(2人機票來回多倫多和香港），耀即時匯豐過錢HKD12076比彦

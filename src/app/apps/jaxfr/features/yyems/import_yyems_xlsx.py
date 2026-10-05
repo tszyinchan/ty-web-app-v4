@@ -12,7 +12,7 @@
 #   python .../import_yyems_xlsx.py --dicts-only --wipe
 #
 # --dicts-only: A dictionaries only.
-# --through-bills: A dictionaries + B bills (+ bill_share). No prices/buys/eats/files.
+# --through-bills: A dictionaries + B bills. No prices/buys/eats/files.
 # Full import (no flag): everything including kitchen cycle.
 
 from __future__ import annotations
@@ -29,7 +29,7 @@ from openpyxl import load_workbook
 
 DEFAULT_XLSX = (
     r"j:\.shortcut-targets-by-id\1yqrgKWWM13JcXnN0VdIaLbLVzW7LytpH"
-    r"\6FRD\Project\2024_YYEMS Appsheet\20260929_142600_Items.xlsx"
+    r"\6FRD\Project\2024_YYEMS Appsheet\20261005_101700_Items.xlsx"
 )
 
 EMAIL_TO_PARTY = {
@@ -177,12 +177,24 @@ def main() -> int:
     parser.add_argument(
         "--through-bills",
         action="store_true",
-        help="Dictionaries + bills + bill_share only (skip prices / buys / eats / files)",
+        help="Dictionaries + bills only (skip prices / buys / eats / files)",
     )
     parser.add_argument(
         "--wipe",
         action="store_true",
         help="Delete existing yyhome rows first (scope follows --dicts-only / --through-bills)",
+    )
+    parser.add_argument(
+        "--key",
+        "--service-role-key",
+        dest="service_role_key",
+        default="",
+        help="Supabase service role key (or set via SUPABASE_SERVICE_ROLE_KEY env)",
+    )
+    parser.add_argument(
+        "--url",
+        default="",
+        help="Supabase URL (optional; defaults to project URL)",
     )
     args = parser.parse_args()
     if args.dicts_only and args.through_bills:
@@ -197,10 +209,24 @@ def main() -> int:
         print(f"xlsx not found: {xlsx}", file=sys.stderr)
         return 1
 
-    url = os.environ.get("SUPABASE_URL", "").strip()
-    key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "").strip()
-    if not args.dry_run and (not url or not key):
-        print("Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY", file=sys.stderr)
+    url = (
+        args.url.strip()
+        or os.environ.get("SUPABASE_URL", "").strip()
+        or "https://hqaxwodbhaohwyunbzxg.supabase.co"
+    )
+    key = (
+        args.service_role_key.strip()
+        or os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "").strip()
+    )
+    if not args.dry_run and not key:
+        print(
+            "Set SUPABASE_SERVICE_ROLE_KEY or pass --key <service_role_key>.\n"
+            "Example in PowerShell:\n"
+            "  $env:SUPABASE_SERVICE_ROLE_KEY=\"<your_service_role_key>\"\n"
+            "Or directly:\n"
+            "  python src/app/apps/jaxfr/features/yyems/import_yyems_xlsx.py --through-bills --wipe --key \"<your_service_role_key>\"",
+            file=sys.stderr,
+        )
         return 1
 
     print(f"Reading {xlsx} …")
@@ -308,8 +334,7 @@ def main() -> int:
                 "tyapp_yyhome_item_category",
             ]
             bill_tables = [
-                "tyapp_yyhome_bill_share",
-                "tyapp_yyhome",
+                "tyapp_yyhome_bill",
             ]
             kitchen_tables = [
                 "tyapp_yyhome_eat",
@@ -324,18 +349,10 @@ def main() -> int:
             else:
                 wipe_tables = kitchen_tables + bill_tables + dict_tables
 
-            # bill_share has no created_at — use PK / seq filters PostgREST accepts.
-            wipe_filter: dict[str, tuple[str, object]] = {
-                "tyapp_yyhome_bill_share": ("tb_tyapp_yhbs_seq_no", 0),
-            }
             for table in wipe_tables:
-                q = client.table(table).delete()
-                if table in wipe_filter:
-                    col, val = wipe_filter[table]
-                    q = q.gte(col, val)
-                else:
-                    q = q.gte("created_at", "1970-01-01T00:00:00Z")
-                q.execute()
+                client.table(table).delete().gte(
+                    "created_at", "1970-01-01T00:00:00Z"
+                ).execute()
             print("wiped:", ", ".join(wipe_tables))
 
     def created_by_from_email(email: object) -> str:
@@ -427,10 +444,22 @@ def main() -> int:
         )
 
     vendor_payload: list[dict[str, Any]] = []
+    default_vcat_id = vcat_ids.get("其他_其他") or (next(iter(vcat_ids.values())) if vcat_ids else None)
     for row in vendors:
         lid = as_text(row.get("ID"))
         cat = as_text(row.get("Vendor Categories"))
-        if not lid or not cat or cat not in vcat_ids:
+        if not lid:
+            skip("vendor")
+            continue
+        vcat_id = vcat_ids.get(cat) if cat else None
+        if not vcat_id:
+            # Fallback category to avoid dropping vendor and its transactions
+            name_lower = (as_text(row.get("Name")) or "").lower()
+            if "bakery" in name_lower and "飲食_麵包店" in vcat_ids:
+                vcat_id = vcat_ids["飲食_麵包店"]
+            else:
+                vcat_id = default_vcat_id
+        if not vcat_id:
             skip("vendor")
             continue
         pk = new_id()
@@ -439,7 +468,7 @@ def main() -> int:
             {
                 "tb_tyapp_yhvd_id": pk,
                 "legacy_id": lid,
-                "category_id": vcat_ids[cat],
+                "category_id": vcat_id,
                 "name": as_text(row.get("Name")) or lid,
                 "name_short": as_text(row.get("Name_簡稱_如有")),
                 "sort_order": as_int(row.get("Order")),
@@ -510,13 +539,15 @@ def main() -> int:
         )
 
     bill_payload: list[dict[str, Any]] = []
-    share_payload: list[dict[str, Any]] = []
     for row in bills if load_bills else []:
         lid = as_text(row.get("YYEMS ID"))
         vendor = as_text(row.get("Vendor ID"))
         wallet = as_text(row.get("Wallet"))
         occurred = as_iso_dt(row.get("DateTime"))
         amount = as_num(row.get("Amount"))
+        cur = as_text(row.get("Currency")) or "CAD"
+        if amount is None and cur == "FREE":
+            amount = 0.0
         if not lid or not vendor or vendor not in vendor_ids:
             skip("bill")
             continue
@@ -532,18 +563,20 @@ def main() -> int:
         flow = (as_text(row.get("In_or_out")) or "out").strip().lower()
         if flow not in {"in", "out", "free"}:
             flow = "out"
-        cur = as_text(row.get("Currency")) or "CAD"
         own = (as_text(row.get("Ownership")) or "").strip().lower()
+        if own not in {"cty", "frd", "yyems"}:
+            own = "yyems"
         pk = new_id()
         bill_ids[lid] = pk
         tick = as_text(row.get("✔️"))
         bill_payload.append(
             {
-                "tb_tyapp_yhm_id": pk,
+                "tb_tyapp_yhbl_id": pk,
                 "legacy_id": lid,
                 "occurred_at": occurred,
                 "location_tz": tz,
                 "in_or_out": flow,
+                "ownership": own,
                 "vendor_id": vendor_ids[vendor],
                 "currency": cur,
                 "amount": amount,
@@ -558,14 +591,6 @@ def main() -> int:
                 "group_id": couple_group_id,
             }
         )
-        owner_id = person_user(own)
-        if owner_id:
-            share_payload.append({"yyhome_id": pk, "user_id": owner_id, "share": 1})
-        else:
-            for code in ("cty", "frd"):
-                hid = party_user.get(code)
-                if hid:
-                    share_payload.append({"yyhome_id": pk, "user_id": hid, "share": 0.5})
 
     price_payload: list[dict[str, Any]] = []
     for row in prices if load_kitchen else []:
@@ -645,7 +670,7 @@ def main() -> int:
                 "tb_tyapp_yhby_id": pk,
                 "legacy_id": lid,
                 "price_id": price_ids[price],
-                "yyhome_id": bill_ids.get(bill) if bill else None,
+                "bill_id": bill_ids.get(bill) if bill else None,
                 "paid": as_num(row.get("Paid")),
                 "home_amount": home,
                 "home_unit": as_text(row.get("Home Unit")),
@@ -724,7 +749,7 @@ def main() -> int:
             {
                 "tb_tyapp_yhfl_id": new_id(),
                 "legacy_id": lid,
-                "yyhome_id": bill_ids[bill],
+                "bill_id": bill_ids[bill],
                 "kind": kind,
                 "drive_file_id": None,
                 "legacy_path": path,
@@ -742,7 +767,6 @@ def main() -> int:
         "wallet": wallet_payload,
         "fx": fx_payload,
         "bill": bill_payload,
-        "share": share_payload,
         "price": price_payload,
         "buy": buy_payload,
         "eat": eat_payload,
@@ -770,8 +794,7 @@ def main() -> int:
     insert_all("tyapp_yyhome_wallet", wallet_payload)
     insert_all("tyapp_yyhome_fx_rate", fx_payload)
     if load_bills:
-        insert_all("tyapp_yyhome", bill_payload)
-        insert_all("tyapp_yyhome_bill_share", share_payload)
+        insert_all("tyapp_yyhome_bill", bill_payload)
     if load_kitchen:
         insert_all("tyapp_yyhome_price", price_payload)
         insert_all("tyapp_yyhome_buy", buy_payload)

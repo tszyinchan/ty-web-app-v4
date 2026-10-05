@@ -1,12 +1,11 @@
--- Phase D: drop ALL legacy tyapp_yyems_* objects before creating tyapp_yyhome_*.
--- Paste in Supabase SQL editor FIRST, then paste yyems.schema.sql (yyhome-named),
--- then yyems-split.schema.patch.sql / fridge patch if needed.
--- DESTRUCTIVE — all yyems / half-built yyhome feature data is removed.
+-- Wipe yyHome / legacy yyems before recreating tyapp_yyhome_*.
+-- Paste in Supabase SQL editor FIRST, then yyems.schema.sql, then split/fridge patches.
+-- DESTRUCTIVE — all yyems / yyhome feature data is removed.
 --
--- Order matters: tables (and their RLS policies) first, then functions.
+-- Order: tables (CASCADE) first, then functions.
 
 -- ---------------------------------------------------------------------------
--- 1) Tables CASCADE — drops dependent policies / triggers / FKs
+-- 1) Tables CASCADE
 -- ---------------------------------------------------------------------------
 
 -- Legacy yyems (child → parent)
@@ -25,12 +24,13 @@ DROP TABLE IF EXISTS public.tyapp_yyems_item CASCADE;
 DROP TABLE IF EXISTS public.tyapp_yyems_item_category CASCADE;
 DROP TABLE IF EXISTS public.tyapp_yyems_currency CASCADE;
 
--- Any half-built Phase D yyhome tables
+-- Phase D / current yyhome (child → parent)
 DROP TABLE IF EXISTS public.tyapp_yyhome_eat CASCADE;
 DROP TABLE IF EXISTS public.tyapp_yyhome_file CASCADE;
 DROP TABLE IF EXISTS public.tyapp_yyhome_buy CASCADE;
 DROP TABLE IF EXISTS public.tyapp_yyhome_price CASCADE;
 DROP TABLE IF EXISTS public.tyapp_yyhome_bill_share CASCADE;
+DROP TABLE IF EXISTS public.tyapp_yyhome_bill CASCADE;
 DROP TABLE IF EXISTS public.tyapp_yyhome CASCADE;
 DROP TABLE IF EXISTS public.tyapp_yyhome_wallet CASCADE;
 DROP TABLE IF EXISTS public.tyapp_yyhome_financial_account CASCADE;
@@ -42,7 +42,7 @@ DROP TABLE IF EXISTS public.tyapp_yyhome_item_category CASCADE;
 DROP TABLE IF EXISTS public.tyapp_yyhome_currency CASCADE;
 
 -- ---------------------------------------------------------------------------
--- 2) Functions (CASCADE in case anything else still references them)
+-- 2) Functions
 -- ---------------------------------------------------------------------------
 
 DROP FUNCTION IF EXISTS public.tyapp_yyems_soft_delete_single_record(uuid) CASCADE;
@@ -55,6 +55,7 @@ DROP FUNCTION IF EXISTS public.tyapp_yyems_split_group_totals(uuid, uuid, uuid) 
 DROP FUNCTION IF EXISTS public.tyapp_yyems_is_household_member() CASCADE;
 
 DROP FUNCTION IF EXISTS public.tyapp_yyhome_soft_delete_single_record(uuid) CASCADE;
+DROP FUNCTION IF EXISTS public.tyapp_yyhome_bill_soft_delete_single_record(uuid) CASCADE;
 DROP FUNCTION IF EXISTS public.tyapp_yyhome_price_soft_delete_single_record(uuid) CASCADE;
 DROP FUNCTION IF EXISTS public.tyapp_yyhome_buy_soft_delete_single_record(uuid) CASCADE;
 DROP FUNCTION IF EXISTS public.tyapp_yyhome_eat_soft_delete_single_record(uuid) CASCADE;

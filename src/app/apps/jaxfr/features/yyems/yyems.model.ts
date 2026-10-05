@@ -30,6 +30,16 @@ export const YYEMS_IN_OR_OUT = {
 export type YyemsInOrOut =
   (typeof YYEMS_IN_OR_OUT)[keyof typeof YYEMS_IN_OR_OUT];
 
+/** AppSheet Ownership codes on the bill (not user UUIDs). */
+export const YYEMS_OWNERSHIP = {
+  Cty: 'cty',
+  Frd: 'frd',
+  Yyems: 'yyems',
+} as const;
+
+export type YyemsOwnership =
+  (typeof YYEMS_OWNERSHIP)[keyof typeof YYEMS_OWNERSHIP];
+
 /** Home / Eat meal slots. 1/3/5 are the three meals; the rest are extras. */
 export const YYEMS_MEAL = {
   Breakfast: '1早',
@@ -174,12 +184,14 @@ export interface YyemsFxRate {
 }
 
 export interface YyemsBill {
-  tb_tyapp_yhm_id: string;
-  tb_tyapp_yhm_seq_no: number;
+  tb_tyapp_yhbl_id: string;
+  tb_tyapp_yhbl_seq_no: number;
   legacy_id: string | null;
   occurred_at: string;
   location_tz: YyemsLocationTz;
   in_or_out: YyemsInOrOut;
+  /** AppSheet Ownership: cty | frd | yyems. */
+  ownership: YyemsOwnership;
   vendor_id: string;
   currency: string;
   amount: number;
@@ -250,8 +262,8 @@ export interface YyemsBuy {
   tb_tyapp_yhby_seq_no: number;
   legacy_id: string | null;
   price_id: string;
-  /** FK to tyapp_yyhome (bill). */
-  yyhome_id: string | null;
+  /** FK to tyapp_yyhome_bill. */
+  bill_id: string | null;
   paid: number | null;
   home_amount: number;
   home_unit: string | null;
@@ -291,7 +303,7 @@ export interface YyemsFile {
   tb_tyapp_yhfl_id: string;
   tb_tyapp_yhfl_seq_no: number;
   legacy_id: string | null;
-  yyhome_id: string;
+  bill_id: string;
   kind: YyemsFileKind;
   /** Google Drive file id in the Jaxfr folder. Null until a legacy AppSheet path is moved. */
   drive_file_id: string | null;
@@ -303,17 +315,6 @@ export interface YyemsFile {
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
-}
-
-/** Form value for shared 50/50 bill ownership (maps to two 0.5 share rows). */
-export const YYEMS_OWNERSHIP_SHARED = 'shared';
-
-export interface YyemsBillShare {
-  tb_tyapp_yhbs_id: string;
-  tb_tyapp_yhbs_seq_no: number;
-  yyhome_id: string;
-  user_id: string;
-  share: number;
 }
 
 export const YYEMS_MAIN_MEALS: readonly YyemsMeal[] = [
@@ -365,7 +366,7 @@ export interface YyemsFridgeRpcRow {
   home_unit: string | null;
   expiry_date: string | null;
   eat_priority: number;
-  yyhome_id: string | null;
+  bill_id: string | null;
   price_id: string;
   remaining: number;
   eaten: number;

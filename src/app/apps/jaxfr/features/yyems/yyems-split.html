@@ -60,9 +60,4 @@
       {{ totalView().unsetCount }} bills have no group, so they are not in the total.
     </p>
   }
-  @if (!loading() && totalView().missingShareCount > 0) {
-    <p class="split-footnote">
-      {{ totalView().missingShareCount }} bills in this group have no share rows, so they are not in the total.
-    </p>
-  }
 </div>

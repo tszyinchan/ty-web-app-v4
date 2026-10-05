@@ -1,15 +1,14 @@
--- Bill group. Safe to re-run.
--- Paste in the Supabase SQL editor.
--- Excel rows (legacy_id set) are stamped with the group whose members are
--- exactly the two users bound to appsheet_525_user_id cty and frd.
--- Ownership is not used. If that group is missing or not exactly those two, nothing is stamped.
+-- OBSOLETE for greenfield rebuild.
+-- group_id is part of tyapp_yyhome_bill in yyems.schema.sql.
+-- Keep only if patching an old DB that still has tyapp_yyhome (pre-rename).
+-- Prefer: yyhome.drop-yyems.sql → yyems.schema.sql → import.
 
-ALTER TABLE public.tyapp_yyhome
+ALTER TABLE public.tyapp_yyhome_bill
   ADD COLUMN IF NOT EXISTS group_id uuid
     REFERENCES public.tyapp_user_group (tb_tyapp_usr_grp_id);
 
-CREATE INDEX IF NOT EXISTS tyapp_yyhome_group_idx
-  ON public.tyapp_yyhome (group_id)
+CREATE INDEX IF NOT EXISTS tyapp_yyhome_bill_group_idx
+  ON public.tyapp_yyhome_bill (group_id)
   WHERE deleted_at IS NULL;
 
 WITH couple AS (
@@ -37,7 +36,7 @@ only_one AS (
   WHERE (SELECT count(*) FROM couple) = 2
     AND (SELECT count(*) FROM sized) = 1
 )
-UPDATE public.tyapp_yyhome AS bill
+UPDATE public.tyapp_yyhome_bill AS bill
 SET group_id = (SELECT group_id FROM only_one)
 WHERE bill.legacy_id IS NOT NULL
   AND bill.deleted_at IS NULL

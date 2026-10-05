@@ -254,89 +254,21 @@
             </div>
           }
 
-          @if (bearers().length === 0) {
-          <p class="owner-hint">Join a user group to choose who bears this bill.</p>
-        } @else {
-          @if (bearers().length > 2) {
-            <div class="owner-toggle">
-              @for (u of bearers(); track u.user_id) {
-                <button
-                  type="button"
-                  [class.active]="isBearer(bill, u.user_id)"
-                  [attr.aria-pressed]="isBearer(bill, u.user_id)"
-                  (click)="toggleBearer(bill, u.user_id)"
-                >
-                  @if (isBearer(bill, u.user_id)) {
-                    <mat-icon>check</mat-icon>
-                  }
-                  {{ u | tyDisplayName }}
-                </button>
-              }
-            </div>
-          }
-          @if (bill.bearers.length === 2) {
-            <div class="pair-split">
-              <div class="pair-ends">
-                <button
-                  type="button"
-                  class="pair-name"
-                  [class.sole]="bill.bearers[0].percent >= 100"
-                  (click)="setSoleBearer(bill, 0)"
-                >
-                  {{ bearerName(bill.bearers[0].user_id) }}
-                </button>
-                <button
-                  type="button"
-                  class="pair-half"
-                  [class.active]="isHalfSplit(bill)"
-                  aria-label="Split 50 / 50"
-                  (click)="setHalfSplit(bill)"
-                >
-                  ½
-                </button>
-                <button
-                  type="button"
-                  class="pair-name"
-                  [class.sole]="bill.bearers[1].percent >= 100"
-                  (click)="setSoleBearer(bill, 1)"
-                >
-                  {{ bearerName(bill.bearers[1].user_id) }}
-                </button>
-              </div>
-              <div
-                class="pair-hit"
-                (pointerdown)="onPairDown($event, bill, lane)"
-                (pointermove)="onPairMove($event, bill, lane)"
-                (pointerup)="onPairUp()"
-                (pointercancel)="onPairUp()"
+          <div class="owner-toggle">
+            @for (opt of ownershipOptions(); track opt.value) {
+              <button
+                type="button"
+                [class.active]="bill.ownership === opt.value"
+                [attr.aria-pressed]="bill.ownership === opt.value"
+                (click)="setOwnership(bill, opt.value)"
               >
-                <div class="pair-lane" #lane>
-                  <div class="pair-rail">
-                    <div class="pair-left" [style.width.%]="bill.bearers[0].percent"></div>
-                  </div>
-                  <button
-                    type="button"
-                    class="pair-knob"
-                    [style.left.%]="bill.bearers[0].percent"
-                    aria-label="Drag to change split"
-                    (pointerdown)="onPairDown($event, bill, lane)"
-                    (pointermove)="onPairMove($event, bill, lane)"
-                    (pointerup)="onPairUp()"
-                    (keydown)="onPairKey($event, bill)"
-                  ></button>
-                </div>
-              </div>
-              <div class="pair-pct">
-                <span>{{ formatSharePercent(bill.bearers[0].percent) }}%</span>
-                <span>{{ formatSharePercent(bill.bearers[1].percent) }}%</span>
-              </div>
-            </div>
-          } @else if (bill.bearers.length === 1) {
-            <p class="owner-hint">{{ bearerName(bill.bearers[0].user_id) }} · 100%</p>
-          } @else {
-            <p class="owner-hint">{{ shareSplitHint(bill.bearers.length) }}</p>
-          }
-          }
+                @if (bill.ownership === opt.value) {
+                  <mat-icon>check</mat-icon>
+                }
+                {{ opt.label }}
+              </button>
+            }
+          </div>
         </div>
 
         <div class="ledger-row">

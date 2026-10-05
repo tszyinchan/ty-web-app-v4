@@ -5,9 +5,8 @@ import {
   YYEMS_EATEN_OTHER,
   YYEMS_IN_OR_OUT,
   YYEMS_MEAL,
-  YYEMS_OWNERSHIP_SHARED,
+  YYEMS_OWNERSHIP,
   YyemsBillEmbed,
-  YyemsBillShare,
   YyemsEat,
   YyemsEatAmount,
   YyemsEatenOther,
@@ -15,6 +14,7 @@ import {
   YyemsInOrOut,
   YyemsItem,
   YyemsMeal,
+  YyemsOwnership,
   YyemsVendorEmbed,
 } from './yyems.model';
 
@@ -234,31 +234,21 @@ export function billFxHint(input: {
   return { text, off, suggest };
 }
 
-/** Display hint from bill_share rows only (Phase D dropped bill.ownership_user_id). */
-export function bearerNames(
-  shares: readonly { user_id: string }[] | undefined,
+/** List / search label from bill.ownership (AppSheet cty | frd | yyems). */
+export function ownershipLabel(
+  ownership: YyemsOwnership | string | null | undefined,
   users: readonly TyappUser[],
 ): string {
-  if (shares && shares.length > 0) {
-    return shares
-      .map((row) => {
-        const user = users.find((item) => item.user_id === row.user_id);
-        return user ? formatUserDisplayName(user) : 'Unknown';
-      })
-      .sort((a, b) => a.localeCompare(b))
-      .join(' · ');
+  if (ownership === YYEMS_OWNERSHIP.Yyems) return 'Both';
+  if (ownership === YYEMS_OWNERSHIP.Cty || ownership === YYEMS_OWNERSHIP.Frd) {
+    const user = users.find(
+      (row) =>
+        !row.deleted_at &&
+        (row.appsheet_525_user_id || '').trim().toLowerCase() === ownership,
+    );
+    return user ? formatUserDisplayName(user) : ownership;
   }
   return '—';
-}
-
-/** Map locked share rows back to the Yin / Yiu / Both control. */
-export function ownershipKeyFromShares(
-  rows: readonly Pick<YyemsBillShare, 'user_id' | 'share'>[],
-): string | null {
-  if (rows.length === 1 && Number(rows[0].share) === 1) return rows[0].user_id;
-  const halves = rows.filter((row) => Math.abs(Number(row.share) - 0.5) < 0.001);
-  if (rows.length >= 2 && halves.length === rows.length) return YYEMS_OWNERSHIP_SHARED;
-  return null;
 }
 
 export function sortByOrderThenName<T extends { sort_order: number | null; name: string }>(
@@ -441,7 +431,6 @@ export function buildBillLedger(
   bills: readonly YyemsBillEmbed[],
   users: readonly TyappUser[],
   search: string,
-  sharesByBill: ReadonlyMap<string, readonly { user_id: string }[]> | null = null,
 ): YyemsBillLedger {
   const monthIn: Record<string, number> = {};
   const monthOut: Record<string, number> = {};
@@ -456,10 +445,7 @@ export function buildBillLedger(
   const needle = search.trim().toLowerCase();
   const visible = needle
     ? bills.filter((bill) =>
-        billHaystack(
-          bill,
-          bearerNames(sharesByBill?.get(bill.tb_tyapp_yhm_id), users),
-        ).includes(needle),
+        billHaystack(bill, ownershipLabel(bill.ownership, users)).includes(needle),
       )
     : bills;
 
@@ -469,7 +455,7 @@ export function buildBillLedger(
     const dateKey = local.slice(0, 10);
     if (!dateKey) continue;
     const cat = vendorCategoryLines(bill.vendor);
-    const owner = bearerNames(sharesByBill?.get(bill.tb_tyapp_yhm_id), users);
+    const owner = ownershipLabel(bill.ownership, users);
     const wallet = bill.wallet?.name || '—';
     const row: YyemsBillLedgerRow = {
       bill,
