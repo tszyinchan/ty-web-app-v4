@@ -17,6 +17,7 @@ export enum CgLayerLook {
 export enum CgSubtitlePreset {
   News = 'news',
   Show = 'show',
+  Custom = 'custom',
 }
 
 export enum CgElementType {
@@ -189,12 +190,32 @@ export const CG_LAYER_LOOK_OPTIONS: ReadonlyArray<{
   { value: CgLayerLook.Mono, label: 'B&W' },
 ];
 
-export const CG_SUBTITLE_PRESET_OPTIONS: ReadonlyArray<{
-  value: CgSubtitlePreset;
+export interface CgSubtitleFontOption {
+  value: string;
   label: string;
-}> = [
-  { value: CgSubtitlePreset.News, label: 'News' },
-  { value: CgSubtitlePreset.Show, label: 'Show' },
+}
+
+export const CG_SUBTITLE_FONT_OPTIONS: ReadonlyArray<CgSubtitleFontOption> = [
+  {
+    value: "'華康中黑體', '華康中黑體(P)', 'Microsoft JhengHei', 'Segoe UI', sans-serif",
+    label: '華康中黑體 (DFHei)',
+  },
+  {
+    value: "'Microsoft JhengHei', 'Segoe UI', sans-serif",
+    label: '微軟正黑體 (JhengHei)',
+  },
+  {
+    value: "'Noto Sans TC', 'PingFang TC', sans-serif",
+    label: '思源黑體 (Noto Sans)',
+  },
+  {
+    value: "'DFKai-SB', 'BiauKai', serif",
+    label: '標楷體 (BiauKai)',
+  },
+  {
+    value: "'Segoe UI', Arial, sans-serif",
+    label: 'Arial / Segoe UI',
+  },
 ];
 
 export const CG_PACKAGE_ROLE_OPTIONS: ReadonlyArray<{

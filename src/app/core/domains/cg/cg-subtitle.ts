@@ -15,7 +15,7 @@ import {
   CgSubtitlePreset,
   DEFAULT_SUBTITLE_LAYOUT,
 } from './cg.constants';
-import { CgLayout } from './cg.model';
+import { CgLayout, CgSubtitleStyle } from './cg.model';
 import { subtitleLayoutToCss, subtitleTextParts } from './cg.util';
 
 @Component({
@@ -31,13 +31,20 @@ export class CgSubtitle {
   readonly layout = input<CgLayout>({ ...DEFAULT_SUBTITLE_LAYOUT });
   readonly durationMs = input(CG_DEFAULT_DURATION_MS);
   readonly preset = input(CgSubtitlePreset.News);
+  readonly style = input<CgSubtitleStyle>();
 
   readonly incoming = signal('');
   readonly outgoing = signal('');
   readonly fading = signal(false);
 
+  readonly effectiveStyle = computed<CgSubtitleStyle>(() => {
+    const custom = this.style();
+    if (custom) return custom;
+    return { preset: this.preset() };
+  });
+
   readonly css = computed(() =>
-    subtitleLayoutToCss(this.layout(), this.preset()),
+    subtitleLayoutToCss(this.layout(), this.effectiveStyle()),
   );
   readonly incomingParts = computed(() => subtitleTextParts(this.incoming()));
   readonly outgoingParts = computed(() => subtitleTextParts(this.outgoing()));

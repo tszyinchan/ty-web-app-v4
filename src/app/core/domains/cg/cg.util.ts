@@ -138,7 +138,7 @@ export function emptySubtitlePayload(
     lines: [...lines],
     index,
     cursor: clampSubtitleCursor(lines, cursor ?? index ?? 0),
-    style: { preset: normalizeSubtitlePreset(style?.preset) },
+    style: normalizeSubtitleStyle(style),
     transition: { duration_ms: normalizeDurationMs(transitionMs) },
   };
 }
@@ -298,13 +298,58 @@ export function innerDurationMs(payload: Pick<CgLayerPayload, 'transition'>): nu
 }
 
 export function normalizeSubtitlePreset(raw: unknown): CgSubtitlePreset {
-  return raw === CgSubtitlePreset.Show
-    ? CgSubtitlePreset.Show
-    : CgSubtitlePreset.News;
+  if (raw === CgSubtitlePreset.Show) return CgSubtitlePreset.Show;
+  if (raw === CgSubtitlePreset.Custom) return CgSubtitlePreset.Custom;
+  return CgSubtitlePreset.News;
+}
+
+export function normalizeSubtitleStyle(raw: unknown): CgSubtitleStyle {
+  const value = asRecord(raw);
+  const preset = normalizeSubtitlePreset(value['preset']);
+  const style: CgSubtitleStyle = { preset };
+
+  const fontFamily = asString(value['fontFamily']);
+  if (fontFamily) style.fontFamily = fontFamily;
+
+  const fontSize = toOptionalNumber(value['fontSize']);
+  if (fontSize != null && fontSize > 0) style.fontSize = fontSize;
+
+  const scaleY = toOptionalNumber(value['scaleY']);
+  if (scaleY != null && scaleY > 0) style.scaleY = scaleY;
+
+  const scaleX = toOptionalNumber(value['scaleX']);
+  if (scaleX != null && scaleX > 0) style.scaleX = scaleX;
+
+  const color = asString(value['color']);
+  if (color) style.color = color;
+
+  const borderWidth = toOptionalNumber(value['borderWidth']);
+  if (borderWidth != null && borderWidth >= 0) style.borderWidth = borderWidth;
+
+  const borderColor = asString(value['borderColor']);
+  if (borderColor) style.borderColor = borderColor;
+
+  const shadowAngle = toOptionalNumber(value['shadowAngle']);
+  if (shadowAngle != null) style.shadowAngle = shadowAngle;
+
+  const shadowDistance = toOptionalNumber(value['shadowDistance']);
+  if (shadowDistance != null && shadowDistance >= 0) style.shadowDistance = shadowDistance;
+
+  const shadowRadius = toOptionalNumber(value['shadowRadius']);
+  if (shadowRadius != null && shadowRadius >= 0) style.shadowRadius = shadowRadius;
+
+  const shadowColor = asString(value['shadowColor']);
+  if (shadowColor) style.shadowColor = shadowColor;
+
+  return style;
 }
 
 export function subtitlePresetOf(payload: CgLayerPayload): CgSubtitlePreset {
   return normalizeSubtitlePreset(payload.style?.preset);
+}
+
+export function subtitleStyleOf(payload: CgLayerPayload): CgSubtitleStyle {
+  return normalizeSubtitleStyle(payload.style);
 }
 
 export function subtitleTextParts(
@@ -421,9 +466,13 @@ export function normalizeSubtitlePayload(raw: unknown): CgLayerPayload {
       : (index ?? 0);
   const styleRaw = asRecord(value['style']);
   const transitionRaw = asRecord(value['transition']);
-  return emptySubtitlePayload(lines, index, cursorSource, {
-    preset: normalizeSubtitlePreset(styleRaw['preset']),
-  }, transitionRaw['duration_ms']);
+  return emptySubtitlePayload(
+    lines,
+    index,
+    cursorSource,
+    normalizeSubtitleStyle(styleRaw),
+    transitionRaw['duration_ms'],
+  );
 }
 
 export function layerToDraft(layer: CgLayer): CgLayerDraft {
@@ -600,15 +649,55 @@ export function logoLayoutToCss(layout: CgLayout): Record<string, string> {
 /** Subtitle Scale is type size, not a CSS transform of the caption box. */
 export function subtitleLayoutToCss(
   layout: CgLayout,
-  preset: CgSubtitlePreset = CgSubtitlePreset.News,
+  styleOrPreset: CgSubtitleStyle | CgSubtitlePreset = CgSubtitlePreset.News,
 ): Record<string, string> {
   const css = layoutBoxCss(layout, false);
+  const style: CgSubtitleStyle =
+    typeof styleOrPreset === 'string'
+      ? { preset: normalizeSubtitlePreset(styleOrPreset) }
+      : normalizeSubtitleStyle(styleOrPreset);
+  const isShow = style.preset === CgSubtitlePreset.Show;
+
+  const baseFont =
+    style.fontSize != null && style.fontSize > 0
+      ? style.fontSize
+      : isShow
+        ? CG_SUBTITLE_SHOW_FONT_VH
+        : CG_SUBTITLE_FONT_VH;
   const scale = Number.isFinite(layout.scale) ? layout.scale : 1;
-  const base =
-    preset === CgSubtitlePreset.Show
-      ? CG_SUBTITLE_SHOW_FONT_VH
-      : CG_SUBTITLE_FONT_VH;
-  css['--cg-sub-font'] = String(base * scale);
+  css['--cg-sub-font'] = String(baseFont * scale);
+
+  if (style.fontFamily) {
+    css['--cg-sub-font-family'] = style.fontFamily;
+  }
+
+  const scaleX = style.scaleX ?? 1.0;
+  const scaleY = style.scaleY ?? (isShow ? 1.0 : 1.11);
+  css['--cg-sub-scale-x'] = String(scaleX);
+  css['--cg-sub-scale-y'] = String(scaleY);
+
+  const color = style.color || (isShow ? '#fff6d8' : '#ffffff');
+  css['--cg-sub-color'] = color;
+
+  const borderWidth = style.borderWidth ?? (isShow ? 0.16 : 0.12);
+  const borderColor = style.borderColor || '#000000';
+  css['--cg-sub-stroke-width'] = `${borderWidth}em`;
+  css['--cg-sub-stroke-color'] = borderColor;
+
+  const shadowDist = style.shadowDistance ?? (isShow ? 2 : 0);
+  const shadowRad = style.shadowRadius ?? 2;
+  const shadowCol = style.shadowColor || 'rgba(0, 0, 0, 0.8)';
+  const shadowAngle = style.shadowAngle ?? 135;
+
+  if (shadowDist > 0 && shadowCol && shadowCol !== 'transparent') {
+    const rad = (shadowAngle * Math.PI) / 180;
+    const dx = Math.round(Math.cos(rad) * shadowDist * 10) / 10;
+    const dy = Math.round(Math.sin(rad) * shadowDist * 10) / 10;
+    css['--cg-sub-filter'] = `drop-shadow(${dx}px ${dy}px ${shadowRad}px ${shadowCol})`;
+  } else {
+    css['--cg-sub-filter'] = 'none';
+  }
+
   return css;
 }
 

@@ -27,6 +27,17 @@ export interface CgLogoPayload {
 
 export interface CgSubtitleStyle {
   preset: CgSubtitlePreset;
+  fontFamily?: string;
+  fontSize?: number;
+  scaleY?: number;
+  scaleX?: number;
+  color?: string;
+  borderWidth?: number;
+  borderColor?: string;
+  shadowAngle?: number;
+  shadowDistance?: number;
+  shadowRadius?: number;
+  shadowColor?: string;
 }
 
 /** Inner cue / future Layer animation. Not Package Appear. */

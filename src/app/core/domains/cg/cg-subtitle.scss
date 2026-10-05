@@ -17,17 +17,20 @@
   position: relative;
   max-width: 100%;
   box-sizing: border-box;
-  color: #fff;
-  font-family:
-    '華康中黑體', '華康中黑體(P)', 'Microsoft JhengHei', 'Segoe UI', sans-serif;
+  color: var(--cg-sub-color, #fff);
+  font-family: var(
+    --cg-sub-font-family,
+    ('華康中黑體', '華康中黑體(P)', 'Microsoft JhengHei', 'Segoe UI', sans-serif)
+  );
   font-size: calc(var(--cg-sub-font, 5.6) * 1vh);
   font-size: calc(var(--cg-sub-font, 5.6) * 1cqh);
   font-weight: 400;
   letter-spacing: 0.104em;
   line-height: 1.15;
   text-align: center;
-  transform: scaleY(1.11);
+  transform: scale(var(--cg-sub-scale-x, 1), var(--cg-sub-scale-y, 1.11));
   transform-origin: center bottom;
+  filter: var(--cg-sub-filter, none);
 }
 
 .sub-stroke,
@@ -49,13 +52,13 @@
   left: 0;
   right: 0;
   top: 0;
-  color: #000;
-  -webkit-text-stroke: 0.12em #000;
+  color: var(--cg-sub-stroke-color, #000);
+  -webkit-text-stroke: var(--cg-sub-stroke-width, 0.12em) var(--cg-sub-stroke-color, #000);
 }
 
 .sub-fill {
   position: relative;
-  color: #fff;
+  color: var(--cg-sub-color, #fff);
 }
 
 .sub-text .latin {
@@ -86,11 +89,11 @@
 }
 
 .sub-box.show .sub-stroke {
-  -webkit-text-stroke: 0.16em #000;
+  -webkit-text-stroke: var(--cg-sub-stroke-width, 0.16em) var(--cg-sub-stroke-color, #000);
 }
 
 .sub-box.show .sub-fill {
-  color: #fff6d8;
+  color: var(--cg-sub-color, #fff6d8);
 }
 
 @keyframes cg-cue-in {

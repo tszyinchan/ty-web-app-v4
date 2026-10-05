@@ -1,6 +1,6 @@
 <div
   class="sub-box"
-  [class.show]="preset() === Show"
+  [class.show]="effectiveStyle().preset === Show"
   [ngStyle]="css()"
   [style.--cg-cue-ms]="durationMs() + 'ms'"
 >

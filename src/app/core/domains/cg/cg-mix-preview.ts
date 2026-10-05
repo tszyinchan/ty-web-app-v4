@@ -7,7 +7,7 @@ import {
   CgPreviewBackdrop,
 } from './cg.constants';
 import { CgLayerDraft } from './cg.model';
-import { innerDurationMs, layerIsMono, subtitlePresetOf } from './cg.util';
+import { innerDurationMs, layerIsMono, subtitleStyleOf } from './cg.util';
 
 @Component({
   selector: 'app-cg-mix-preview',
@@ -56,7 +56,7 @@ export class CgMixPreview {
     return {
       ...layer.payload,
       lines: [...layer.payload.lines],
-      style: { preset: subtitlePresetOf(layer.payload) },
+      style: subtitleStyleOf(layer.payload),
       transition: {
         duration_ms: innerDurationMs(layer.payload),
       },

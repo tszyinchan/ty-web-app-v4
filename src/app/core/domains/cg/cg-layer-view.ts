@@ -6,7 +6,7 @@ import {
   CgElementType,
 } from './cg.constants';
 import { CgLayerPayload, CgLayout } from './cg.model';
-import { subtitleLine, subtitlePresetOf, innerDurationMs } from './cg.util';
+import { subtitleLine, subtitlePresetOf, subtitleStyleOf, innerDurationMs } from './cg.util';
 
 @Component({
   selector: 'app-cg-layer-view',
@@ -28,6 +28,7 @@ import { subtitleLine, subtitlePresetOf, innerDurationMs } from './cg.util';
           [layout]="layout()"
           [durationMs]="innerDurationMs(payload())"
           [preset]="subtitlePresetOf(payload())"
+          [style]="subtitleStyleOf(payload())"
         />
       }
     }
@@ -64,6 +65,7 @@ export class CgLayerView {
   readonly Subtitle = CgElementType.Subtitle;
   readonly subtitleLine = subtitleLine;
   readonly subtitlePresetOf = subtitlePresetOf;
+  readonly subtitleStyleOf = subtitleStyleOf;
   readonly innerDurationMs = innerDurationMs;
   readonly elementType = input.required<CgElementType>();
   readonly layout = input.required<CgLayout>();

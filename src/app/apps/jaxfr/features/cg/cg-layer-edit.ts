@@ -26,14 +26,14 @@ import {
   CG_LOGO_ACCEPT,
   CG_LOGO_MAX_BYTES,
   CG_MAX_DURATION_MS,
-  CG_SUBTITLE_PRESET_OPTIONS,
+  CG_SUBTITLE_FONT_OPTIONS,
   CgAnchor,
   CgElementType,
   CgLayerEditMode,
   CgLayerLook,
   CgSubtitlePreset,
 } from '../../../../core/domains/cg/cg.constants';
-import { CgLayerDraft, CgLayout } from '../../../../core/domains/cg/cg.model';
+import { CgLayerDraft, CgLayout, CgSubtitleStyle } from '../../../../core/domains/cg/cg.model';
 import { CgService } from '../../../../core/domains/cg/cg.service';
 import {
   buildCgOverlayUrl,
@@ -47,6 +47,7 @@ import {
   parseSubtitleScript,
   readLayerEditMode,
   subtitlePresetOf,
+  subtitleStyleOf,
   writeLayerEditMode,
 } from '../../../../core/domains/cg/cg.util';
 import { HasUnsavedChanges } from '../../../../core/guards/unsaved-changes.guard';
@@ -83,7 +84,10 @@ export class CgLayerEdit implements OnInit, HasUnsavedChanges {
   readonly Logo = CgElementType.Logo;
   readonly Subtitle = CgElementType.Subtitle;
   readonly lookOptions = CG_LAYER_LOOK_OPTIONS;
-  readonly presetOptions = CG_SUBTITLE_PRESET_OPTIONS;
+  readonly fontOptions = CG_SUBTITLE_FONT_OPTIONS;
+  readonly PresetNews = CgSubtitlePreset.News;
+  readonly PresetShow = CgSubtitlePreset.Show;
+  readonly PresetCustom = CgSubtitlePreset.Custom;
   readonly anchorOptions = CG_ANCHOR_OPTIONS;
   readonly anchorGridOptions = CG_ANCHOR_GRID_OPTIONS;
   readonly logoAccept = CG_LOGO_ACCEPT;
@@ -92,6 +96,7 @@ export class CgLayerEdit implements OnInit, HasUnsavedChanges {
   readonly maxDurationMs = CG_MAX_DURATION_MS;
   readonly layersBackdrop = this.cg.layersBackdrop;
   readonly copyTargetId = signal('');
+  quickInputText = '';
   /** Desk-only Logo placement guide (not saved / not on OBS). */
   readonly logoOutline = signal(false);
   /** Operator preference for Logo Studio mode (when not forced on air). */
@@ -516,6 +521,97 @@ export class CgLayerEdit implements OnInit, HasUnsavedChanges {
     });
   }
 
+  clearQueue(layer: CgLayerDraft): void {
+    if (layer.element_type !== this.Subtitle) return;
+    if (layer.payload.lines.length === 0) return;
+    if (!confirm('Clear all captions in the queue?')) return;
+    void this.applySubtitlePayload(layer, [], null, 0);
+    this.notification.showSuccess('Queue cleared');
+  }
+
+  onQuickInputEnter(event: Event, layer: CgLayerDraft): void {
+    const keyEvent = event as KeyboardEvent;
+    if (keyEvent.ctrlKey || keyEvent.metaKey) {
+      event.preventDefault();
+      this.airNowQuickText(layer);
+    } else {
+      event.preventDefault();
+      this.appendQuickText(layer);
+    }
+  }
+
+  appendQuickText(layer: CgLayerDraft): void {
+    const text = this.quickInputText.trim();
+    if (!text || layer.element_type !== this.Subtitle) return;
+    const newLines = parseSubtitleScript(text);
+    if (newLines.length === 0) return;
+    const nextLines = [...layer.payload.lines, ...newLines];
+    const currentIndex = layer.payload.index;
+    const currentCursor =
+      layer.payload.lines.length === 0 ? 0 : layer.payload.cursor;
+    void this.applySubtitlePayload(
+      layer,
+      nextLines,
+      currentIndex,
+      currentCursor,
+    );
+    this.quickInputText = '';
+  }
+
+  insertQuickText(layer: CgLayerDraft): void {
+    const text = this.quickInputText.trim();
+    if (!text || layer.element_type !== this.Subtitle) return;
+    const newLines = parseSubtitleScript(text);
+    if (newLines.length === 0) return;
+    if (layer.payload.lines.length === 0) {
+      void this.applySubtitlePayload(layer, newLines, null, 0);
+      this.quickInputText = '';
+      return;
+    }
+    const currentActive =
+      layer.payload.index ?? layer.payload.cursor ?? (layer.payload.lines.length - 1);
+    const insertAt = Math.min(
+      layer.payload.lines.length,
+      Math.max(0, currentActive + 1),
+    );
+    const nextLines = [
+      ...layer.payload.lines.slice(0, insertAt),
+      ...newLines,
+      ...layer.payload.lines.slice(insertAt),
+    ];
+    let nextIndex = layer.payload.index;
+    if (nextIndex != null && nextIndex >= insertAt) {
+      nextIndex += newLines.length;
+    }
+    void this.applySubtitlePayload(layer, nextLines, nextIndex, insertAt);
+    this.quickInputText = '';
+  }
+
+  airNowQuickText(layer: CgLayerDraft): void {
+    const text = this.quickInputText.trim();
+    if (!text || layer.element_type !== this.Subtitle) return;
+    const newLines = parseSubtitleScript(text);
+    if (newLines.length === 0) return;
+    if (layer.payload.lines.length === 0) {
+      void this.applySubtitlePayload(layer, newLines, 0, 0);
+      this.quickInputText = '';
+      return;
+    }
+    const currentActive =
+      layer.payload.index ?? layer.payload.cursor ?? (layer.payload.lines.length - 1);
+    const insertAt = Math.min(
+      layer.payload.lines.length,
+      Math.max(0, currentActive + 1),
+    );
+    const nextLines = [
+      ...layer.payload.lines.slice(0, insertAt),
+      ...newLines,
+      ...layer.payload.lines.slice(insertAt),
+    ];
+    void this.applySubtitlePayload(layer, nextLines, insertAt, insertAt);
+    this.quickInputText = '';
+  }
+
   cueDurationMs(layer: CgLayerDraft): number {
     return innerDurationMs(layer.payload);
   }
@@ -572,24 +668,29 @@ export class CgLayerEdit implements OnInit, HasUnsavedChanges {
     else this.setCueFade(layer);
   }
 
-  onPresetToggle(event: MatButtonToggleChange): void {
-    const value = event.value;
-    if (value === CgSubtitlePreset.News || value === CgSubtitlePreset.Show) {
-      this.setPreset(value);
+  ensureCustomPreset(layer: CgLayerDraft): void {
+    if (layer.element_type !== this.Subtitle) return;
+    if (layer.payload.style?.preset !== CgSubtitlePreset.Custom) {
+      layer.payload.style = {
+        ...subtitleStyleOf(layer.payload),
+        preset: CgSubtitlePreset.Custom,
+      };
     }
   }
 
-  setPreset(preset: CgSubtitlePreset): void {
-    const layer = this.layer();
-    if (!layer || layer.element_type !== this.Subtitle) return;
-    layer.payload = {
-      ...layer.payload,
-      style: { preset },
-    };
+  onStyleFieldChange(layer: CgLayerDraft): void {
+    this.ensureCustomPreset(layer);
     this.touchPreview();
   }
 
-  isPreset(preset: CgSubtitlePreset): boolean {
+  getSubtitleStyle(layer: CgLayerDraft): CgSubtitleStyle {
+    if (!layer.payload.style) {
+      layer.payload.style = { preset: CgSubtitlePreset.News };
+    }
+    return layer.payload.style;
+  }
+
+  isPreset(preset: CgSubtitlePreset | 'news' | 'show' | 'custom'): boolean {
     const layer = this.layer();
     return !!layer && subtitlePresetOf(layer.payload) === preset;
   }

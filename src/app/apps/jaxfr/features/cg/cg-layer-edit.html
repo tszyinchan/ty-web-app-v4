@@ -126,6 +126,91 @@
             }
           </section>
         }
+        @if (layer.element_type === Subtitle) {
+          <section class="cg-block cg-sub-source">
+            <h3 class="cg-block-title">Source</h3>
+            <div class="cg-inline cg-source-actions">
+              <button
+                mat-stroked-button
+                type="button"
+                class="cg-seg-btn cg-icon-btn"
+                title="Paste script from clipboard"
+                aria-label="Paste script"
+                (click)="pasteScript()"
+              >
+                <mat-icon>content_paste</mat-icon>
+              </button>
+              <button
+                mat-stroked-button
+                type="button"
+                class="cg-seg-btn"
+                (click)="scriptFileInput.click()"
+              >
+                Load .txt / .srt
+              </button>
+              <input
+                #scriptFileInput
+                class="cg-file-input"
+                type="file"
+                [accept]="scriptAccept"
+                (change)="onScriptFile(layer, $event)"
+              />
+              <button
+                mat-stroked-button
+                type="button"
+                class="cg-seg-btn danger-sub-btn"
+                [disabled]="layer.payload.lines.length === 0"
+                title="Clear caption queue"
+                (click)="clearQueue(layer)"
+              >
+                Clear
+              </button>
+            </div>
+
+            <div class="cg-quick-input-box">
+              <input
+                type="text"
+                class="cg-sub-text-input"
+                placeholder="Type caption (Enter = Append, Ctrl+Enter = Air)..."
+                [(ngModel)]="quickInputText"
+                (keydown.enter)="onQuickInputEnter($event, layer)"
+              />
+              <div class="cg-inline cg-input-modes">
+                <button
+                  mat-stroked-button
+                  type="button"
+                  class="cg-seg-btn"
+                  [disabled]="!quickInputText.trim()"
+                  (click)="appendQuickText(layer)"
+                  title="Append to bottom of queue"
+                >
+                  Append
+                </button>
+                <button
+                  mat-stroked-button
+                  type="button"
+                  class="cg-seg-btn"
+                  [disabled]="!quickInputText.trim()"
+                  (click)="insertQuickText(layer)"
+                  title="Insert after current cursor"
+                >
+                  Insert
+                </button>
+                <button
+                  mat-flat-button
+                  color="primary"
+                  type="button"
+                  class="cg-seg-btn"
+                  [disabled]="!quickInputText.trim()"
+                  (click)="airNowQuickText(layer)"
+                  title="Insert and air immediately"
+                >
+                  Air Now
+                </button>
+              </div>
+            </div>
+          </section>
+        }
         <section class="cg-block">
           <h3 class="cg-block-title">Copy to package</h3>
           @if (copyTargets().length > 0) {
@@ -253,6 +338,7 @@
           </section>
         } @else if (layer.element_type === Subtitle) {
           <div class="cg-cue-bar">
+            <span class="cg-kicker">Cue</span>
             <button
               mat-stroked-button
               type="button"
@@ -282,34 +368,6 @@
             >
               Blank
             </button>
-            <button
-              mat-stroked-button
-              type="button"
-              class="cg-seg-btn cg-icon-btn"
-              title="Paste script"
-              aria-label="Paste script"
-              (click)="pasteScript()"
-            >
-              <mat-icon>content_paste</mat-icon>
-            </button>
-            <button
-              mat-stroked-button
-              type="button"
-              class="cg-seg-btn"
-              (click)="scriptFileInput.click()"
-            >
-              Load .txt / .srt
-            </button>
-            <input
-              #scriptFileInput
-              class="cg-file-input"
-              type="file"
-              [accept]="scriptAccept"
-              (change)="onScriptFile(layer, $event)"
-            />
-          </div>
-          <div class="cg-appear cue">
-            <span class="cg-kicker">Cue</span>
             <mat-button-toggle-group
               class="cg-seg-toggle"
               [value]="isCueCut(layer) ? 'cut' : 'fade'"
@@ -319,38 +377,55 @@
               <mat-button-toggle value="fade">Fade</mat-button-toggle>
               <mat-button-toggle value="cut">Cut</mat-button-toggle>
             </mat-button-toggle-group>
+
             @if (!isCueCut(layer)) {
-              <label class="cg-field cg-duration">
-                <span>ms</span>
-                <input
-                  type="number"
-                  [min]="cutMs"
-                  [max]="maxDurationMs"
-                  step="50"
-                  [ngModel]="cueDurationMs(layer)"
-                  (ngModelChange)="onCueDurationMsChange(layer, $event)"
-                />
-              </label>
+              <div class="cg-duration-wrap">
+                <label class="cg-field cg-duration">
+                  <span>ms</span>
+                  <input
+                    type="number"
+                    [min]="cutMs"
+                    [max]="maxDurationMs"
+                    step="50"
+                    [ngModel]="cueDurationMs(layer)"
+                    (ngModelChange)="onCueDurationMsChange(layer, $event)"
+                  />
+                </label>
+                <div class="cg-cue-presets">
+                  <button
+                    mat-stroked-button
+                    type="button"
+                    class="cg-seg-btn cg-mini-btn"
+                    [class.selected]="cueDurationMs(layer) === 200"
+                    (click)="onCueDurationMsChange(layer, 200)"
+                  >
+                    200ms
+                  </button>
+                  <button
+                    mat-stroked-button
+                    type="button"
+                    class="cg-seg-btn cg-mini-btn"
+                    [class.selected]="cueDurationMs(layer) === 400"
+                    (click)="onCueDurationMsChange(layer, 400)"
+                  >
+                    400ms
+                  </button>
+                  <button
+                    mat-stroked-button
+                    type="button"
+                    class="cg-seg-btn cg-mini-btn"
+                    [class.selected]="cueDurationMs(layer) === 800"
+                    (click)="onCueDurationMsChange(layer, 800)"
+                  >
+                    800ms
+                  </button>
+                </div>
+              </div>
             }
           </div>
           @if (!packageId) {
             <p class="cg-hint">Save the package once so cue goes to OBS.</p>
           }
-          <div class="cg-appear">
-            <span class="cg-kicker">Style</span>
-            <mat-button-toggle-group
-              class="cg-seg-toggle"
-              [value]="subtitlePresetOf(layer.payload)"
-              (change)="onPresetToggle($event)"
-              hideSingleSelectionIndicator
-            >
-              @for (option of presetOptions; track option.value) {
-                <mat-button-toggle [value]="option.value">
-                  {{ option.label }}
-                </mat-button-toggle>
-              }
-            </mat-button-toggle-group>
-          </div>
           <div class="cg-queue" role="listbox" aria-label="Caption queue">
             @for (line of layer.payload.lines; track $index) {
               <button
@@ -373,6 +448,161 @@
               </button>
             }
           </div>
+
+          @let subStyle = getSubtitleStyle(layer);
+          <section class="cg-sub-styling">
+            <div class="cg-style-row">
+              <label class="cg-field cg-font-field">
+                <span>Font</span>
+                <select
+                  [ngModel]="subStyle.fontFamily ?? ''"
+                  (ngModelChange)="subStyle.fontFamily = $event; onStyleFieldChange(layer)"
+                >
+                  <option value="">Default (DFHei / JhengHei)</option>
+                  @for (font of fontOptions; track font.value) {
+                    <option [value]="font.value">{{ font.label }}</option>
+                  }
+                </select>
+              </label>
+              <label class="cg-field">
+                <span>Size (vh)</span>
+                <input
+                  type="number"
+                  step="0.2"
+                  min="1"
+                  max="20"
+                  [ngModel]="subStyle.fontSize ?? (isPreset(PresetShow) ? 7.2 : 5.6)"
+                  (ngModelChange)="subStyle.fontSize = $event; onStyleFieldChange(layer)"
+                />
+              </label>
+            </div>
+
+            <div class="cg-fields cg-scale-row">
+              <label class="cg-field">
+                <span>Scale X (寬比)</span>
+                <input
+                  type="number"
+                  step="0.05"
+                  min="0.5"
+                  max="2.5"
+                  [ngModel]="subStyle.scaleX ?? 1.0"
+                  (ngModelChange)="subStyle.scaleX = $event; onStyleFieldChange(layer)"
+                />
+              </label>
+              <label class="cg-field">
+                <span>Scale Y (高比)</span>
+                <input
+                  type="number"
+                  step="0.05"
+                  min="0.5"
+                  max="2.5"
+                  [ngModel]="subStyle.scaleY ?? (isPreset(PresetShow) ? 1.0 : 1.11)"
+                  (ngModelChange)="subStyle.scaleY = $event; onStyleFieldChange(layer)"
+                />
+              </label>
+              <label class="cg-field">
+                <span>Text Color</span>
+                <div class="cg-color-input-wrap">
+                  <input
+                    type="color"
+                    class="cg-color-swatch"
+                    [ngModel]="subStyle.color ?? (isPreset(PresetShow) ? '#fff6d8' : '#ffffff')"
+                    (ngModelChange)="subStyle.color = $event; onStyleFieldChange(layer)"
+                  />
+                  <input
+                    type="text"
+                    class="cg-color-hex"
+                    [ngModel]="subStyle.color ?? (isPreset(PresetShow) ? '#fff6d8' : '#ffffff')"
+                    (ngModelChange)="subStyle.color = $event; onStyleFieldChange(layer)"
+                  />
+                </div>
+              </label>
+            </div>
+
+            <div class="cg-fields cg-border-row">
+              <label class="cg-field">
+                <span>Stroke (em)</span>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max="0.4"
+                  [ngModel]="subStyle.borderWidth ?? (isPreset(PresetShow) ? 0.16 : 0.12)"
+                  (ngModelChange)="subStyle.borderWidth = $event; onStyleFieldChange(layer)"
+                />
+              </label>
+              <label class="cg-field">
+                <span>Stroke Color</span>
+                <div class="cg-color-input-wrap">
+                  <input
+                    type="color"
+                    class="cg-color-swatch"
+                    [ngModel]="subStyle.borderColor ?? '#000000'"
+                    (ngModelChange)="subStyle.borderColor = $event; onStyleFieldChange(layer)"
+                  />
+                  <input
+                    type="text"
+                    class="cg-color-hex"
+                    [ngModel]="subStyle.borderColor ?? '#000000'"
+                    (ngModelChange)="subStyle.borderColor = $event; onStyleFieldChange(layer)"
+                  />
+                </div>
+              </label>
+            </div>
+
+            <div class="cg-fields cg-shadow-row">
+              <label class="cg-field">
+                <span>Shadow Angle</span>
+                <input
+                  type="number"
+                  step="15"
+                  min="0"
+                  max="360"
+                  [ngModel]="subStyle.shadowAngle ?? 135"
+                  (ngModelChange)="subStyle.shadowAngle = $event; onStyleFieldChange(layer)"
+                />
+              </label>
+              <label class="cg-field">
+                <span>Distance</span>
+                <input
+                  type="number"
+                  step="0.5"
+                  min="0"
+                  max="15"
+                  [ngModel]="subStyle.shadowDistance ?? (isPreset(PresetShow) ? 2 : 0)"
+                  (ngModelChange)="subStyle.shadowDistance = $event; onStyleFieldChange(layer)"
+                />
+              </label>
+              <label class="cg-field">
+                <span>Radius</span>
+                <input
+                  type="number"
+                  step="0.5"
+                  min="0"
+                  max="15"
+                  [ngModel]="subStyle.shadowRadius ?? 2"
+                  (ngModelChange)="subStyle.shadowRadius = $event; onStyleFieldChange(layer)"
+                />
+              </label>
+              <label class="cg-field">
+                <span>Shadow Color</span>
+                <div class="cg-color-input-wrap">
+                  <input
+                    type="color"
+                    class="cg-color-swatch"
+                    [ngModel]="subStyle.shadowColor ?? '#000000'"
+                    (ngModelChange)="subStyle.shadowColor = $event; onStyleFieldChange(layer)"
+                  />
+                  <input
+                    type="text"
+                    class="cg-color-hex"
+                    [ngModel]="subStyle.shadowColor ?? '#000000'"
+                    (ngModelChange)="subStyle.shadowColor = $event; onStyleFieldChange(layer)"
+                  />
+                </div>
+              </label>
+            </div>
+          </section>
           <div class="cg-fields">
             <label class="cg-field">
               <span>Scale</span>
