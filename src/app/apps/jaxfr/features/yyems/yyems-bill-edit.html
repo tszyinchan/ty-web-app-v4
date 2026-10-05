@@ -303,32 +303,80 @@
       </section>
 
       <section class="form-group">
-        <h3 class="group-header">Buys on this bill</h3>
+        <h3 class="group-header">Items on this Bill</h3>
         @if (!currentId) {
-          <p class="home-empty">Save the bill first, then add grocery lines.</p>
+          <p class="home-empty">Save the bill first, then add items.</p>
         } @else {
-          <button mat-stroked-button type="button" class="mb-16" (click)="addBuy()">
-            <mat-icon>add</mat-icon>
-            Add buy
-          </button>
-          <div class="list-container">
+          <div class="quick-add-row" (keyup.enter)="addQuickBuy()">
+            <div class="qa-field main-field">
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-label>Search Item...</mat-label>
+                <input
+                  #buyItemInput
+                  matInput
+                  [matAutocomplete]="buyAuto"
+                  [(ngModel)]="quickBuy().item_query"
+                />
+                <mat-autocomplete
+                  #buyAuto="matAutocomplete"
+                  (optionSelected)="onQuickBuyItemSelect($event.option.value)"
+                >
+                  @for (it of filteredBuyItems(); track it.tb_tyapp_yhit_id) {
+                    <mat-option [value]="it">{{ itemLabel(it) }}</mat-option>
+                  }
+                </mat-autocomplete>
+              </mat-form-field>
+            </div>
+            <div class="qa-field small-field">
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-label>$ Price</mat-label>
+                <input matInput type="number" [(ngModel)]="quickBuy().packed_price" />
+              </mat-form-field>
+            </div>
+            <div class="qa-field small-field">
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-label>Qty</mat-label>
+                <input matInput type="number" [(ngModel)]="quickBuy().home_amount" />
+              </mat-form-field>
+            </div>
+            <div class="qa-field small-field">
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-label>Paid</mat-label>
+                <input matInput type="number" [(ngModel)]="quickBuy().paid" />
+              </mat-form-field>
+            </div>
+            <button
+              mat-mini-fab
+              color="primary"
+              (click)="addQuickBuy()"
+              [disabled]="!quickBuy().item_id || quickBuy().home_amount === null"
+              aria-label="Add"
+            >
+              <mat-icon>add</mat-icon>
+            </button>
+          </div>
+
+          <div class="list-container mt-16">
             @for (buy of buys(); track buy.tb_tyapp_yhby_id) {
-              <a class="item-link" [routerLink]="['/yyems/buys/edit', buy.tb_tyapp_yhby_id]">
-                <div class="item-content">
+              <div class="item-link">
+                <a class="item-content" [routerLink]="['/yyems/buys/edit', buy.tb_tyapp_yhby_id]">
                   <div class="item-info-group">
                     <span class="main-text">{{ itemLabel(buy.price?.item) }}</span>
-                    <span class="sub-text"
-                      >{{ buy.home_amount }} {{ buy.home_unit || '' }}
+                    <span class="sub-text">
+                      {{ buy.home_amount }} {{ buy.home_unit || '' }}
                       @if (buy.paid !== null) {
                         · paid {{ buy.paid }}
                       }
                     </span>
                   </div>
                   <mat-icon class="chevron">chevron_right</mat-icon>
-                </div>
-              </a>
+                </a>
+                <button mat-icon-button color="warn" (click)="deleteBuy(buy.tb_tyapp_yhby_id)">
+                  <mat-icon>delete_outline</mat-icon>
+                </button>
+              </div>
             } @empty {
-              <p class="home-empty">No grocery lines yet.</p>
+              <p class="home-empty">No items yet.</p>
             }
           </div>
         }

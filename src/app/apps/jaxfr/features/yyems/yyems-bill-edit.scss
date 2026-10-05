@@ -45,6 +45,33 @@
   margin-bottom: 8px;
 }
 
+.quick-add-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  background: rgba(var(--app-surface-variant-rgb), 0.3);
+  padding: 8px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+
+  .qa-field {
+    min-width: 0;
+  }
+  .main-field {
+    flex: 2;
+  }
+  .small-field {
+    flex: 1;
+    max-width: 100px;
+  }
+}
+
+.item-link {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 /* Same base hues for Material flat + Aero gloss so In/Out/Free match across themes. */
 .kind-toggle {
   --kind-in: #2e9a4f;

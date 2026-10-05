@@ -552,6 +552,47 @@ export class YyemsService {
     }
   }
 
+  async findPrice(criteria: {
+    item_id: string;
+    vendor_id: string | null;
+    currency: string;
+    packed_price: number | null;
+    packed_amount: number | null;
+    packed_unit: string | null;
+  }): Promise<YyemsPrice | null> {
+    try {
+      let query = this.supabase
+        .from('tyapp_yyhome_price')
+        .select('*')
+        .eq('item_id', criteria.item_id)
+        .eq('currency', criteria.currency)
+        .is('deleted_at', null);
+
+      if (criteria.vendor_id) query = query.eq('vendor_id', criteria.vendor_id);
+      else query = query.is('vendor_id', null);
+
+      if (criteria.packed_price !== null) query = query.eq('packed_price', criteria.packed_price);
+      else query = query.is('packed_price', null);
+
+      if (criteria.packed_amount !== null) query = query.eq('packed_amount', criteria.packed_amount);
+      else query = query.is('packed_amount', null);
+
+      if (criteria.packed_unit !== null) query = query.eq('packed_unit', criteria.packed_unit);
+      else query = query.is('packed_unit', null);
+
+      const { data, error } = await query
+        .order('priced_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data as YyemsPrice;
+    } catch (error: unknown) {
+      this.notification.handleError('Find price failed', error);
+      return null;
+    }
+  }
+
   async savePrice(row: Partial<YyemsPrice>): Promise<YyemsPrice | null> {
     const isNew = !row.tb_tyapp_yhpr_id;
     const {

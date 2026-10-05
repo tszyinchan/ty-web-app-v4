@@ -38,12 +38,16 @@ import {
 } from '../../../../core/utils/date-time.util';
 import {
   YYEMS_IN_OR_OUT,
+  YYEMS_MEALS,
   YYEMS_OWNERSHIP,
   YyemsBill,
+  YyemsBuy,
   YyemsBuyEmbed,
   YyemsInOrOut,
+  YyemsItem,
   YyemsLocationTz,
   YyemsOwnership,
+  YyemsPrice,
 } from './yyems.model';
 import { YyemsService } from './yyems.service';
 import { YyemsVendorEdit } from './yyems-vendor-edit';
@@ -53,6 +57,17 @@ import {
   itemLabel,
   sortByOrderThenName,
 } from './yyems.util';
+
+interface QuickBuyForm {
+  item_id: string;
+  item_query: string;
+  packed_price: number | null;
+  packed_amount: number | null;
+  packed_unit: string;
+  home_amount: number | null;
+  paid: number | null;
+  expiry_date: string;
+}
 
 interface BillForm {
   tb_tyapp_yhbl_id?: string;
@@ -116,8 +131,11 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
   readonly walletPane = viewChild(YyemsWalletEdit);
   readonly billPane = viewChild<ElementRef<HTMLElement>>('billPane');
   readonly currencyOtherInput = viewChild<ElementRef<HTMLInputElement>>('currencyOtherInput');
+  readonly buyItemInput = viewChild<ElementRef<HTMLInputElement>>('buyItemInput');
+
   billNudge = signal(0);
   billTweening = signal(false);
+
   private injector = inject(Injector);
   private zone = inject(NgZone);
   private readonly seatMs = 520;
@@ -134,6 +152,111 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
   currentId: string | null = null;
   item = signal<BillForm | null>(null);
   buys = signal<YyemsBuyEmbed[]>([]);
+  quickBuy = signal<QuickBuyForm>(this.newQuickBuy());
+
+  filteredBuyItems = computed(() => {
+    const q = this.quickBuy().item_query.toLowerCase().trim();
+    const items = this.yyems.items();
+    if (!q) return items.slice(0, 50);
+    return items.filter((it) => itemLabel(it).toLowerCase().includes(q)).slice(0, 50);
+  });
+
+  private newQuickBuy(): QuickBuyForm {
+    return {
+      item_id: '',
+      item_query: '',
+      packed_price: null,
+      packed_amount: null,
+      packed_unit: '',
+      home_amount: null,
+      paid: null,
+      expiry_date: '',
+    };
+  }
+
+  async onQuickBuyItemSelect(item: YyemsItem) {
+    const bill = this.item();
+    if (!bill) return;
+
+    const qb = this.quickBuy();
+    qb.item_id = item.tb_tyapp_yhit_id;
+    qb.item_query = itemLabel(item);
+
+    // Auto-prefill from last price at this vendor
+    const prices = await this.yyems.fetchPricesForItem(item.tb_tyapp_yhit_id);
+    const lastAtVendor = prices.find((p) => p.vendor_id === bill.vendor_id && p.currency === bill.currency);
+    const lastAny = prices[0];
+    const best = lastAtVendor || lastAny;
+
+    if (best) {
+      qb.packed_price = best.packed_price;
+      qb.packed_amount = best.packed_amount;
+      qb.packed_unit = best.packed_unit || '';
+      // Default buy amount to same as packed
+      if (qb.home_amount === null) qb.home_amount = best.packed_amount;
+      if (qb.paid === null) qb.paid = best.packed_price;
+    }
+  }
+
+  async addQuickBuy() {
+    const bill = this.item();
+    const qb = this.quickBuy();
+    const userId = this.auth.userProfile()?.user_id;
+    if (!this.currentId || !bill || !qb.item_id || !userId || qb.home_amount === null) return;
+
+    // 1. Get or Create Price
+    let priceId = '';
+    const priceCriteria = {
+      item_id: qb.item_id,
+      vendor_id: bill.vendor_id || null,
+      currency: bill.currency,
+      packed_price: qb.packed_price,
+      packed_amount: qb.packed_amount,
+      packed_unit: qb.packed_unit.trim() || null,
+    };
+
+    const existingPrice = await this.yyems.findPrice(priceCriteria);
+    if (existingPrice) {
+      priceId = existingPrice.tb_tyapp_yhpr_id;
+    } else {
+      const newPrice = await this.yyems.savePrice({
+        ...priceCriteria,
+        priced_at: new Date().toISOString(),
+        created_by: userId,
+        nutri_is_estimated: false,
+      });
+      if (!newPrice) return;
+      priceId = newPrice.tb_tyapp_yhpr_id;
+    }
+
+    // 2. Create Buy
+    const savedBuy = await this.yyems.saveBuy({
+      price_id: priceId,
+      bill_id: this.currentId,
+      paid: qb.paid,
+      home_amount: qb.home_amount,
+      home_unit: qb.packed_unit.trim() || null,
+      expiry_date: qb.expiry_date || null,
+      created_by: userId,
+    });
+
+    if (savedBuy) {
+      // Refresh buys list
+      this.buys.set(await this.yyems.fetchBuysForBill(this.currentId));
+      // Reset form and focus back to item input
+      this.quickBuy.set(this.newQuickBuy());
+      this.buyItemInput()?.nativeElement.focus();
+    }
+  }
+
+  async deleteBuy(id: string) {
+    if (!confirm('Delete this line item?')) return;
+    const ok = await this.yyems.deleteBuy(id);
+    if (ok) {
+      this.buys.set(this.buys().filter((b) => b.tb_tyapp_yhby_id !== id));
+    }
+  }
+
   vendorQuery = signal('');
   walletQuery = signal('');
   currencyOtherOpen = signal(false);
@@ -148,7 +271,6 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
   moreOpen = signal(false);
 
   groupId = signal('');
-
   myGroups = computed(() => {
     const me = this.auth.userProfile()?.user_id;
     if (!me) return [];
@@ -377,13 +499,6 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
     }
     const ok = await this.yyems.deleteBill(this.currentId);
     if (ok) void this.router.navigateByUrl('/yyems/bills/list');
-  }
-
-  addBuy() {
-    if (!this.currentId) return;
-    void this.router.navigate(['/yyems/buys/new'], {
-      queryParams: { billId: this.currentId },
-    });
   }
 
   setFlow(bill: BillForm, flow: YyemsInOrOut) {
