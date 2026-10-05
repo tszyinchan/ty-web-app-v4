@@ -49,3 +49,7 @@ Thumbs.db
 coverage/
 *.log
 *.lock
+public/**/*.svg
+repomix-output.xml
+*.map
+.cursor/yyhome-hitl-weird-bills.md

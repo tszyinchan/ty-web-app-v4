@@ -1,0 +1,30 @@
+---
+description: Token efficiency guidelines, model selection tiering, and prompt practices for cost-effective AI collaboration
+alwaysApply: false
+---
+
+# Token 智慧運用與效率準則 (Token Efficiency & Best Practices)
+
+為在維持高品質 AI 協作成果的前提下將 Token 消耗降至最低，日常開發遵循以下四大準則：
+
+## 1. 單任務單對話原則 (Single Task, Single Session)
+- **短對話循環：** 每個對話專注於一個獨立 bug、單一功能模組或一個 commit 批次。
+- **5-10 輪重置：** 當任務完成或對話輪數達到 5-10 輪時，立刻開新對話 (`Ctrl/Cmd + N`)。
+- **避免歷史累積：** 長對話會將所有過往工具調用、檔案快照與輸出重複傳送，單次 Prompt 輸入動輒突破 80,000~120,000 tokens。新對話可讓 Context 即刻歸零。
+
+## 2. 模型分級選擇策略 (Model Tiering)
+- **Tier 1 (輕量 / 日常任務) → Flash / Haiku 模型：**
+  - 適用：CSS/樣式調校、UI 文案修改、純函式抽取、單檔 Lint 修正、Git 狀態查詢、簡單元件微調。
+  - 特性：成本極低、速度極快、足以處理 80% 的日常 Angular 開發。
+- **Tier 2 (核心架構 / 疑難排解) → Sonnet / o3-mini 模型：**
+  - 適用：跨模組資料流重構、Supabase RLS / 複雜 PL/pgSQL RPC、多狀態機聯動除錯、架構設計評估。
+  - 特性：深度推論與長脈絡整合能力強。
+
+## 3. 精準 Context 引用原則 (Precise Context)
+- **指名檔案：** 明確使用 `@file`（如 `@fit.service.ts`）或 `@folder`，避免盲目使用全域 `@codebase`。
+- **錯誤訊息精簡：** 終端報錯時，僅複製關鍵的核心 3-5 行錯誤描述與檔名行號，切勿直接貼上 200 行完整日誌。
+- **局部讀取與搜尋：** 大檔案 (>150 行) 優先透過 `Grep` 定位關鍵字，或使用 `offset`/`limit` 讀取，避免反覆全檔傾印。
+
+## 4. 先 Plan 後 Agent (Plan Before Execution)
+- 涉及 2 個以上檔案或結構性更動的任務，先在 Plan Mode 中完成脈絡梳理與架構對齊。
+- 方案確認無誤後，再切換至 Agent Mode 精準依清單執行，避免 Agent 在探索期反覆呼叫各類寫入與除錯工具造成 Token 劇烈消耗。

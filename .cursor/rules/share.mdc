@@ -1,0 +1,24 @@
+---
+description: Share subdomain architecture, access-key verification, and public modules
+globs:
+  - src/app/apps/share/**
+  - src/app/core/guards/public-access.guard.ts
+alwaysApply: false
+---
+
+# Share Subdomain Pattern (No-Login Public Modules)
+
+- **Hosts:** see `.cursor/rules/deployment-hosts.mdc`. Production Share is `https://share.tszyin.com` (`SUBDOMAINS.SHARE`).
+- **Purpose:** Hosts read-only modules that intentionally require no login (e.g. sharing a calendar with family/friends), while still not being discoverable by bots or guessing.
+- **URL shape:** `share.tszyin.com/<accessKey>/<moduleId>` — both segments are opaque random strings, never human-readable names. The `moduleId` is a per-module secret, NOT the internal `module_key`.
+- **Validation is server-side only:** `publicAccessGuard` (`core/guards/public-access.guard.ts`) calls Supabase RPC `tyapp_validate_share_access(p_access_key, p_module_id)`, backed by `tyapp_share_module` (RLS blocks all direct reads). The RPC returns the internal `module_key` (e.g. `'wash-log-calendar'`) on success or `null` on failure.
+  - **Never** put real `accessKey`/`moduleId` in client source code or environment files.
+- **Adding a new public module:**
+  1. Insert a row into `tyapp_share_module` (new `module_key`, random `access_key`/`module_id`).
+  2. Add an entry to `SHARE_MODULE_LOADERS` map in `apps/share/pages/share-gate/share-gate.ts`.
+  3. No changes needed to `app.routes.ts` (generic `:accessKey/:moduleId` route).
+- **Revoking access:** set `status = 0` to disable (reversible); set `deleted_at` to remove permanently.
+- **Failure UX:** wrong key, unknown `moduleId`, or invalid path redirect to `/not-found` without disclosing details.
+- **Known Accepted Risk — Wash Log GAS Token:** `WashLogPublic` calls Google Apps Script with token from `environment.ts` directly from browser. Accepted for now as low-sensitivity data.
+- **Wash Log lives entirely in `share`:** the admin jaxfr copy was removed (2026-08-13). `WashLogService`/`WashLog` model live solely under `apps/share/features/wash-log/`.
+- **`AppToolbar` is optional:** `ShareGate` does not render it. A module opts in by including `<app-toolbar>` in its own template and driving it via `HeaderService`.

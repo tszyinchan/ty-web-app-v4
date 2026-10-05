@@ -1,0 +1,35 @@
+---
+description: User lifecycle, auth, registration, and invitations
+globs:
+  - src/app/apps/jaxfr/features/user/**
+  - src/app/pages/login/**
+  - src/app/pages/register/**
+  - src/app/pages/reset-password/**
+  - supabase/functions/register-with-invite/**
+  - supabase/functions/send-password-reset/**
+  - supabase/functions/set-user-password/**
+alwaysApply: false
+---
+
+# User Lifecycle, Auth & Invitations
+
+- **User lifecycle RPCs:**
+  - Deactivate/activate: `tyapp_user_set_status` (`RecordStatus`).
+  - Delete: `tyapp_user_soft_delete`.
+  - Restore: `tyapp_user_restore`.
+  - Do NOT `.update({ deleted_at })` or hard-delete `tyapp_user`.
+- **Inactive / Deleted Login UX:**
+  - Inactive login signs out, attempts reactivation request, then displays `AUTH_ACCOUNT_INACTIVE`.
+  - Deleted login shows `AUTH_ACCOUNT_REJECTED` (same UX as bad password).
+- **Permissions:**
+  - A regular USER may deactivate or delete **self**.
+  - Only Super Admin can activate, restore, or edit other users.
+  - Invitation delete: `tyapp_invitation_soft_delete_single_record`.
+  - Group delete: `tyapp_user_group_soft_delete_single_record`.
+- **Registration & Invitations:**
+  - Invite-only via Edge Function `register-with-invite`, then `login()`.
+  - Super Admin creates invites with `.insert`/`.update` on `tyapp_invitation`.
+  - Login uses Reactive Forms; register uses Template-Driven Forms (`[(ngModel)]`).
+  - When adding a feature that invitations grant, give it `show_in_launcher` or a `route`; `ACCESS_FEATURE_NAMES` in `invitation-edit.ts` is only a fallback list.
+- **Junction Tables:**
+  - Membership/access tables (`tyapp_user_group_member`, `tyapp_user_app_access`, `tyapp_user_feature_access`) use `.delete()` then `.insert()` to replace the set. Soft-delete RPCs are not used for junction tables.

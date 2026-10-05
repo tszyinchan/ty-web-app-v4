@@ -1,0 +1,13 @@
+---
+description: Daily Log module naming and regression guidelines
+globs:
+  - src/app/apps/jaxfr/features/daily-log/**
+alwaysApply: false
+---
+
+# Daily Log Module Rules
+
+- **Feature Directory:** Live feature folder is `src/app/apps/jaxfr/features/daily-log/`.
+- **Naming:** Do NOT create a sibling `daily-checklist` feature. Historical mentions of "Daily Checklist" refer to this module.
+- **Regression Playbook:** Regression script is stored at `daily-log.regression.md` inside the feature folder.
+- **Testing Cleanliness:** After running regression tests, ensure test records (e.g. `[TEST] DL`) are cleaned up.

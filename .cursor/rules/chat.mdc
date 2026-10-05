@@ -1,0 +1,16 @@
+---
+description: Chat feature architecture, write RPCs, and message rendering
+globs:
+  - src/app/apps/jaxfr/features/chat/**
+  - supabase/functions/chat-push/**
+alwaysApply: false
+---
+
+# Chat Feature Rules
+
+- **Chat writes:** Edit, delete, rename, leave, and membership mutations MUST go through `tyapp_chat_*` RPCs:
+  - Message delete: `tyapp_chat_message_soft_delete_single_record`.
+  - Do NOT `.update()` or `.delete()` message or room rows directly from the client.
+- **HTML Sanitization:** Render HTML only through `sanitizeChatHtml` + `ChatHtml` to prevent XSS.
+- **Push Notifications:** Handled by Supabase Edge Function `chat-push`.
+- **Multi-user Testing:** When testing chat interactions, user-a and user-b accounts from `.cursor/test-credentials.local.json` are required.
