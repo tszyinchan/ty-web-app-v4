@@ -197,7 +197,7 @@ export interface CgSubtitleFontOption {
 
 export const CG_SUBTITLE_FONT_OPTIONS: ReadonlyArray<CgSubtitleFontOption> = [
   {
-    value: "'華康中黑體', '華康中黑體(P)', 'Microsoft JhengHei', 'Segoe UI', sans-serif",
+    value: "'華康中黑體', '華康中黑體(P)', 'DFHei', 'Microsoft JhengHei', 'Segoe UI', sans-serif",
     label: '華康中黑體 (DFHei)',
   },
   {
@@ -205,16 +205,44 @@ export const CG_SUBTITLE_FONT_OPTIONS: ReadonlyArray<CgSubtitleFontOption> = [
     label: '微軟正黑體 (JhengHei)',
   },
   {
-    value: "'Noto Sans TC', 'PingFang TC', sans-serif",
-    label: '思源黑體 (Noto Sans)',
+    value: "'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif",
+    label: '思源黑體 (Noto Sans TC)',
   },
   {
-    value: "'DFKai-SB', 'BiauKai', serif",
+    value: "'Noto Serif TC', 'Songti TC', 'PMingLiU', serif",
+    label: '思源宋體 (Noto Serif TC)',
+  },
+  {
+    value: "'PingFang TC', 'PingFang HK', 'Heiti TC', sans-serif",
+    label: '蘋方 (PingFang TC)',
+  },
+  {
+    value: "'Microsoft YaHei', 'PingFang SC', sans-serif",
+    label: '微軟雅黑 (YaHei)',
+  },
+  {
+    value: "'DFKai-SB', 'BiauKai', 'Kaiti TC', serif",
     label: '標楷體 (BiauKai)',
   },
   {
+    value: "'PMingLiU', 'MingLiU', 'Songti TC', serif",
+    label: '新細明體 (MingLiU)',
+  },
+  {
+    value: "'華康圓體', 'Yu Gothic', 'PingFang TC', 'Microsoft JhengHei', sans-serif",
+    label: '圓體 (Round)',
+  },
+  {
     value: "'Segoe UI', Arial, sans-serif",
-    label: 'Arial / Segoe UI',
+    label: 'Segoe UI / Arial',
+  },
+  {
+    value: "'Roboto', Arial, sans-serif",
+    label: 'Roboto',
+  },
+  {
+    value: "'Impact', 'Arial Black', sans-serif",
+    label: 'Impact (粗標題)',
   },
 ];
 

@@ -320,14 +320,16 @@ export class CgLayerEdit implements OnInit, HasUnsavedChanges {
   onPlaceWheel(
     event: WheelEvent,
     layer: CgLayerDraft,
-    field: 'x' | 'y' | 'scale',
+    field: 'x' | 'y' | 'scale' | 'width',
   ): void {
-    if (layer.element_type !== this.Logo) return;
     event.preventDefault();
     const dir = event.deltaY < 0 ? 1 : -1;
     if (field === 'scale') {
       const next = Math.round((layer.layout.scale + dir * 0.05) * 100) / 100;
       layer.layout.scale = Math.max(0.05, next);
+    } else if (field === 'width') {
+      const current = layer.layout.width ?? 88;
+      layer.layout.width = Math.max(10, Math.min(100, Math.round(current + dir)));
     } else {
       layer.layout[field] = Math.round((layer.layout[field] + dir) * 10) / 10;
     }
@@ -652,8 +654,84 @@ export class CgLayerEdit implements OnInit, HasUnsavedChanges {
       }
       return;
     }
+    const prevAnchor = layer.layout.anchor;
     layer.layout.anchor = value;
+    if (layer.element_type === this.Subtitle && prevAnchor !== value) {
+      this.repositionSubtitleOnAnchor(layer, prevAnchor, value);
+    }
     this.touchPreview();
+  }
+
+  private repositionSubtitleOnAnchor(
+    layer: CgLayerDraft,
+    _prevAnchor: CgAnchor,
+    nextAnchor: CgAnchor,
+  ): void {
+    const isNextTop =
+      nextAnchor === CgAnchor.TopLeft ||
+      nextAnchor === CgAnchor.TopCenter ||
+      nextAnchor === CgAnchor.TopRight;
+    const isNextCenterY =
+      nextAnchor === CgAnchor.CenterLeft ||
+      nextAnchor === CgAnchor.Center ||
+      nextAnchor === CgAnchor.CenterRight;
+    const isNextBottom =
+      nextAnchor === CgAnchor.BottomLeft ||
+      nextAnchor === CgAnchor.BottomCenter ||
+      nextAnchor === CgAnchor.BottomRight;
+
+    const isNextLeft =
+      nextAnchor === CgAnchor.TopLeft ||
+      nextAnchor === CgAnchor.CenterLeft ||
+      nextAnchor === CgAnchor.BottomLeft;
+    const isNextCenterX =
+      nextAnchor === CgAnchor.TopCenter ||
+      nextAnchor === CgAnchor.Center ||
+      nextAnchor === CgAnchor.BottomCenter;
+    const isNextRight =
+      nextAnchor === CgAnchor.TopRight ||
+      nextAnchor === CgAnchor.CenterRight ||
+      nextAnchor === CgAnchor.BottomRight;
+
+    if (isNextTop && layer.layout.y > 60) {
+      layer.layout.y = 11;
+    } else if (isNextBottom && layer.layout.y < 40) {
+      layer.layout.y = 89;
+    } else if (isNextCenterY && (layer.layout.y < 30 || layer.layout.y > 70)) {
+      layer.layout.y = 50;
+    }
+
+    if (isNextLeft && layer.layout.x >= 45 && layer.layout.x <= 55) {
+      layer.layout.x = 6;
+    } else if (isNextRight && layer.layout.x >= 45 && layer.layout.x <= 55) {
+      layer.layout.x = 94;
+    } else if (isNextCenterX && (layer.layout.x <= 15 || layer.layout.x >= 85)) {
+      layer.layout.x = 50;
+    }
+  }
+
+  selectedFontValue(layer: CgLayerDraft): string {
+    const family = layer.payload.style?.fontFamily?.trim();
+    if (!family) return '';
+    const match = this.fontOptions.find((opt) => opt.value === family);
+    return match ? match.value : '__custom__';
+  }
+
+  isCustomFont(layer: CgLayerDraft): boolean {
+    return this.selectedFontValue(layer) === '__custom__';
+  }
+
+  onFontSelectChange(layer: CgLayerDraft, value: string): void {
+    const style = this.getSubtitleStyle(layer);
+    if (value === '__custom__') {
+      const match = this.fontOptions.find((opt) => opt.value === style.fontFamily);
+      if (match || !style.fontFamily) {
+        style.fontFamily = '';
+      }
+    } else {
+      style.fontFamily = value || undefined;
+    }
+    this.onStyleFieldChange(layer);
   }
 
   onLayerLookToggle(event: MatButtonToggleChange): void {

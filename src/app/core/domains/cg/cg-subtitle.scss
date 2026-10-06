@@ -5,8 +5,8 @@
 .sub-box {
   box-sizing: border-box;
   display: flex;
-  align-items: flex-end;
-  justify-content: center;
+  align-items: var(--cg-sub-box-align, flex-end);
+  justify-content: var(--cg-sub-box-justify, center);
   min-width: 0;
   pointer-events: none;
   user-select: none;
@@ -25,11 +25,11 @@
   font-size: calc(var(--cg-sub-font, 5.6) * 1vh);
   font-size: calc(var(--cg-sub-font, 5.6) * 1cqh);
   font-weight: 400;
-  letter-spacing: 0.104em;
-  line-height: 1.15;
-  text-align: center;
+  letter-spacing: var(--cg-sub-letter-spacing, 0.104em);
+  line-height: var(--cg-sub-line-height, 1.15);
+  text-align: var(--cg-sub-text-align, center);
   transform: scale(var(--cg-sub-scale-x, 1), var(--cg-sub-scale-y, 1.11));
-  transform-origin: center bottom;
+  transform-origin: var(--cg-sub-transform-origin, center bottom);
   filter: var(--cg-sub-filter, none);
 }
 
@@ -45,6 +45,7 @@
   -webkit-line-clamp: 2;
   line-clamp: 2;
   overflow: hidden;
+  text-align: inherit;
 }
 
 .sub-stroke {
@@ -63,14 +64,16 @@
 
 .sub-text .latin {
   font-family: 'Segoe UI', Arial, sans-serif;
-  letter-spacing: 0.04em;
+  letter-spacing: calc(var(--cg-sub-letter-spacing, 0.104em) * 0.4);
 }
 
 .sub-text.outgoing {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 0;
+  top: var(--cg-sub-outgoing-top, auto);
+  bottom: var(--cg-sub-outgoing-bottom, 0);
+  transform: var(--cg-sub-outgoing-transform, none);
   opacity: 1;
   transition: opacity var(--cg-cue-ms, 400ms) ease;
 }
@@ -85,7 +88,6 @@
 
 .sub-box.show .sub-text {
   font-weight: 500;
-  letter-spacing: 0.06em;
 }
 
 .sub-box.show .sub-stroke {

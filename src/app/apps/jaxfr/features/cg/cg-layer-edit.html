@@ -455,13 +455,14 @@
               <label class="cg-field cg-font-field">
                 <span>Font</span>
                 <select
-                  [ngModel]="subStyle.fontFamily ?? ''"
-                  (ngModelChange)="subStyle.fontFamily = $event; onStyleFieldChange(layer)"
+                  [ngModel]="selectedFontValue(layer)"
+                  (ngModelChange)="onFontSelectChange(layer, $event)"
                 >
                   <option value="">Default (DFHei / JhengHei)</option>
                   @for (font of fontOptions; track font.value) {
                     <option [value]="font.value">{{ font.label }}</option>
                   }
+                  <option value="__custom__">自訂字型 (Custom font...)</option>
                 </select>
               </label>
               <label class="cg-field">
@@ -474,6 +475,56 @@
                   [ngModel]="subStyle.fontSize ?? (isPreset(PresetShow) ? 7.2 : 5.6)"
                   (ngModelChange)="subStyle.fontSize = $event; onStyleFieldChange(layer)"
                 />
+              </label>
+            </div>
+            @if (isCustomFont(layer)) {
+              <div class="cg-style-row cg-custom-font-row">
+                <label class="cg-field cg-custom-font-field">
+                  <span>Custom Font Family (本機或系統字型名稱)</span>
+                  <input
+                    type="text"
+                    [ngModel]="subStyle.fontFamily ?? ''"
+                    (ngModelChange)="subStyle.fontFamily = $event; onStyleFieldChange(layer)"
+                    placeholder="e.g. 'GenYoGothic', 'DFPHeiMedium-B5', sans-serif"
+                  />
+                </label>
+              </div>
+            }
+
+            <div class="cg-fields cg-spacing-row">
+              <label class="cg-field">
+                <span>字距 (em)</span>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="-0.2"
+                  max="1.0"
+                  [ngModel]="subStyle.letterSpacing ?? (isPreset(PresetShow) ? 0.06 : 0.104)"
+                  (ngModelChange)="subStyle.letterSpacing = $event; onStyleFieldChange(layer)"
+                />
+              </label>
+              <label class="cg-field">
+                <span>行距 (倍數)</span>
+                <input
+                  type="number"
+                  step="0.05"
+                  min="0.8"
+                  max="3.0"
+                  [ngModel]="subStyle.lineHeight ?? 1.15"
+                  (ngModelChange)="subStyle.lineHeight = $event; onStyleFieldChange(layer)"
+                />
+              </label>
+              <label class="cg-field">
+                <span>文字對齊</span>
+                <select
+                  [ngModel]="subStyle.textAlign ?? ''"
+                  (ngModelChange)="subStyle.textAlign = ($event || undefined); onStyleFieldChange(layer)"
+                >
+                  <option value="">Auto (跟隨 Anchor)</option>
+                  <option value="left">置左 (Left)</option>
+                  <option value="center">置中 (Center)</option>
+                  <option value="right">置右 (Right)</option>
+                </select>
               </label>
             </div>
 
@@ -603,37 +654,71 @@
               </label>
             </div>
           </section>
-          <div class="cg-fields">
-            <label class="cg-field">
-              <span>Scale</span>
-              <input
-                type="number"
-                step="0.05"
-                [(ngModel)]="layer.layout.scale"
-                (ngModelChange)="touchPreview()"
-              />
-            </label>
-            <label class="cg-field">
-              <span>Y</span>
-              <input
-                type="number"
-                [(ngModel)]="layer.layout.y"
-                (ngModelChange)="touchPreview()"
-              />
-            </label>
-            <label class="cg-field">
-              <span>Width</span>
-              <input
-                type="number"
-                [(ngModel)]="layer.layout.width"
-                (ngModelChange)="touchPreview()"
-              />
-            </label>
-          </div>
-          <p class="cg-hint">
-            Scale is type size (1 = burned-in caption). Y is how high. Width is
-            wrap.
-          </p>
+          <section class="cg-block cg-sub-place">
+            <h3 class="cg-block-title">Place</h3>
+            <div class="cg-anchor-field">
+              <span class="cg-anchor-title">Anchor</span>
+              <mat-button-toggle-group
+                class="cg-anchor-toggle-group"
+                [value]="layer.layout.anchor"
+                (change)="onAnchorToggle(layer, $event)"
+                hideSingleSelectionIndicator
+                aria-label="Anchor position"
+              >
+                @for (option of anchorGridOptions; track option.value) {
+                  <mat-button-toggle
+                    [value]="option.value"
+                    [attr.title]="option.label"
+                    [attr.aria-label]="option.label"
+                  >
+                    <mat-icon [class.cg-anchor-dot]="option.value === 'center'">{{ option.icon }}</mat-icon>
+                  </mat-button-toggle>
+                }
+              </mat-button-toggle-group>
+            </div>
+            <div class="cg-place-row">
+              <label class="cg-field cg-control-field">
+                <span>X (%)</span>
+                <input
+                  type="number"
+                  [(ngModel)]="layer.layout.x"
+                  (ngModelChange)="touchPreview()"
+                  (wheel)="onPlaceWheel($event, layer, 'x')"
+                />
+              </label>
+              <label class="cg-field cg-control-field">
+                <span>Y (%)</span>
+                <input
+                  type="number"
+                  [(ngModel)]="layer.layout.y"
+                  (ngModelChange)="touchPreview()"
+                  (wheel)="onPlaceWheel($event, layer, 'y')"
+                />
+              </label>
+              <label class="cg-field cg-control-field">
+                <span>Width (%)</span>
+                <input
+                  type="number"
+                  [(ngModel)]="layer.layout.width"
+                  (ngModelChange)="touchPreview()"
+                  (wheel)="onPlaceWheel($event, layer, 'width')"
+                />
+              </label>
+              <label class="cg-field cg-control-field">
+                <span>Scale</span>
+                <input
+                  type="number"
+                  step="0.05"
+                  [(ngModel)]="layer.layout.scale"
+                  (ngModelChange)="touchPreview()"
+                  (wheel)="onPlaceWheel($event, layer, 'scale')"
+                />
+              </label>
+            </div>
+            <p class="cg-hint">
+              Anchor 定位基準點與對齊。Scale 為字體倍率。Width 為折行寬度上限 (%)。
+            </p>
+          </section>
         }
       </div>
     </div>

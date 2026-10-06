@@ -759,13 +759,22 @@ button.mat-mdc-outlined-button.cg-mini-btn {
   gap: 8px;
 }
 
+.cg-custom-font-row {
+  grid-template-columns: 1fr;
+}
+
+.cg-custom-font-field input {
+  width: 100%;
+}
+
 .cg-font-field select {
   width: 100%;
 }
 
 .cg-scale-row,
 .cg-border-row,
-.cg-shadow-row {
+.cg-shadow-row,
+.cg-spacing-row {
   grid-template-columns: repeat(auto-fit, minmax(76px, 1fr));
 }
 

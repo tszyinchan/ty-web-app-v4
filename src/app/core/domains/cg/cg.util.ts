@@ -341,6 +341,17 @@ export function normalizeSubtitleStyle(raw: unknown): CgSubtitleStyle {
   const shadowColor = asString(value['shadowColor']);
   if (shadowColor) style.shadowColor = shadowColor;
 
+  const letterSpacing = toOptionalNumber(value['letterSpacing']);
+  if (letterSpacing != null) style.letterSpacing = letterSpacing;
+
+  const lineHeight = toOptionalNumber(value['lineHeight']);
+  if (lineHeight != null && lineHeight > 0) style.lineHeight = lineHeight;
+
+  const textAlign = asString(value['textAlign']);
+  if (textAlign === 'left' || textAlign === 'center' || textAlign === 'right') {
+    style.textAlign = textAlign;
+  }
+
   return style;
 }
 
@@ -675,6 +686,57 @@ export function subtitleLayoutToCss(
   const scaleY = style.scaleY ?? (isShow ? 1.0 : 1.11);
   css['--cg-sub-scale-x'] = String(scaleX);
   css['--cg-sub-scale-y'] = String(scaleY);
+
+  const defaultLetterSpacing = isShow ? 0.06 : 0.104;
+  const letterSpacing =
+    style.letterSpacing != null ? style.letterSpacing : defaultLetterSpacing;
+  css['--cg-sub-letter-spacing'] = `${letterSpacing}em`;
+
+  const lineHeight = style.lineHeight != null ? style.lineHeight : 1.15;
+  css['--cg-sub-line-height'] = String(lineHeight);
+
+  const anchor = layout.anchor || CgAnchor.BottomCenter;
+  const isLeft =
+    anchor === CgAnchor.TopLeft ||
+    anchor === CgAnchor.CenterLeft ||
+    anchor === CgAnchor.BottomLeft;
+  const isRight =
+    anchor === CgAnchor.TopRight ||
+    anchor === CgAnchor.CenterRight ||
+    anchor === CgAnchor.BottomRight;
+  const isTop =
+    anchor === CgAnchor.TopLeft ||
+    anchor === CgAnchor.TopCenter ||
+    anchor === CgAnchor.TopRight;
+  const isCenterY =
+    anchor === CgAnchor.CenterLeft ||
+    anchor === CgAnchor.Center ||
+    anchor === CgAnchor.CenterRight;
+
+  const boxJustify = isLeft ? 'flex-start' : isRight ? 'flex-end' : 'center';
+  const textAlign = style.textAlign || (isLeft ? 'left' : isRight ? 'right' : 'center');
+  const boxAlign = isTop ? 'flex-start' : isCenterY ? 'center' : 'flex-end';
+  const originX = isLeft ? 'left' : isRight ? 'right' : 'center';
+  const originY = isTop ? 'top' : isCenterY ? 'center' : 'bottom';
+
+  css['--cg-sub-box-justify'] = boxJustify;
+  css['--cg-sub-box-align'] = boxAlign;
+  css['--cg-sub-text-align'] = textAlign;
+  css['--cg-sub-transform-origin'] = `${originX} ${originY}`;
+
+  if (isTop) {
+    css['--cg-sub-outgoing-top'] = '0';
+    css['--cg-sub-outgoing-bottom'] = 'auto';
+    css['--cg-sub-outgoing-transform'] = 'none';
+  } else if (isCenterY) {
+    css['--cg-sub-outgoing-top'] = '50%';
+    css['--cg-sub-outgoing-bottom'] = 'auto';
+    css['--cg-sub-outgoing-transform'] = 'translateY(-50%)';
+  } else {
+    css['--cg-sub-outgoing-top'] = 'auto';
+    css['--cg-sub-outgoing-bottom'] = '0';
+    css['--cg-sub-outgoing-transform'] = 'none';
+  }
 
   const color = style.color || (isShow ? '#fff6d8' : '#ffffff');
   css['--cg-sub-color'] = color;

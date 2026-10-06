@@ -38,6 +38,9 @@ export interface CgSubtitleStyle {
   shadowDistance?: number;
   shadowRadius?: number;
   shadowColor?: string;
+  letterSpacing?: number;
+  lineHeight?: number;
+  textAlign?: 'left' | 'center' | 'right';
 }
 
 /** Inner cue / future Layer animation. Not Package Appear. */
