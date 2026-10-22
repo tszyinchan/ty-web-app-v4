@@ -5,6 +5,8 @@ alwaysApply: false
 
 # Browser must be visible
 
+Use this file only while running user-confirmed verification (`/verify` / test / run regression). Do not start this handshake after a coding turn.
+
 The user must watch **the same tab you are driving**. Proof: their **Jaxfr:4200** (editor Browser tab) follows your clicks.
 
 **Take Control** is not a setting they can turn on. After `browser_lock`, it often appears only when they **hover the browser pane**. Missing overlay is OK if the page is changing.

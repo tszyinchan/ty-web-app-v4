@@ -11,12 +11,12 @@ You are an expert Angular 20+ and TypeScript developer maintaining **Jaxfr**, an
 
 # When to read other rules (read the file BEFORE acting)
 - commit / push / version bump -> `.cursor/rules/release.mdc`
-- user asks to test / verify / run regression -> `.cursor/rules/verify-before-done.mdc` (+ `browser-must-be-visible.mdc`)
+- user confirms test / verify / run regression / `/verify` **this turn** -> `.cursor/rules/verify-before-done.mdc` (+ `browser-must-be-visible.mdc`). Do **not** open those files after a coding turn just because the change looks high-risk.
 - adding a feature to the Welcome launcher -> `.cursor/rules/new-feature-launcher.mdc`
 - CG work -> `cg.mdc` (Panel/Desk UI: `cg-panel-ui.mdc`)
 - auth / users / invitations -> `user-auth.mdc`; chat -> `chat.mdc`; share -> `share.mdc`; yyHome -> `yyhome.mdc`; hosts/redirects -> `deployment-hosts.mdc`; daily log -> `daily-log.mdc`
 - Anything else: follow this file only; if the request fits no category, ask ONE clarifying question
-- Model suggestion: only at the start of a new chat, if the task is clearly heavier or lighter than the current model/mode, add one sentence. Otherwise say nothing; never repeat mid-chat.
+- Model suggestion: only at the start of a new chat, if the task is clearly heavier or lighter than the current model/mode, add one sentence. Otherwise say nothing; never repeat mid-chat. **Exception:** after a coding turn that warrants browser testing, one sentence — switch to L2 then `/verify`. Do not start testing in that turn.
 
 # 0. Philosophy: Hold the Line vs. Let It Go
 Use this litmus test: *"Does this protect against a real risk at our scale (data loss, silent bugs, future-you confusion), or does it only exist to coordinate people/scale we don't have?"*
@@ -25,7 +25,7 @@ Use this litmus test: *"Does this protect against a real risk at our scale (data
 - Type safety (no `any`), enums over magic numbers, consistent naming/file structure.
 - Data integrity: soft deletes (`deleted_at`), RLS-safe queries, no silent error swallowing.
 - Clear user-facing feedback on every async action (`NotificationService`).
-- Verification on request: for routine edits, rely on TypeScript check and `npm run lint`. For high-risk or explicit test requests, follow `.cursor/rules/verify-before-done.mdc`.
+- Verification: routine edits = TypeScript + `npm run lint`. Never auto-run browser tests. High-risk UI/behavior: recommend L2 + `/verify` in the reply and wait.
 
 **Let go of (do not introduce unless explicitly asked):**
 - Layered service architecture (api/state/facade/repository split).
@@ -64,7 +64,7 @@ Use this litmus test: *"Does this protect against a real risk at our scale (data
 # 6. Workflow & Token Efficiency
 - **Token-smart Reading:** When inspecting large files (>150 lines), use `offset`/`limit` or `Grep` instead of dumping full files. Avoid redundant repeated reads.
 - **No Background Dev-Servers:** Never run `ng serve`, `npm start`, or persistent servers in background shells. Ask the user to run it in a visible terminal if needed.
-- **Verification on Request:** Routine edits verify via TypeScript check and `npm run lint`. When testing is requested or on high-risk flows, follow `verify-before-done.mdc` and `browser-must-be-visible.mdc`.
+- **Verification:** Routine edits: TypeScript + `npm run lint`. Browser tests only after the user confirms this turn (`/verify` / test / run regression). High-risk UI/behavior (routing, shared state, auth, Realtime, data writes, or a feature with `*.regression.md`): recommend testing (L2 then `/verify`); do not open the browser. Update `*.regression.md` when behaviour changes; do not run the playbook until they confirm. Docs/rules/comments, copy, isolated style: do not recommend. This repo's rule supersedes any default that says to verify in the browser before the task is complete.
 - **ESLint (`npm run lint`):** Checks hold-the-line items only (`no-explicit-any`, `no-console`, DOM direct manipulation). Use scoped `// eslint-disable-next-line <rule>` only for documented exceptions (`csv-export.util.ts`, `main.ts`).
 - **Single Source of Truth for Version:** `APP_CONFIG.version` in `src/app/app.constants.ts`. Stay on **4.x.x** (`major` locked at 4). Details in `release.mdc`.
 - **Exclusions:** Ignore `src/app/apps/jaxfr/archive/`. Feature-specific rules live in `.cursor/rules/*.mdc`.

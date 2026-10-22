@@ -17,7 +17,11 @@ import {
   CG_OVERLAY_SAFETY_POLL_MS,
   CgPackageLook,
 } from '../../core/domains/cg/cg.constants';
-import { CgLayer, CgPublicOutput } from '../../core/domains/cg/cg.model';
+import {
+  CgLayer,
+  CgOverlayCueMessage,
+  CgPublicOutput,
+} from '../../core/domains/cg/cg.model';
 import { CgService } from '../../core/domains/cg/cg.service';
 import {
   layerIsMono,
@@ -50,15 +54,21 @@ export class CgOverlay implements OnInit, OnDestroy {
   private fadeId = 0;
   private token = '';
   private lastHash = '';
+  private lastVersion = '';
   private firstPaint = true;
+  private lastCueSeq = new Map<string, number>();
 
   ngOnInit(): void {
     this.document.documentElement.classList.add(OVERLAY_HTML_CLASS);
     this.title.setTitle('');
     this.token = this.route.snapshot.paramMap.get('token') ?? '';
-    this.cg.subscribeOverlayOutput(this.token, (output) => {
-      this.applyOutput(output, false);
-    });
+    this.cg.subscribeOverlayOutput(
+      this.token,
+      (output) => {
+        this.applyOutput(output, false);
+      },
+      (cue) => this.applyCue(cue),
+    );
     void this.refresh();
     this.safetyPollId = window.setInterval(() => {
       void this.refresh();
@@ -77,9 +87,50 @@ export class CgOverlay implements OnInit, OnDestroy {
       this.applyOutput(null, true);
       return;
     }
+    if (!this.firstPaint) {
+      const version = await this.cg.fetchPublicOutputVersion(this.token);
+      if (version != null && version === this.lastVersion) return;
+      if (version != null) this.lastVersion = version;
+    }
     const live = await this.cg.fetchPublicOutput(this.token);
+    if (this.firstPaint) {
+      const version = await this.cg.fetchPublicOutputVersion(this.token);
+      if (version != null) this.lastVersion = version;
+    }
     this.applyOutput(live, this.firstPaint);
     this.firstPaint = false;
+  }
+
+  private applyCue(cue: CgOverlayCueMessage): void {
+    const applied = this.lastCueSeq.get(cue.layerId) ?? 0;
+    if (cue.seq <= applied) return;
+    this.lastCueSeq.set(cue.layerId, cue.seq);
+
+    const current = this.stagedLayers();
+    const at = current.findIndex(
+      (layer) => layer.tb_tyapp_cgly_id === cue.layerId,
+    );
+    if (at < 0) return;
+
+    const layer = current[at];
+    if (
+      layer.payload.index === cue.index &&
+      layer.payload.cursor === cue.cursor
+    ) {
+      return;
+    }
+
+    const next = [...current];
+    next[at] = {
+      ...layer,
+      payload: {
+        ...layer.payload,
+        index: cue.index,
+        cursor: cue.cursor,
+      },
+    };
+    this.stagedLayers.set(next);
+    this.lastHash = outputHash(next.filter((row) => row.visible));
   }
 
   private applyOutput(live: CgPublicOutput | null, instant: boolean): void {

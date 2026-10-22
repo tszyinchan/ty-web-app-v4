@@ -2,11 +2,12 @@
   <section
     class="cg-layer-form"
     [class.logo-desk]="layer.element_type === Logo"
+    [class.sub-desk]="layer.element_type === Subtitle"
   >
     <div class="cg-desk-split">
       <aside class="cg-desk-preview">
-        <div class="cg-monitor-toolbar">
-          @if (layer.element_type === Logo) {
+        @if (layer.element_type === Logo) {
+          <div class="cg-monitor-toolbar">
             <div class="cg-mode">
               <span class="cg-mode-label">Studio mode</span>
               <button
@@ -46,8 +47,8 @@
                 </button>
               }
             </div>
-          }
-        </div>
+          </div>
+        }
         <div class="cg-monitors">
           <app-cg-mix-preview
             label=""
@@ -211,10 +212,10 @@
             </div>
           </section>
         }
-        <section class="cg-block">
-          <h3 class="cg-block-title">Copy to package</h3>
-          @if (copyTargets().length > 0) {
-            <div class="cg-inline">
+        <footer class="cg-desk-foot">
+          <div class="cg-foot-copy">
+            <span class="cg-block-title">Copy to package</span>
+            @if (copyTargets().length > 0) {
               <select
                 class="cg-copy-select"
                 [ngModel]="copyTargetId()"
@@ -234,12 +235,10 @@
               >
                 Copy
               </button>
-            </div>
-          } @else {
-            <span class="cg-url-placeholder">Need another saved package</span>
-          }
-        </section>
-        <footer class="cg-desk-foot">
+            } @else {
+              <span class="cg-url-placeholder">Need another saved package</span>
+            }
+          </div>
           <div class="cg-foot-actions">
             <button
               mat-flat-button
@@ -337,388 +336,411 @@
             </div>
           </section>
         } @else if (layer.element_type === Subtitle) {
-          <div class="cg-cue-bar">
-            <span class="cg-kicker">Cue</span>
-            <button
-              mat-stroked-button
-              type="button"
-              class="cg-seg-btn cg-icon-btn"
-              title="Cue up"
-              aria-label="Cue up"
-              (click)="cue(-1)"
-            >
-              <mat-icon>keyboard_arrow_up</mat-icon>
-            </button>
-            <button
-              mat-stroked-button
-              type="button"
-              class="cg-seg-btn cg-icon-btn"
-              title="Cue down"
-              aria-label="Cue down"
-              (click)="cue(1)"
-            >
-              <mat-icon>keyboard_arrow_down</mat-icon>
-            </button>
-            <button
-              mat-stroked-button
-              type="button"
-              class="cg-seg-btn"
-              [class.selected]="layer.payload.index === null"
-              (click)="blankAir()"
-            >
-              Blank
-            </button>
-            <mat-button-toggle-group
-              class="cg-seg-toggle"
-              [value]="isCueCut(layer) ? 'cut' : 'fade'"
-              (change)="onCueAppearToggle(layer, $event)"
-              hideSingleSelectionIndicator
-            >
-              <mat-button-toggle value="fade">Fade</mat-button-toggle>
-              <mat-button-toggle value="cut">Cut</mat-button-toggle>
-            </mat-button-toggle-group>
-
-            @if (!isCueCut(layer)) {
-              <div class="cg-duration-wrap">
-                <label class="cg-field cg-duration">
-                  <span>ms</span>
-                  <input
-                    type="number"
-                    [min]="cutMs"
-                    [max]="maxDurationMs"
-                    step="50"
-                    [ngModel]="cueDurationMs(layer)"
-                    (ngModelChange)="onCueDurationMsChange(layer, $event)"
-                  />
-                </label>
-                <div class="cg-cue-presets">
-                  <button
-                    mat-stroked-button
-                    type="button"
-                    class="cg-seg-btn cg-mini-btn"
-                    [class.selected]="cueDurationMs(layer) === 200"
-                    (click)="onCueDurationMsChange(layer, 200)"
-                  >
-                    200ms
-                  </button>
-                  <button
-                    mat-stroked-button
-                    type="button"
-                    class="cg-seg-btn cg-mini-btn"
-                    [class.selected]="cueDurationMs(layer) === 400"
-                    (click)="onCueDurationMsChange(layer, 400)"
-                  >
-                    400ms
-                  </button>
-                  <button
-                    mat-stroked-button
-                    type="button"
-                    class="cg-seg-btn cg-mini-btn"
-                    [class.selected]="cueDurationMs(layer) === 800"
-                    (click)="onCueDurationMsChange(layer, 800)"
-                  >
-                    800ms
-                  </button>
-                </div>
+          <div class="cg-sub-cue-col">
+            <div class="cg-cue-bar">
+              <div class="cg-cue-nav">
+                <span class="cg-kicker">Cue</span>
+                <button
+                  mat-stroked-button
+                  type="button"
+                  class="cg-seg-btn cg-icon-btn"
+                  title="Cue up"
+                  aria-label="Cue up"
+                  (click)="cue(-1)"
+                >
+                  <mat-icon>keyboard_arrow_up</mat-icon>
+                </button>
+                <button
+                  mat-stroked-button
+                  type="button"
+                  class="cg-seg-btn cg-icon-btn"
+                  title="Cue down"
+                  aria-label="Cue down"
+                  (click)="cue(1)"
+                >
+                  <mat-icon>keyboard_arrow_down</mat-icon>
+                </button>
+                <button
+                  mat-stroked-button
+                  type="button"
+                  class="cg-seg-btn"
+                  [class.selected]="layer.payload.index === null"
+                  (click)="blankAir()"
+                >
+                  Blank
+                </button>
+                <mat-button-toggle-group
+                  class="cg-seg-toggle"
+                  [value]="isCueCut(layer) ? 'cut' : 'fade'"
+                  (change)="onCueAppearToggle(layer, $event)"
+                  hideSingleSelectionIndicator
+                >
+                  <mat-button-toggle value="fade">Fade</mat-button-toggle>
+                  <mat-button-toggle value="cut">Cut</mat-button-toggle>
+                </mat-button-toggle-group>
               </div>
+              @if (!isCueCut(layer)) {
+                <div class="cg-duration-wrap">
+                  <label class="cg-field cg-duration">
+                    <span>ms</span>
+                    <input
+                      type="number"
+                      [min]="cutMs"
+                      [max]="maxDurationMs"
+                      step="50"
+                      [ngModel]="cueDurationMs(layer)"
+                      (ngModelChange)="onCueDurationMsChange(layer, $event)"
+                    />
+                  </label>
+                  <div class="cg-cue-presets">
+                    <button
+                      mat-stroked-button
+                      type="button"
+                      class="cg-seg-btn cg-mini-btn"
+                      [class.selected]="cueDurationMs(layer) === 200"
+                      (click)="onCueDurationMsChange(layer, 200)"
+                    >
+                      200ms
+                    </button>
+                    <button
+                      mat-stroked-button
+                      type="button"
+                      class="cg-seg-btn cg-mini-btn"
+                      [class.selected]="cueDurationMs(layer) === 400"
+                      (click)="onCueDurationMsChange(layer, 400)"
+                    >
+                      400ms
+                    </button>
+                    <button
+                      mat-stroked-button
+                      type="button"
+                      class="cg-seg-btn cg-mini-btn"
+                      [class.selected]="cueDurationMs(layer) === 800"
+                      (click)="onCueDurationMsChange(layer, 800)"
+                    >
+                      800ms
+                    </button>
+                  </div>
+                </div>
+              }
+            </div>
+            @if (!packageId) {
+              <p class="cg-hint">Save the package once so cue goes to OBS.</p>
             }
-          </div>
-          @if (!packageId) {
-            <p class="cg-hint">Save the package once so cue goes to OBS.</p>
-          }
-          <div class="cg-queue" role="listbox" aria-label="Caption queue">
-            @for (line of layer.payload.lines; track $index) {
-              <button
-                type="button"
-                #queueRow
-                class="cg-queue-row"
-                role="option"
-                [class.on]="$index === layer.payload.index"
-                [class.held]="
-                  layer.payload.index === null && $index === layer.payload.cursor
-                "
-                [attr.aria-selected]="
-                  $index === layer.payload.index ||
-                  (layer.payload.index === null && $index === layer.payload.cursor)
-                "
-                (click)="cueAt($index)"
-              >
-                <span class="cg-queue-n">{{ $index + 1 }}</span>
-                <span class="cg-queue-line">{{ line }}</span>
-              </button>
-            }
+            <div class="cg-queue" role="listbox" aria-label="Caption queue">
+              @for (line of layer.payload.lines; track $index) {
+                <button
+                  type="button"
+                  #queueRow
+                  class="cg-queue-row"
+                  role="option"
+                  [class.on]="$index === layer.payload.index"
+                  [class.held]="
+                    layer.payload.index === null && $index === layer.payload.cursor
+                  "
+                  [attr.aria-selected]="
+                    $index === layer.payload.index ||
+                    (layer.payload.index === null && $index === layer.payload.cursor)
+                  "
+                  (click)="cueAt($index)"
+                >
+                  <span class="cg-queue-n">{{ $index + 1 }}</span>
+                  <span class="cg-queue-line">{{ line }}</span>
+                </button>
+              }
+            </div>
           </div>
 
           @let subStyle = getSubtitleStyle(layer);
-          <section class="cg-sub-styling">
-            <div class="cg-style-row">
-              <label class="cg-field cg-font-field">
-                <span>Font</span>
-                <select
-                  [ngModel]="selectedFontValue(layer)"
-                  (ngModelChange)="onFontSelectChange(layer, $event)"
-                >
-                  <option value="">Default (DFHei / JhengHei)</option>
-                  @for (font of fontOptions; track font.value) {
-                    <option [value]="font.value">{{ font.label }}</option>
-                  }
-                  <option value="__custom__">自訂字型 (Custom font...)</option>
-                </select>
-              </label>
-              <label class="cg-field">
-                <span>Size (vh)</span>
-                <input
-                  type="number"
-                  step="0.2"
-                  min="1"
-                  max="20"
-                  [ngModel]="subStyle.fontSize ?? (isPreset(PresetShow) ? 7.2 : 5.6)"
-                  (ngModelChange)="subStyle.fontSize = $event; onStyleFieldChange(layer)"
-                />
-              </label>
-            </div>
-            @if (isCustomFont(layer)) {
-              <div class="cg-style-row cg-custom-font-row">
-                <label class="cg-field cg-custom-font-field">
-                  <span>Custom Font Family (本機或系統字型名稱)</span>
+          <div class="cg-sub-style-col">
+            <section class="cg-block cg-sub-place">
+              <h3 class="cg-block-title">Place</h3>
+              <div class="cg-place-compact">
+                <div class="cg-anchor-field">
+                  <span class="cg-anchor-title">Anchor</span>
+                  <mat-button-toggle-group
+                    class="cg-anchor-toggle-group"
+                    [value]="layer.layout.anchor"
+                    (change)="onAnchorToggle(layer, $event)"
+                    hideSingleSelectionIndicator
+                    aria-label="Anchor position"
+                  >
+                    @for (option of anchorGridOptions; track option.value) {
+                      <mat-button-toggle
+                        [value]="option.value"
+                        [attr.title]="option.label"
+                        [attr.aria-label]="option.label"
+                      >
+                        <mat-icon [class.cg-anchor-dot]="option.value === 'center'">{{ option.icon }}</mat-icon>
+                      </mat-button-toggle>
+                    }
+                  </mat-button-toggle-group>
+                </div>
+                <div class="cg-place-grid">
+                  <label class="cg-field cg-control-field">
+                    <span>X (%)</span>
+                    <input
+                      type="number"
+                      [(ngModel)]="layer.layout.x"
+                      (ngModelChange)="touchPreview()"
+                      (wheel)="onPlaceWheel($event, layer, 'x')"
+                    />
+                  </label>
+                  <label class="cg-field cg-control-field">
+                    <span>Y (%)</span>
+                    <input
+                      type="number"
+                      [(ngModel)]="layer.layout.y"
+                      (ngModelChange)="touchPreview()"
+                      (wheel)="onPlaceWheel($event, layer, 'y')"
+                    />
+                  </label>
+                  <label class="cg-field cg-control-field">
+                    <span>Width (%)</span>
+                    <input
+                      type="number"
+                      [(ngModel)]="layer.layout.width"
+                      (ngModelChange)="touchPreview()"
+                      (wheel)="onPlaceWheel($event, layer, 'width')"
+                    />
+                  </label>
+                  <label class="cg-field cg-control-field">
+                    <span>Scale</span>
+                    <input
+                      type="number"
+                      step="0.05"
+                      [(ngModel)]="layer.layout.scale"
+                      (ngModelChange)="touchPreview()"
+                      (wheel)="onPlaceWheel($event, layer, 'scale')"
+                    />
+                  </label>
+                </div>
+              </div>
+              <p class="cg-hint">Anchor · Scale type size · Width wrap %.</p>
+            </section>
+            <section class="cg-sub-styling">
+              <div class="cg-style-row">
+                <label class="cg-field cg-font-field">
+                  <span>Font</span>
+                  <select
+                    [ngModel]="selectedFontValue(layer)"
+                    (ngModelChange)="onFontSelectChange(layer, $event)"
+                  >
+                    <option value="">Default (DFHei / JhengHei)</option>
+                    @for (group of fontGroups; track group.id) {
+                      <optgroup [label]="group.label">
+                        @for (font of fontsInGroup(group.id); track font.value) {
+                          <option [value]="font.value">{{ font.label }}</option>
+                        }
+                      </optgroup>
+                    }
+                    <option value="__custom__">Other… (installed on OBS PC)</option>
+                  </select>
+                </label>
+                @if (isCustomFont(layer)) {
+                  <label class="cg-field cg-custom-font-field">
+                    <span>Other font name</span>
+                    <input
+                      type="text"
+                      [ngModel]="subStyle.fontFamily ?? ''"
+                      (ngModelChange)="subStyle.fontFamily = $event; onStyleFieldChange(layer)"
+                      placeholder="e.g. GenYoGothic, sans-serif"
+                    />
+                  </label>
+                } @else {
+                  <label class="cg-field">
+                    <span>Size (vh)</span>
+                    <input
+                      type="number"
+                      step="0.2"
+                      min="1"
+                      max="20"
+                      [ngModel]="subStyle.fontSize ?? (isPreset(PresetShow) ? 7.2 : 5.6)"
+                      (ngModelChange)="subStyle.fontSize = $event; onStyleFieldChange(layer)"
+                    />
+                  </label>
+                }
+              </div>
+              @if (isCustomFont(layer)) {
+                <div class="cg-style-row">
+                  <label class="cg-field">
+                    <span>Size (vh)</span>
+                    <input
+                      type="number"
+                      step="0.2"
+                      min="1"
+                      max="20"
+                      [ngModel]="subStyle.fontSize ?? (isPreset(PresetShow) ? 7.2 : 5.6)"
+                      (ngModelChange)="subStyle.fontSize = $event; onStyleFieldChange(layer)"
+                    />
+                  </label>
+                </div>
+              }
+
+              <div class="cg-fields cg-spacing-row">
+                <label class="cg-field">
+                  <span>字距 (em)</span>
                   <input
-                    type="text"
-                    [ngModel]="subStyle.fontFamily ?? ''"
-                    (ngModelChange)="subStyle.fontFamily = $event; onStyleFieldChange(layer)"
-                    placeholder="e.g. 'GenYoGothic', 'DFPHeiMedium-B5', sans-serif"
+                    type="number"
+                    step="0.01"
+                    min="-0.2"
+                    max="1.0"
+                    [ngModel]="subStyle.letterSpacing ?? (isPreset(PresetShow) ? 0.06 : 0.104)"
+                    (ngModelChange)="subStyle.letterSpacing = $event; onStyleFieldChange(layer)"
                   />
                 </label>
-              </div>
-            }
-
-            <div class="cg-fields cg-spacing-row">
-              <label class="cg-field">
-                <span>字距 (em)</span>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="-0.2"
-                  max="1.0"
-                  [ngModel]="subStyle.letterSpacing ?? (isPreset(PresetShow) ? 0.06 : 0.104)"
-                  (ngModelChange)="subStyle.letterSpacing = $event; onStyleFieldChange(layer)"
-                />
-              </label>
-              <label class="cg-field">
-                <span>行距 (倍數)</span>
-                <input
-                  type="number"
-                  step="0.05"
-                  min="0.8"
-                  max="3.0"
-                  [ngModel]="subStyle.lineHeight ?? 1.15"
-                  (ngModelChange)="subStyle.lineHeight = $event; onStyleFieldChange(layer)"
-                />
-              </label>
-              <label class="cg-field">
-                <span>文字對齊</span>
-                <select
-                  [ngModel]="subStyle.textAlign ?? ''"
-                  (ngModelChange)="subStyle.textAlign = ($event || undefined); onStyleFieldChange(layer)"
-                >
-                  <option value="">Auto (跟隨 Anchor)</option>
-                  <option value="left">置左 (Left)</option>
-                  <option value="center">置中 (Center)</option>
-                  <option value="right">置右 (Right)</option>
-                </select>
-              </label>
-            </div>
-
-            <div class="cg-fields cg-scale-row">
-              <label class="cg-field">
-                <span>Scale X (寬比)</span>
-                <input
-                  type="number"
-                  step="0.05"
-                  min="0.5"
-                  max="2.5"
-                  [ngModel]="subStyle.scaleX ?? 1.0"
-                  (ngModelChange)="subStyle.scaleX = $event; onStyleFieldChange(layer)"
-                />
-              </label>
-              <label class="cg-field">
-                <span>Scale Y (高比)</span>
-                <input
-                  type="number"
-                  step="0.05"
-                  min="0.5"
-                  max="2.5"
-                  [ngModel]="subStyle.scaleY ?? (isPreset(PresetShow) ? 1.0 : 1.11)"
-                  (ngModelChange)="subStyle.scaleY = $event; onStyleFieldChange(layer)"
-                />
-              </label>
-              <label class="cg-field">
-                <span>Text Color</span>
-                <div class="cg-color-input-wrap">
+                <label class="cg-field">
+                  <span>行距 (倍數)</span>
                   <input
-                    type="color"
-                    class="cg-color-swatch"
-                    [ngModel]="subStyle.color ?? (isPreset(PresetShow) ? '#fff6d8' : '#ffffff')"
-                    (ngModelChange)="subStyle.color = $event; onStyleFieldChange(layer)"
+                    type="number"
+                    step="0.05"
+                    min="0.8"
+                    max="3.0"
+                    [ngModel]="subStyle.lineHeight ?? 1.15"
+                    (ngModelChange)="subStyle.lineHeight = $event; onStyleFieldChange(layer)"
                   />
-                  <input
-                    type="text"
-                    class="cg-color-hex"
-                    [ngModel]="subStyle.color ?? (isPreset(PresetShow) ? '#fff6d8' : '#ffffff')"
-                    (ngModelChange)="subStyle.color = $event; onStyleFieldChange(layer)"
-                  />
-                </div>
-              </label>
-            </div>
-
-            <div class="cg-fields cg-border-row">
-              <label class="cg-field">
-                <span>Stroke (em)</span>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  max="0.4"
-                  [ngModel]="subStyle.borderWidth ?? (isPreset(PresetShow) ? 0.16 : 0.12)"
-                  (ngModelChange)="subStyle.borderWidth = $event; onStyleFieldChange(layer)"
-                />
-              </label>
-              <label class="cg-field">
-                <span>Stroke Color</span>
-                <div class="cg-color-input-wrap">
-                  <input
-                    type="color"
-                    class="cg-color-swatch"
-                    [ngModel]="subStyle.borderColor ?? '#000000'"
-                    (ngModelChange)="subStyle.borderColor = $event; onStyleFieldChange(layer)"
-                  />
-                  <input
-                    type="text"
-                    class="cg-color-hex"
-                    [ngModel]="subStyle.borderColor ?? '#000000'"
-                    (ngModelChange)="subStyle.borderColor = $event; onStyleFieldChange(layer)"
-                  />
-                </div>
-              </label>
-            </div>
-
-            <div class="cg-fields cg-shadow-row">
-              <label class="cg-field">
-                <span>Shadow Angle</span>
-                <input
-                  type="number"
-                  step="15"
-                  min="0"
-                  max="360"
-                  [ngModel]="subStyle.shadowAngle ?? 135"
-                  (ngModelChange)="subStyle.shadowAngle = $event; onStyleFieldChange(layer)"
-                />
-              </label>
-              <label class="cg-field">
-                <span>Distance</span>
-                <input
-                  type="number"
-                  step="0.5"
-                  min="0"
-                  max="15"
-                  [ngModel]="subStyle.shadowDistance ?? (isPreset(PresetShow) ? 2 : 0)"
-                  (ngModelChange)="subStyle.shadowDistance = $event; onStyleFieldChange(layer)"
-                />
-              </label>
-              <label class="cg-field">
-                <span>Radius</span>
-                <input
-                  type="number"
-                  step="0.5"
-                  min="0"
-                  max="15"
-                  [ngModel]="subStyle.shadowRadius ?? 2"
-                  (ngModelChange)="subStyle.shadowRadius = $event; onStyleFieldChange(layer)"
-                />
-              </label>
-              <label class="cg-field">
-                <span>Shadow Color</span>
-                <div class="cg-color-input-wrap">
-                  <input
-                    type="color"
-                    class="cg-color-swatch"
-                    [ngModel]="subStyle.shadowColor ?? '#000000'"
-                    (ngModelChange)="subStyle.shadowColor = $event; onStyleFieldChange(layer)"
-                  />
-                  <input
-                    type="text"
-                    class="cg-color-hex"
-                    [ngModel]="subStyle.shadowColor ?? '#000000'"
-                    (ngModelChange)="subStyle.shadowColor = $event; onStyleFieldChange(layer)"
-                  />
-                </div>
-              </label>
-            </div>
-          </section>
-          <section class="cg-block cg-sub-place">
-            <h3 class="cg-block-title">Place</h3>
-            <div class="cg-anchor-field">
-              <span class="cg-anchor-title">Anchor</span>
-              <mat-button-toggle-group
-                class="cg-anchor-toggle-group"
-                [value]="layer.layout.anchor"
-                (change)="onAnchorToggle(layer, $event)"
-                hideSingleSelectionIndicator
-                aria-label="Anchor position"
-              >
-                @for (option of anchorGridOptions; track option.value) {
-                  <mat-button-toggle
-                    [value]="option.value"
-                    [attr.title]="option.label"
-                    [attr.aria-label]="option.label"
+                </label>
+                <label class="cg-field">
+                  <span>文字對齊</span>
+                  <select
+                    [ngModel]="subStyle.textAlign ?? ''"
+                    (ngModelChange)="subStyle.textAlign = ($event || undefined); onStyleFieldChange(layer)"
                   >
-                    <mat-icon [class.cg-anchor-dot]="option.value === 'center'">{{ option.icon }}</mat-icon>
-                  </mat-button-toggle>
-                }
-              </mat-button-toggle-group>
-            </div>
-            <div class="cg-place-row">
-              <label class="cg-field cg-control-field">
-                <span>X (%)</span>
-                <input
-                  type="number"
-                  [(ngModel)]="layer.layout.x"
-                  (ngModelChange)="touchPreview()"
-                  (wheel)="onPlaceWheel($event, layer, 'x')"
-                />
-              </label>
-              <label class="cg-field cg-control-field">
-                <span>Y (%)</span>
-                <input
-                  type="number"
-                  [(ngModel)]="layer.layout.y"
-                  (ngModelChange)="touchPreview()"
-                  (wheel)="onPlaceWheel($event, layer, 'y')"
-                />
-              </label>
-              <label class="cg-field cg-control-field">
-                <span>Width (%)</span>
-                <input
-                  type="number"
-                  [(ngModel)]="layer.layout.width"
-                  (ngModelChange)="touchPreview()"
-                  (wheel)="onPlaceWheel($event, layer, 'width')"
-                />
-              </label>
-              <label class="cg-field cg-control-field">
-                <span>Scale</span>
-                <input
-                  type="number"
-                  step="0.05"
-                  [(ngModel)]="layer.layout.scale"
-                  (ngModelChange)="touchPreview()"
-                  (wheel)="onPlaceWheel($event, layer, 'scale')"
-                />
-              </label>
-            </div>
-            <p class="cg-hint">
-              Anchor 定位基準點與對齊。Scale 為字體倍率。Width 為折行寬度上限 (%)。
-            </p>
-          </section>
+                    <option value="">Auto (跟隨 Anchor)</option>
+                    <option value="left">置左 (Left)</option>
+                    <option value="center">置中 (Center)</option>
+                    <option value="right">置右 (Right)</option>
+                  </select>
+                </label>
+              </div>
+
+              <div class="cg-fields cg-scale-row">
+                <label class="cg-field">
+                  <span>Scale X (寬比)</span>
+                  <input
+                    type="number"
+                    step="0.05"
+                    min="0.5"
+                    max="2.5"
+                    [ngModel]="subStyle.scaleX ?? 1.0"
+                    (ngModelChange)="subStyle.scaleX = $event; onStyleFieldChange(layer)"
+                  />
+                </label>
+                <label class="cg-field">
+                  <span>Scale Y (高比)</span>
+                  <input
+                    type="number"
+                    step="0.05"
+                    min="0.5"
+                    max="2.5"
+                    [ngModel]="subStyle.scaleY ?? (isPreset(PresetShow) ? 1.0 : 1.11)"
+                    (ngModelChange)="subStyle.scaleY = $event; onStyleFieldChange(layer)"
+                  />
+                </label>
+                <label class="cg-field">
+                  <span>Text Color</span>
+                  <div class="cg-color-input-wrap">
+                    <input
+                      type="color"
+                      class="cg-color-swatch"
+                      [ngModel]="subStyle.color ?? (isPreset(PresetShow) ? '#fff6d8' : '#ffffff')"
+                      (ngModelChange)="subStyle.color = $event; onStyleFieldChange(layer)"
+                    />
+                    <input
+                      type="text"
+                      class="cg-color-hex"
+                      [ngModel]="subStyle.color ?? (isPreset(PresetShow) ? '#fff6d8' : '#ffffff')"
+                      (ngModelChange)="subStyle.color = $event; onStyleFieldChange(layer)"
+                    />
+                  </div>
+                </label>
+              </div>
+
+              <div class="cg-fields cg-border-row">
+                <label class="cg-field">
+                  <span>Stroke (em)</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="0.4"
+                    [ngModel]="subStyle.borderWidth ?? (isPreset(PresetShow) ? 0.16 : 0.12)"
+                    (ngModelChange)="subStyle.borderWidth = $event; onStyleFieldChange(layer)"
+                  />
+                </label>
+                <label class="cg-field">
+                  <span>Stroke Color</span>
+                  <div class="cg-color-input-wrap">
+                    <input
+                      type="color"
+                      class="cg-color-swatch"
+                      [ngModel]="subStyle.borderColor ?? '#000000'"
+                      (ngModelChange)="subStyle.borderColor = $event; onStyleFieldChange(layer)"
+                    />
+                    <input
+                      type="text"
+                      class="cg-color-hex"
+                      [ngModel]="subStyle.borderColor ?? '#000000'"
+                      (ngModelChange)="subStyle.borderColor = $event; onStyleFieldChange(layer)"
+                    />
+                  </div>
+                </label>
+              </div>
+
+              <div class="cg-fields cg-shadow-row">
+                <label class="cg-field">
+                  <span>Shadow Angle</span>
+                  <input
+                    type="number"
+                    step="15"
+                    min="0"
+                    max="360"
+                    [ngModel]="subStyle.shadowAngle ?? 135"
+                    (ngModelChange)="subStyle.shadowAngle = $event; onStyleFieldChange(layer)"
+                  />
+                </label>
+                <label class="cg-field">
+                  <span>Distance</span>
+                  <input
+                    type="number"
+                    step="0.5"
+                    min="0"
+                    max="15"
+                    [ngModel]="subStyle.shadowDistance ?? (isPreset(PresetShow) ? 2 : 0)"
+                    (ngModelChange)="subStyle.shadowDistance = $event; onStyleFieldChange(layer)"
+                  />
+                </label>
+                <label class="cg-field">
+                  <span>Radius</span>
+                  <input
+                    type="number"
+                    step="0.5"
+                    min="0"
+                    max="15"
+                    [ngModel]="subStyle.shadowRadius ?? 2"
+                    (ngModelChange)="subStyle.shadowRadius = $event; onStyleFieldChange(layer)"
+                  />
+                </label>
+                <label class="cg-field">
+                  <span>Shadow Color</span>
+                  <div class="cg-color-input-wrap">
+                    <input
+                      type="color"
+                      class="cg-color-swatch"
+                      [ngModel]="subStyle.shadowColor ?? '#000000'"
+                      (ngModelChange)="subStyle.shadowColor = $event; onStyleFieldChange(layer)"
+                    />
+                    <input
+                      type="text"
+                      class="cg-color-hex"
+                      [ngModel]="subStyle.shadowColor ?? '#000000'"
+                      (ngModelChange)="subStyle.shadowColor = $event; onStyleFieldChange(layer)"
+                    />
+                  </div>
+                </label>
+              </div>
+            </section>
+          </div>
         }
       </div>
     </div>

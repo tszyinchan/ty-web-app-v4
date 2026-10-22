@@ -9,6 +9,7 @@ import {
   CG_EDIT_MODE_STORAGE_PREFIX,
   CG_LAYER_STUDIO_STORAGE_PREFIX,
   CG_OVERLAY_CHANNEL_PREFIX,
+  CG_OVERLAY_CUE_KIND,
   CG_ELEMENT_CATALOG,
   CG_MAX_DURATION_MS,
   CG_PAGE_VIEWPORT,
@@ -36,6 +37,7 @@ import {
   CgLayerPayload,
   CgLayout,
   CgLogoPayload,
+  CgOverlayCueMessage,
   CgPackage,
   CgPublicOutput,
   CgSubtitleStyle,
@@ -452,11 +454,16 @@ export function normalizeLogoPayload(raw: unknown): CgLayerPayload {
 export function normalizeSubtitlePayload(raw: unknown): CgLayerPayload {
   const value = asRecord(raw);
   const fromLines = Array.isArray(value['lines'])
-    ? value['lines'].filter((line): line is string => typeof line === 'string')
+    ? value['lines']
+        .filter((line): line is string => typeof line === 'string')
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0)
     : [];
+  // Stored `lines` already one cue per element (a cue may contain `\n`).
+  // Do not re-parse — that would split dual-line SRT cues and desync index.
   const lines =
     fromLines.length > 0
-      ? parseSubtitleScript(fromLines.join('\n'))
+      ? fromLines
       : parseSubtitleScript(asString(value['text']));
   const rawIndex = value['index'];
   let index: number | null = null;
@@ -790,6 +797,31 @@ function layoutBoxCss(
 
 export function cgOutputChannelName(token: string): string {
   return `${CG_OVERLAY_CHANNEL_PREFIX}${token}`;
+}
+
+export function isOverlayCueMessage(raw: unknown): raw is CgOverlayCueMessage {
+  const value = asRecord(raw);
+  const index = value['index'];
+  const cursor = value['cursor'];
+  const seq = value['seq'];
+  const layerId = value['layerId'];
+  return (
+    value['kind'] === CG_OVERLAY_CUE_KIND &&
+    typeof layerId === 'string' &&
+    layerId.length > 0 &&
+    typeof seq === 'number' &&
+    Number.isFinite(seq) &&
+    typeof cursor === 'number' &&
+    Number.isFinite(cursor) &&
+    (index === null || (typeof index === 'number' && Number.isFinite(index)))
+  );
+}
+
+/** First family name from a CSS font-family stack (for document.fonts.load). */
+export function primaryFontFamily(stack: string | undefined): string {
+  if (!stack) return '';
+  const first = stack.split(',')[0]?.trim() ?? '';
+  return first.replace(/^['"]+|['"]+$/g, '');
 }
 
 export function buildCgOverlayUrl(token: string, location: Location): string {

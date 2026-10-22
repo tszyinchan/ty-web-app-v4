@@ -235,6 +235,7 @@
 
         <div
           class="cg-drive"
+          [class.desk-open]="!!selectedLayerId()"
           cdkDropList
           cdkDropListOrientation="mixed"
           [cdkDropListData]="layers()"

@@ -13,6 +13,7 @@ alwaysApply: false
 1. **What landed** — one short sentence.
 2. **Suggested bump** — minor or patch, plus the `Ver4.X.X-<description>` message. Do **not** edit `app.constants.ts` yet.
 3. **Choice** — `現在 commit + push`，還是 `先留著，等後面改完再一起`。
+If browser testing is warranted (`core.mdc`), add one recommend-testing sentence (L2 then `/verify`) in the same reply. Still ask this prompt — do not wait for `/verify` unless they said to test first. Do not open the browser in this turn.
 
 ## Bump kind
 - New feature / page / route → minor, patch = 0.

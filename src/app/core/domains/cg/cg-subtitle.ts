@@ -12,11 +12,16 @@ import {
 import {
   CG_CUT_DURATION_MS,
   CG_DEFAULT_DURATION_MS,
+  CG_SUBTITLE_FONT_LOAD_MS,
   CgSubtitlePreset,
   DEFAULT_SUBTITLE_LAYOUT,
 } from './cg.constants';
 import { CgLayout, CgSubtitleStyle } from './cg.model';
-import { subtitleLayoutToCss, subtitleTextParts } from './cg.util';
+import {
+  primaryFontFamily,
+  subtitleLayoutToCss,
+  subtitleTextParts,
+} from './cg.util';
 
 @Component({
   selector: 'app-cg-subtitle',
@@ -50,6 +55,7 @@ export class CgSubtitle {
   readonly outgoingParts = computed(() => subtitleTextParts(this.outgoing()));
 
   private fadeId = 0;
+  private swapGen = 0;
 
   constructor() {
     effect(() => {
@@ -57,21 +63,53 @@ export class CgSubtitle {
       const ms = this.durationMs();
       const prev = untracked(() => this.incoming());
       if (next === prev) return;
+      const family = untracked(() => this.css()['--cg-sub-font-family']);
+      const gen = ++this.swapGen;
       window.clearTimeout(this.fadeId);
-      if (ms <= CG_CUT_DURATION_MS) {
-        this.outgoing.set('');
-        this.incoming.set(next);
-        this.fading.set(false);
-        return;
-      }
-      this.outgoing.set(prev);
-      this.incoming.set(next);
-      this.fading.set(true);
-      this.fadeId = window.setTimeout(() => {
-        this.outgoing.set('');
-        this.fading.set(false);
-      }, ms);
+      void this.swapText(gen, next, prev, ms, family);
     });
     inject(DestroyRef).onDestroy(() => window.clearTimeout(this.fadeId));
+  }
+
+  private async swapText(
+    gen: number,
+    next: string,
+    prev: string,
+    ms: number,
+    family: string | undefined,
+  ): Promise<void> {
+    await this.ensureFont(family, next);
+    if (gen !== this.swapGen) return;
+    if (ms <= CG_CUT_DURATION_MS) {
+      this.outgoing.set('');
+      this.incoming.set(next);
+      this.fading.set(false);
+      return;
+    }
+    this.outgoing.set(prev);
+    this.incoming.set(next);
+    this.fading.set(true);
+    this.fadeId = window.setTimeout(() => {
+      this.outgoing.set('');
+      this.fading.set(false);
+    }, ms);
+  }
+
+  private async ensureFont(
+    family: string | undefined,
+    sample: string,
+  ): Promise<void> {
+    const name = primaryFontFamily(family);
+    if (!name || !sample || !document.fonts?.load) return;
+    try {
+      await Promise.race([
+        document.fonts.load(`24px "${name}"`, sample),
+        new Promise<void>((resolve) =>
+          window.setTimeout(resolve, CG_SUBTITLE_FONT_LOAD_MS),
+        ),
+      ]);
+    } catch {
+      return;
+    }
   }
 }

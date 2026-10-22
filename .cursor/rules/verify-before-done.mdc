@@ -1,17 +1,21 @@
 ---
-description: Verification and browser testing playbook — executed when user requests testing/verification or for high-risk flows
+description: Browser testing playbook — run only after the user confirms this turn (/verify, test, run regression)
 alwaysApply: false
 ---
 
-# Verification (On-Demand / When Requested)
+# Verification (user-confirmed only)
 
 This is how Jaxfr is tested. Do **not** add `.spec.ts` / Playwright / Cypress files.
 
-Browser verification is **on-demand**: run it when the user asks to test, or when confirming complex, high-risk UI/behavior changes. For routine edits, verify via static analysis (`npm run lint` / TypeScript checks / logic trace).
+**Run this file only when the user confirmed this turn:** `/verify`, test, verify, or run regression. `/verify` counts as confirm.
 
-When running verification:
+Do **not** run it after a coding turn just because the change is high-risk UI/behavior. Recommend testing instead (`core.mdc`: one sentence, switch to L2 then `/verify`) and stop. Do not open a browser, lock a tab, or click through the app in that turn.
 
-1. **Invent scenarios** covering: the main path, empty/error/edge states, and other screens that share the same state or components.
+Routine edits without a confirm: TypeScript + `npm run lint` / logic trace. That is not this file.
+
+## When running (user confirmed)
+
+1. **Invent scenarios** covering: the main path, empty/error/edge states, and other screens that share the same state or components. If the user asked for regression and the feature has `*.regression.md`, follow that script (`.cursor/regression/index.md`).
 2. **Run them** in the Cursor browser like a user (click, type, submit, navigate). A screenshot is not verification. The pane must be **visible** to the user — follow `.cursor/rules/browser-must-be-visible.mdc`. Do not test in a hidden tab.
 3. **Put a 驗證報告 in the reply** (Traditional Chinese) **before** the commit-or-keep question (see `release.mdc`). Do not say the work is done while any case is Fail. `Needs Super Admin` is not Fail — it is a handoff. Fix real Fails, re-run, update the table.
 4. Run `npm run lint` on touched files when practical; include whether it passed.
@@ -36,12 +40,13 @@ Cursor tests as a **USER** test account, never as the owner's Super Admin.
 
 ### Feature regression playbooks (separate from the above)
 
-When the user asks to run regression, or you finish a behaviour change on a feature that has a script:
+**Coding turn (no confirm):** update `*.regression.md` if behaviour changed. An outdated playbook means the change is not done. Do **not** run the script; recommend `/verify` or run regression (user may switch to L2).
+
+**When the user asks to run regression:**
 
 - Script path and run order: `.cursor/regression/index.md`. Feature script lives beside the code (`*.regression.md`).
-- Updating the script is part of finishing a behaviour change. An outdated playbook means the change is not done.
 - A **playbook run** that hits Fail: flag it, write the run file under `.cursor/regression/runs/`, **ask the user before changing application code**. Do not "fix while testing."
-- A **change you just made** that fails your own verification: still fix it and re-run (that is this file's usual rule). The "ask first" rule is for stored playbooks and unexpected Fail, not for the bug you introduced this turn.
+- A **change you just made** that fails your own **user-confirmed** verification: still fix it and re-run (that is this file's usual rule). The "ask first" rule is for stored playbooks and unexpected Fail, not for the bug you introduced this turn.
 
 ## 驗證報告 format
 
@@ -51,9 +56,11 @@ When the user asks to run regression, or you finish a behaviour change on a feat
 
 Then one line: `N passed, N failed, N blocked, N need Super Admin.` For Blocked or Needs Super Admin, say exactly what the user should click.
 
-## Skip only when
+## Skip only when (user asked to test, but)
 
 - The change is rules/docs/comments with no app behavior change.
 - The user explicitly said not to test this turn.
+
+A coding turn without `/verify` / test / run regression is not a skip — you should not be in this file. Recommend (or not) per `core.mdc`.
 
 Never invent Pass. If you could not run a case, it is Blocked, not Pass.

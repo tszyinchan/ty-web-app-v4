@@ -147,8 +147,12 @@ export const CG_ELEMENT_CATALOG: ReadonlyArray<CgElementDef> = [
 /** Realtime broadcast topic is `cg-output:{public_token}` — same secret as `/o/:token`. */
 export const CG_OVERLAY_CHANNEL_PREFIX = 'cg-output:';
 export const CG_OVERLAY_BROADCAST_EVENT = 'sync';
+/** Small live-cue payload on the same broadcast event (not a full output snapshot). */
+export const CG_OVERLAY_CUE_KIND = 'cue';
 /** If Realtime drops a packet, overlay re-fetches. Not the live cue path. */
 export const CG_OVERLAY_SAFETY_POLL_MS = 30_000;
+/** Wait at most this long for a web font before showing the next cue. */
+export const CG_SUBTITLE_FONT_LOAD_MS = 400;
 
 /** Admin UI is always the desktop 3-pane. Phones/tablets get this layout (pinch-zoom), not a stacked reflow. Overlay `/o` and `/cg-live` stay device-width. */
 export const CG_DESKTOP_MIN_WIDTH_PX = 1280;
@@ -190,59 +194,117 @@ export const CG_LAYER_LOOK_OPTIONS: ReadonlyArray<{
   { value: CgLayerLook.Mono, label: 'B&W' },
 ];
 
+export type CgSubtitleFontGroup = 'web' | 'installed';
+
 export interface CgSubtitleFontOption {
   value: string;
   label: string;
+  group: CgSubtitleFontGroup;
 }
+
+export const CG_SUBTITLE_FONT_GROUPS: ReadonlyArray<{
+  id: CgSubtitleFontGroup;
+  label: string;
+}> = [
+  { id: 'web', label: 'Web fonts (any computer)' },
+  { id: 'installed', label: 'Installed on OBS PC' },
+];
 
 export const CG_SUBTITLE_FONT_OPTIONS: ReadonlyArray<CgSubtitleFontOption> = [
   {
+    value: "'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif",
+    label: 'Noto Sans TC',
+    group: 'web',
+  },
+  {
+    value: "'Noto Serif TC', 'Songti TC', 'PMingLiU', serif",
+    label: 'Noto Serif TC',
+    group: 'web',
+  },
+  {
+    value: "'LXGW WenKai TC', 'DFKai-SB', serif",
+    label: 'LXGW WenKai TC (霞鶩文楷)',
+    group: 'web',
+  },
+  {
+    value: "'Huninn', 'Microsoft JhengHei', sans-serif",
+    label: 'Huninn (粉圓)',
+    group: 'web',
+  },
+  {
+    value: "'Chocolate Classical Sans', 'Microsoft JhengHei', sans-serif",
+    label: 'Chocolate Classical Sans',
+    group: 'web',
+  },
+  {
+    value: "'Zen Maru Gothic', 'Yu Gothic', sans-serif",
+    label: 'Zen Maru Gothic',
+    group: 'web',
+  },
+  {
+    value: "'Oswald', 'Arial Narrow', sans-serif",
+    label: 'Oswald',
+    group: 'web',
+  },
+  {
+    value: "'Bebas Neue', Impact, sans-serif",
+    label: 'Bebas Neue',
+    group: 'web',
+  },
+  {
+    value: "'Inter', 'Segoe UI', sans-serif",
+    label: 'Inter',
+    group: 'web',
+  },
+  {
     value: "'華康中黑體', '華康中黑體(P)', 'DFHei', 'Microsoft JhengHei', 'Segoe UI', sans-serif",
     label: '華康中黑體 (DFHei)',
+    group: 'installed',
   },
   {
     value: "'Microsoft JhengHei', 'Segoe UI', sans-serif",
     label: '微軟正黑體 (JhengHei)',
-  },
-  {
-    value: "'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif",
-    label: '思源黑體 (Noto Sans TC)',
-  },
-  {
-    value: "'Noto Serif TC', 'Songti TC', 'PMingLiU', serif",
-    label: '思源宋體 (Noto Serif TC)',
+    group: 'installed',
   },
   {
     value: "'PingFang TC', 'PingFang HK', 'Heiti TC', sans-serif",
     label: '蘋方 (PingFang TC)',
+    group: 'installed',
   },
   {
     value: "'Microsoft YaHei', 'PingFang SC', sans-serif",
     label: '微軟雅黑 (YaHei)',
+    group: 'installed',
   },
   {
     value: "'DFKai-SB', 'BiauKai', 'Kaiti TC', serif",
     label: '標楷體 (BiauKai)',
+    group: 'installed',
   },
   {
     value: "'PMingLiU', 'MingLiU', 'Songti TC', serif",
     label: '新細明體 (MingLiU)',
+    group: 'installed',
   },
   {
     value: "'華康圓體', 'Yu Gothic', 'PingFang TC', 'Microsoft JhengHei', sans-serif",
     label: '圓體 (Round)',
+    group: 'installed',
   },
   {
     value: "'Segoe UI', Arial, sans-serif",
     label: 'Segoe UI / Arial',
+    group: 'installed',
   },
   {
     value: "'Roboto', Arial, sans-serif",
     label: 'Roboto',
+    group: 'installed',
   },
   {
     value: "'Impact', 'Arial Black', sans-serif",
     label: 'Impact (粗標題)',
+    group: 'installed',
   },
 ];
 

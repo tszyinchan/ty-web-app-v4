@@ -2,8 +2,8 @@ export const APP_CONFIG = {
   appName: 'Jaxfr',
   version: {
     major: 4,
-    minor: 107,
-    patch: 6,
+    minor: 108,
+    patch: 0,
   },
   versionDate: '2026-10-22',
 };

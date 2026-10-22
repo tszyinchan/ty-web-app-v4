@@ -462,6 +462,10 @@ mat-button-toggle-group.cg-seg-toggle {
   align-content: start;
 }
 
+.cg-drive.desk-open {
+  max-height: 120px;
+}
+
 .cg-drive.cdk-drop-list-dragging .cg-tile:not(.cdk-drag-placeholder) {
   transition: transform 0.16s ease;
 }

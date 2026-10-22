@@ -12,7 +12,7 @@ alwaysApply: false
 - **L1 日常(約 80%)**:Auto 或 Sonnet 5.5 low。
 - **L2 中型**:Sonnet 5.5 medium/high(不開 thinking)。
 - **L3 少用**:thinking-high。只用於 RLS/RPC 設計、L2 解不開的 bug、架構取捨,且僅在 Ask/Plan。
-- 維度:模型家族、強度(low/medium/high/max、thinking)、fast、Max Mode(維持關閉)。不要在對話中途換模型。
+- 維度:模型家族、強度(low/medium/high/max、thinking)、fast、Max Mode(維持關閉)。寫 code 途中不要換模型。若 agent 建議測試,換到 L2 再 `/verify`(可同對話或新開)。
 
 ## 模式選擇四問
 只討論 → Ask;多檔案或不確定 → Plan;猜不出原因的 bug → Debug;範圍明確 → Agent。
@@ -30,13 +30,13 @@ alwaysApply: false
 | E Bug | 已知原因 = C 或 D;未知 = Debug | Debug 或 Agent | L2,2 次無解升 L3 | core |
 | F 資料庫 | SQL、RPC、RLS、遷移 | Plan 再 Agent | 設計 L3,實作 L2 | core 第 3 節;auth/chat 讀對應規則;新 SQL 放 supabase/sql |
 | G 領域功能 | CG、yyHome、Chat、Share、Daily Log、Fit | 同 C 或 D | 同 C 或 D | 功能規則(glob 自動載入) |
-| H 驗證與測試 | 明確要求才做 | Agent | L2 | verify-before-done、browser-must-be-visible;先請你開 ng serve |
+| H 驗證與測試 | 你確認才做(`/verify` / 測一下)。C/D 結束若建議測:先提案,你換 L2 再跑;不要在寫 code 的模型上開瀏覽器 | Agent | L2 | verify-before-done、browser-must-be-visible;先請你開 ng serve |
 | I 發佈 | commit、push、版本 | Agent(或 Ask 先提案) | L1 | release.mdc |
 | J 維護工具 | 改規則、看 usage | Plan 再 Agent | L2 | 先給刪改清單 |
 | K 其他 | 不屬於以上 | Ask | L1 | core;先問一個釐清問題 |
 
 ## 標準流程
-Plan(L3)定方案 → 新對話 Agent(L1/L2)執行 → commit → 關閉對話。每個對話只做一件事,5-10 輪就重開。
+Plan(L3)定方案 → 新對話 Agent(L1/L2)執行 → (若建議測:你換 L2 → `/verify`) → commit → 關閉對話。每個對話只做一件事,5-10 輪就重開。
 
 ## Context 習慣
 - 用 `@file` / `@folder`,不用 `@codebase`。

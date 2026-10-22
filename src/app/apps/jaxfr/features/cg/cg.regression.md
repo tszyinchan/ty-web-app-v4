@@ -92,6 +92,9 @@
 | B14 | 未 Take 改 Scale（Studio，已有 id） | Package On air 也變（Layer Direct）；On/Off 仍要 Take；Package 不因 Scale 而 Unsaved |
 | B15 | Cue = Cut。↓（cue down） | 字幕瞬間換句 |
 | B16 | 視窗縮到手機寬 | 仍是桌面三欄 |
+| B17 | Load 含雙行 cue 的 .srt（約 2000 句）。點中段 queue、看 Panel On air 與 overlay | 同一句；queue 筆數 = cue 數（雙行 cue 不算兩筆）。重整 Panel 後筆數不變 |
+| B18 | 連按 Down 約 20 次 | overlay 最後停在與 Panel 相同的一句（不亂序、不拆行） |
+| B19 | 1920×1080 開 Subtitle desk | Place / Style / Cue / queue 都點得到；窄於約 1300px desk 時可捲。Font 有 Web fonts / Installed on OBS PC；Other… 會出現文字框 |
 
 ### C — Package Output
 
@@ -100,6 +103,7 @@
 | C1 | 點 Copy OBS（content_copy），另開分頁 | `cg.localhost:4200/o/…`（或正式 `cg.tszyin.com`）。真透明。壞 token 空白 |
 | C2 | Studio：改 Scale（已有 id），不要 Take，看 overlay | overlay / Package On air **立刻**變（Layer Direct） |
 | C3 | Layer desk 點 Copy OBS（Layer output） | 只畫那層 |
+| C4 | Overlay 已開。Panel cue Down | overlay **立刻**換句（小 cue broadcast，不必等 30s poll） |
 
 ### CLEANUP
 

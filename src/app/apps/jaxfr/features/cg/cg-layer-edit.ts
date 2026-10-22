@@ -26,11 +26,13 @@ import {
   CG_LOGO_ACCEPT,
   CG_LOGO_MAX_BYTES,
   CG_MAX_DURATION_MS,
+  CG_SUBTITLE_FONT_GROUPS,
   CG_SUBTITLE_FONT_OPTIONS,
   CgAnchor,
   CgElementType,
   CgLayerEditMode,
   CgLayerLook,
+  CgSubtitleFontGroup,
   CgSubtitlePreset,
 } from '../../../../core/domains/cg/cg.constants';
 import { CgLayerDraft, CgLayout, CgSubtitleStyle } from '../../../../core/domains/cg/cg.model';
@@ -85,6 +87,8 @@ export class CgLayerEdit implements OnInit, HasUnsavedChanges {
   readonly Subtitle = CgElementType.Subtitle;
   readonly lookOptions = CG_LAYER_LOOK_OPTIONS;
   readonly fontOptions = CG_SUBTITLE_FONT_OPTIONS;
+  readonly fontGroups = CG_SUBTITLE_FONT_GROUPS;
+  readonly customFontOpen = signal(false);
   readonly PresetNews = CgSubtitlePreset.News;
   readonly PresetShow = CgSubtitlePreset.Show;
   readonly PresetCustom = CgSubtitlePreset.Custom;
@@ -337,6 +341,7 @@ export class CgLayerEdit implements OnInit, HasUnsavedChanges {
   }
 
   private bindLogoDesk(layer: CgLayerDraft | null): void {
+    this.syncCustomFontOpen(layer);
     if (!layer || layer.element_type !== this.Logo) {
       this.layerStudioPreference.set(false);
       this.layerContentDirty.set(false);
@@ -440,30 +445,20 @@ export class CgLayerEdit implements OnInit, HasUnsavedChanges {
       direction,
       layer.payload.cursor,
     );
-    void this.applySubtitlePayload(
-      layer,
-      layer.payload.lines,
-      next.index,
-      next.cursor,
-    );
+    void this.cg.cueLayer(layer.clientId, next.index, next.cursor);
   }
 
   cueAt(index: number): void {
     const layer = this.layer();
     if (!layer || layer.element_type !== this.Subtitle) return;
     if (index < 0 || index >= layer.payload.lines.length) return;
-    void this.applySubtitlePayload(layer, layer.payload.lines, index, index);
+    void this.cg.cueLayer(layer.clientId, index, index);
   }
 
   blankAir(): void {
     const layer = this.layer();
     if (!layer || layer.element_type !== this.Subtitle) return;
-    void this.applySubtitlePayload(
-      layer,
-      layer.payload.lines,
-      null,
-      layer.payload.cursor,
-    );
+    void this.cg.cueLayer(layer.clientId, null, layer.payload.cursor);
   }
 
   async pasteScript(): Promise<void> {
@@ -710,7 +705,12 @@ export class CgLayerEdit implements OnInit, HasUnsavedChanges {
     }
   }
 
+  fontsInGroup(group: CgSubtitleFontGroup) {
+    return this.fontOptions.filter((font) => font.group === group);
+  }
+
   selectedFontValue(layer: CgLayerDraft): string {
+    if (this.customFontOpen()) return '__custom__';
     const family = layer.payload.style?.fontFamily?.trim();
     if (!family) return '';
     const match = this.fontOptions.find((opt) => opt.value === family);
@@ -722,16 +722,27 @@ export class CgLayerEdit implements OnInit, HasUnsavedChanges {
   }
 
   onFontSelectChange(layer: CgLayerDraft, value: string): void {
-    const style = this.getSubtitleStyle(layer);
     if (value === '__custom__') {
-      const match = this.fontOptions.find((opt) => opt.value === style.fontFamily);
-      if (match || !style.fontFamily) {
-        style.fontFamily = '';
-      }
-    } else {
-      style.fontFamily = value || undefined;
+      this.customFontOpen.set(true);
+      this.ensureCustomPreset(layer);
+      this.touchPreview();
+      return;
     }
+    this.customFontOpen.set(false);
+    const style = this.getSubtitleStyle(layer);
+    style.fontFamily = value || undefined;
     this.onStyleFieldChange(layer);
+  }
+
+  private syncCustomFontOpen(layer: CgLayerDraft | null): void {
+    if (!layer || layer.element_type !== this.Subtitle) {
+      this.customFontOpen.set(false);
+      return;
+    }
+    const family = layer.payload.style?.fontFamily?.trim() ?? '';
+    this.customFontOpen.set(
+      !!family && !this.fontOptions.some((opt) => opt.value === family),
+    );
   }
 
   onLayerLookToggle(event: MatButtonToggleChange): void {

@@ -7,18 +7,27 @@ import {
   CG_DEFAULT_DURATION_MS,
   CG_LOGO_BUCKET,
   CG_OVERLAY_BROADCAST_EVENT,
+  CG_OVERLAY_CUE_KIND,
   CgElementType,
   CgPackageEditMode,
   CgPackageLook,
   CgPackageRole,
   CgPreviewBackdrop,
 } from './cg.constants';
-import { CgLayer, CgLayerDraft, CgLayerPayload, CgPackage, CgPublicOutput } from './cg.model';
+import {
+  CgLayer,
+  CgLayerDraft,
+  CgLayerPayload,
+  CgOverlayCueMessage,
+  CgPackage,
+  CgPublicOutput,
+} from './cg.model';
 import {
   cgOutputChannelName,
   createCgPublicToken,
   createEmptyLogoLayer,
   emptySubtitlePayload,
+  isOverlayCueMessage,
   layerToDraft,
   normalizeDurationMs,
   normalizeLayer,
@@ -44,6 +53,12 @@ export class CgService {
   private overlaySendJoins = new Map<string, Promise<RealtimeChannel | null>>();
   private layerContentPersistTimers = new Map<string, number>();
   private layerContentPersistInFlight = new Set<string>();
+  private cueSeqByClient = new Map<string, number>();
+  private cueWriteQueue = new Map<
+    string,
+    { index: number | null; cursor: number }
+  >();
+  private cueFlushPromises = new Map<string, Promise<void>>();
 
   packages = signal<CgPackage[]>([]);
   layers = signal<CgLayer[]>([]);
@@ -517,9 +532,11 @@ export class CgService {
     for (let i = 0; i < 40 && this.layerContentPersistInFlight.size > 0; i++) {
       await new Promise<void>((resolve) => window.setTimeout(resolve, 50));
     }
+    await this.waitForPendingCueWrites();
   }
 
   async persistLayerContent(clientId: string): Promise<boolean> {
+    await this.waitForPendingCueWrites();
     const current = this.draftLayers().find((layer) => layer.clientId === clientId);
     if (!current?.tb_tyapp_cgly_id) return false;
     if (this.layerContentPersistInFlight.has(clientId)) {
@@ -587,6 +604,44 @@ export class CgService {
       next.splice(toIndex, 0, moved);
       return next.map((layer, index) => ({ ...layer, sort_order: index }));
     });
+  }
+
+  async cueLayer(
+    clientId: string,
+    index: number | null,
+    cursor: number,
+  ): Promise<boolean> {
+    const current = this.draftLayers().find((layer) => layer.clientId === clientId);
+    if (!current) return false;
+
+    this.zone.run(() => this.rememberLayerCueIndex(clientId, index, cursor));
+
+    const seq = (this.cueSeqByClient.get(clientId) ?? 0) + 1;
+    this.cueSeqByClient.set(clientId, seq);
+
+    const layerId = current.tb_tyapp_cgly_id;
+    const message: CgOverlayCueMessage = {
+      kind: CG_OVERLAY_CUE_KIND,
+      layerId: layerId ?? clientId,
+      index,
+      cursor,
+      seq,
+    };
+    void this.broadcastCue(
+      [this.draftItem()?.public_token, current.public_token],
+      message,
+    );
+
+    if (!layerId) return true;
+
+    this.cueWriteQueue.set(clientId, { index, cursor });
+    if (!this.cueFlushPromises.has(clientId)) {
+      const flush = this.flushCueWrites(clientId, layerId).finally(() => {
+        this.cueFlushPromises.delete(clientId);
+      });
+      this.cueFlushPromises.set(clientId, flush);
+    }
+    return true;
   }
 
   async patchLayerPayload(
@@ -818,6 +873,105 @@ export class CgService {
     }
   }
 
+  private rememberLayerCueIndex(
+    clientId: string,
+    index: number | null,
+    cursor: number,
+  ): void {
+    const apply = (layer: CgLayerDraft): CgLayerDraft =>
+      layer.clientId === clientId
+        ? { ...layer, payload: { ...layer.payload, index, cursor } }
+        : layer;
+    this.draftLayers.update((list) => list.map(apply));
+    this.onAirLayers.update((list) => list.map(apply));
+  }
+
+  private async flushCueWrites(
+    clientId: string,
+    layerId: string,
+  ): Promise<void> {
+    try {
+      while (this.cueWriteQueue.has(clientId)) {
+        while (this.layerContentPersistInFlight.has(clientId)) {
+          await new Promise<void>((resolve) => window.setTimeout(resolve, 40));
+        }
+        const next = this.cueWriteQueue.get(clientId);
+        if (!next) break;
+        this.cueWriteQueue.delete(clientId);
+        const { error } = await this.supabase.rpc('tyapp_cg_layer_set_cue', {
+          p_layer_id: layerId,
+          p_index: next.index,
+          p_cursor: next.cursor,
+        });
+        if (error) {
+          const source =
+            this.airLayerPayload(clientId) ??
+            this.draftLayers().find((layer) => layer.clientId === clientId)
+              ?.payload;
+          if (!source) throw error;
+          const { error: fallbackError } = await this.supabase
+            .from('tyapp_cg_layer')
+            .update({
+              payload: {
+                ...source,
+                lines: [...source.lines],
+                index: next.index,
+                cursor: next.cursor,
+              },
+              updated_at: new Date().toISOString(),
+            })
+            .eq('tb_tyapp_cgly_id', layerId);
+          if (fallbackError) throw error;
+        }
+        if (this.cueWriteQueue.has(clientId)) continue;
+        this.zone.run(() =>
+          this.rememberLayerCueIndex(clientId, next.index, next.cursor),
+        );
+        const current = this.draftLayers().find(
+          (layer) => layer.clientId === clientId,
+        );
+        void this.broadcastCue(
+          [this.draftItem()?.public_token, current?.public_token],
+          {
+            kind: CG_OVERLAY_CUE_KIND,
+            layerId,
+            index: next.index,
+            cursor: next.cursor,
+            seq: this.cueSeqByClient.get(clientId) ?? 0,
+          },
+        );
+      }
+    } catch (error: unknown) {
+      this.notification.handleError('Cue subtitle failed', error);
+    }
+  }
+
+  private async broadcastCue(
+    tokens: Array<string | null | undefined>,
+    message: CgOverlayCueMessage,
+  ): Promise<void> {
+    const unique = [
+      ...new Set(tokens.filter((token): token is string => !!token)),
+    ];
+    await Promise.all(
+      unique.map(async (token) => {
+        const channel = await this.ensureOverlaySendChannel(token);
+        if (!channel) return;
+        await channel.send({
+          type: 'broadcast',
+          event: CG_OVERLAY_BROADCAST_EVENT,
+          payload: message,
+        });
+      }),
+    );
+  }
+
+  private async waitForPendingCueWrites(): Promise<void> {
+    const pending = [...this.cueFlushPromises.values()];
+    if (pending.length === 0) return;
+    await Promise.all(pending);
+  }
+
   /** Last On-air payload for this layer (cue merges into this, not mix baseline). */
   private airLayerPayload(clientId: string): CgLayerPayload | null {
     const layer = this.onAirLayers().find((row) => row.clientId === clientId);
@@ -934,9 +1088,24 @@ export class CgService {
     }
   }
 
+  async fetchPublicOutputVersion(token: string): Promise<string | null> {
+    try {
+      const { data, error } = await this.supabase.rpc(
+        'tyapp_cg_get_output_version_by_token',
+        { p_token: token },
+      );
+      if (error) throw error;
+      if (data == null) return null;
+      return String(data);
+    } catch {
+      return null;
+    }
+  }
+
   subscribeOverlayOutput(
     token: string,
     onSync: (output: CgPublicOutput | null) => void,
+    onCue?: (cue: CgOverlayCueMessage) => void,
   ): void {
     void this.unsubscribeOverlayOutput();
     if (!token) return;
@@ -946,6 +1115,11 @@ export class CgService {
         'broadcast',
         { event: CG_OVERLAY_BROADCAST_EVENT },
         (message: { payload?: unknown }) => {
+          if (isOverlayCueMessage(message.payload)) {
+            const cue = message.payload;
+            this.zone.run(() => onCue?.(cue));
+            return;
+          }
           const output = normalizePublicOutput(message.payload);
           this.zone.run(() => onSync(output));
         },
@@ -963,6 +1137,7 @@ export class CgService {
   private async publishOverlayOutputs(
     tokens: Array<string | null | undefined>,
   ): Promise<void> {
+    await this.waitForPendingCueWrites();
     const unique = [...new Set(tokens.filter((token): token is string => !!token))];
     await Promise.all(unique.map((token) => this.publishOverlayOutput(token)));
   }

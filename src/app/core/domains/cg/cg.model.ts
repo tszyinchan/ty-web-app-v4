@@ -115,3 +115,12 @@ export interface CgPublicOutput {
   look: CgPackageLook;
   layers: CgLayer[];
 }
+
+/** Live cue on the overlay broadcast — not a full output snapshot. */
+export interface CgOverlayCueMessage {
+  kind: 'cue';
+  layerId: string;
+  index: number | null;
+  cursor: number;
+  seq: number;
+}

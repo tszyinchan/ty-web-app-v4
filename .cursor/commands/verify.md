@@ -1,6 +1,6 @@
 # verify
 
-Run browser verification per `.cursor/rules/verify-before-done.mdc` and `.cursor/rules/browser-must-be-visible.mdc`.
+This command **is** user confirmation. Run browser verification now per `.cursor/rules/verify-before-done.mdc` and `.cursor/rules/browser-must-be-visible.mdc`. Do not ask again whether to test.
 
 1. Confirm the user has `ng serve` running in a visible terminal; do not start it yourself.
 2. Browser tab must be visible. Log in per the rule (test credentials file or ask user).
