@@ -1,0 +1,34 @@
+---
+description: Read when committing, pushing, or bumping the app version (Ver4.X.X, APP_CONFIG)
+globs:
+  - src/app/app.constants.ts
+alwaysApply: false
+---
+
+# Release: version, commit, push
+
+`APP_CONFIG.version` in `src/app/app.constants.ts`; `major` is **locked at 4** (never `Ver5.X.X`). Minor may exceed 99 (`4.100.0` is valid).
+
+## After a finished code batch, ask (in Traditional Chinese)
+1. **What landed** — one short sentence.
+2. **Suggested bump** — minor or patch, plus the `Ver4.X.X-<description>` message. Do **not** edit `app.constants.ts` yet.
+3. **Choice** — `現在 commit + push`，還是 `先留著，等後面改完再一起`。
+
+## Bump kind
+- New feature / page / route → minor, patch = 0.
+- Bug fix / style / refactor / copy → patch.
+- Breaking change or redesign → still minor (or ask).
+
+## If push now
+1. `git fetch origin`.
+2. Read `app.constants.ts` from origin/main (`git show origin/main:src/app/app.constants.ts`), `HEAD`, and the working tree. Take the highest `major.minor.patch`. Never use a version remembered from chat (other agents may have bumped it).
+3. If origin is ahead of HEAD, pull/rebase first. Never commit a lower or duplicate version.
+4. Bump **once** from that number, commit `Ver4.X.X-<description>`, push immediately.
+
+## If keep it
+- Leave the working tree dirty; do not bump again on later changes.
+- When they later commit, propose **one** bump for everything uncommitted.
+
+## Do not
+- Commit or push unless asked (or just answered this prompt with push).
+- Invent intermediate versions inside one uncommitted session.

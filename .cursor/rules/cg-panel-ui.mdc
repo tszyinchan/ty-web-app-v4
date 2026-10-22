@@ -1,0 +1,75 @@
+---
+description: CG Panel / Layer desk UI details (layout, Studio vs Direct, controls, buttons). Naming and DB live in cg.mdc.
+globs:
+  - src/app/apps/jaxfr/features/cg/cg-package-edit.*
+  - src/app/apps/jaxfr/features/cg/cg-layer-edit.*
+  - src/app/apps/jaxfr/features/cg/**/*.scss
+  - src/app/apps/cg/**/*.scss
+alwaysApply: false
+---
+
+# CG Panel / Desk UI
+
+Vocabulary and ownership: see `cg.mdc`.
+
+**Panel layout:** one page, two columns — **Package** (master surface, card bg + soft depth) vs **Layers** (nested workbench, quieter bg). Prefer spacing / surface over hairline borders. Header: Back + Package + Alpha/Dim + Copy OBS; Layers header: Layers + Alpha/Dim + catalog. Then monitor section, Name / Role / Appear / Look, footer Delete package (`mat-flat-button.danger-btn`). Right: tiles then selected Layer desk as one inset card (settings | visual). Desk footer: Delete layer + Copy layer OBS. Click selected tile again to close desk. Package title is heavier than Layers.
+
+## Edit mode (per package, localStorage `cg-package-edit-mode:{id}`)
+| Mode | Monitors | Package mix | Take |
+|---|---|---|---|
+| **Studio mode** ON (default) | Pending \| On air on Package column | Waits for **Take**: name, role, Appear, Package Look, Layer existence / On-Off / z-order | Required |
+| **Studio mode** OFF (= Direct) | One On air monitor | Auto-saves (debounced ~450ms) + Realtime broadcast | Hidden once package exists (first **Create** still needed); turning Studio off while dirty promotes immediately |
+
+Layer content is never gated by Package Take (see Ownership in `cg.mdc`). Hide-mid-edit workflow: Package Off → Take → edit Layer → On → Take. Skipping Take after Off can still hit OBS while visible — accepted risk.
+
+## Logo desk Studio mode (per Logo layer, localStorage `cg-layer-studio:{layerId}`, default OFF = Live)
+- Separate from Package Studio. **No second monitor**.
+- Layer on air (`visible === true`): every change is live; switch disabled and forced OFF.
+- Layer not on air: toggle allowed.
+
+| Studio | Behavior |
+|---|---|
+| OFF (Live) | Name / Look / Source / Place write through to DB + On air / OBS (debounced) |
+| ON (Draft) | Edits stay local until **Apply** (promote to On air + DB) or **Discard** (restore last Apply). Tiles (`tileLayer(layer)`) show committed state only |
+
+Turning Studio off with dirty discards or promotes. Subtitle desk has no Studio switch (always Live).
+
+## On air / Pending
+- Studio: two 16:9 Stages — **Pending left**, **On air right**. New unsaved Package: On air empty.
+- Direct: one On air Stage.
+- Live cue (Up / Down / Blank / Paste / Load) and Cue Fade / Cut always update On air immediately in both modes. Alpha / Dim toggles sit next to **Package** and **Layers** — no Backdrop label.
+
+## Controls & heights (Panel & Desk)
+- `.cg-seg-btn`, `.cg-seg-toggle`, `input`, `select`: uniform **28px** outer height, `box-sizing: border-box`.
+- Inputs/selects: 1px border. Toggle groups: `height: 28px`, inner buttons `26px`.
+- `.cg-seg-btn`: `height/min-height/max-height/line-height: 28px` (overrides Aero 32px).
+- `.cg-monitor-toolbar` locked to 28px (`flex-shrink: 0; overflow: hidden`) so preview position is stable with or without Apply / Discard.
+
+## Always desktop (Panel only)
+`/cg/new`, `/cg/edit/…` lock viewport `width=1280`, `min-width: 1280px`. No stacked `@media` reflow. **List** is responsive. Overlay `/o` and `/cg-live` stay `width=device-width`. Unlock when leaving Panel.
+
+## Theme and buttons
+- No fixed CG palette; follow the operator's Aero/Material + light/dark. Do not recreate `_cg-theme.scss`.
+- Real Angular Material only, not hand-rolled `.cg-btn`:
+  - Either-choice groups (Channel/Source, Fade/Cut, Color/B&W, Alpha/Dim, News/Show, Cue Fade/Cut): `mat-button-toggle-group.cg-seg-toggle`.
+  - One-shot actions (Delete / Copy OBS `content_copy` / Choose local image / catalog / cue / Copy): `mat-stroked-button.cg-seg-btn`.
+  - Only **Create** / **Take** / Logo **Apply**: `mat-flat-button` primary.
+  - Destructive: `mat-flat-button.danger-btn`.
+  - **Studio mode** is a labeled `.cg-switch` in the Package monitor toolbar and on the Logo desk. Layer On/Off is `.cg-switch`.
+  - Back is plain circular `<a class="cg-back">`. Package Copy OBS sits right after Package Alpha/Dim; Layers catalog is `margin-left: auto`.
+- Sentence case labels; no uppercase transform.
+
+## No global toolbar
+`<app-toolbar>` hidden for Panel paths via `isCgPanelPath()`. **List** (`/cg`, `/cg/list`) uses the normal AppToolbar through `HeaderService` (title, back to Welcome, Refresh, New package). Panel keeps Back / Studio mode / Take inline.
+
+## Layer desk
+- Single preview for that one Layer, own local Alpha/Dim backdrop. Desk Look is **Layer Look only** (`layerLookOnly`); Package B&W does not grey the desk. Desk force-shows the layer even when Package Off (`forceVisible`). Desk does not bind Package Appear duration.
+- Tiles: chrome on top (`drag_indicator` + z + On/Off), Stage thumb, **name** at bottom (custom `name`, or Element type if blank).
+- Desk left: Logo Studio switch (+ Apply / Discard) + Stage ~450px + **Name | Look** side by side + **Source** (Logo) + **Copy to package** + footer Delete layer + Copy layer OBS. Right: **Place** (Anchor / X / Y / Scale + Outline switch) or Cue / Style for Subtitle. Place numbers accept wheel adjust on hover and use fixed width. No Inherit / Follow package option.
+- Greyscale is a per-layer host `filter` and always cuts. Package Appear only drives host opacity. Must not change z-order.
+
+## Logo / Subtitle desk details
+- Logo Anchor: 3x3 directional button grid (`cg-anchor-toggle-group`, arrow icons, dark blue when selected); X / Y / Scale inputs (no Unit / Width controls). Desk **Outline** toggle (not saved, not OBS): thick yellow rim + red outer shadow.
+- Subtitle desk: Cue Fade/Cut next to Up / Down / Blank, then Scale / Y / Width (bottom-center, `%`), plus News / Show.
+- Cue bar icons: `keyboard_arrow_up` / `keyboard_arrow_down` / `content_paste`; **Blank** and **Load .txt / .srt** stay words.
+- Subtitle style: caption stays inside `width` and wraps. News = white fill, regular weight, `ScaleY` 1.11, `Spacing` 1.68. Black outline is a **behind** `-webkit-text-stroke` copy (fill on top); never stroke and fill on the same span (OBS CEF has no `paint-order`; 8-way `text-shadow` is jagged on CJK). Show is larger, slightly gold, thicker behind-stroke. Latin: Segoe UI / Arial; CJK: 華康中黑體 / JhengHei. Overlay uses `vh`, not `cqh`.

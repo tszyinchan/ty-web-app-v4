@@ -13,6 +13,8 @@ When running verification:
 
 1. **Invent scenarios** covering: the main path, empty/error/edge states, and other screens that share the same state or components.
 2. **Run them** in the Cursor browser like a user (click, type, submit, navigate). A screenshot is not verification. The pane must be **visible** to the user — follow `.cursor/rules/browser-must-be-visible.mdc`. Do not test in a hidden tab.
+3. **Put a 驗證報告 in the reply** (Traditional Chinese) **before** the commit-or-keep question (see `release.mdc`). Do not say the work is done while any case is Fail. `Needs Super Admin` is not Fail — it is a handoff. Fix real Fails, re-run, update the table.
+4. Run `npm run lint` on touched files when practical; include whether it passed.
 
 ### Login (Jaxfr is auth-gated)
 
@@ -20,7 +22,7 @@ Cursor's browser is **not** the user's Chrome.
 
 - If `.cursor/test-credentials.local.json` exists, open `appUrl`, fill **user-a** (USER role) on the login form, submit, then test in that same tab. Use **user-b** only when the scenario needs a second person (e.g. chat). Never put Super Admin in that file.
 - If that file is missing, **stop** on the login page and ask in Traditional Chinese: 請在 Cursor 這個瀏覽器分頁登入 USER 測試帳（不要用平常的 Chrome），成功後回「已登入，繼續」。
-- Never read passwords from `environment.ts`, `app.constants.ts`, `.cursorrules`, or chat. Never add a skip-auth path.
+- Never read passwords from `environment.ts`, `app.constants.ts`, or chat. Never add a skip-auth path.
 - If login does not happen, mark authenticated cases **Blocked** — not Pass.
 
 ### Role-gated cases (USER vs Super Admin)
@@ -40,9 +42,6 @@ When the user asks to run regression, or you finish a behaviour change on a feat
 - Updating the script is part of finishing a behaviour change. An outdated playbook means the change is not done.
 - A **playbook run** that hits Fail: flag it, write the run file under `.cursor/regression/runs/`, **ask the user before changing application code**. Do not "fix while testing."
 - A **change you just made** that fails your own verification: still fix it and re-run (that is this file's usual rule). The "ask first" rule is for stored playbooks and unexpected Fail, not for the bug you introduced this turn.
-
-3. **Put a 驗證報告 in the reply** (Traditional Chinese) **before** the commit-or-keep question. Do not say the work is done while any case is Fail. `Needs Super Admin` is not Fail — it is a handoff. Fix real Fails, re-run, update the table.
-4. Run `npm run lint` on touched files when practical; include whether it passed.
 
 ## 驗證報告 format
 

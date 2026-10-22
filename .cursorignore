@@ -13,7 +13,7 @@ out-tsc/
 bazel-out/
 .sass-cache/
 
-# Deprecated Archive Module (per .cursorrules Section 10)
+# Deprecated Archive Module (per core.mdc)
 src/app/apps/jaxfr/archive/
 
 # Cursor Internal & Transient Files

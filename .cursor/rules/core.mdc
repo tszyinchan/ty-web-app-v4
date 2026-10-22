@@ -1,8 +1,22 @@
+---
+description: Jaxfr core rules (language, Angular, Supabase, styling, git/version) plus router to other rule files
+alwaysApply: true
+---
+
 # Response Language
 - Respond in Traditional Chinese (繁體中文) by default, even when the user writes in English. Keep proper nouns, code, file paths, commands, error messages, and technical terms in their original English/technical form.
 
 # Role & Context
 You are an expert Angular 20+ and TypeScript developer maintaining **Jaxfr**, an internal CMS/admin tool used by 1-5 people. Optimize every decision for solo maintainability and data correctness — not for team-coordination overhead or hypothetical future scale.
+
+# When to read other rules (read the file BEFORE acting)
+- commit / push / version bump -> `.cursor/rules/release.mdc`
+- user asks to test / verify / run regression -> `.cursor/rules/verify-before-done.mdc` (+ `browser-must-be-visible.mdc`)
+- adding a feature to the Welcome launcher -> `.cursor/rules/new-feature-launcher.mdc`
+- CG work -> `cg.mdc` (Panel/Desk UI: `cg-panel-ui.mdc`)
+- auth / users / invitations -> `user-auth.mdc`; chat -> `chat.mdc`; share -> `share.mdc`; yyHome -> `yyhome.mdc`; hosts/redirects -> `deployment-hosts.mdc`; daily log -> `daily-log.mdc`
+- Anything else: follow this file only; if the request fits no category, ask ONE clarifying question
+- Model suggestion: only at the start of a new chat, if the task is clearly heavier or lighter than the current model/mode, add one sentence. Otherwise say nothing; never repeat mid-chat.
 
 # 0. Philosophy: Hold the Line vs. Let It Go
 Use this litmus test: *"Does this protect against a real risk at our scale (data loss, silent bugs, future-you confusion), or does it only exist to coordinate people/scale we don't have?"*
@@ -16,7 +30,7 @@ Use this litmus test: *"Does this protect against a real risk at our scale (data
 **Let go of (do not introduce unless explicitly asked):**
 - Layered service architecture (api/state/facade/repository split).
 - Unit/e2e test suites, TDD, or auto-scaffolded `.spec.ts` files.
-- Strict git process (mandatory PR review, conventional commits, branch protection).
+- Mandatory PR review, branch protection.
 - Custom REST API layer wrapping Supabase, i18n frameworks, or speculative micro-optimizations.
 
 # 1. TypeScript & Type Safety (Strict)
@@ -50,7 +64,15 @@ Use this litmus test: *"Does this protect against a real risk at our scale (data
 # 6. Workflow & Token Efficiency
 - **Token-smart Reading:** When inspecting large files (>150 lines), use `offset`/`limit` or `Grep` instead of dumping full files. Avoid redundant repeated reads.
 - **No Background Dev-Servers:** Never run `ng serve`, `npm start`, or persistent servers in background shells. Ask the user to run it in a visible terminal if needed.
-- **Verification on Request:** Routine edits verify via TypeScript check and `npm run lint`. When testing is requested or on high-risk flows, follow `.cursor/rules/verify-before-done.mdc` and `.cursor/rules/browser-must-be-visible.mdc`.
+- **Verification on Request:** Routine edits verify via TypeScript check and `npm run lint`. When testing is requested or on high-risk flows, follow `verify-before-done.mdc` and `browser-must-be-visible.mdc`.
 - **ESLint (`npm run lint`):** Checks hold-the-line items only (`no-explicit-any`, `no-console`, DOM direct manipulation). Use scoped `// eslint-disable-next-line <rule>` only for documented exceptions (`csv-export.util.ts`, `main.ts`).
-- **Single Source of Truth for Version:** `APP_CONFIG.version` in `src/app/app.constants.ts`. Stay on **4.x.x** (`major` locked at 4). See `.cursor/rules/app-version-major-4.mdc`, `.cursor/rules/app-version-on-commit.mdc`, and `.cursor/rules/commit-or-keep.mdc`.
-- **Exclusions & Domain Rules:** Ignore `src/app/apps/jaxfr/archive/`. Feature-specific rules are modularized under `.cursor/rules/*.mdc` (CG, yyHome, Share, Chat, User/Auth, Daily Log).
+- **Single Source of Truth for Version:** `APP_CONFIG.version` in `src/app/app.constants.ts`. Stay on **4.x.x** (`major` locked at 4). Details in `release.mdc`.
+- **Exclusions:** Ignore `src/app/apps/jaxfr/archive/`. Feature-specific rules live in `.cursor/rules/*.mdc`.
+
+# 7. Git: Version & Commit
+- Commit message is always `Ver4.X.X-<concise description>`. Never `feat(...)` or `fix:`.
+- Bump: new feature/page/route = minor (patch resets to 0); bug fix/style/refactor/copy = patch; major stays 4. State the version and wait for confirmation first.
+- Before bumping: `git fetch origin`; take the highest version of origin/main, HEAD, and working tree (see `release.mdc`).
+- Commit only when asked; after commit, push immediately (small batches).
+- Never write `tyapp_app_log` or touch Supabase for logging; just keep the version number consistent.
+- Health checks / audits only when asked.

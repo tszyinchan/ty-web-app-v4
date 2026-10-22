@@ -14,7 +14,7 @@
 6. 每輪結束寫 `.cursor/regression/runs/YYYY-MM-DD-<feature>.md`（此資料夾 gitignore）。
 7. Super Admin 專屬行為：劇本有寫就列入報告 `Needs Super Admin` + 要點哪裡；劇本註明「無 Super Admin 行為」則不要編造。
 
-改某個 feature 的行為時：同步更新該 feature 的 `*.regression.md`，並在 `.cursorrules` §8 的回歸規則下交差。沒更新劇本不算做完。
+改某個 feature 的行為時：同步更新該 feature 的 `*.regression.md`，並在 `.cursor/rules/verify-before-done.mdc` 的回歸規則下交差。沒更新劇本不算做完。
 
 ## 建議順序
 
