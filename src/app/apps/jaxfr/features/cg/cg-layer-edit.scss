@@ -267,6 +267,21 @@ $cg-control-height: 28px;
   color: var(--app-text-muted);
 }
 
+/* Subtitle Align: three icon buttons under the Anchor grid. */
+mat-button-toggle-group.cg-seg-toggle.cg-align-toggle-group {
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    line-height: 18px;
+  }
+
+  ::ng-deep .mat-button-toggle-label-content {
+    padding: 0 10px;
+    line-height: 26px;
+  }
+}
+
 mat-button-toggle-group.cg-anchor-toggle-group {
   display: inline-grid;
   grid-template-columns: repeat(3, $cg-control-height);
@@ -692,6 +707,22 @@ mat-button-toggle-group.cg-seg-toggle {
   font-size: 12px;
   line-height: 1.45;
   color: var(--app-text-muted);
+}
+
+/* Reserved row so the monitor does not jump when the warning toggles. */
+.cg-live-warn-slot {
+  display: flex;
+  align-items: center;
+  height: $cg-control-height;
+  min-height: $cg-control-height;
+  flex-shrink: 0;
+}
+
+.cg-live-warn {
+  margin: 0;
+  font-size: 12px;
+  font-weight: var(--app-weight-emphasis);
+  color: var(--app-warning, #e0a100);
 }
 
 .cg-sub-source {

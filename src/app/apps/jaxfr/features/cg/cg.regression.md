@@ -63,18 +63,28 @@
 |---|---|---|
 | B0 | 打開 `PKG_A`（Studio mode 開）。關掉 **Studio mode** switch（在監看區上方） | 單監看 176px；**Take** 隱藏（留 spacer）。再開 → 兩監看與 **Take**（在 On air 狀態左邊）回來 |
 | B0a | Studio mode **關**（Direct）：撥 Logo On/Off，或改 Look | ~0.5s auto-save；無 Take 鈕 |
-| B1 | Studio mode 開。監看區上方：Studio mode switch、緊挨右邊的 **Take**、右側 ☁ On air。頂列 Back + Package + Alpha/Dim + Copy OBS。左下深紅白字 Delete package。Layers 標題旁 Alpha/Dim。點 Logo tile | tile：**上** drag_indicator+序號+On-Off，**下** 名稱。desk **左** Logo Studio mode（預設關）+ Stage + Name\|Look 並排 + Source + Copy to package + 深紅白字 Delete layer + Copy layer OBS；**右** Place |
+| B1 | Studio mode 開。監看區上方：Studio mode switch、緊挨右邊的 **Take**、右側 ☁ On air。頂列 Back + Package + Alpha/Dim + Copy OBS。左下深紅白字 Delete package。Layers 標題旁 Alpha/Dim。點 Logo tile | tile：**上** drag_indicator+序號+On-Off，**下** 名稱。desk **左** Stage + Name\|Look 並排（**沒有** Layer Studio mode；Layer 在 On air 時 Stage 上方出現「This layer is on air. Edits go to OBS now.」） + Source + Copy to package + 深紅白字 Delete layer + Copy layer OBS；**右** Place |
 | B1b | 開任一 Layer desk → Delete layer → confirm | 留在同一 Package Panel（`/cg/edit/:id`），**不要**跳 `/login`。draft 少一 tile；Studio 下需 Take 才寫 DB |
 | B1c | List 點 package → Panel；點 tile 開 desk → 再點同 tile 關；Back → list；New package | URL 皆為絕對 `/cg/…`，不要進 `/login`。Overlay 複製鈕產生 `cg.*.tszyin.com/o/…`（或 localhost） |
-| B1a | `PKG_A`（Studio）加新 Logo（未 Take）。看 desk 小監看 | desk 可預覽草稿；**尚未有 DB id 前** Layer Live 不會寫上氣。Take 後才有 layer id，之後改內容才 live（Logo Studio 關） |
-| B1d | Package Studio；Logo Studio **關**：改已有 id 的 Logo Scale／圖。**不要**碰 On/Off | Package **不**變 Unsaved／Take；Package On air／overlay 內容立刻變 |
+| B1a | `PKG_A`（Studio）加新 Logo（未 Take）。看 desk 小監看 | desk 可預覽草稿；**尚未有 DB id 前** Layer Live 不會寫上氣。Take 後才有 layer id，之後改內容才 live（Layer 內容一律 Live） |
+| B1d | Package Studio：改已有 id 的 Logo Scale／圖。**不要**碰 On/Off | Package **不**變 Unsaved／Take；Package On air／overlay 內容立刻變 |
 | B1e | Studio：Off Logo → Take → 開 desk 改 Scale | Package Pending／On air **不**畫該層；desk 監看**仍**顯示。改完 On → Take 才回混音 |
-| B1b | 已 Take 過的 Logo：Choose local image（Logo Studio 關） | ~0.5s 後 Package **On air** 與 overlay 換圖（不必再 Take）。Storage URL |
-| B2 | 改 Logo Anchor／X／Y／Scale（Package Studio，Logo Studio 關，已有 layer id） | Package Pending 與 **On air** 都動（內容 Live）；不必 Take；Package 不 Unsaved。Top right + 小 X/Y → 靠右上。Outline 開 → desk 黃框紅影；OBS 無框 |
+| B1b | 已 Take 過的 Logo：Choose local image | ~0.5s 後 Package **On air** 與 overlay 換圖（不必再 Take）。Storage URL |
+| B2 | 改 Logo Anchor／X／Y／Scale（Package Studio，已有 layer id） | Package Pending 與 **On air** 都動（內容 Live）；不必 Take；Package 不 Unsaved。Top right + 小 X/Y → 靠右上。Outline 開 → desk 黃框紅影；OBS 無框 |
 | B2a | Logo Place 右欄 | 只有 Anchor／X／Y／Scale／Outline；無 Unit／Width；輸入框非全寬；滑鼠停在 X／Y／Scale 上滾輪可加減 |
-| B2b | Logo desk：Studio mode **預設關**。打開 → 改 Scale → **不要** Apply | desk 變；Package **On air**／overlay **不變**；Package 不 Unsaved。Apply → On air／overlay 追上。Discard 還原 desk |
-| B2c | Logo Studio 開、改過未 Apply → 關 desk tile 或 Back | confirm「Discard and leave？」；確定後 desk 還原、On air 仍是舊值 |
-| B2d | 兩個 Logo：A 開 Studio、B 關。重整後再開 | A 仍記住 Studio 開；B 仍關（`cg-layer-studio:{id}`） |
+| B2k | 九宮格定位（Logo 與 Subtitle 都測）：X=4、Y=4，逐一點 9 個 Anchor | 四個角落各自靠對應角落、離邊約 4；Top/Bottom center 只靠上/下邊；Center left/right 只靠左/右邊；永遠在畫面內 |
+| B2l | Logo／Subtitle 選 Top center | X 欄變灰顯示「—」且不能輸入、滾輪無效；Y 照用。改選 Center left → Y 灰、X 可用。選正中 Center → X、Y 都灰，內容在畫面正中 |
+| B2m | 先在 Top left 把 X 設 20，換成 Top center，再換回 Top left | 換成 Top center 時 X 被忽略；換回後 X 仍是 20（數值沒被改寫） |
+| B2n | Subtitle Place：Anchor 下方有 Align 三顆按鈕。點 Anchor Top left | Align 自動變 Left，字幕靠左上。再手動點 Align right → 字幕在方塊內靠右；News／Show preset 不變 Custom |
+| B2o | Subtitle 九個 Anchor × 三種 Align（含 Bottom left + Align right） | 全部不跑出畫面；單行字也看得出靠左／置中／靠右；tile、desk、overlay 一致 |
+| B2p | 新加 Subtitle | 預設 Bottom center、Align center，約離底部 11%（外觀同舊預設）；Style 區沒有「文字對齊」下拉 |
+| B2b | Logo desk 沒有 Studio mode / Apply / Discard。離開 desk（關 tile、Back）不會出現 confirm | 一律 Live，沒有「Discard and leave」提示 |
+| B2e | On air 監看 = 實際播出：Studio 與 Direct 都做：改 Scale、撥 On/Off（Take）、改 Look、cue Down，同時開 overlay 分頁 | Panel **On air** 與 overlay 逐項一致（位置、大小、灰階、字幕句）；On air 比編輯晚約 0.5–1s（debounce + RPC）。Direct 模式 On air 也走這條，不是草稿 |
+| B2f | 斷網（或封鎖 Realtime）後改 Logo Scale | 出現錯誤提示；Panel **On air** 不更新（不顯示沒送到 OBS 的內容） |
+| B2g | Subtitle 設定 Font / Size / Color / Stroke 後看 Layer tile 與 desk 監看 | tile 與 desk 字幕樣式一致（tile 不再只套 preset） |
+| B2h | 同一個 Logo（預設 px 位置，圖片較大）在 tile、desk、overlay 比例 | 三處相對位置與大小一致（px 以 1920 為基準，不是在小監看上放大） |
+| B2i | Subtitle cue 後重新整理 Panel，再按 cue Down | overlay 立刻換句（不必等 30s poll） |
+| B2j | Studio：Logo Off → Take → 開 desk | desk 不顯示 on-air 警示；On → Take 後警示出現 |
 | B3 | 頂列 Package / Layers 標題旁 **Alpha / Dim** | 監看底換（棋盤 / 暗底） |
 | B4 | Studio mode：撥 Logo On/Off | tile 變淡但仍看得到縮圖。Pending 淡出。On air 先不變（混音仍等 Take）。開 desk：監看**仍顯示**該層。Package **變** Unsaved |
 | B5 | **Take**（Studio） | On air 追上 Pending 的 On/Off、排序、Package 欄位；**不**靠 Take 重寫 Layer 內容 |

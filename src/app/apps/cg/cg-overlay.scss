@@ -17,6 +17,12 @@ html.cg-overlay-on .overlay-root {
   background: transparent;
 }
 
+html.cg-overlay-on app-cg-program {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
 html.cg-overlay-on app-cg-stage {
   width: 100%;
   height: 100%;

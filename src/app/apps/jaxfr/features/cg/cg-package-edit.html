@@ -97,11 +97,11 @@
         </div>
         <div class="cg-monitors">
           @if (isDirectMode()) {
-            <app-cg-mix-preview
+            <app-cg-program
               label="On air"
-              [layers]="layers()"
-              [packageLook]="pendingLook()"
-              [durationMs]="packageDurationMs()"
+              [preview]="true"
+              [output]="cg.onAirOutput()"
+              [cue]="cg.onAirCue()"
               [backdrop]="packageBackdrop()"
             />
           } @else {
@@ -112,11 +112,11 @@
               [durationMs]="packageDurationMs()"
               [backdrop]="packageBackdrop()"
             />
-            <app-cg-mix-preview
+            <app-cg-program
               label="On air"
-              [layers]="onAirLayers()"
-              [packageLook]="onAirLook()"
-              [durationMs]="onAirDurationMs()"
+              [preview]="true"
+              [output]="cg.onAirOutput()"
+              [cue]="cg.onAirCue()"
               [backdrop]="packageBackdrop()"
             />
           }
@@ -242,7 +242,6 @@
           (cdkDropListDropped)="onLayerDrop($event)"
         >
           @for (layer of layers(); track layer.clientId) {
-            @let tile = tileLayer(layer);
             <article
               class="cg-tile"
               cdkDrag
@@ -274,19 +273,16 @@
                 </button>
               </div>
               <div class="cg-tile-stage">
-                <app-cg-stage [preview]="true" [backdrop]="layersBackdrop()">
-                  <app-cg-layer-view
-                    [elementType]="tile.element_type"
-                    [layout]="layoutSnapshot(tile)"
-                    [payload]="payloadSnapshot(tile)"
-                    [visible]="true"
-                    [sortOrder]="tile.sort_order"
-                    [mono]="layerMono(tile)"
-                  />
-                </app-cg-stage>
+                <app-cg-mix-preview
+                  [wide]="true"
+                  [forceVisible]="true"
+                  [layers]="[layer]"
+                  [packageLook]="pendingLook()"
+                  [backdrop]="layersBackdrop()"
+                />
               </div>
               <div class="cg-tile-bar bottom">
-                <span class="cg-tile-name">{{ layerDisplayName(tile) }}</span>
+                <span class="cg-tile-name">{{ layerDisplayName(layer) }}</span>
               </div>
             </article>
           } @empty {

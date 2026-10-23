@@ -3,24 +3,22 @@ import { RecordStatus } from '../../models/status.enum';
 import {
   CG_CUT_DURATION_MS,
   CG_DEFAULT_DURATION_MS,
-  CG_DEFAULT_LAYER_EDIT_MODE,
   CG_DEFAULT_PACKAGE_EDIT_MODE,
   CG_DESKTOP_VIEWPORT,
   CG_EDIT_MODE_STORAGE_PREFIX,
-  CG_LAYER_STUDIO_STORAGE_PREFIX,
   CG_OVERLAY_CHANNEL_PREFIX,
   CG_OVERLAY_CUE_KIND,
   CG_ELEMENT_CATALOG,
   CG_MAX_DURATION_MS,
   CG_PAGE_VIEWPORT,
   CG_SAMPLE_LOGO_URL,
+  CG_STAGE_REFERENCE_WIDTH_PX,
   CG_SAMPLE_SUBTITLE_LINES,
   CG_SUBTITLE_FONT_VH,
   CG_SUBTITLE_SHOW_FONT_VH,
   CgAnchor,
   CgElementDef,
   CgElementType,
-  CgLayerEditMode,
   CgLayerLook,
   CgLayoutUnit,
   CgOutputKind,
@@ -40,20 +38,54 @@ import {
   CgOverlayCueMessage,
   CgPackage,
   CgPublicOutput,
+  CgSubtitleAlign,
   CgSubtitleStyle,
 } from './cg.model';
 
-const ANCHOR_TRANSLATE: Record<CgAnchor, string> = {
-  [CgAnchor.TopLeft]: 'translate(0, 0)',
-  [CgAnchor.TopCenter]: 'translate(-50%, 0)',
-  [CgAnchor.TopRight]: 'translate(-100%, 0)',
-  [CgAnchor.CenterLeft]: 'translate(0, -50%)',
-  [CgAnchor.Center]: 'translate(-50%, -50%)',
-  [CgAnchor.CenterRight]: 'translate(-100%, -50%)',
-  [CgAnchor.BottomLeft]: 'translate(0, -100%)',
-  [CgAnchor.BottomCenter]: 'translate(-50%, -100%)',
-  [CgAnchor.BottomRight]: 'translate(-100%, -100%)',
-};
+/** Which side of the 3x3 grid an Anchor sits on, per axis. */
+export type CgAnchorSideX = 'left' | 'center' | 'right';
+export type CgAnchorSideY = 'top' | 'center' | 'bottom';
+
+export function anchorSideX(anchor: CgAnchor): CgAnchorSideX {
+  switch (anchor) {
+    case CgAnchor.TopLeft:
+    case CgAnchor.CenterLeft:
+    case CgAnchor.BottomLeft:
+      return 'left';
+    case CgAnchor.TopRight:
+    case CgAnchor.CenterRight:
+    case CgAnchor.BottomRight:
+      return 'right';
+    default:
+      return 'center';
+  }
+}
+
+export function anchorSideY(anchor: CgAnchor): CgAnchorSideY {
+  switch (anchor) {
+    case CgAnchor.TopLeft:
+    case CgAnchor.TopCenter:
+    case CgAnchor.TopRight:
+      return 'top';
+    case CgAnchor.BottomLeft:
+    case CgAnchor.BottomCenter:
+    case CgAnchor.BottomRight:
+      return 'bottom';
+    default:
+      return 'center';
+  }
+}
+
+/**
+ * On a centre axis the item is centred and X / Y is ignored.
+ * Shared by CSS and the desk so the two never disagree.
+ */
+export function anchorIgnoresAxis(anchor: CgAnchor): { x: boolean; y: boolean } {
+  return {
+    x: anchorSideX(anchor) === 'center',
+    y: anchorSideY(anchor) === 'center',
+  };
+}
 
 const ANCHOR_ORIGIN: Record<CgAnchor, string> = {
   [CgAnchor.TopLeft]: '0 0',
@@ -97,7 +129,10 @@ export function createEmptySubtitleLayer(sortOrder: number): CgLayerDraft {
     public_token: createCgPublicToken(),
     name: '',
     layout: { ...DEFAULT_SUBTITLE_LAYOUT },
-    payload: emptySubtitlePayload([...CG_SAMPLE_SUBTITLE_LINES], 0),
+    payload: emptySubtitlePayload([...CG_SAMPLE_SUBTITLE_LINES], 0, undefined, {
+      preset: CgSubtitlePreset.News,
+      textAlign: 'center',
+    }),
     visible: true,
     look: CgLayerLook.Color,
     sort_order: sortOrder,
@@ -586,82 +621,88 @@ export function normalizeLayerPayload(
   return normalizeLogoPayload(raw);
 }
 
-export function layoutToCss(layout: CgLayout): Record<string, string> {
-  return layoutBoxCss(layout, true);
-}
-
 /**
- * Logo Place: X/Y are insets from the Anchor edges (not stage top-left).
- * Top right + X=5 Y=5 → 5 from the right, 5 from the top.
+ * Shared 9-grid placement for every Element (Logo, Subtitle, future ones).
+ * Anchor picks a cell of the Stage; X / Y are insets from that cell's edge
+ * (Top right + X=5 Y=5 → 5 from the right, 5 from the top). On a centre axis the
+ * item is centred and X / Y is ignored (see `anchorIgnoresAxis`).
+ *
+ * `scaleAsTransform` adds `scale(layout.scale)` (Logo). Subtitle uses Scale as
+ * type size instead.
  */
-export function logoLayoutToCss(layout: CgLayout): Record<string, string> {
-  const unit = layout.unit === CgLayoutUnit.Pixel ? 'px' : '%';
+export function anchoredBoxCss(
+  layout: CgLayout,
+  options: { scaleAsTransform: boolean; defaultWidth?: number },
+): Record<string, string> {
+  const len = (value: number): string => logoLength(value, layout.unit);
   const x = Number.isFinite(layout.x) ? layout.x : 0;
   const y = Number.isFinite(layout.y) ? layout.y : 0;
   const scale = Number.isFinite(layout.scale) ? layout.scale : 1;
   const anchor = layout.anchor;
+  const sideX = anchorSideX(anchor);
+  const sideY = anchorSideY(anchor);
   const css: Record<string, string> = {
     position: 'absolute',
     transformOrigin: ANCHOR_ORIGIN[anchor],
   };
 
-  const fromRight =
-    anchor === CgAnchor.TopRight ||
-    anchor === CgAnchor.CenterRight ||
-    anchor === CgAnchor.BottomRight;
-  const fromBottom =
-    anchor === CgAnchor.BottomLeft ||
-    anchor === CgAnchor.BottomCenter ||
-    anchor === CgAnchor.BottomRight;
-  const centerX =
-    anchor === CgAnchor.TopCenter ||
-    anchor === CgAnchor.Center ||
-    anchor === CgAnchor.BottomCenter;
-  const centerY =
-    anchor === CgAnchor.CenterLeft ||
-    anchor === CgAnchor.Center ||
-    anchor === CgAnchor.CenterRight;
-
-  // Always set both edges so ngStyle does not keep a stale left/right.
-  if (fromRight) {
-    css['right'] = `${x}${unit}`;
+  // Always set both edges so ngStyle does not keep a stale left/right/top/bottom.
+  if (sideX === 'right') {
+    css['right'] = len(x);
     css['left'] = 'auto';
-  } else if (centerX) {
-    css['left'] = `calc(50% + ${x}${unit})`;
+  } else if (sideX === 'center') {
+    css['left'] = '50%';
     css['right'] = 'auto';
   } else {
-    css['left'] = `${x}${unit}`;
+    css['left'] = len(x);
     css['right'] = 'auto';
   }
 
-  if (fromBottom) {
-    css['bottom'] = `${y}${unit}`;
+  if (sideY === 'bottom') {
+    css['bottom'] = len(y);
     css['top'] = 'auto';
-  } else if (centerY) {
-    css['top'] = `calc(50% + ${y}${unit})`;
+  } else if (sideY === 'center') {
+    css['top'] = '50%';
     css['bottom'] = 'auto';
   } else {
-    css['top'] = `${y}${unit}`;
+    css['top'] = len(y);
     css['bottom'] = 'auto';
   }
 
-  const shiftX = centerX ? '-50%' : '0';
-  const shiftY = centerY ? '-50%' : '0';
+  const shiftX = sideX === 'center' ? '-50%' : '0';
+  const shiftY = sideY === 'center' ? '-50%' : '0';
   const shift =
     shiftX === '0' && shiftY === '0'
       ? ''
       : `translate(${shiftX}, ${shiftY})`;
-  css['transform'] = shift
-    ? `${shift} scale(${scale})`
-    : `scale(${scale})`;
+  const scaleCss = options.scaleAsTransform ? `scale(${scale})` : '';
+  css['transform'] = [shift, scaleCss].filter(Boolean).join(' ') || 'none';
 
   if (layout.width != null && Number.isFinite(layout.width)) {
-    css['width'] = `${layout.width}${unit}`;
+    css['width'] = len(layout.width);
+  } else if (options.defaultWidth != null) {
+    css['width'] = `${options.defaultWidth}%`;
   }
   if (layout.height != null && Number.isFinite(layout.height)) {
-    css['height'] = `${layout.height}${unit}`;
+    css['height'] = len(layout.height);
   }
   return css;
+}
+
+/** Logo Place: shared 9-grid placement; Scale is a CSS transform. */
+export function logoLayoutToCss(layout: CgLayout): Record<string, string> {
+  return anchoredBoxCss(layout, { scaleAsTransform: true });
+}
+
+/**
+ * Logo length. `px` is authored on a 1920 wide canvas and rendered as a share
+ * of the Stage width (`--cg-u` = 1% of Stage width), so tile / desk / OBS stay
+ * proportional. `percent` is used as is.
+ */
+export function logoLength(value: number, unit: CgLayoutUnit): string {
+  if (unit !== CgLayoutUnit.Pixel) return `${value}%`;
+  const share = Math.round((value / CG_STAGE_REFERENCE_WIDTH_PX) * 100 * 10000) / 10000;
+  return `calc(${share} * var(--cg-u, 1vw))`;
 }
 
 /** Subtitle Scale is type size, not a CSS transform of the caption box. */
@@ -669,7 +710,10 @@ export function subtitleLayoutToCss(
   layout: CgLayout,
   styleOrPreset: CgSubtitleStyle | CgSubtitlePreset = CgSubtitlePreset.News,
 ): Record<string, string> {
-  const css = layoutBoxCss(layout, false);
+  const css = anchoredBoxCss(layout, {
+    scaleAsTransform: false,
+    defaultWidth: DEFAULT_SUBTITLE_LAYOUT.width,
+  });
   const style: CgSubtitleStyle =
     typeof styleOrPreset === 'string'
       ? { preset: normalizeSubtitlePreset(styleOrPreset) }
@@ -702,29 +746,23 @@ export function subtitleLayoutToCss(
   const lineHeight = style.lineHeight != null ? style.lineHeight : 1.15;
   css['--cg-sub-line-height'] = String(lineHeight);
 
+  // Anchor decides where the box sits (vertical here). Alignment decides where
+  // the text sits inside that box, independent of Anchor.
   const anchor = layout.anchor || CgAnchor.BottomCenter;
-  const isLeft =
-    anchor === CgAnchor.TopLeft ||
-    anchor === CgAnchor.CenterLeft ||
-    anchor === CgAnchor.BottomLeft;
-  const isRight =
-    anchor === CgAnchor.TopRight ||
-    anchor === CgAnchor.CenterRight ||
-    anchor === CgAnchor.BottomRight;
-  const isTop =
-    anchor === CgAnchor.TopLeft ||
-    anchor === CgAnchor.TopCenter ||
-    anchor === CgAnchor.TopRight;
-  const isCenterY =
-    anchor === CgAnchor.CenterLeft ||
-    anchor === CgAnchor.Center ||
-    anchor === CgAnchor.CenterRight;
+  const sideY = anchorSideY(anchor);
+  const isTop = sideY === 'top';
+  const isCenterY = sideY === 'center';
+  const textAlign = resolveSubtitleAlign(style, anchor);
 
-  const boxJustify = isLeft ? 'flex-start' : isRight ? 'flex-end' : 'center';
-  const textAlign = style.textAlign || (isLeft ? 'left' : isRight ? 'right' : 'center');
+  const boxJustify =
+    textAlign === 'left'
+      ? 'flex-start'
+      : textAlign === 'right'
+        ? 'flex-end'
+        : 'center';
   const boxAlign = isTop ? 'flex-start' : isCenterY ? 'center' : 'flex-end';
-  const originX = isLeft ? 'left' : isRight ? 'right' : 'center';
   const originY = isTop ? 'top' : isCenterY ? 'center' : 'bottom';
+  const originX = textAlign;
 
   css['--cg-sub-box-justify'] = boxJustify;
   css['--cg-sub-box-align'] = boxAlign;
@@ -770,29 +808,12 @@ export function subtitleLayoutToCss(
   return css;
 }
 
-/** Point-in-frame model (Subtitle): (x,y) is where the Anchor sits on Stage. */
-function layoutBoxCss(
-  layout: CgLayout,
-  scaleAsTransform: boolean,
-): Record<string, string> {
-  const unit = layout.unit === CgLayoutUnit.Pixel ? 'px' : '%';
-  const scale = Number.isFinite(layout.scale) ? layout.scale : 1;
-  const css: Record<string, string> = {
-    position: 'absolute',
-    left: `${layout.x}${unit}`,
-    top: `${layout.y}${unit}`,
-    transform: scaleAsTransform
-      ? `${ANCHOR_TRANSLATE[layout.anchor]} scale(${scale})`
-      : ANCHOR_TRANSLATE[layout.anchor],
-    transformOrigin: ANCHOR_ORIGIN[layout.anchor],
-  };
-  if (layout.width != null && Number.isFinite(layout.width)) {
-    css['width'] = `${layout.width}${unit}`;
-  }
-  if (layout.height != null && Number.isFinite(layout.height)) {
-    css['height'] = `${layout.height}${unit}`;
-  }
-  return css;
+/** Text alignment inside the Subtitle box; falls back to Anchor's side. */
+export function resolveSubtitleAlign(
+  style: CgSubtitleStyle,
+  anchor: CgAnchor,
+): CgSubtitleAlign {
+  return style.textAlign ?? anchorSideX(anchor);
 }
 
 export function cgOutputChannelName(token: string): string {
@@ -866,43 +887,6 @@ export function writePackageEditMode(
   if (!packageId || typeof localStorage === 'undefined') return;
   try {
     localStorage.setItem(`${CG_EDIT_MODE_STORAGE_PREFIX}${packageId}`, mode);
-  } catch {
-    /* private mode / quota */
-  }
-}
-
-/** Stable key for Logo Studio preference — DB id when known, else clientId. */
-export function layerStudioStorageKey(layer: {
-  tb_tyapp_cgly_id?: string;
-  clientId: string;
-}): string {
-  return layer.tb_tyapp_cgly_id || layer.clientId;
-}
-
-export function readLayerEditMode(layerKey: string | null): CgLayerEditMode {
-  if (!layerKey || typeof localStorage === 'undefined') {
-    return CG_DEFAULT_LAYER_EDIT_MODE;
-  }
-  try {
-    const raw = localStorage.getItem(
-      `${CG_LAYER_STUDIO_STORAGE_PREFIX}${layerKey}`,
-    );
-    if (raw === CgLayerEditMode.Direct || raw === CgLayerEditMode.Studio) {
-      return raw;
-    }
-  } catch {
-    /* private mode / quota */
-  }
-  return CG_DEFAULT_LAYER_EDIT_MODE;
-}
-
-export function writeLayerEditMode(
-  layerKey: string | null,
-  mode: CgLayerEditMode,
-): void {
-  if (!layerKey || typeof localStorage === 'undefined') return;
-  try {
-    localStorage.setItem(`${CG_LAYER_STUDIO_STORAGE_PREFIX}${layerKey}`, mode);
   } catch {
     /* private mode / quota */
   }

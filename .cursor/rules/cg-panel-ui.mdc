@@ -22,21 +22,13 @@ Vocabulary and ownership: see `cg.mdc`.
 
 Layer content is never gated by Package Take (see Ownership in `cg.mdc`). Hide-mid-edit workflow: Package Off → Take → edit Layer → On → Take. Skipping Take after Off can still hit OBS while visible — accepted risk.
 
-## Logo desk Studio mode (per Logo layer, localStorage `cg-layer-studio:{layerId}`, default OFF = Live)
-- Separate from Package Studio. **No second monitor**.
-- Layer on air (`visible === true`): every change is live; switch disabled and forced OFF.
-- Layer not on air: toggle allowed.
-
-| Studio | Behavior |
-|---|---|
-| OFF (Live) | Name / Look / Source / Place write through to DB + On air / OBS (debounced) |
-| ON (Draft) | Edits stay local until **Apply** (promote to On air + DB) or **Discard** (restore last Apply). Tiles (`tileLayer(layer)`) show committed state only |
-
-Turning Studio off with dirty discards or promotes. Subtitle desk has no Studio switch (always Live).
+## Layer desk has no Studio mode
+Layer content (Logo and Subtitle) is always Live: edits write through to DB, then publish to OBS (debounced ~450ms). When `CgService.onAirOutput` really lists the layer, the desk shows "This layer is on air. Edits go to OBS now." (reserved 28px row above the monitor).
 
 ## On air / Pending
-- Studio: two 16:9 Stages — **Pending left**, **On air right**. New unsaved Package: On air empty.
-- Direct: one On air Stage.
+- Studio: two 16:9 Stages — **Pending left** (`CgMixPreview`, draft), **On air right** (`CgProgram`, same data as OBS). New unsaved Package: On air empty.
+- Direct: one On air Stage (`CgProgram`, not the draft).
+- Layer tiles use `CgMixPreview` (`wide`, `forceVisible`, Package pending Look) — same component as the desk monitor.
 - Live cue (Up / Down / Blank / Paste / Load) and Cue Fade / Cut always update On air immediately in both modes. Alpha / Dim toggles sit next to **Package** and **Layers** — no Backdrop label.
 
 ## Controls & heights (Panel & Desk)
@@ -55,7 +47,7 @@ Turning Studio off with dirty discards or promotes. Subtitle desk has no Studio 
   - One-shot actions (Delete / Copy OBS `content_copy` / Choose local image / catalog / cue / Copy): `mat-stroked-button.cg-seg-btn`.
   - Only **Create** / **Take** / Logo **Apply**: `mat-flat-button` primary.
   - Destructive: `mat-flat-button.danger-btn`.
-  - **Studio mode** is a labeled `.cg-switch` in the Package monitor toolbar and on the Logo desk. Layer On/Off is `.cg-switch`.
+  - **Studio mode** is a labeled `.cg-switch` in the Package monitor toolbar only. Layer On/Off is `.cg-switch`.
   - Back is plain circular `<a class="cg-back">`. Package Copy OBS sits right after Package Alpha/Dim; Layers catalog is `margin-left: auto`.
 - Sentence case labels; no uppercase transform.
 
@@ -65,11 +57,11 @@ Turning Studio off with dirty discards or promotes. Subtitle desk has no Studio 
 ## Layer desk
 - Single preview for that one Layer, own local Alpha/Dim backdrop. Desk Look is **Layer Look only** (`layerLookOnly`); Package B&W does not grey the desk. Desk force-shows the layer even when Package Off (`forceVisible`). Desk does not bind Package Appear duration.
 - Tiles: chrome on top (`drag_indicator` + z + On/Off), Stage thumb, **name** at bottom (custom `name`, or Element type if blank).
-- Desk left: Logo Studio switch (+ Apply / Discard) + Stage ~450px + **Name | Look** side by side + **Source** (Logo / Subtitle load-paste) + footer one row: Copy to package + Delete layer + Copy layer OBS. Right: **Place** (Anchor / X / Y / Scale + Outline switch) for Logo. Subtitle right is two columns (Cue+queue | Place+Style) when the desk is ≥1300px (`@container`); narrower stacks and scrolls. Place numbers accept wheel adjust on hover and use fixed width. No Inherit / Follow package option. Tiles (`.cg-drive`) shrink while a desk is open.
+- Desk left: live-on-air warning row + Stage ~450px + **Name | Look** side by side + **Source** (Logo / Subtitle load-paste) + footer one row: Copy to package + Delete layer + Copy layer OBS. Right: **Place** (Anchor / X / Y / Scale + Outline switch) for Logo. Subtitle right is two columns (Cue+queue | Place+Style) when the desk is ≥1300px (`@container`); narrower stacks and scrolls. Place numbers accept wheel adjust on hover and use fixed width. No Inherit / Follow package option. Tiles (`.cg-drive`) shrink while a desk is open.
 - Greyscale is a per-layer host `filter` and always cuts. Package Appear only drives host opacity. Must not change z-order.
 
 ## Logo / Subtitle desk details
-- Logo Anchor: 3x3 directional button grid (`cg-anchor-toggle-group`, arrow icons, dark blue when selected); X / Y / Scale inputs (no Unit / Width controls). Desk **Outline** toggle (not saved, not OBS): thick yellow rim + red outer shadow.
-- Subtitle desk: column A = monitor + Source + footer; column B = Cue (Up / Down / Blank / Fade-Cut, then ms) + filling queue; column C = Place (Anchor 3x3 + X/Y/Width/Scale 2×2) then Style. Empty Logo-only toolbar is hidden.
+- Logo Anchor: 3x3 directional button grid (`cg-anchor-toggle-group`, arrow icons, dark blue when selected); X / Y / Scale inputs (no Unit / Width controls). X / Y labels say which edge they measure from (`From right`, `From top`); on a centered axis the input is a greyed `—` and the value is ignored (value kept in data). Desk **Outline** toggle (not saved, not OBS): thick yellow rim + red outer shadow.
+- Subtitle desk: column A = monitor + Source + footer; column B = Cue (Up / Down / Blank / Fade-Cut, then ms) + filling queue; column C = Place (Anchor 3x3 + **Align** left / center / right icon toggle under it + X/Y/Width/Scale 2×2; same ignored-axis `—` behaviour as Logo) then Style (no text-align control there). Empty Logo-only toolbar is hidden.
 - Cue bar icons: `keyboard_arrow_up` / `keyboard_arrow_down` / `content_paste`; **Blank** and **Load .txt / .srt** stay words.
 - Subtitle style: caption stays inside `width` and wraps. News = white fill, regular weight, `ScaleY` 1.11, `Spacing` 1.68. Black outline is a **behind** `-webkit-text-stroke` copy (fill on top); never stroke and fill on the same span (OBS CEF has no `paint-order`; 8-way `text-shadow` is jagged on CJK). Show is larger, slightly gold, thicker behind-stroke. Font dropdown: **Web fonts (any computer)** vs **Installed on OBS PC**; Other… is a text field for a local family name (`customFontOpen`). Latin: Segoe UI / Arial unless a Latin web font is chosen; CJK default: 華康中黑體 / JhengHei. Overlay uses `vh`, not `cqh`; `document.fonts.load` before cue swap (400ms cap).

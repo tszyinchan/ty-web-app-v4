@@ -25,6 +25,9 @@ export interface CgLogoPayload {
   fileName?: string;
 }
 
+/** Text alignment inside the Subtitle box; independent of Anchor. */
+export type CgSubtitleAlign = 'left' | 'center' | 'right';
+
 export interface CgSubtitleStyle {
   preset: CgSubtitlePreset;
   fontFamily?: string;
@@ -40,7 +43,7 @@ export interface CgSubtitleStyle {
   shadowColor?: string;
   letterSpacing?: number;
   lineHeight?: number;
-  textAlign?: 'left' | 'center' | 'right';
+  textAlign?: CgSubtitleAlign;
 }
 
 /** Inner cue / future Layer animation. Not Package Appear. */

@@ -1,0 +1,26 @@
+:host {
+  display: block;
+}
+
+:host.preview {
+  width: 176px;
+  flex: 0 0 176px;
+  min-width: 0;
+}
+
+.cg-monitor-head {
+  margin-bottom: 6px;
+}
+
+.cg-kicker {
+  font-size: 11px;
+  font-weight: var(--app-weight-emphasis);
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: var(--app-text-muted);
+}
+
+app-cg-stage {
+  display: block;
+  width: 100%;
+}

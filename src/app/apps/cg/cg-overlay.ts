@@ -9,32 +9,21 @@ import {
 } from '@angular/core';
 import { Title } from '@angular/platform-browser';
 import { ActivatedRoute } from '@angular/router';
-import { CgLayerView } from '../../core/domains/cg/cg-layer-view';
-import { CgStage } from '../../core/domains/cg/cg-stage';
+import { CgProgram } from '../../core/domains/cg/cg-program';
+import { CG_OVERLAY_SAFETY_POLL_MS } from '../../core/domains/cg/cg.constants';
 import {
-  CG_CUT_DURATION_MS,
-  CG_DEFAULT_DURATION_MS,
-  CG_OVERLAY_SAFETY_POLL_MS,
-  CgPackageLook,
-} from '../../core/domains/cg/cg.constants';
-import {
-  CgLayer,
   CgOverlayCueMessage,
   CgPublicOutput,
 } from '../../core/domains/cg/cg.model';
 import { CgService } from '../../core/domains/cg/cg.service';
-import {
-  layerIsMono,
-  normalizeDurationMs,
-  normalizeLook,
-} from '../../core/domains/cg/cg.util';
 
 const OVERLAY_HTML_CLASS = 'cg-overlay-on';
 
+/** Public OBS page. Fetch / Realtime only; staging lives in CgProgram. */
 @Component({
   selector: 'app-cg-overlay',
   standalone: true,
-  imports: [CgStage, CgLayerView],
+  imports: [CgProgram],
   templateUrl: './cg-overlay.html',
   styleUrl: './cg-overlay.scss',
   encapsulation: ViewEncapsulation.None,
@@ -45,18 +34,13 @@ export class CgOverlay implements OnInit, OnDestroy {
   private title = inject(Title);
   private document = inject(DOCUMENT);
 
-  readonly stagedLayers = signal<CgLayer[]>([]);
-  readonly durationMs = signal(CG_DEFAULT_DURATION_MS);
-  readonly look = signal(CgPackageLook.Color);
-  readonly layerIsMono = layerIsMono;
+  readonly output = signal<CgPublicOutput | null>(null);
+  readonly cue = signal<CgOverlayCueMessage | null>(null);
 
   private safetyPollId = 0;
-  private fadeId = 0;
   private token = '';
-  private lastHash = '';
   private lastVersion = '';
   private firstPaint = true;
-  private lastCueSeq = new Map<string, number>();
 
   ngOnInit(): void {
     this.document.documentElement.classList.add(OVERLAY_HTML_CLASS);
@@ -64,10 +48,8 @@ export class CgOverlay implements OnInit, OnDestroy {
     this.token = this.route.snapshot.paramMap.get('token') ?? '';
     this.cg.subscribeOverlayOutput(
       this.token,
-      (output) => {
-        this.applyOutput(output, false);
-      },
-      (cue) => this.applyCue(cue),
+      (output) => this.output.set(output),
+      (cue) => this.cue.set(cue),
     );
     void this.refresh();
     this.safetyPollId = window.setInterval(() => {
@@ -77,14 +59,13 @@ export class CgOverlay implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     window.clearInterval(this.safetyPollId);
-    window.clearTimeout(this.fadeId);
     void this.cg.unsubscribeOverlayOutput();
     this.document.documentElement.classList.remove(OVERLAY_HTML_CLASS);
   }
 
   private async refresh(): Promise<void> {
     if (!this.token) {
-      this.applyOutput(null, true);
+      this.output.set(null);
       return;
     }
     if (!this.firstPaint) {
@@ -97,123 +78,7 @@ export class CgOverlay implements OnInit, OnDestroy {
       const version = await this.cg.fetchPublicOutputVersion(this.token);
       if (version != null) this.lastVersion = version;
     }
-    this.applyOutput(live, this.firstPaint);
+    this.output.set(live);
     this.firstPaint = false;
   }
-
-  private applyCue(cue: CgOverlayCueMessage): void {
-    const applied = this.lastCueSeq.get(cue.layerId) ?? 0;
-    if (cue.seq <= applied) return;
-    this.lastCueSeq.set(cue.layerId, cue.seq);
-
-    const current = this.stagedLayers();
-    const at = current.findIndex(
-      (layer) => layer.tb_tyapp_cgly_id === cue.layerId,
-    );
-    if (at < 0) return;
-
-    const layer = current[at];
-    if (
-      layer.payload.index === cue.index &&
-      layer.payload.cursor === cue.cursor
-    ) {
-      return;
-    }
-
-    const next = [...current];
-    next[at] = {
-      ...layer,
-      payload: {
-        ...layer.payload,
-        index: cue.index,
-        cursor: cue.cursor,
-      },
-    };
-    this.stagedLayers.set(next);
-    this.lastHash = outputHash(next.filter((row) => row.visible));
-  }
-
-  private applyOutput(live: CgPublicOutput | null, instant: boolean): void {
-    const durationMs = normalizeDurationMs(live?.durationMs);
-    this.durationMs.set(durationMs);
-    this.look.set(normalizeLook(live?.look));
-    this.applyIncoming(live?.layers ?? [], instant, durationMs);
-  }
-
-  private applyIncoming(
-    incoming: CgLayer[],
-    instant: boolean,
-    durationMs: number,
-  ): void {
-    const hash = outputHash(incoming);
-    if (hash === this.lastHash) return;
-    this.lastHash = hash;
-
-    const incomingById = new Map(
-      incoming.map((layer) => [layer.tb_tyapp_cgly_id, layer]),
-    );
-    const current = this.stagedLayers();
-    const currentById = new Map(
-      current.map((layer) => [layer.tb_tyapp_cgly_id, layer]),
-    );
-    const fadeInIds = new Set<string>();
-    const fadeOutIds = new Set<string>();
-    const next: CgLayer[] = [];
-    const cut = durationMs <= CG_CUT_DURATION_MS;
-
-    for (const layer of incoming) {
-      const previous = currentById.get(layer.tb_tyapp_cgly_id);
-      const stayOn = !!previous?.visible;
-      if (instant || stayOn || cut) {
-        next.push({ ...layer, visible: true });
-      } else {
-        next.push({ ...layer, visible: false });
-        fadeInIds.add(layer.tb_tyapp_cgly_id);
-      }
-    }
-
-    for (const staged of current) {
-      if (incomingById.has(staged.tb_tyapp_cgly_id)) continue;
-      if (cut) continue;
-      next.push({ ...staged, visible: false });
-      fadeOutIds.add(staged.tb_tyapp_cgly_id);
-    }
-
-    this.stagedLayers.set(next);
-
-    if (fadeInIds.size > 0) {
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          this.stagedLayers.update((list) =>
-            list.map((layer) =>
-              fadeInIds.has(layer.tb_tyapp_cgly_id)
-                ? { ...layer, visible: true }
-                : layer,
-            ),
-          );
-        });
-      });
-    }
-
-    window.clearTimeout(this.fadeId);
-    if (fadeOutIds.size === 0) return;
-    this.fadeId = window.setTimeout(() => {
-      this.stagedLayers.update((list) =>
-        list.filter((layer) => !fadeOutIds.has(layer.tb_tyapp_cgly_id)),
-      );
-    }, durationMs);
-  }
-}
-
-function outputHash(layers: CgLayer[]): string {
-  return JSON.stringify(
-    layers.map((layer) => ({
-      id: layer.tb_tyapp_cgly_id,
-      type: layer.element_type,
-      layout: layer.layout,
-      payload: layer.payload,
-      look: layer.look,
-      sort: layer.sort_order,
-    })),
-  );
 }

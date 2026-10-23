@@ -26,18 +26,26 @@ import {
   CG_LOGO_ACCEPT,
   CG_LOGO_MAX_BYTES,
   CG_MAX_DURATION_MS,
+  CG_SUBTITLE_ALIGN_OPTIONS,
   CG_SUBTITLE_FONT_GROUPS,
   CG_SUBTITLE_FONT_OPTIONS,
   CgAnchor,
   CgElementType,
-  CgLayerEditMode,
   CgLayerLook,
+  CgLayoutUnit,
   CgSubtitleFontGroup,
   CgSubtitlePreset,
 } from '../../../../core/domains/cg/cg.constants';
-import { CgLayerDraft, CgLayout, CgSubtitleStyle } from '../../../../core/domains/cg/cg.model';
+import {
+  CgLayerDraft,
+  CgSubtitleAlign,
+  CgSubtitleStyle,
+} from '../../../../core/domains/cg/cg.model';
 import { CgService } from '../../../../core/domains/cg/cg.service';
 import {
+  anchorIgnoresAxis,
+  anchorSideX,
+  anchorSideY,
   buildCgOverlayUrl,
   cueSubtitleIndex,
   elementLabel,
@@ -45,24 +53,13 @@ import {
   isCgCut,
   isEmbeddedImageUrl,
   isLocalFilesystemPath,
-  layerStudioStorageKey,
   parseSubtitleScript,
-  readLayerEditMode,
+  resolveSubtitleAlign,
   subtitlePresetOf,
   subtitleStyleOf,
-  writeLayerEditMode,
 } from '../../../../core/domains/cg/cg.util';
-import { HasUnsavedChanges } from '../../../../core/guards/unsaved-changes.guard';
 import { NotificationService } from '../../../../core/services/notification.service';
 import { copyTextToClipboard } from '../../../../core/utils/copy-text.util';
-
-interface LogoContentSnapshot {
-  name: string;
-  look: CgLayerLook;
-  layout: CgLayout;
-  imageUrl: string;
-  fileName: string;
-}
 
 @Component({
   selector: 'app-cg-layer-edit',
@@ -77,7 +74,7 @@ interface LogoContentSnapshot {
   templateUrl: './cg-layer-edit.html',
   styleUrl: './cg-layer-edit.scss',
 })
-export class CgLayerEdit implements OnInit, HasUnsavedChanges {
+export class CgLayerEdit implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private notification = inject(NotificationService);
@@ -94,6 +91,7 @@ export class CgLayerEdit implements OnInit, HasUnsavedChanges {
   readonly PresetCustom = CgSubtitlePreset.Custom;
   readonly anchorOptions = CG_ANCHOR_OPTIONS;
   readonly anchorGridOptions = CG_ANCHOR_GRID_OPTIONS;
+  readonly alignOptions = CG_SUBTITLE_ALIGN_OPTIONS;
   readonly logoAccept = CG_LOGO_ACCEPT;
   readonly scriptAccept = '.txt,.srt,text/plain,application/x-subrip';
   readonly cutMs = CG_CUT_DURATION_MS;
@@ -103,29 +101,6 @@ export class CgLayerEdit implements OnInit, HasUnsavedChanges {
   quickInputText = '';
   /** Desk-only Logo placement guide (not saved / not on OBS). */
   readonly logoOutline = signal(false);
-  /** Operator preference for Logo Studio mode (when not forced on air). */
-  readonly layerStudioPreference = signal(false);
-
-  /**
-   * True when this layer is defined to be on air in the package (layer.visible === true).
-   */
-  readonly isLayerOnAir = computed(() => {
-    const l = this.layer();
-    return !!l && l.visible;
-  });
-
-  /**
-   * Logo Studio mode:
-   * - When layer is on air: ALWAYS OFF (live / direct) and toggle is disabled.
-   * - When layer is not on air: user can toggle on (draft) or off (live).
-   */
-  readonly isLayerStudio = computed(() => {
-    if (this.isLayerOnAir()) return false;
-    return this.layerStudioPreference();
-  });
-
-  readonly layerContentDirty = signal(false);
-  private contentBaseline = '';
   private boundLayerKey = '';
   private lastCueFadeMs = CG_DEFAULT_DURATION_MS;
 
@@ -136,8 +111,20 @@ export class CgLayerEdit implements OnInit, HasUnsavedChanges {
     return this.cg.draftLayers().find((row) => row.clientId === id) ?? null;
   });
 
-  /** Re-bind when route layer or its DB id appears — not on every content edit. */
-  private readonly _bindLogoStudio = effect(() => {
+  /**
+   * True when OBS really has this layer (Package output lists only visible
+   * layers). Content edits on this desk are Live, so warn the operator.
+   */
+  readonly isLiveOnAir = computed(() => {
+    const layer = this.layer();
+    const id = layer?.tb_tyapp_cgly_id;
+    if (!id) return false;
+    const output = this.cg.onAirOutput();
+    return !!output?.layers.some((row) => row.tb_tyapp_cgly_id === id);
+  });
+
+  /** Re-sync the custom font field when the route layer changes. */
+  private readonly _bindDesk = effect(() => {
     const clientId = this.params().get('layerId') ?? '';
     const layer =
       this.cg.draftLayers().find((row) => row.clientId === clientId) ?? null;
@@ -147,20 +134,8 @@ export class CgLayerEdit implements OnInit, HasUnsavedChanges {
     untracked(() => {
       if (bindKey === this.boundLayerKey) return;
       this.boundLayerKey = bindKey;
-      this.bindLogoDesk(layer);
+      this.syncCustomFontOpen(layer);
     });
-  });
-
-  /** When this layer goes on air in the package, flush any unapplied draft changes to live. */
-  private readonly _autoApplyWhenOnAir = effect(() => {
-    const onAir = this.isLayerOnAir();
-    if (onAir) {
-      untracked(() => {
-        if (this.layerContentDirty()) {
-          void this.applyLayerContent();
-        }
-      });
-    }
   });
 
   readonly copyTargets = computed(() => {
@@ -231,93 +206,11 @@ export class CgLayerEdit implements OnInit, HasUnsavedChanges {
   elementLabel = elementLabel;
   subtitlePresetOf = subtitlePresetOf;
 
-  /** Guard + beforeunload — Logo Studio Draft with unapplied edits. */
-  isDirty(): boolean {
-    return this.isLogoStudioDraftDirty();
-  }
-
-  @HostListener('window:beforeunload', ['$event'])
-  onBeforeUnload(event: BeforeUnloadEvent): string | true {
-    if (!this.isDirty()) return true;
-    event.preventDefault();
-    return '';
-  }
-
-  toggleLayerStudio(): void {
-    const layer = this.layer();
-    if (!layer || layer.element_type !== this.Logo) return;
-    // When layer is on air, toggle is disabled and always on.
-    if (this.isLayerOnAir()) return;
-
-    if (this.isLayerStudio()) {
-      this.setLayerStudio(false);
-      return;
-    }
-    this.setLayerStudio(true);
-  }
-
-  private setLayerStudio(on: boolean): void {
-    const layer = this.layer();
-    if (!layer || layer.element_type !== this.Logo) return;
-    const key = layerStudioStorageKey(layer);
-    if (on) {
-      this.cg.cancelPersistLayerContent(layer.clientId);
-      this.layerStudioPreference.set(true);
-      writeLayerEditMode(key, CgLayerEditMode.Studio);
-      this.captureContentBaseline(layer);
-      this.layerContentDirty.set(false);
-      return;
-    }
-    // Turning Studio mode off: do NOT save. Discard dirty changes so top right bar stays clean.
-    if (this.layerContentDirty()) {
-      this.discardLayerContent();
-    }
-    this.layerStudioPreference.set(false);
-    writeLayerEditMode(key, CgLayerEditMode.Direct);
-  }
-
-  async applyLayerContent(): Promise<void> {
-    const layer = this.layer();
-    if (!layer || layer.element_type !== this.Logo) return;
-    await this.cg.applyLayerContent(layer.clientId);
-    this.captureContentBaseline(layer);
-    this.layerContentDirty.set(false);
-    this.notification.showSuccess('Layer applied');
-  }
-
-  discardLayerContent(): void {
-    const layer = this.layer();
-    if (!layer || layer.element_type !== this.Logo || !this.contentBaseline) {
-      return;
-    }
-    const snap = JSON.parse(this.contentBaseline) as LogoContentSnapshot;
-    layer.name = snap.name;
-    layer.look = snap.look;
-    layer.layout = structuredClone(snap.layout);
-    layer.payload = {
-      ...layer.payload,
-      imageUrl: snap.imageUrl,
-      ...(snap.fileName ? { fileName: snap.fileName } : {}),
-    };
-    if (!snap.fileName) delete layer.payload.fileName;
-    this.cg.cancelPersistLayerContent(layer.clientId);
-    this.cg.touchPreview();
-    this.layerContentDirty.set(false);
-  }
-
+  /** Layer content is always Live: preview now, debounced DB write + publish. */
   touchPreview(): void {
     this.cg.touchPreview();
     const layer = this.layer();
     if (!layer) return;
-    if (
-      layer.element_type === this.Logo &&
-      this.isLayerStudio()
-    ) {
-      this.layerContentDirty.set(
-        this.logoContentSnapshot(layer) !== this.contentBaseline,
-      );
-      return;
-    }
     this.cg.schedulePersistLayerContent(layer.clientId);
   }
 
@@ -327,6 +220,9 @@ export class CgLayerEdit implements OnInit, HasUnsavedChanges {
     field: 'x' | 'y' | 'scale' | 'width',
   ): void {
     event.preventDefault();
+    if ((field === 'x' || field === 'y') && this.ignoresAxis(layer, field)) {
+      return;
+    }
     const dir = event.deltaY < 0 ? 1 : -1;
     if (field === 'scale') {
       const next = Math.round((layer.layout.scale + dir * 0.05) * 100) / 100;
@@ -338,49 +234,6 @@ export class CgLayerEdit implements OnInit, HasUnsavedChanges {
       layer.layout[field] = Math.round((layer.layout[field] + dir) * 10) / 10;
     }
     this.touchPreview();
-  }
-
-  private bindLogoDesk(layer: CgLayerDraft | null): void {
-    this.syncCustomFontOpen(layer);
-    if (!layer || layer.element_type !== this.Logo) {
-      this.layerStudioPreference.set(false);
-      this.layerContentDirty.set(false);
-      this.contentBaseline = '';
-      return;
-    }
-    const studio =
-      readLayerEditMode(layerStudioStorageKey(layer)) === CgLayerEditMode.Studio;
-    this.layerStudioPreference.set(studio);
-    this.captureContentBaseline(layer);
-    this.layerContentDirty.set(false);
-    if (this.isLayerStudio()) {
-      this.cg.cancelPersistLayerContent(layer.clientId);
-    }
-  }
-
-  private isLogoStudioDraftDirty(): boolean {
-    const layer = this.layer();
-    return (
-      !!layer &&
-      layer.element_type === this.Logo &&
-      this.isLayerStudio() &&
-      this.layerContentDirty()
-    );
-  }
-
-  private captureContentBaseline(layer: CgLayerDraft): void {
-    this.contentBaseline = this.logoContentSnapshot(layer);
-  }
-
-  private logoContentSnapshot(layer: CgLayerDraft): string {
-    const snap: LogoContentSnapshot = {
-      name: layer.name?.trim() ?? '',
-      look: layer.look,
-      layout: structuredClone(layer.layout),
-      imageUrl: layer.payload.imageUrl ?? '',
-      fileName: layer.payload.fileName ?? '',
-    };
-    return JSON.stringify(snap);
   }
 
   toggleVisible(layer: CgLayerDraft): void {
@@ -649,60 +502,52 @@ export class CgLayerEdit implements OnInit, HasUnsavedChanges {
       }
       return;
     }
-    const prevAnchor = layer.layout.anchor;
     layer.layout.anchor = value;
-    if (layer.element_type === this.Subtitle && prevAnchor !== value) {
-      this.repositionSubtitleOnAnchor(layer, prevAnchor, value);
+    // X / Y keep their meaning (inset from the Anchor edge), so nothing is
+    // rewritten here. Subtitle Alignment follows the Anchor's side once; the
+    // operator can still pick any other combination afterwards.
+    if (layer.element_type === this.Subtitle) {
+      this.getSubtitleStyle(layer).textAlign = anchorSideX(value);
     }
     this.touchPreview();
   }
 
-  private repositionSubtitleOnAnchor(
-    layer: CgLayerDraft,
-    _prevAnchor: CgAnchor,
-    nextAnchor: CgAnchor,
-  ): void {
-    const isNextTop =
-      nextAnchor === CgAnchor.TopLeft ||
-      nextAnchor === CgAnchor.TopCenter ||
-      nextAnchor === CgAnchor.TopRight;
-    const isNextCenterY =
-      nextAnchor === CgAnchor.CenterLeft ||
-      nextAnchor === CgAnchor.Center ||
-      nextAnchor === CgAnchor.CenterRight;
-    const isNextBottom =
-      nextAnchor === CgAnchor.BottomLeft ||
-      nextAnchor === CgAnchor.BottomCenter ||
-      nextAnchor === CgAnchor.BottomRight;
+  /** True when the Anchor centres this axis and X / Y is ignored. */
+  ignoresAxis(layer: CgLayerDraft, axis: 'x' | 'y'): boolean {
+    return anchorIgnoresAxis(layer.layout.anchor)[axis];
+  }
 
-    const isNextLeft =
-      nextAnchor === CgAnchor.TopLeft ||
-      nextAnchor === CgAnchor.CenterLeft ||
-      nextAnchor === CgAnchor.BottomLeft;
-    const isNextCenterX =
-      nextAnchor === CgAnchor.TopCenter ||
-      nextAnchor === CgAnchor.Center ||
-      nextAnchor === CgAnchor.BottomCenter;
-    const isNextRight =
-      nextAnchor === CgAnchor.TopRight ||
-      nextAnchor === CgAnchor.CenterRight ||
-      nextAnchor === CgAnchor.BottomRight;
-
-    if (isNextTop && layer.layout.y > 60) {
-      layer.layout.y = 11;
-    } else if (isNextBottom && layer.layout.y < 40) {
-      layer.layout.y = 89;
-    } else if (isNextCenterY && (layer.layout.y < 30 || layer.layout.y > 70)) {
-      layer.layout.y = 50;
+  /** Label that says which edge X / Y is measured from. */
+  placeAxisLabel(layer: CgLayerDraft, axis: 'x' | 'y'): string {
+    const unit = layer.layout.unit === CgLayoutUnit.Pixel ? '' : ' (%)';
+    if (axis === 'x') {
+      const side = anchorSideX(layer.layout.anchor);
+      if (side === 'center') return 'X · centered';
+      return `From ${side}${unit}`;
     }
+    const side = anchorSideY(layer.layout.anchor);
+    if (side === 'center') return 'Y · centered';
+    return `From ${side}${unit}`;
+  }
 
-    if (isNextLeft && layer.layout.x >= 45 && layer.layout.x <= 55) {
-      layer.layout.x = 6;
-    } else if (isNextRight && layer.layout.x >= 45 && layer.layout.x <= 55) {
-      layer.layout.x = 94;
-    } else if (isNextCenterX && (layer.layout.x <= 15 || layer.layout.x >= 85)) {
-      layer.layout.x = 50;
+  subtitleAlign(layer: CgLayerDraft): CgSubtitleAlign {
+    return resolveSubtitleAlign(
+      this.getSubtitleStyle(layer),
+      layer.layout.anchor,
+    );
+  }
+
+  onAlignToggle(layer: CgLayerDraft, event: MatButtonToggleChange): void {
+    const value = event.value as CgSubtitleAlign | undefined;
+    if (!value) {
+      if (event.source?.buttonToggleGroup) {
+        event.source.buttonToggleGroup.value = this.subtitleAlign(layer);
+      }
+      return;
     }
+    // Placement, not style: do not flip News / Show to Custom.
+    this.getSubtitleStyle(layer).textAlign = value;
+    this.touchPreview();
   }
 
   fontsInGroup(group: CgSubtitleFontGroup) {
@@ -815,7 +660,6 @@ export class CgLayerEdit implements OnInit, HasUnsavedChanges {
 
   removeLayer(layer: CgLayerDraft): void {
     if (!confirm('Remove this layer from the package?')) return;
-    this.layerContentDirty.set(false);
     this.cg.cancelPersistLayerContent(layer.clientId);
     this.cg.draftLayers.update((list) =>
       list.filter((row) => row.clientId !== layer.clientId),

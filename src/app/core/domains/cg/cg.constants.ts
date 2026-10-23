@@ -76,21 +76,10 @@ export const CG_EDIT_MODE_STORAGE_PREFIX = 'cg-package-edit-mode:';
 export const CG_DEFAULT_PACKAGE_EDIT_MODE = CgPackageEditMode.Studio;
 
 /**
- * Logo Layer desk edit mode (content only — not Package mix):
- * - Direct = Live: desk edits write through to On air / OBS
- * - Studio = Draft: edit on desk, Apply to air, Discard / leave to drop
- * Not Package Studio mode; no second monitor.
+ * OBS canvas width Logo `px` layouts are authored against. Stage renders
+ * them as a share of its own width, so tiles / desk / OBS stay proportional.
  */
-export enum CgLayerEditMode {
-  Direct = 'direct',
-  Studio = 'studio',
-}
-
-/** localStorage key prefix — value is per Logo layer id. */
-export const CG_LAYER_STUDIO_STORAGE_PREFIX = 'cg-layer-studio:';
-
-/** Default for Logo desk — Live (same as today’s Direct content). */
-export const CG_DEFAULT_LAYER_EDIT_MODE = CgLayerEditMode.Direct;
+export const CG_STAGE_REFERENCE_WIDTH_PX = 1920;
 
 export interface CgElementDef {
   type: CgElementType;
@@ -173,9 +162,10 @@ export const DEFAULT_LOGO_LAYOUT = {
   scale: 1,
 } as const;
 
+/** Same inset model as Logo. Bottom center ignores X; Y is inset from the bottom edge. */
 export const DEFAULT_SUBTITLE_LAYOUT = {
-  x: 50,
-  y: 89,
+  x: 4,
+  y: 11,
   unit: CgLayoutUnit.Percent,
   anchor: CgAnchor.BottomCenter,
   scale: 1,
@@ -345,6 +335,17 @@ export const CG_ANCHOR_GRID_OPTIONS: ReadonlyArray<{
   { value: CgAnchor.BottomLeft, label: 'Bottom left', icon: 'south_west' },
   { value: CgAnchor.BottomCenter, label: 'Bottom center', icon: 'south' },
   { value: CgAnchor.BottomRight, label: 'Bottom right', icon: 'south_east' },
+];
+
+/** Subtitle text alignment inside its box (independent of Anchor). */
+export const CG_SUBTITLE_ALIGN_OPTIONS: ReadonlyArray<{
+  value: 'left' | 'center' | 'right';
+  label: string;
+  icon: string;
+}> = [
+  { value: 'left', label: 'Align left', icon: 'format_align_left' },
+  { value: 'center', label: 'Align center', icon: 'format_align_center' },
+  { value: 'right', label: 'Align right', icon: 'format_align_right' },
 ];
 
 export const CG_LAYOUT_UNIT_OPTIONS: ReadonlyArray<{

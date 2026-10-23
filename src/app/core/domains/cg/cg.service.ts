@@ -74,9 +74,13 @@ export class CgService {
    * it is always Direct and does not dirty the Package.
    */
   draftOriginal = signal('');
-  /** Last Save (+ live cue). Empty until the package exists in DB. */
-  onAirItem = signal<Partial<CgPackage> | null>(null);
-  onAirLayers = signal<CgLayerDraft[]>([]);
+  /**
+   * What OBS has: the exact RPC output last sent to the overlay (only set
+   * after Realtime `send` succeeded). `null` until the package exists.
+   */
+  onAirOutput = signal<CgPublicOutput | null>(null);
+  /** Latest live cue that reached OBS (package token). */
+  onAirCue = signal<CgOverlayCueMessage | null>(null);
   /** Direct = live to air; Studio = Pending then Save. Per package in localStorage. */
   editMode = signal(CgPackageEditMode.Studio);
   /** Panel Stage checkerboard / dim — Package column monitors. */
@@ -391,9 +395,15 @@ export class CgService {
     if (this.draftKey() === id && this.draftItem()) return true;
     const fresh = await this.fetchPackageById(id);
     if (!fresh) return false;
+    this.clearOnAir();
     this.applyDraft(fresh.package, fresh.layers.map((layer) => layerToDraft(layer)));
     this.loadEditModeForPackage(id);
     void this.ensureOverlaySendChannel(fresh.package.public_token);
+    const output = await this.fetchPublicOutput(fresh.package.public_token);
+    this.zone.run(() => {
+      // Ignore a late reply if the operator already moved to another package.
+      if (this.draftKey() === id) this.onAirOutput.set(output);
+    });
     return true;
   }
 
@@ -401,7 +411,38 @@ export class CgService {
     this.draftKey.set(pkg.tb_tyapp_cgpk_id);
     this.draftItem.set(structuredClone(pkg));
     this.draftLayers.set(structuredClone(drafts));
-    this.captureOnAir();
+    this.markDraftClean();
+  }
+
+  /**
+   * After Take / Direct autosave: keep existing layer objects (content is
+   * always Live and was flushed before save) so an edit made after the flush
+   * is not overwritten. Only mix fields come from the saved rows; rows that
+   * were just inserted are taken as saved.
+   */
+  mergeSavedDraft(pkg: CgPackage, saved: CgLayerDraft[]): void {
+    const keep = new Map(
+      this.draftLayers()
+        .filter((layer) => !!layer.tb_tyapp_cgly_id)
+        .map((layer) => [layer.tb_tyapp_cgly_id as string, layer]),
+    );
+    this.draftKey.set(pkg.tb_tyapp_cgpk_id);
+    this.draftItem.set(structuredClone(pkg));
+    this.draftLayers.set(
+      saved.map((fresh) => {
+        const current = fresh.tb_tyapp_cgly_id
+          ? keep.get(fresh.tb_tyapp_cgly_id)
+          : undefined;
+        return current
+          ? {
+              ...current,
+              visible: fresh.visible,
+              sort_order: fresh.sort_order,
+              status: fresh.status,
+            }
+          : structuredClone(fresh);
+      }),
+    );
     this.markDraftClean();
   }
 
@@ -463,14 +504,9 @@ export class CgService {
     this.draftOriginal.set(JSON.stringify(this.mixSnapshot()));
   }
 
-  private captureOnAir(): void {
-    this.onAirItem.set(structuredClone(this.draftItem()));
-    this.onAirLayers.set(structuredClone(this.draftLayers()));
-  }
-
   private clearOnAir(): void {
-    this.onAirItem.set(null);
-    this.onAirLayers.set([]);
+    this.onAirOutput.set(null);
+    this.onAirCue.set(null);
   }
 
   touchPreview(): void {
@@ -490,9 +526,8 @@ export class CgService {
    * No-op until the layer row exists in DB.
    */
   schedulePersistLayerContent(clientId: string): void {
-    // Layer Direct: Package On air / desk mirrors content immediately;
-    // DB write stays debounced. Mix (visible / z-order) is untouched.
-    this.mirrorLayerContentToOnAir(clientId);
+    // Layer content is always Live: DB write is debounced, then the output
+    // is published (Panel On air follows that publish, not the draft).
     const previous = this.layerContentPersistTimers.get(clientId);
     if (previous !== undefined) window.clearTimeout(previous);
     const handle = window.setTimeout(() => {
@@ -502,22 +537,12 @@ export class CgService {
     this.layerContentPersistTimers.set(clientId, handle);
   }
 
-  /** Drop a pending Live write (Logo Studio Draft, or before Apply). */
+  /** Drop a pending Live write (layer removed from the draft). */
   cancelPersistLayerContent(clientId: string): void {
     const previous = this.layerContentPersistTimers.get(clientId);
     if (previous === undefined) return;
     window.clearTimeout(previous);
     this.layerContentPersistTimers.delete(clientId);
-  }
-
-  /**
-   * Logo Studio Apply: push desk content to On air + DB now.
-   * Does not touch mix (visible / z-order).
-   */
-  async applyLayerContent(clientId: string): Promise<boolean> {
-    this.cancelPersistLayerContent(clientId);
-    this.mirrorLayerContentToOnAir(clientId);
-    return this.persistLayerContent(clientId);
   }
 
   /** Run any debounced desk content writes now (before mix Take/Create). */
@@ -562,9 +587,6 @@ export class CgService {
         })
         .eq('tb_tyapp_cgly_id', current.tb_tyapp_cgly_id);
       if (error) throw error;
-      this.zone.run(() => {
-        this.rememberLayerContent(clientId, { name, layout, look, payload });
-      });
       void this.publishOverlayOutputs([
         this.draftItem()?.public_token,
         current.public_token,
@@ -614,9 +636,14 @@ export class CgService {
     const current = this.draftLayers().find((layer) => layer.clientId === clientId);
     if (!current) return false;
 
-    this.zone.run(() => this.rememberLayerCueIndex(clientId, index, cursor));
+    this.zone.run(() => this.setDraftCue(clientId, index, cursor));
 
-    const seq = (this.cueSeqByClient.get(clientId) ?? 0) + 1;
+    // Time-based floor so a Panel reload (counter back to 0) still beats the
+    // overlay's remembered seq.
+    const seq = Math.max(
+      (this.cueSeqByClient.get(clientId) ?? 0) + 1,
+      Date.now(),
+    );
     this.cueSeqByClient.set(clientId, seq);
 
     const layerId = current.tb_tyapp_cgly_id;
@@ -671,26 +698,16 @@ export class CgService {
     const layerId = current.tb_tyapp_cgly_id;
     if (!layerId) return true;
 
-    // Baseline = last On air content so a racing Style edit that has not
-    // finished Layer Direct yet is not promoted by a cue click.
-    const baseline = this.airLayerPayload(clientId) ?? current.payload;
-    const nextSaved: CgLayerPayload = {
-      ...baseline,
-      lines: [...payload.lines],
-      index: payload.index,
-      cursor: payload.cursor,
-    };
-
+    // Layer content is always Live, so the draft payload is what goes to DB.
     try {
       const { error } = await this.supabase
         .from('tyapp_cg_layer')
         .update({
-          payload: nextSaved,
+          payload: nextDraft,
           updated_at: new Date().toISOString(),
         })
         .eq('tb_tyapp_cgly_id', layerId);
       if (error) throw error;
-      this.zone.run(() => this.rememberLayerCue(clientId, nextSaved));
       void this.publishOverlayOutputs([
         this.draftItem()?.public_token,
         current.public_token,
@@ -722,43 +739,20 @@ export class CgService {
             : layer,
         ),
       );
-      this.onAirLayers.update((list) =>
-        list.map((layer) =>
-          layer.clientId === clientId
-            ? {
-                ...layer,
-                payload: {
-                  ...layer.payload,
-                  transition: { duration_ms: ms },
-                },
-              }
-            : layer,
-        ),
-      );
     });
 
     const layerId = current.tb_tyapp_cgly_id;
-    if (!layerId) {
-      this.rememberLayerTransition(clientId, ms);
-      return true;
-    }
-
-    const baseline = this.airLayerPayload(clientId) ?? current.payload;
-    const nextSaved: CgLayerPayload = {
-      ...baseline,
-      transition: { duration_ms: ms },
-    };
+    if (!layerId) return true;
 
     try {
       const { error } = await this.supabase
         .from('tyapp_cg_layer')
         .update({
-          payload: nextSaved,
+          payload: nextDraft,
           updated_at: new Date().toISOString(),
         })
         .eq('tb_tyapp_cgly_id', layerId);
       if (error) throw error;
-      this.zone.run(() => this.rememberLayerTransition(clientId, ms));
       void this.publishOverlayOutputs([
         this.draftItem()?.public_token,
         current.public_token,
@@ -829,12 +823,12 @@ export class CgService {
 
       return this.zone.run(() => {
         this.layers.update((list) => [...list, saved]);
-        if (this.draftKey() === targetPackageId) {
-          const draft = layerToDraft(saved);
-          this.draftLayers.update((list) => [...list, draft]);
-          this.appendOriginalLayer(draft);
-        }
         this.loading.set(false);
+        // Target may be on air in OBS right now — don't wait for the 30s poll.
+        void this.publishOverlayOutputs([
+          target.public_token,
+          saved.public_token,
+        ]);
         this.notification.showSuccess(`Copied to ${target.name}`);
         return saved;
       });
@@ -873,17 +867,18 @@ export class CgService {
     }
   }
 
-  private rememberLayerCueIndex(
+  private setDraftCue(
     clientId: string,
     index: number | null,
     cursor: number,
   ): void {
-    const apply = (layer: CgLayerDraft): CgLayerDraft =>
-      layer.clientId === clientId
-        ? { ...layer, payload: { ...layer.payload, index, cursor } }
-        : layer;
-    this.draftLayers.update((list) => list.map(apply));
-    this.onAirLayers.update((list) => list.map(apply));
+    this.draftLayers.update((list) =>
+      list.map((layer) =>
+        layer.clientId === clientId
+          ? { ...layer, payload: { ...layer.payload, index, cursor } }
+          : layer,
+      ),
+    );
   }
 
   private async flushCueWrites(
@@ -904,10 +899,9 @@ export class CgService {
           p_cursor: next.cursor,
         });
         if (error) {
-          const source =
-            this.airLayerPayload(clientId) ??
-            this.draftLayers().find((layer) => layer.clientId === clientId)
-              ?.payload;
+          const source = this.draftLayers().find(
+            (layer) => layer.clientId === clientId,
+          )?.payload;
           if (!source) throw error;
           const { error: fallbackError } = await this.supabase
             .from('tyapp_cg_layer')
@@ -925,7 +919,7 @@ export class CgService {
         }
         if (this.cueWriteQueue.has(clientId)) continue;
         this.zone.run(() =>
-          this.rememberLayerCueIndex(clientId, next.index, next.cursor),
+          this.setDraftCue(clientId, next.index, next.cursor),
         );
         const current = this.draftLayers().find(
           (layer) => layer.clientId === clientId,
@@ -957,11 +951,15 @@ export class CgService {
       unique.map(async (token) => {
         const channel = await this.ensureOverlaySendChannel(token);
         if (!channel) return;
-        await channel.send({
+        const result = await channel.send({
           type: 'broadcast',
           event: CG_OVERLAY_BROADCAST_EVENT,
           payload: message,
         });
+        // Panel On air only follows a cue that really reached the channel.
+        if (result === 'ok' && token === this.draftItem()?.public_token) {
+          this.zone.run(() => this.onAirCue.set(message));
+        }
       }),
     );
   }
@@ -970,109 +968,6 @@ export class CgService {
     const pending = [...this.cueFlushPromises.values()];
     if (pending.length === 0) return;
     await Promise.all(pending);
-  }
-
-  /** Last On-air payload for this layer (cue merges into this, not mix baseline). */
-  private airLayerPayload(clientId: string): CgLayerPayload | null {
-    const layer = this.onAirLayers().find((row) => row.clientId === clientId);
-    return layer
-      ? { ...layer.payload, lines: [...layer.payload.lines] }
-      : null;
-  }
-
-  private rememberLayerCue(clientId: string, payload: CgLayerPayload): void {
-    this.onAirLayers.update((list) =>
-      list.map((layer) =>
-        layer.clientId === clientId
-          ? {
-              ...layer,
-              payload: {
-                ...layer.payload,
-                lines: [...payload.lines],
-                index: payload.index,
-                cursor: payload.cursor,
-              },
-            }
-          : layer,
-      ),
-    );
-  }
-
-  private rememberLayerTransition(clientId: string, durationMs: number): void {
-    this.onAirLayers.update((list) =>
-      list.map((layer) =>
-        layer.clientId === clientId
-          ? {
-              ...layer,
-              payload: {
-                ...layer.payload,
-                transition: { duration_ms: durationMs },
-              },
-            }
-          : layer,
-      ),
-    );
-  }
-
-  /** Push draft content onto On air without touching mix (visible / sort). */
-  private mirrorLayerContentToOnAir(clientId: string): void {
-    const current = this.draftLayers().find((layer) => layer.clientId === clientId);
-    if (!current) return;
-    this.rememberLayerContent(clientId, {
-      name: current.name?.trim() ?? '',
-      layout: current.layout,
-      look: normalizeLayerLook(current.look),
-      payload: normalizeLayerPayload(current.element_type, current.payload),
-    });
-  }
-
-  /** After Layer Direct content save: promote content on air (mix unchanged). */
-  private rememberLayerContent(
-    clientId: string,
-    next: {
-      name: string;
-      layout: CgLayerDraft['layout'];
-      look: CgLayerDraft['look'];
-      payload: CgLayerPayload;
-    },
-  ): void {
-    const apply = (layer: CgLayerDraft): CgLayerDraft =>
-      layer.clientId === clientId
-        ? {
-            ...layer,
-            name: next.name,
-            layout: structuredClone(next.layout),
-            look: next.look,
-            payload: {
-              ...next.payload,
-              lines: [...next.payload.lines],
-            },
-          }
-        : layer;
-
-    this.onAirLayers.update((list) => list.map(apply));
-  }
-
-  private appendOriginalLayer(draft: CgLayerDraft): void {
-    const raw = this.draftOriginal();
-    if (!raw) return;
-    try {
-      const snapshot = JSON.parse(raw) as ReturnType<CgService['mixSnapshot']>;
-      snapshot.layers = [
-        ...snapshot.layers,
-        {
-          clientId: draft.clientId,
-          tb_tyapp_cgly_id: draft.tb_tyapp_cgly_id ?? null,
-          element_type: draft.element_type,
-          visible: draft.visible,
-          sort_order: snapshot.layers.length,
-        },
-      ];
-      this.draftOriginal.set(JSON.stringify(snapshot));
-      this.onAirLayers.update((list) => [...list, structuredClone(draft)]);
-    } catch {
-      return;
-    }
   }
 
   async fetchPublicOutput(token: string): Promise<CgPublicOutput | null> {
@@ -1146,11 +1041,15 @@ export class CgService {
     const channel = await this.ensureOverlaySendChannel(token);
     if (!channel) return;
     const output = await this.fetchPublicOutput(token);
-    await channel.send({
+    const result = await channel.send({
       type: 'broadcast',
       event: CG_OVERLAY_BROADCAST_EVENT,
       payload: output ?? {},
     });
+    // Panel On air = the exact output that just reached OBS.
+    if (result === 'ok' && token === this.draftItem()?.public_token) {
+      this.zone.run(() => this.onAirOutput.set(output));
+    }
   }
 
   private async ensureOverlaySendChannel(

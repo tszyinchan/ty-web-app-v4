@@ -53,8 +53,9 @@ This is the locked vocabulary for code, UI copy, DB, routes, and the subdomain. 
 `package_id` → package PK, `element_type`, `public_token`, `layout` jsonb, `payload` jsonb, `visible` (On/Off), `look` (`inherit` \| `color` \| `mono`; default `inherit` = Package Look), `sort_order`, `status`, `created_at`, `updated_at`, `deleted_at`
 
 **Layout jsonb:** `x`, `y`, `unit` (`percent` \| `px`), `anchor`, `scale`, `width`, `height`.
-- **Logo Place** is inset-from-anchor: X/Y are offsets from the Anchor edges (Top right + 5,5 = 5 from right and top). Logo `scale` is a CSS transform. Optional stored `width` still applies if present.
-- **Subtitle** is point-in-frame (x/y = where the Anchor sits on Stage). Subtitle `scale` only multiplies type size (`1` = ffmpeg FontSize 16.1 / PlayRes 288, about 5.6% of frame height); Show preset Scale 1 is about 7.2%.
+- **9-grid placement (every Element, now and future)** is inset-from-anchor, one shared function `anchoredBoxCss` in `cg.util.ts`: Anchor picks a cell of the Stage; X/Y are offsets from that cell's edges (Top right + 5,5 = 5 from right and top). On a centre axis the item is centered and that axis' X/Y is **ignored** (`anchorIgnoresAxis`): Top/Bottom center ignore X, Center left/right ignore Y, Center ignores both. Stored X/Y are kept so switching Anchor back restores them. Do not add a second positioning model for a new Element.
+- Logo `scale` is a CSS transform. Optional stored `width` still applies if present.
+- **Subtitle** uses the same placement; its `width` (default 88%) is the box the Anchor places. **Alignment** (`payload.style.textAlign`: `left` \| `center` \| `right`) sets where text sits inside that box, independent of Anchor (Bottom left + Align right is valid). Clicking an Anchor sets Alignment to that Anchor's side once; the operator may change it after. Alignment is placement, so changing it does not flip News / Show to Custom. Subtitle `scale` only multiplies type size (`1` = ffmpeg FontSize 16.1 / PlayRes 288, about 5.6% of frame height); Show preset Scale 1 is about 7.2%.
 
 **Logo payload jsonb:** `imageUrl` (http(s) or app path such as `/icons/3d/apps.png` — **never** a `data:image` base64 string), `fileName`. "Choose local image" uploads PNG/WebP to the public Storage bucket `cg-logo` (`CgService.uploadLogoImage`) and stores only the public URL. Additive SQL: `supabase/sql/cg-logo-storage.sql`. Overlay subscribes to Realtime broadcast `cg-output:{token}` (full snapshot on Save / lines change; live cue is `{ kind: 'cue', layerId, index, cursor, seq }`). Full fetch is `tyapp_cg_get_output_by_token` on connect, plus a 30s safety poll that first calls `tyapp_cg_get_output_version_by_token` and skips the download when `updated_at` is unchanged. Do not go back to fast polling, and do not drop `tyapp_cg_*` tables.
 
@@ -65,11 +66,16 @@ Tokens share one `/o/:token` space (unique across both tables in practice). Do n
 ## RPCs
 `tyapp_cg_package_soft_delete_single_record`, `tyapp_cg_layer_soft_delete_single_record`, `tyapp_cg_get_output_by_token`, `tyapp_cg_layer_set_cue` (jsonb_set `index`/`cursor` only), `tyapp_cg_get_output_version_by_token`. Additive SQL: `supabase/sql/cg-layer-cue.sql` (run in the SQL editor before the frontend that calls them).
 
+## On air source (locked)
+Panel **On air** is rendered by `CgProgram` (same component as the public overlay) from `CgService.onAirOutput` / `onAirCue`. These are set only after a Realtime `send` succeeds, from the same RPC output (`tyapp_cg_get_output_by_token`) the overlay receives. Do not rebuild an On air mirror from the draft. Pending (Studio) stays `CgMixPreview` on the draft. Layer Output (`/o/<layer token>`) ignores Package On/Off by design.
+
+**Logo `px`** layouts are authored on a 1920-wide canvas (`CG_STAGE_REFERENCE_WIDTH_PX`) and rendered as a share of Stage width (`--cg-u`), so tile / desk / OBS are proportional. Natural image size follows the same rule.
+
 ## Host vs inner
 Package / Panel owns mix — which Layers exist, On/Off, z-order, OBS URL, **Appear** (Fade / Cut + `duration_ms` for the whole Layer going on or off), and **Package Look** as master bus. Package B&W greys **every** Layer (Layer Color cannot punch out). Package Color lets a Layer set Color / B&W. Layer desk has no Appear. Cue crossfade, News / Show, layout live on the Layer (`payload.transition.duration_ms` for cue). Package Cut must not force cue to cut. Each Layer fades in/out on its own using Package `duration_ms`; unchanged Layers stay put. Tile order is Stage **z-order** (first behind, last in front).
 
 ## Ownership (locked)
-Package Studio gates **mix only** (membership, On/Off, z-order, Package Look, Appear). **Layer content** never waits for Package Take and never marks Package Unsaved. Logo defaults to Live Direct; optional Logo Studio Draft gates Name / Look / Source / Place until Apply. Subtitle cue / layout / Look / Style stay Live. Take/Create flushes pending Layer Live writes, then updates mix columns only on existing layer rows (new rows still full-insert on first Create).
+Package Studio gates **mix only** (membership, On/Off, z-order, Package Look, Appear). **Layer content** never waits for Package Take and never marks Package Unsaved. All Layer content (Logo and Subtitle: Name / Look / Source / Place / cue / Style) is always Live; there is no Layer Studio mode. The Layer desk warns when the layer is really on air. Take/Create flushes pending Layer Live writes, then updates mix columns only on existing layer rows (new rows still full-insert on first Create).
 
 ## Save scope
 | Mode | Behavior |

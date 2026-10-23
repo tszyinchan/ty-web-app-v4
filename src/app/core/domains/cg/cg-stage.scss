@@ -6,6 +6,15 @@
   overflow: hidden;
   container-type: size;
   container-name: cg-stage;
+  /* 1% of Stage width. Older embedded browsers without container units fall
+     back to vw (the overlay Stage fills the viewport, so it is the same). */
+  --cg-u: 1vw;
+}
+
+@supports (width: 1cqw) {
+  :host {
+    --cg-u: 1cqw;
+  }
 }
 
 .stage {

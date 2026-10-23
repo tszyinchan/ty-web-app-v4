@@ -1,15 +1,3 @@
 <div class="overlay-root">
-  <app-cg-stage>
-    @for (layer of stagedLayers(); track layer.tb_tyapp_cgly_id) {
-      <app-cg-layer-view
-        [elementType]="layer.element_type"
-        [layout]="layer.layout"
-        [payload]="layer.payload"
-        [visible]="layer.visible"
-        [durationMs]="durationMs()"
-        [sortOrder]="layer.sort_order"
-        [mono]="layerIsMono(layer.look, look())"
-      />
-    }
-  </app-cg-stage>
+  <app-cg-program [output]="output()" [cue]="cue()" />
 </div>

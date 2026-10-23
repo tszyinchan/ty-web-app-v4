@@ -29,9 +29,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleChange, MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatIconModule } from '@angular/material/icon';
 import { filter, map, startWith } from 'rxjs/operators';
-import { CgLayerView } from '../../../../core/domains/cg/cg-layer-view';
 import { CgMixPreview } from '../../../../core/domains/cg/cg-mix-preview';
-import { CgStage } from '../../../../core/domains/cg/cg-stage';
+import { CgProgram } from '../../../../core/domains/cg/cg-program';
 import {
   CG_CUT_DURATION_MS,
   CG_DEFAULT_DURATION_MS,
@@ -53,12 +52,10 @@ import {
   isCgCut,
   isCgMono,
   layerDisplayName,
-  layerIsMono,
   layerToDraft,
   normalizeDurationMs,
   packageHasUnsavedIdentity,
   setCgDesktopViewport,
-  subtitlePresetOf,
 } from '../../../../core/domains/cg/cg.util';
 import { NotificationService } from '../../../../core/services/notification.service';
 import { copyTextToClipboard } from '../../../../core/utils/copy-text.util';
@@ -79,9 +76,8 @@ const DIRECT_AUTOSAVE_MS = 450;
     CdkDropList,
     CdkDrag,
     CdkDragHandle,
-    CgStage,
-    CgLayerView,
     CgMixPreview,
+    CgProgram,
   ],
   templateUrl: './cg-package-edit.html',
   styleUrl: './cg-package-edit.scss',
@@ -104,8 +100,6 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
 
   readonly item = this.cg.draftItem;
   readonly layers = this.cg.draftLayers;
-  readonly onAirItem = this.cg.onAirItem;
-  readonly onAirLayers = this.cg.onAirLayers;
   readonly editMode = this.cg.editMode;
   readonly selectedLayerId = toSignal(
     this.router.events.pipe(
@@ -295,14 +289,6 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
     return normalizeDurationMs(this.item()?.duration_ms);
   }
 
-  onAirDurationMs(): number {
-    return normalizeDurationMs(this.onAirItem()?.duration_ms);
-  }
-
-  onAirLook(): CgPackageLook {
-    return this.onAirItem()?.look ?? CgPackageLook.Color;
-  }
-
   pendingLook(): CgPackageLook {
     return this.item()?.look ?? CgPackageLook.Color;
   }
@@ -334,10 +320,6 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
     return isCgMono(this.item()?.look);
   }
 
-  layerMono(layer: CgLayerDraft): boolean {
-    return layerIsMono(layer.look, this.item()?.look);
-  }
-
   setLook(look: CgPackageLook): void {
     const pkg = this.item();
     if (!pkg) return;
@@ -348,36 +330,6 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
     const token = this.item()?.public_token;
     if (!token || !this.packageId) return '';
     return buildCgOverlayUrl(token, window.location);
-  }
-
-  /**
-   * For the top-right layer items bar (tiles):
-   * When a layer has an on-air / committed version, the tile displays that
-   * saved version rather than any unapplied draft edits from the desk,
-   * until the user explicitly saves / applies.
-   */
-  tileLayer(layer: CgLayerDraft): CgLayerDraft {
-    const onAir = this.onAirLayers().find(
-      (row) =>
-        row.clientId === layer.clientId ||
-        (!!layer.tb_tyapp_cgly_id && row.tb_tyapp_cgly_id === layer.tb_tyapp_cgly_id),
-    );
-    return onAir ?? layer;
-  }
-
-  layoutSnapshot(layer: CgLayerDraft): CgLayerDraft['layout'] {
-    return { ...layer.layout };
-  }
-
-  payloadSnapshot(layer: CgLayerDraft): CgLayerDraft['payload'] {
-    return {
-      ...layer.payload,
-      lines: [...layer.payload.lines],
-      style: { preset: subtitlePresetOf(layer.payload) },
-      transition: {
-        duration_ms: layer.payload.transition?.duration_ms ?? CG_DEFAULT_DURATION_MS,
-      },
-    };
   }
 
   async copyPackageOutput(): Promise<void> {
@@ -418,7 +370,7 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
     this.zone.run(() => {
       if (fresh) {
         const drafts = fresh.layers.map((layer) => layerToDraft(layer));
-        this.cg.applyDraft(fresh.package, drafts);
+        this.cg.mergeSavedDraft(fresh.package, drafts);
         const still =
           drafts.find((row) => row.clientId === previousClientId) ??
           drafts.find((row) => row.tb_tyapp_cgly_id === previousClientId) ??
