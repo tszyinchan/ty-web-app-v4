@@ -138,8 +138,16 @@ export const CG_OVERLAY_CHANNEL_PREFIX = 'cg-output:';
 export const CG_OVERLAY_BROADCAST_EVENT = 'sync';
 /** Small live-cue payload on the same broadcast event (not a full output snapshot). */
 export const CG_OVERLAY_CUE_KIND = 'cue';
-/** If Realtime drops a packet, overlay re-fetches. Not the live cue path. */
+/**
+ * If Realtime drops a packet, overlay catches up. Not the live cue path.
+ * Each tick calls the tiny `tyapp_cg_get_output_state_by_token` (content
+ * `rev` + stored cues) and only downloads the full output when `rev` changed.
+ */
 export const CG_OVERLAY_SAFETY_POLL_MS = 30_000;
+/** Overlay announces itself on its channel so the Panel can skip Layer tokens nobody watches. */
+export const CG_OVERLAY_PRESENCE_ROLE = 'overlay';
+/** Max wait for the first Presence sync before the Panel assumes someone is listening. */
+export const CG_PRESENCE_SYNC_WAIT_MS = 1_500;
 /** Wait at most this long for a web font before showing the next cue. */
 export const CG_SUBTITLE_FONT_LOAD_MS = 400;
 

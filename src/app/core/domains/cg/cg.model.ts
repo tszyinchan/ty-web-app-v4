@@ -117,6 +117,21 @@ export interface CgPublicOutput {
   durationMs: number;
   look: CgPackageLook;
   layers: CgLayer[];
+  /** Content signature from the DB (excludes the live cue). */
+  rev?: string;
+}
+
+/** One Layer's live cue as stored in the DB (safety-poll drift check only). */
+export interface CgOutputStateCue {
+  id: string;
+  index: number | null;
+  cursor: number;
+}
+
+/** Tiny safety-poll response: content `rev` + stored cues. */
+export interface CgOutputState {
+  rev: string;
+  cues: CgOutputStateCue[];
 }
 
 /** Live cue on the overlay broadcast — not a full output snapshot. */

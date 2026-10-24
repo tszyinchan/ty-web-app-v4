@@ -35,6 +35,8 @@ import {
   CgLayerPayload,
   CgLayout,
   CgLogoPayload,
+  CgOutputState,
+  CgOutputStateCue,
   CgOverlayCueMessage,
   CgPackage,
   CgPublicOutput,
@@ -608,7 +610,34 @@ export function normalizePublicOutput(raw: unknown): CgPublicOutput | null {
     ),
     look: normalizeLook(value['look']),
     layers,
+    rev: asString(value['rev']) || undefined,
   };
+}
+
+/** Safety-poll state: content `rev` + each Layer's cue. `null` = unusable. */
+export function normalizeOutputState(raw: unknown): CgOutputState | null {
+  const value = asRecord(raw);
+  const rev = asString(value['rev']);
+  if (!rev) return null;
+  const cuesRaw = value['cues'];
+  const cues: CgOutputStateCue[] = [];
+  if (Array.isArray(cuesRaw)) {
+    for (const row of cuesRaw) {
+      const cue = asRecord(row);
+      const id = asString(cue['id']);
+      const cursor = cue['cursor'];
+      const index = cue['index'];
+      // Logo Layers have no cue — only subtitle rows carry a numeric cursor.
+      if (!id || typeof cursor !== 'number' || !Number.isFinite(cursor)) {
+        continue;
+      }
+      if (index !== null && (typeof index !== 'number' || !Number.isFinite(index))) {
+        continue;
+      }
+      cues.push({ id, index, cursor });
+    }
+  }
+  return { rev, cues };
 }
 
 export function normalizeLayerPayload(
@@ -619,6 +648,27 @@ export function normalizeLayerPayload(
     return normalizeSubtitlePayload(raw);
   }
   return normalizeLogoPayload(raw);
+}
+
+/**
+ * What OBS can actually see of a Layer's content: layout, look and payload
+ * without the live cue (`index` / `cursor`) and `fileName`. `name` is not part
+ * of it. Equal signatures mean a re-publish would change nothing on air.
+ */
+export function layerContentSignature(
+  layer: Pick<CgLayerDraft, 'element_type' | 'layout' | 'look' | 'payload'>,
+): string {
+  const payload: Record<string, unknown> = {
+    ...normalizeLayerPayload(layer.element_type, layer.payload),
+  };
+  delete payload['index'];
+  delete payload['cursor'];
+  delete payload['fileName'];
+  return JSON.stringify({
+    layout: layer.layout,
+    look: normalizeLayerLook(layer.look),
+    payload,
+  });
 }
 
 /**

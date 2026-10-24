@@ -198,6 +198,8 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
   ngOnDestroy(): void {
     window.clearTimeout(this.autoSaveTimer);
     setCgDesktopViewport(this.document, false);
+    // Panel closed: leave its Realtime send channels (re-joined lazily).
+    void this.cg.releaseOverlaySendChannels();
   }
 
   elementLabel = elementLabel;
@@ -361,27 +363,24 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
     )?.public_token;
     const hadPackageId = !!this.route.snapshot.paramMap.get('id');
     const previousEditMode = this.editMode();
-    const id = await this.cg.savePackage(data, this.layers(), options);
-    if (!id) return;
+    const savedResult = await this.cg.savePackage(data, this.layers(), options);
+    if (!savedResult) return;
+    const id = savedResult.packageId;
     // Persist Direct/Studio against the real package id after first Create.
     this.cg.setEditMode(previousEditMode, id);
-    const fresh = await this.cg.fetchPackageById(id);
+    // The save already returned every row (ids for new Layers), so there is
+    // no second full download of the package and its subtitle lines.
     let nextLayerId = previousClientId;
     this.zone.run(() => {
-      if (fresh) {
-        const drafts = fresh.layers.map((layer) => layerToDraft(layer));
-        this.cg.mergeSavedDraft(fresh.package, drafts);
-        const still =
-          drafts.find((row) => row.clientId === previousClientId) ??
-          drafts.find((row) => row.tb_tyapp_cgly_id === previousClientId) ??
-          drafts.find(
-            (row) => !!previousToken && row.public_token === previousToken,
-          );
-        nextLayerId = still?.clientId ?? '';
-      } else {
-        this.cg.markDraftClean();
-        this.isDirty.set(false);
-      }
+      const drafts = savedResult.layers.map((layer) => layerToDraft(layer));
+      this.cg.mergeSavedDraft(savedResult.package, drafts);
+      const still =
+        drafts.find((row) => row.clientId === previousClientId) ??
+        drafts.find((row) => row.tb_tyapp_cgly_id === previousClientId) ??
+        drafts.find(
+          (row) => !!previousToken && row.public_token === previousToken,
+        );
+      nextLayerId = still?.clientId ?? '';
     });
     if (!hadPackageId) {
       if (nextLayerId) {

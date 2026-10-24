@@ -41,6 +41,7 @@
 - [ ] 已在 Supabase 跑過 `supabase/sql/cg-package-look.sql`（package `look` color/mono；**不要**再跑一次 v2）
 - [ ] 已在 Supabase 跑過 `supabase/sql/cg-layer-look.sql`（layer `look` inherit/color/mono；**不要**再跑一次 v2）
 - [ ] 已在 Supabase 跑過 `supabase/sql/cg-logo-storage.sql`（public bucket `cg-logo` + 清掉 `payload.imageUrl` 的 `data:image`；**不要**再跑一次 v2、**不要** drop `tyapp_cg_*`）
+- [ ] 已在 Supabase 跑過 `supabase/sql/cg-traffic-v1.sql`（流量最佳化：`rev`、`tyapp_cg_get_output_state_by_token`；**一定要在前端部署前跑**，可重跑）
 - [ ] `.cursor/test-credentials.local.json` 存在；用 **user-a** 登入成功
 - [ ] user-a 已有 CG feature grant（沒有則 Welcome 看不到，`/cg/list` 會被送回 Welcome）
 - [ ] `/cg/list` 沒有名稱以 `[TEST] CG` 開頭的 package；有的話先當 leftover 刪掉
@@ -114,6 +115,19 @@
 | C2 | Studio：改 Scale（已有 id），不要 Take，看 overlay | overlay / Package On air **立刻**變（Layer Direct） |
 | C3 | Layer desk 點 Copy OBS（Layer output） | 只畫那層 |
 | C4 | Overlay 已開。Panel cue Down | overlay **立刻**換句（小 cue broadcast，不必等 30s poll） |
+
+### T — 流量（Network 面板 / Supabase 請求數；OBS 畫面行為必須與改版前一致）
+
+| # | 操作 | 預期 |
+|---|---|---|
+| T1 | Overlay 開著、不操作 2 分鐘，看 Network | 每 30s 只有一個 `tyapp_cg_get_output_state_by_token`（幾百 bytes）；**沒有** `tyapp_cg_get_output_by_token` |
+| T2 | 連按 cue Down ~10 次，看 Network | overlay 即時換句；poll 仍只打 state RPC，不下載完整 output；Layer cue RPC 照常寫 DB |
+| T3 | 只改 Layer **Name**（有 id） | DB 更新；**沒有**新的 Realtime broadcast，也沒有 `get_output_by_token`；overlay 不眨眼 |
+| T3b | 改 Scale／Anchor／Look／Style | overlay 仍在約 0.5–1s 內變（有 publish）；改回原值再改，同樣有 publish |
+| T4 | Studio：只改 Package **Name**／Role 再 Take | 不產生 broadcast；改 On/Off、排序、Duration、Look 再 Take → overlay 照舊更新 |
+| T5 | 只開 Package Output overlay（不開 Layer Output），改 Layer 內容 | Package overlay 正常更新；Layer token 不 broadcast（Presence 無人聽）。再開一個 Layer Output 分頁後改內容，該分頁也更新 |
+| T6 | Take 後看 Network | 沒有緊接的 `tyapp_cg_package` + `tyapp_cg_layer` 完整重抓；Panel 狀態（On air、Layer id）正確 |
+| T7 | 暫時斷網 30s 後復網 | overlay 保持原畫面不變空白；復網後自動對齊（一次 full fetch） |
 
 ### CLEANUP
 

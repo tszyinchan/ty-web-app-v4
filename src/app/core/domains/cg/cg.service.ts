@@ -8,6 +8,8 @@ import {
   CG_LOGO_BUCKET,
   CG_OVERLAY_BROADCAST_EVENT,
   CG_OVERLAY_CUE_KIND,
+  CG_OVERLAY_PRESENCE_ROLE,
+  CG_PRESENCE_SYNC_WAIT_MS,
   CgElementType,
   CgPackageEditMode,
   CgPackageLook,
@@ -18,6 +20,7 @@ import {
   CgLayer,
   CgLayerDraft,
   CgLayerPayload,
+  CgOutputState,
   CgOverlayCueMessage,
   CgPackage,
   CgPublicOutput,
@@ -28,12 +31,14 @@ import {
   createEmptyLogoLayer,
   emptySubtitlePayload,
   isOverlayCueMessage,
+  layerContentSignature,
   layerToDraft,
   normalizeDurationMs,
   normalizeLayer,
   normalizeLayerLook,
   normalizeLayerPayload,
   normalizeLook,
+  normalizeOutputState,
   normalizePackage,
   normalizePublicOutput,
   readPackageEditMode,
@@ -43,6 +48,13 @@ import {
 /** Debounce Layer content writes (always Direct — not Package Take). */
 const LAYER_CONTENT_AUTOSAVE_MS = 450;
 
+/**
+ * Columns the list needs from `tyapp_cg_layer` — `normalizeLayer` requires
+ * id / package_id / public_token / element_type; `payload` is left out.
+ */
+const CG_LAYER_LIST_COLUMNS =
+  'tb_tyapp_cgly_id, package_id, element_type, public_token, name, visible, sort_order, status';
+
 @Injectable({ providedIn: 'root' })
 export class CgService {
   private supabase = inject(SupabaseService).client;
@@ -51,6 +63,14 @@ export class CgService {
   private overlayListenChannel: RealtimeChannel | null = null;
   private overlaySendChannels = new Map<string, RealtimeChannel>();
   private overlaySendJoins = new Map<string, Promise<RealtimeChannel | null>>();
+  /** Per send channel: resolves `true` on the first Presence sync. */
+  private overlayPresenceSynced = new Map<string, Promise<boolean>>();
+  /**
+   * Last OBS-visible content (layout / look / payload without the cue) that
+   * was published per Layer. Lets a Name-only edit skip the publish. Missing
+   * entry = unknown, which always publishes (fail-open).
+   */
+  private lastPublishedSig = new Map<string, string>();
   private layerContentPersistTimers = new Map<string, number>();
   private layerContentPersistInFlight = new Set<string>();
   private cueSeqByClient = new Map<string, number>();
@@ -112,9 +132,11 @@ export class CgService {
           .select('*')
           .is('deleted_at', null)
           .order('name', { ascending: true }),
+        // List summary only (never `payload`, which holds the subtitle
+        // lines). A Panel loads full rows via fetchPackageById.
         this.supabase
           .from('tyapp_cg_layer')
-          .select('*')
+          .select(CG_LAYER_LIST_COLUMNS)
           .is('deleted_at', null)
           .order('sort_order', { ascending: true }),
       ]);
@@ -191,10 +213,13 @@ export class CgService {
     pkg: Partial<CgPackage>,
     drafts: CgLayerDraft[],
     options?: { quiet?: boolean },
-  ): Promise<string | null> {
+  ): Promise<{ packageId: string; package: CgPackage; layers: CgLayer[] } | null> {
     // Layer content is always Direct — flush pending desk writes before
     // mix Take/Create so a reload cannot clobber unsaved content.
     await this.flushPendingLayerContent();
+    // Last clean mix (load / previous save): lets us write and publish only
+    // what really changed.
+    const baseline = this.mixBaseline();
 
     const isNew = !pkg.tb_tyapp_cgpk_id;
     const {
@@ -251,9 +276,10 @@ export class CgService {
           .filter((id): id is string => !!id),
       );
 
-      for (const stale of existing.filter(
+      const staleLayers = existing.filter(
         (layer) => !keptIds.has(layer.tb_tyapp_cgly_id),
-      )) {
+      );
+      for (const stale of staleLayers) {
         const { error } = await this.supabase.rpc(
           'tyapp_cg_layer_soft_delete_single_record',
           { record_id: stale.tb_tyapp_cgly_id },
@@ -261,13 +287,29 @@ export class CgService {
         if (error) throw error;
       }
 
+      const baselineById = new Map(
+        (baseline?.layers ?? [])
+          .filter((row) => !!row.tb_tyapp_cgly_id)
+          .map((row) => [row.tb_tyapp_cgly_id as string, row]),
+      );
+      // What changed decides what gets written and published. No baseline
+      // (or a brand-new package) means everything is treated as changed.
+      let mixChanged = isNew || !baseline || staleLayers.length > 0;
+      const changedLayerTokens: string[] = [];
       const savedLayers: CgLayer[] = [];
       for (const [index, draft] of drafts.entries()) {
         // Take / Package autosave owns mix only for existing rows. New rows
         // still need a full insert (first Create). Content edits after that
         // go through persistLayerContent / cue patches — never Take.
-        const layerQuery = draft.tb_tyapp_cgly_id
-          ? this.supabase
+        if (draft.tb_tyapp_cgly_id) {
+          const before = baselineById.get(draft.tb_tyapp_cgly_id);
+          const unchanged =
+            !!before &&
+            before.visible === draft.visible &&
+            before.sort_order === index;
+          if (!unchanged) {
+            // No `.select()`: the row (with its subtitle lines) stays in the DB.
+            const { error } = await this.supabase
               .from('tyapp_cg_layer')
               .update({
                 visible: draft.visible,
@@ -275,31 +317,66 @@ export class CgService {
                 status: draft.status,
                 updated_at: new Date().toISOString(),
               })
-              .eq('tb_tyapp_cgly_id', draft.tb_tyapp_cgly_id)
-              .select()
-              .single()
-          : this.supabase
-              .from('tyapp_cg_layer')
-              .insert({
-                package_id: packageId,
-                element_type: draft.element_type,
-                public_token: draft.public_token,
-                name: draft.name?.trim() ?? '',
-                layout: draft.layout,
-                payload: draft.payload,
-                visible: draft.visible,
-                look: normalizeLayerLook(draft.look),
-                sort_order: index,
-                status: draft.status,
-              })
-              .select()
-              .single();
+              .eq('tb_tyapp_cgly_id', draft.tb_tyapp_cgly_id);
+            if (error) throw error;
+            mixChanged = true;
+            if (!before || before.visible !== draft.visible) {
+              changedLayerTokens.push(draft.public_token);
+            }
+          }
+          savedLayers.push(
+            this.layerFromDraft(
+              draft,
+              packageId,
+              index,
+              draft.tb_tyapp_cgly_id,
+            ),
+          );
+          continue;
+        }
 
-        const { data, error } = await layerQuery;
+        const { data, error } = await this.supabase
+          .from('tyapp_cg_layer')
+          .insert({
+            package_id: packageId,
+            element_type: draft.element_type,
+            public_token: draft.public_token,
+            name: draft.name?.trim() ?? '',
+            layout: draft.layout,
+            payload: draft.payload,
+            visible: draft.visible,
+            look: normalizeLayerLook(draft.look),
+            sort_order: index,
+            status: draft.status,
+          })
+          .select('tb_tyapp_cgly_id, tb_tyapp_cgly_seq_no, created_at, updated_at')
+          .single();
         if (error) throw error;
-        const normalized = normalizeLayer(data);
-        if (normalized) savedLayers.push(normalized);
+        const row = data as unknown as Record<string, unknown>;
+        const newId = row['tb_tyapp_cgly_id'];
+        if (typeof newId !== 'string' || !newId) {
+          throw new Error('Inserted CG layer row was incomplete');
+        }
+        mixChanged = true;
+        changedLayerTokens.push(draft.public_token);
+        savedLayers.push(this.layerFromDraft(draft, packageId, index, newId, row));
       }
+
+      // Layer outputs embed the Package duration / look, so those reach every
+      // Layer token; Name / Role are not rendered by OBS at all.
+      const packageOutputChanged =
+        isNew ||
+        !baseline?.package ||
+        baseline.package.duration_ms !== saved.duration_ms ||
+        baseline.package.look !== saved.look ||
+        baseline.package.status !== saved.status;
+      const publishPackage = mixChanged || packageOutputChanged;
+      const publishLayerTokens = [
+        ...staleLayers.map((layer) => layer.public_token),
+        ...(packageOutputChanged
+          ? savedLayers.map((layer) => layer.public_token)
+          : changedLayerTokens),
+      ];
 
       return this.zone.run(() => {
         this.packages.update((list) =>
@@ -317,11 +394,13 @@ export class CgService {
         if (!options?.quiet) {
           this.notification.showSuccess(isNew ? 'Package created' : 'On air');
         }
-        void this.publishOverlayOutputs([
-          saved.public_token,
-          ...savedLayers.map((layer) => layer.public_token),
-        ]);
-        return packageId;
+        if (publishPackage) {
+          void this.publishOverlayOutputs(
+            saved.public_token,
+            publishLayerTokens,
+          );
+        }
+        return { packageId, package: saved, layers: savedLayers };
       });
     } catch (error: unknown) {
       this.notification.handleError('Save CG package failed', error);
@@ -356,10 +435,10 @@ export class CgService {
         this.loading.set(false);
         this.notification.showSuccess('Package deleted');
         if (removed) {
-          void this.publishOverlayOutputs([
+          void this.publishOverlayOutputs(
             removed.public_token,
-            ...removedLayerTokens,
-          ]);
+            removedLayerTokens,
+          );
         }
         return true;
       });
@@ -383,6 +462,7 @@ export class CgService {
       look: CgPackageLook.Color,
       status: RecordStatus.Active,
     };
+    this.lastPublishedSig.clear();
     this.draftKey.set(null);
     this.draftItem.set(created);
     this.draftLayers.set([logo]);
@@ -411,7 +491,20 @@ export class CgService {
     this.draftKey.set(pkg.tb_tyapp_cgpk_id);
     this.draftItem.set(structuredClone(pkg));
     this.draftLayers.set(structuredClone(drafts));
+    // Freshly loaded content is what OBS already has.
+    this.lastPublishedSig.clear();
+    this.seedPublishedSigs(drafts);
     this.markDraftClean();
+  }
+
+  /** Remember current content as published (only rows not tracked yet). */
+  private seedPublishedSigs(drafts: CgLayerDraft[]): void {
+    for (const draft of drafts) {
+      if (!draft.tb_tyapp_cgly_id || this.lastPublishedSig.has(draft.clientId)) {
+        continue;
+      }
+      this.lastPublishedSig.set(draft.clientId, layerContentSignature(draft));
+    }
   }
 
   /**
@@ -443,10 +536,18 @@ export class CgService {
           : structuredClone(fresh);
       }),
     );
+    // Only rows that were just inserted: existing rows keep their own entry
+    // (a missing one stays "unknown" and publishes on the next edit).
+    this.seedPublishedSigs(
+      saved.filter(
+        (row) => !row.tb_tyapp_cgly_id || !keep.has(row.tb_tyapp_cgly_id),
+      ),
+    );
     this.markDraftClean();
   }
 
   clearDraft(): void {
+    this.lastPublishedSig.clear();
     this.draftKey.set(undefined);
     this.draftItem.set(null);
     this.draftLayers.set([]);
@@ -502,6 +603,47 @@ export class CgService {
 
   markDraftClean(): void {
     this.draftOriginal.set(JSON.stringify(this.mixSnapshot()));
+  }
+
+  /** Mix as of the last clean point (load / save), or `null` if unknown. */
+  private mixBaseline(): ReturnType<CgService['mixSnapshot']> | null {
+    const raw = this.draftOriginal();
+    if (!raw) return null;
+    try {
+      return JSON.parse(raw) as ReturnType<CgService['mixSnapshot']>;
+    } catch {
+      return null;
+    }
+  }
+
+  /** A saved Layer row built from the draft that was just written. */
+  private layerFromDraft(
+    draft: CgLayerDraft,
+    packageId: string,
+    sortOrder: number,
+    id: string,
+    row?: Record<string, unknown>,
+  ): CgLayer {
+    const seq = row?.['tb_tyapp_cgly_seq_no'];
+    const created = row?.['created_at'];
+    const updated = row?.['updated_at'];
+    return {
+      tb_tyapp_cgly_id: id,
+      tb_tyapp_cgly_seq_no: typeof seq === 'number' ? seq : undefined,
+      package_id: packageId,
+      element_type: draft.element_type,
+      public_token: draft.public_token,
+      name: draft.name?.trim() ?? '',
+      layout: structuredClone(draft.layout),
+      payload: normalizeLayerPayload(draft.element_type, draft.payload),
+      visible: draft.visible,
+      look: normalizeLayerLook(draft.look),
+      sort_order: sortOrder,
+      status: draft.status,
+      created_at: typeof created === 'string' ? created : undefined,
+      updated_at: typeof updated === 'string' ? updated : undefined,
+      deleted_at: null,
+    };
   }
 
   private clearOnAir(): void {
@@ -587,10 +729,23 @@ export class CgService {
         })
         .eq('tb_tyapp_cgly_id', current.tb_tyapp_cgly_id);
       if (error) throw error;
-      void this.publishOverlayOutputs([
-        this.draftItem()?.public_token,
-        current.public_token,
-      ]);
+      // Publish only when OBS would see something different (a Name-only
+      // edit changes nothing on air). Unknown baseline always publishes.
+      const signature = layerContentSignature({
+        element_type: current.element_type,
+        layout,
+        look,
+        payload,
+      });
+      if (this.lastPublishedSig.get(clientId) !== signature) {
+        this.lastPublishedSig.set(clientId, signature);
+        void this.publishOverlayOutputs(this.draftItem()?.public_token, [
+          current.public_token,
+        ]).then((published) => {
+          // Did not reach OBS — forget it so the next edit publishes again.
+          if (!published) this.lastPublishedSig.delete(clientId);
+        });
+      }
       return true;
     } catch (error: unknown) {
       this.notification.handleError('Layer update failed', error);
@@ -708,8 +863,10 @@ export class CgService {
         })
         .eq('tb_tyapp_cgly_id', layerId);
       if (error) throw error;
-      void this.publishOverlayOutputs([
-        this.draftItem()?.public_token,
+      // Lines changed: always publish, and forget the content signature so
+      // the next desk edit re-publishes once (never skip on a stale baseline).
+      this.lastPublishedSig.delete(clientId);
+      void this.publishOverlayOutputs(this.draftItem()?.public_token, [
         current.public_token,
       ]);
       return true;
@@ -753,8 +910,8 @@ export class CgService {
         })
         .eq('tb_tyapp_cgly_id', layerId);
       if (error) throw error;
-      void this.publishOverlayOutputs([
-        this.draftItem()?.public_token,
+      this.lastPublishedSig.delete(clientId);
+      void this.publishOverlayOutputs(this.draftItem()?.public_token, [
         current.public_token,
       ]);
       return true;
@@ -825,8 +982,7 @@ export class CgService {
         this.layers.update((list) => [...list, saved]);
         this.loading.set(false);
         // Target may be on air in OBS right now — don't wait for the 30s poll.
-        void this.publishOverlayOutputs([
-          target.public_token,
+        void this.publishOverlayOutputs(target.public_token, [
           saved.public_token,
         ]);
         this.notification.showSuccess(`Copied to ${target.name}`);
@@ -971,41 +1127,65 @@ export class CgService {
   }
 
   async fetchPublicOutput(token: string): Promise<CgPublicOutput | null> {
+    return (await this.fetchPublicOutputResult(token)).output;
+  }
+
+  /**
+   * `ok: false` = the request failed (network / RPC error) — callers must not
+   * treat that as "nothing on air". `ok: true, output: null` = token is gone.
+   */
+  async fetchPublicOutputResult(
+    token: string,
+  ): Promise<{ ok: boolean; output: CgPublicOutput | null }> {
     try {
       const { data, error } = await this.supabase.rpc(
         'tyapp_cg_get_output_by_token',
         { p_token: token },
       );
       if (error) throw error;
-      return normalizePublicOutput(data);
+      return { ok: true, output: normalizePublicOutput(data) };
     } catch {
-      return null;
+      return { ok: false, output: null };
     }
   }
 
-  async fetchPublicOutputVersion(token: string): Promise<string | null> {
+  /**
+   * Safety-poll state (content `rev` + stored cues, a few hundred bytes).
+   * `undefined` = request failed or RPC missing; `null` = token is gone.
+   */
+  async fetchPublicOutputState(
+    token: string,
+  ): Promise<CgOutputState | null | undefined> {
     try {
       const { data, error } = await this.supabase.rpc(
-        'tyapp_cg_get_output_version_by_token',
+        'tyapp_cg_get_output_state_by_token',
         { p_token: token },
       );
       if (error) throw error;
       if (data == null) return null;
-      return String(data);
+      return normalizeOutputState(data) ?? undefined;
     } catch {
-      return null;
+      return undefined;
     }
   }
 
+  /**
+   * Overlay side. `onResubscribed` fires when the channel rejoins after a
+   * drop (not on the first join) so the caller can catch up on missed messages.
+   * The overlay also announces itself via Presence so the Panel can skip
+   * publishing Layer tokens that nobody is watching.
+   */
   subscribeOverlayOutput(
     token: string,
     onSync: (output: CgPublicOutput | null) => void,
     onCue?: (cue: CgOverlayCueMessage) => void,
+    onResubscribed?: () => void,
   ): void {
     void this.unsubscribeOverlayOutput();
     if (!token) return;
-    this.overlayListenChannel = this.supabase
-      .channel(cgOutputChannelName(token))
+    const channel = this.supabase.channel(cgOutputChannelName(token));
+    let joinedBefore = false;
+    channel
       .on(
         'broadcast',
         { event: CG_OVERLAY_BROADCAST_EVENT },
@@ -1019,7 +1199,17 @@ export class CgService {
           this.zone.run(() => onSync(output));
         },
       )
-      .subscribe();
+      // Binding a Presence listener is what turns Presence on for this join.
+      .on('presence', { event: 'sync' }, () => undefined)
+      .subscribe((status) => {
+        if (status !== 'SUBSCRIBED') return;
+        void channel.track({ role: CG_OVERLAY_PRESENCE_ROLE });
+        if (joinedBefore) {
+          this.zone.run(() => onResubscribed?.());
+        }
+        joinedBefore = true;
+      });
+    this.overlayListenChannel = channel;
   }
 
   async unsubscribeOverlayOutput(): Promise<void> {
@@ -1029,18 +1219,44 @@ export class CgService {
     await this.supabase.removeChannel(channel);
   }
 
+  /**
+   * Publish the DB's output to overlays. The Package token always publishes
+   * (that is what OBS uses, and an overlay that was not refreshed after a
+   * deploy does not announce Presence). Layer tokens publish only when an
+   * overlay is listening — or when we cannot tell (fail-open).
+   * Resolves `false` when any attempted publish did not reach the channel.
+   */
   private async publishOverlayOutputs(
-    tokens: Array<string | null | undefined>,
-  ): Promise<void> {
+    packageToken: string | null | undefined,
+    layerTokens: Array<string | null | undefined>,
+  ): Promise<boolean> {
     await this.waitForPendingCueWrites();
-    const unique = [...new Set(tokens.filter((token): token is string => !!token))];
-    await Promise.all(unique.map((token) => this.publishOverlayOutput(token)));
+    const layers = [
+      ...new Set(
+        layerTokens.filter(
+          (token): token is string => !!token && token !== packageToken,
+        ),
+      ),
+    ];
+    const results = await Promise.all([
+      packageToken
+        ? this.publishOverlayOutput(packageToken)
+        : Promise.resolve(true),
+      ...layers.map(async (token) =>
+        (await this.hasOverlayListener(token))
+          ? this.publishOverlayOutput(token)
+          : true,
+      ),
+    ]);
+    return results.every(Boolean);
   }
 
-  private async publishOverlayOutput(token: string): Promise<void> {
+  private async publishOverlayOutput(token: string): Promise<boolean> {
     const channel = await this.ensureOverlaySendChannel(token);
-    if (!channel) return;
-    const output = await this.fetchPublicOutput(token);
+    if (!channel) return false;
+    const { ok, output } = await this.fetchPublicOutputResult(token);
+    // A failed read must never look like "nothing on air" to OBS.
+    if (!ok) return false;
     const result = await channel.send({
       type: 'broadcast',
       event: CG_OVERLAY_BROADCAST_EVENT,
@@ -1050,6 +1266,41 @@ export class CgService {
     if (result === 'ok' && token === this.draftItem()?.public_token) {
       this.zone.run(() => this.onAirOutput.set(output));
     }
+    return result === 'ok';
+  }
+
+  /**
+   * Is an overlay watching this token? Any doubt (channel or Presence not
+   * ready within the wait) counts as "yes" so we over-publish, never miss.
+   */
+  private async hasOverlayListener(token: string): Promise<boolean> {
+    const channel = await this.ensureOverlaySendChannel(token);
+    const synced = this.overlayPresenceSynced.get(token);
+    if (!channel || !synced) return true;
+    const ready = await Promise.race([
+      synced,
+      new Promise<boolean>((resolve) =>
+        window.setTimeout(() => resolve(false), CG_PRESENCE_SYNC_WAIT_MS),
+      ),
+    ]);
+    if (!ready) return true;
+    return Object.values(channel.presenceState<{ role?: string }>()).some(
+      (metas) =>
+        metas.some((meta) => meta.role === CG_OVERLAY_PRESENCE_ROLE),
+    );
+  }
+
+  /**
+   * Leave the Panel's send channels (e.g. when the Panel closes). They are
+   * re-joined lazily on the next publish / cue, so behaviour is unchanged.
+   */
+  async releaseOverlaySendChannels(): Promise<void> {
+    const channels = [...this.overlaySendChannels.values()];
+    this.overlaySendChannels.clear();
+    this.overlayPresenceSynced.clear();
+    await Promise.all(
+      channels.map((channel) => this.supabase.removeChannel(channel)),
+    );
   }
 
   private async ensureOverlaySendChannel(
@@ -1073,6 +1324,13 @@ export class CgService {
     token: string,
   ): Promise<RealtimeChannel | null> {
     const channel = this.supabase.channel(cgOutputChannelName(token));
+    // Presence is read-only here: the Panel never tracks, it only checks
+    // whether an overlay has (resolves on the first Presence sync).
+    let markSynced: (value: boolean) => void = () => undefined;
+    const synced = new Promise<boolean>((resolve) => {
+      markSynced = resolve;
+    });
+    channel.on('presence', { event: 'sync' }, () => markSynced(true));
     const joined = await new Promise<boolean>((resolve) => {
       const timer = window.setTimeout(() => resolve(false), 4000);
       channel.subscribe((status) => {
@@ -1084,6 +1342,7 @@ export class CgService {
         if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
           window.clearTimeout(timer);
           this.overlaySendChannels.delete(token);
+          this.overlayPresenceSynced.delete(token);
           resolve(false);
         }
       });
@@ -1093,6 +1352,7 @@ export class CgService {
       return null;
     }
     this.overlaySendChannels.set(token, channel);
+    this.overlayPresenceSynced.set(token, synced);
     return channel;
   }
 }
