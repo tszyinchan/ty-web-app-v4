@@ -466,16 +466,8 @@ mat-button-toggle-group.cg-seg-toggle {
   max-height: 120px;
 }
 
-.cg-drive.cdk-drop-list-dragging .cg-tile:not(.cdk-drag-placeholder) {
-  transition: transform 0.16s ease;
-}
-
 .cg-tile.cdk-drag-placeholder {
   opacity: 0.4;
-}
-
-.cg-tile.cdk-drag-animating {
-  transition: transform 0.16s ease;
 }
 
 .cg-tile {
@@ -580,7 +572,6 @@ mat-button-toggle-group.cg-seg-toggle {
   position: relative;
   flex-shrink: 0;
   cursor: pointer;
-  transition: background 0.2s ease;
 }
 
 .cg-switch.on {
@@ -595,7 +586,6 @@ mat-button-toggle-group.cg-seg-toggle {
   height: 20px;
   border-radius: 50%;
   background: var(--app-accent-contrast);
-  transition: transform 0.2s ease;
 }
 
 .cg-switch.on .cg-switch-thumb {

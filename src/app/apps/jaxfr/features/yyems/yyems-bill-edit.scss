@@ -30,11 +30,6 @@
   margin: 0;
   padding: 16px;
   overflow: auto;
-  will-change: transform;
-}
-
-.ledger-edit.split-workspace.tweening {
-  transition: transform 520ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .kind-toggle,
@@ -547,11 +542,6 @@ select.ledger-control {
   padding: 16px;
   background: var(--app-page-bg);
   border-left: 1px solid var(--app-border-subtle);
-  animation: guest-in 520ms cubic-bezier(0.22, 1, 0.36, 1) 40ms both;
-
-  &.leaving {
-    animation: guest-out 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
-  }
 }
 
 .quick-bar {
@@ -566,16 +556,6 @@ select.ledger-control {
     font: var(--app-weight-emphasis) 18px var(--app-font);
     color: var(--app-text-primary);
   }
-}
-
-@keyframes guest-in {
-  from { transform: translateX(100%); }
-  to { transform: translateX(0); }
-}
-
-@keyframes guest-out {
-  from { transform: translateX(0); }
-  to { transform: translateX(100%); }
 }
 
 @media (max-width: 768px) {
@@ -596,7 +576,6 @@ select.ledger-control {
     max-width: 720px;
     height: auto;
     margin: 0 auto;
-    transition: none;
   }
 
   .quick-slot {
@@ -622,11 +601,6 @@ select.ledger-control {
     padding: 0;
     background: color-mix(in srgb, var(--app-text-primary) 18%, transparent);
     cursor: pointer;
-    animation: quick-scrim-in 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
-
-    &.leaving {
-      animation: quick-scrim-out 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
-    }
   }
 
   .quick-panel {
@@ -636,45 +610,9 @@ select.ledger-control {
     height: 100%;
     overflow: auto;
     border-left: 0;
-    animation: quick-panel-up 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
-
-    &.leaving {
-      animation: quick-panel-down 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
-    }
   }
 
   .quick-bar {
     display: none;
-  }
-}
-
-@keyframes quick-panel-up {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
-}
-
-@keyframes quick-panel-down {
-  from { transform: translateY(0); }
-  to { transform: translateY(100%); }
-}
-
-@keyframes quick-scrim-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes quick-scrim-out {
-  from { opacity: 1; }
-  to { opacity: 0; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .bill-stage,
-  .bill-stage-inner,
-  .ledger-edit.split-workspace,
-  .quick-scrim,
-  .quick-panel {
-    transition: none;
-    animation: none;
   }
 }

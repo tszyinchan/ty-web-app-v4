@@ -35,16 +35,8 @@
   }
 }
 
-.entries-drop-list.cdk-drop-list-dragging .entry-block:not(.cdk-drag-placeholder) {
-  transition: transform 160ms ease;
-}
-
 .entry-block.cdk-drag-placeholder {
   opacity: 0.4;
-}
-
-.entry-block.cdk-drag-animating {
-  transition: transform 200ms ease;
 }
 
 .entry-drag-handle {

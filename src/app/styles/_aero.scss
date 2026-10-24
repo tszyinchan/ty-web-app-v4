@@ -155,9 +155,7 @@
   height: 26px;
   padding: 0 12px;
   @include gloss-surface;
-  font: 13px var(--app-font);
-  transition: background 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
-}
+  font: 13px var(--app-font);}
 
 .gloss-btn:hover:not(:disabled) {
   @include gloss-surface-hover;

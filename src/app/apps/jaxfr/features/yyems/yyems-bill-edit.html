@@ -1,9 +1,6 @@
-<div class="bill-stage" [class.quick-open]="!!quickKind() && !quickLeaving()">
+<div class="bill-stage" [class.quick-open]="!!quickKind()">
   <div class="bill-stage-inner">
 <div class="split-workspace ledger-edit"
-  #billPane
-  [class.tweening]="billTweening()"
-  [style.transform]="'translateX(' + billNudge() + 'px)'"
 >
   @if (item(); as bill) {
     <div class="form-scroll-area">
@@ -386,19 +383,14 @@
 </div>
 
 @if (quickKind(); as kind) {
-  <aside class="quick-slot" [class.leaving]="quickLeaving()">
+  <aside class="quick-slot">
     <button
       type="button"
       class="quick-scrim"
-      [class.leaving]="quickLeaving()"
       aria-label="Close"
       (click)="closeQuick()"
     ></button>
-    <div
-      class="quick-panel"
-      [class.leaving]="quickLeaving()"
-      (animationend)="onQuickDone($event)"
-    >
+    <div class="quick-panel">
       <header class="quick-bar">
         <button mat-icon-button type="button" aria-label="Back" (click)="closeQuick()">
           <mat-icon>arrow_back</mat-icon>

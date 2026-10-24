@@ -100,7 +100,6 @@
     color: var(--dl-stamp);
     background: transparent;
     transform: rotate(-4deg) scale(1.06);
-    transition: transform 160ms ease;
 
     .day-dot.on {
       background: var(--dl-stamp);
@@ -227,7 +226,6 @@
 
   &.picked {
     transform: scale(1.08);
-    transition: transform 160ms ease;
 
     .mood-label {
       font-weight: 700;
@@ -303,10 +301,6 @@
   gap: 6px;
 }
 
-.item-list.cdk-drop-list-dragging .item-card:not(.cdk-drag-placeholder) {
-  transition: transform 160ms ease;
-}
-
 .item-card.cdk-drag-placeholder {
   opacity: 0.4;
 }
@@ -320,9 +314,6 @@
   background: var(--dl-tint, transparent);
   color: var(--dl-ink);
   border-radius: 14px;
-  animation: dl-fade-up 200ms ease-out;
-  transition: background-color 180ms ease, color 180ms ease;
-
   &.completed {
     background: var(--dl-fill);
     color: #fff;
@@ -381,8 +372,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 160ms ease, border-color 160ms ease;
-
   .check-mark {
     display: none;
     width: 7px;
@@ -399,7 +388,6 @@
 
     .check-mark {
       display: block;
-      animation: dl-check-pop 220ms ease-out;
     }
   }
 }

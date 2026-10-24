@@ -26,8 +26,6 @@
     color: inherit;
     padding: 12px 16px;
     border-bottom: 1px solid var(--app-border-subtle);
-    transition: background 0.15s ease, border-color 0.15s ease;
-
     &:hover {
       background: var(--app-tile-hover-bg);
       border-bottom-color: var(--app-tile-hover-border);

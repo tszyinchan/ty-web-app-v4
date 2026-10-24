@@ -4,7 +4,6 @@
 @use "app/styles/shared-form";
 @use "app/styles/aero-controls";
 @use "app/styles/aero-motion";
-@use "app/styles/page-transition";
 @use "app/apps/jaxfr/features/daily-log/daily-log-theme" as dl;
 
 @include dl.log-globals;

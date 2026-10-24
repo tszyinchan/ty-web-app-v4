@@ -1,95 +1,8 @@
-// Smooth deceleration curve (iOS-like "ease-out-quint") shared by every
-// entrance animation below, instead of the generic browser `ease-out`.
-$aero-ease: cubic-bezier(0.22, 1, 0.36, 1);
-
-// Whole-page entrance is now handled by the native View Transitions API
-// (see _page-transition.scss + withViewTransitions() in app.config.ts) —
-// that crossfade already covers "does this page appear smoothly", so this
-// file only needs the fade + gentle rise for individual list/feed/tile items
-// so a page full of them feels like it's growing in rather than snapping
-// into place. Giving both the page and its items their own opacity/transform
-// animation at the same time was the original "janky" double-motion bug.
-@keyframes aero-fade-up {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@mixin aero-enter($duration: 170ms) {
-  animation: aero-fade-up $duration $aero-ease both;
-}
-
-@mixin aero-stagger-children($child, $max: 10, $step: 22ms) {
-  #{$child} {
-    @include aero-enter;
-  }
-
-  @for $i from 1 through $max {
-    #{$child}:nth-child(#{$i}) {
-      animation-delay: #{($i - 1) * $step};
-    }
-  }
-
-  #{$child}:nth-child(n + #{$max + 1}) {
-    animation-delay: #{($max - 1) * $step};
-  }
-}
-
+// Aero list/feed/tile items: pressed-state feedback only.
+// No entrance animations or transitions (removed on purpose — they did not look good).
 html.theme-aero {
-  .list-container > .item-link,
-  .list-container > .week-group .item-link {
-    @include aero-enter(170ms);
-    transition:
-      background 0.15s ease,
-      border-color 0.15s ease,
-      box-shadow 0.12s ease;
-  }
-
-  @for $i from 1 through 10 {
-    .list-container > .item-link:nth-child(#{$i}),
-    .list-container > .week-group:nth-child(#{$i}) .item-link {
-      animation-delay: #{($i - 1) * 22ms};
-    }
-  }
-
-  .list-container > .item-link:nth-child(n + 11),
-  .list-container > .week-group:nth-child(n + 11) .item-link {
-    animation-delay: 198ms;
-  }
-
   .list-container .item-link:active {
     background: var(--app-tile-pressed-bg);
-  }
-
-  .feed-container > .feed-card {
-    @include aero-enter(180ms);
-  }
-
-  @for $i from 1 through 10 {
-    .feed-container > .feed-card:nth-child(#{$i}) {
-      animation-delay: #{($i - 1) * 26ms};
-    }
-  }
-
-  .feed-container > .feed-card:nth-child(n + 11) {
-    animation-delay: 234ms;
-  }
-
-  .cp-grid {
-    @include aero-stagger-children("> .cp-item", 10, 22ms);
-  }
-
-  .cp-item {
-    transition:
-      background 0.15s ease,
-      border-color 0.15s ease,
-      box-shadow 0.12s ease;
   }
 
   .cp-item:active {
@@ -97,55 +10,12 @@ html.theme-aero {
     border-color: var(--app-tile-hover-border);
   }
 
-  .launcher-grid {
-    @include aero-stagger-children("> .launcher-tile", 10, 22ms);
-  }
-
-  .launcher-tile {
-    transition:
-      background 0.15s ease,
-      border-color 0.15s ease;
-  }
-
   .launcher-tile:active {
     background: var(--app-tile-pressed-bg);
     border-color: var(--app-tile-hover-border);
   }
 
-  .explorer-heading {
-    transition: color 0.12s ease;
-  }
-
   .explorer-heading:active {
     color: var(--app-text-primary);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  html.theme-aero {
-    .list-container > .item-link,
-    .list-container > .week-group .item-link,
-    .feed-container > .feed-card,
-    .cp-grid > .cp-item,
-    .launcher-grid > .launcher-tile {
-      animation: none;
-    }
-
-    .explorer-chevron,
-    .explorer-panel,
-    button.mat-mdc-unelevated-button,
-    button.mat-mdc-outlined-button,
-    button.mat-mdc-button,
-    button.mat-mdc-icon-button,
-    .gloss-btn,
-    .cp-item,
-    .launcher-tile,
-    .list-container .item-link {
-      transition: none;
-    }
-
-    button.mat-mdc-icon-button:active:not(:disabled) {
-      transform: none;
-    }
   }
 }

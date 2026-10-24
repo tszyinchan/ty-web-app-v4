@@ -69,9 +69,7 @@
   align-items: flex-start;
   gap: 8px;
   padding: 10px 0;
-  border-bottom: 1px dashed var(--dl-line);
-  animation: dl-fade-up 180ms ease-out;
-}
+  border-bottom: 1px dashed var(--dl-line);}
 
 .item-body,
 .edit-block {

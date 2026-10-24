@@ -178,8 +178,6 @@
   font-size: 18px;
   line-height: 0;
   text-decoration: none;
-  transition: transform 140ms ease, opacity 140ms ease;
-
   &:hover:not(:disabled) {
     transform: scale(1.08);
   }
@@ -346,7 +344,6 @@
     background: var(--dl-raised);
     box-shadow: 0 3px 10px rgba(40, 30, 20, 0.16);
     transform: rotate(-2deg);
-    animation: dl-pop 280ms ease-out;
   }
 
   .dl-date {
@@ -390,51 +387,6 @@
   @keyframes dl-spin {
     to {
       transform: rotate(360deg);
-    }
-  }
-
-  @keyframes dl-check-pop {
-    0% {
-      transform: scale(0.35) rotate(12deg);
-      opacity: 0;
-    }
-    70% {
-      transform: scale(1.2) rotate(48deg);
-    }
-    100% {
-      transform: scale(1) rotate(40deg);
-      opacity: 1;
-    }
-  }
-
-  @keyframes dl-fade-up {
-    from {
-      opacity: 0;
-      transform: translateY(8px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  @keyframes dl-pop {
-    from {
-      transform: scale(0.86) rotate(-8deg);
-    }
-    to {
-      transform: scale(1) rotate(-2deg);
-    }
-  }
-
-  @keyframes dl-sheet-in {
-    from {
-      opacity: 0;
-      transform: translateX(-50%) translateY(18px);
-    }
-    to {
-      opacity: 1;
-      transform: translateX(-50%) translateY(0);
     }
   }
 
@@ -545,7 +497,6 @@
     background: var(--dl-washi);
     color: var(--dl-ink);
     font-size: 15px;
-    animation: dl-fade-up 180ms ease-out;
   }
 
   .dl-chip-x {
@@ -577,23 +528,8 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .dl-spinner,
-    .mood-polaroid,
-    .dl-chip,
-    .item-card,
-    .check-btn.done .check-mark,
-    .dl-icon-btn,
-    .dl-icon-btn-fill,
-    .dl-icon-btn-danger,
-    .dl-row-btn {
+    .dl-spinner {
       animation: none;
-    }
-
-    .dl-icon-btn,
-    .dl-icon-btn-fill,
-    .dl-icon-btn-danger,
-    .dl-row-btn {
-      transition: none;
     }
   }
 }

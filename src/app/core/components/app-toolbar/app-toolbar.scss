@@ -220,9 +220,7 @@ mat-toolbar.dynamic-navbar.aero {
     border-radius: var(--app-radius);
     background: var(--app-button-bg);
     box-shadow: var(--app-button-shadow);
-    color: var(--app-text-primary);
-    transition: background 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
-  }
+    color: var(--app-text-primary);  }
 
   button.mat-mdc-button:not(.mat-mdc-unelevated-button):not(.mat-mdc-icon-button):hover:not(:disabled) {
     @include aero.gloss-surface-hover;
@@ -246,9 +244,7 @@ mat-toolbar.dynamic-navbar.aero {
     --mdc-filled-button-container-color: transparent;
     --mdc-filled-button-label-text-color: var(--app-accent-contrast);
     --mdc-filled-button-icon-color: var(--app-accent-contrast);
-    color: var(--app-accent-contrast);
-    transition: background 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
-  }
+    color: var(--app-accent-contrast);  }
 
   button.primary-action-btn.mat-mdc-unelevated-button:hover:not(:disabled) {
     @include aero.gloss-primary-surface-hover;
@@ -265,10 +261,6 @@ mat-toolbar.dynamic-navbar.aero {
     --mdc-filled-button-disabled-label-text-color: var(--app-button-disabled-text);
     --mdc-filled-button-disabled-icon-color: var(--app-button-disabled-text);
     color: var(--app-button-disabled-text);
-  }
-
-  button.mat-mdc-icon-button {
-    transition: color 0.12s ease, opacity 0.12s ease, transform 0.1s ease;
   }
 
   button.mat-mdc-icon-button:active:not(:disabled) {

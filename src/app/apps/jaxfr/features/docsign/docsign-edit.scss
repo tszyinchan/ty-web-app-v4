@@ -130,10 +130,6 @@
   overflow: hidden;
   border-right: 1px solid transparent;
   background: var(--app-page-bg);
-  transition:
-    width 220ms ease,
-    flex-basis 220ms ease,
-    border-color 220ms ease;
 }
 
 .docsign-workspace.details-open .details-drawer {
@@ -175,16 +171,12 @@
 .desk-stage {
   flex: 0 0 auto;
   width: var(--docsign-stage-w, 210mm);
-  height: var(--docsign-stage-h, 297mm);
-  transition: width 180ms ease, height 180ms ease;
-}
+  height: var(--docsign-stage-h, 297mm);}
 
 .desk-scaler {
   width: max-content;
   transform: scale(var(--docsign-zoom, 1));
-  transform-origin: top left;
-  transition: transform 180ms ease;
-}
+  transform-origin: top left;}
 
 .paper-box {
   width: 210mm;
@@ -336,9 +328,7 @@
     overflow-y: auto;
     transform: translateY(16px);
     opacity: 0;
-    pointer-events: none;
-    transition: transform 220ms ease, opacity 220ms ease;
-  }
+    pointer-events: none;  }
 
   .docsign-workspace.details-open .details-drawer {
     transform: translateY(0);

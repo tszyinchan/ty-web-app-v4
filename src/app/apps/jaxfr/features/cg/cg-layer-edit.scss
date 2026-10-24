@@ -359,8 +359,6 @@ mat-button-toggle-group.cg-anchor-toggle-group {
       line-height: 16px;
       margin: 0;
       color: var(--app-text-primary);
-      transition: color 0.15s ease;
-
       &.cg-anchor-dot {
         font-size: 10px;
         width: 10px;
@@ -574,7 +572,6 @@ mat-button-toggle-group.cg-seg-toggle {
   position: relative;
   flex-shrink: 0;
   cursor: pointer;
-  transition: background 0.2s ease;
 }
 
 .cg-switch.on {
@@ -589,7 +586,6 @@ mat-button-toggle-group.cg-seg-toggle {
   height: 20px;
   border-radius: 50%;
   background: var(--app-accent-contrast);
-  transition: transform 0.2s ease;
 }
 
 .cg-switch.on .cg-switch-thumb {

@@ -7,9 +7,7 @@
 mat-card.feed-card.highlight-card {
   box-shadow:
     var(--app-panel-shadow),
-    0 0 0 3px var(--app-accent);
-  transition: box-shadow 0.5s ease-in-out;
-}
+    0 0 0 3px var(--app-accent);}
 
 .original-link {
   color: var(--app-link);

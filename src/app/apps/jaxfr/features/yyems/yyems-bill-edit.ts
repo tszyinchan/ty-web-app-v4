@@ -13,7 +13,6 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { NgZone } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
@@ -129,16 +128,10 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
   readonly commonCurrencies = ['CAD', 'HKD'] as const;
   readonly vendorPane = viewChild(YyemsVendorEdit);
   readonly walletPane = viewChild(YyemsWalletEdit);
-  readonly billPane = viewChild<ElementRef<HTMLElement>>('billPane');
   readonly currencyOtherInput = viewChild<ElementRef<HTMLInputElement>>('currencyOtherInput');
   readonly buyItemInput = viewChild<ElementRef<HTMLInputElement>>('buyItemInput');
 
-  billNudge = signal(0);
-  billTweening = signal(false);
-
   private injector = inject(Injector);
-  private zone = inject(NgZone);
-  private readonly seatMs = 520;
   narrow = signal(false);
   private narrowQuery = window.matchMedia('(max-width: 768px)');
   private onNarrow = (event: MediaQueryListEvent) => {
@@ -262,7 +255,6 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
   currencyOtherOpen = signal(false);
   currencyOtherQuery = signal('');
   quickKind = signal<'vendor' | 'wallet' | null>(null);
-  quickLeaving = signal(false);
   quickVendorName = signal('');
   quickWalletName = signal('');
   originalDataStr = signal('');
@@ -606,8 +598,6 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
     bill.wallet_id = hit?.tb_tyapp_yhwl_id ?? '';
   }
 
-  private quickTimer = 0;
-
   openQuickVendor() {
     const typed = this.vendorQuery().trim();
     const exists = this.sortedVendors().some(
@@ -627,71 +617,15 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
   }
 
   private seatGuest(kind: 'vendor' | 'wallet') {
-    const from = this.billLeft();
-    this.quickLeaving.set(false);
     this.quickKind.set(kind);
     this.queueQuickHeader();
-    afterNextRender(() => this.scootBill(from), { injector: this.injector });
   }
 
   closeQuick() {
-    if (!this.quickKind() || this.quickLeaving()) return;
-    // Drop quick-open layout immediately so the bill can scoot back to
-    // center while the guest panel is still sliding out (desktop).
-    const from = this.billLeft();
-    this.quickLeaving.set(true);
-    afterNextRender(() => this.scootBill(from), { injector: this.injector });
-    window.clearTimeout(this.quickTimer);
-    this.quickTimer = window.setTimeout(() => this.finishQuick(), this.seatMs + 40);
-  }
-
-  onQuickDone(event: AnimationEvent) {
-    if (event.target !== event.currentTarget || !this.quickLeaving()) return;
-    if (
-      !event.animationName.includes('guest-out') &&
-      !event.animationName.includes('quick-panel-down')
-    ) {
-      return;
-    }
-    this.finishQuick();
-  }
-
-  private finishQuick() {
-    window.clearTimeout(this.quickTimer);
+    if (!this.quickKind()) return;
     const wasNarrow = this.narrow();
     this.quickKind.set(null);
-    this.quickLeaving.set(false);
     if (wasNarrow) this.applyBillHeader();
-    // Bill already scooted on closeQuick (desktop); mobile never nudged.
-  }
-
-  private billLeft(): number {
-    return this.billPane()?.nativeElement.getBoundingClientRect().left ?? 0;
-  }
-
-  private scootBill(fromLeft: number) {
-    if (this.narrow()) {
-      this.billNudge.set(0);
-      this.billTweening.set(false);
-      return;
-    }
-    const to = this.billLeft();
-    const delta = fromLeft - to;
-    if (Math.abs(delta) < 1) {
-      this.billNudge.set(0);
-      this.billTweening.set(false);
-      return;
-    }
-    this.billTweening.set(false);
-    this.billNudge.set(delta);
-    this.zone.runOutsideAngular(() => {
-      requestAnimationFrame(() => {
-        this.zone.run(() => {
-          this.billTweening.set(true);
-          this.billNudge.set(0);
-        });
-      });
-    });
   }
 
   private queueQuickHeader(attempt = 0) {
@@ -811,7 +745,6 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
 
   ngOnDestroy() {
     this.narrowQuery.removeEventListener('change', this.onNarrow);
-    window.clearTimeout(this.quickTimer);
     this.header.clear();
   }
 }
