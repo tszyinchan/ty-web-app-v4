@@ -23,7 +23,8 @@
   );
   font-size: calc(var(--cg-sub-font, 5.6) * 1vh);
   font-size: calc(var(--cg-sub-font, 5.6) * 1cqh);
-  font-weight: 400;
+  font-weight: var(--cg-sub-font-weight, 400);
+  font-style: var(--cg-sub-font-style, normal);
   letter-spacing: var(--cg-sub-letter-spacing, 0.104em);
   line-height: var(--cg-sub-line-height, 1.15);
   text-align: var(--cg-sub-text-align, center);
@@ -59,11 +60,23 @@
 .sub-fill {
   position: relative;
   color: var(--cg-sub-color, #fff);
+  text-decoration-line: var(--cg-sub-decoration, none);
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.12em;
+  background-image: var(--cg-sub-fill-image, none);
+  background-repeat: no-repeat;
+}
+
+.sub-fill.is-gradient {
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .sub-text .latin {
-  font-family: 'Segoe UI', Arial, sans-serif;
-  letter-spacing: calc(var(--cg-sub-letter-spacing, 0.104em) * 0.4);
+  letter-spacing: calc(
+    var(--cg-sub-letter-spacing, 0.104em) * var(--cg-sub-latin-track, 0.4)
+  );
 }
 
 .sub-text.outgoing {
@@ -88,7 +101,7 @@
 }
 
 .sub-box.show .sub-text {
-  font-weight: 500;
+  font-weight: var(--cg-sub-font-weight, 500);
 }
 
 .sub-box.show .sub-stroke {

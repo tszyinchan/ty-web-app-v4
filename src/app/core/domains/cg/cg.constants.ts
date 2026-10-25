@@ -185,6 +185,29 @@ export const DEFAULT_SUBTITLE_LAYOUT = {
 export const CG_SUBTITLE_FONT_VH = 5.6;
 export const CG_SUBTITLE_SHOW_FONT_VH = 7.2;
 
+export const CG_TEXT_WEIGHT_REGULAR = 400 as const;
+export const CG_TEXT_WEIGHT_MEDIUM = 500 as const;
+export const CG_TEXT_WEIGHT_BOLD = 700 as const;
+
+export type CgTextWeight =
+  | typeof CG_TEXT_WEIGHT_REGULAR
+  | typeof CG_TEXT_WEIGHT_MEDIUM
+  | typeof CG_TEXT_WEIGHT_BOLD;
+
+/** Default second stop when Gradient is turned on. `90` is left to right. */
+export const CG_TEXT_GRADIENT_TO = '#7ec8ff';
+export const CG_TEXT_GRADIENT_ANGLE = 90;
+
+/**
+ * Fallback family names that are Latin even when they are not the first name
+ * in a dropdown stack (Segoe UI / Impact fall back to these).
+ */
+export const CG_LATIN_FONT_ALIASES: readonly string[] = [
+  'Arial',
+  'Arial Narrow',
+  'Arial Black',
+];
+
 export const CG_LAYER_LOOK_OPTIONS: ReadonlyArray<{
   value: CgLayerLook;
   label: string;
@@ -199,6 +222,8 @@ export interface CgSubtitleFontOption {
   value: string;
   label: string;
   group: CgSubtitleFontGroup;
+  /** Latin face: English and digits use the full 字距. Absent = CJK tracking (×0.4). */
+  latin?: boolean;
 }
 
 export const CG_SUBTITLE_FONT_GROUPS: ReadonlyArray<{
@@ -244,16 +269,19 @@ export const CG_SUBTITLE_FONT_OPTIONS: ReadonlyArray<CgSubtitleFontOption> = [
     value: "'Oswald', 'Arial Narrow', sans-serif",
     label: 'Oswald',
     group: 'web',
+    latin: true,
   },
   {
     value: "'Bebas Neue', Impact, sans-serif",
     label: 'Bebas Neue',
     group: 'web',
+    latin: true,
   },
   {
     value: "'Inter', 'Segoe UI', sans-serif",
     label: 'Inter',
     group: 'web',
+    latin: true,
   },
   {
     value: "'華康中黑體', '華康中黑體(P)', 'DFHei', 'Microsoft JhengHei', 'Segoe UI', sans-serif",
@@ -294,16 +322,19 @@ export const CG_SUBTITLE_FONT_OPTIONS: ReadonlyArray<CgSubtitleFontOption> = [
     value: "'Segoe UI', Arial, sans-serif",
     label: 'Segoe UI / Arial',
     group: 'installed',
+    latin: true,
   },
   {
     value: "'Roboto', Arial, sans-serif",
     label: 'Roboto',
     group: 'installed',
+    latin: true,
   },
   {
     value: "'Impact', 'Arial Black', sans-serif",
     label: 'Impact (粗標題)',
     group: 'installed',
+    latin: true,
   },
 ];
 

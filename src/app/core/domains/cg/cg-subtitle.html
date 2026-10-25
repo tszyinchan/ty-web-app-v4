@@ -11,7 +11,7 @@
           <span [class.latin]="part.latin">{{ part.text }}</span>
         }
       </span>
-      <span class="sub-fill">
+      <span class="sub-fill" [class.is-gradient]="gradientOn()">
         @for (part of outgoingParts(); track $index) {
           <span [class.latin]="part.latin">{{ part.text }}</span>
         }
@@ -25,7 +25,7 @@
           <span [class.latin]="part.latin">{{ part.text }}</span>
         }
       </span>
-      <span class="sub-fill">
+      <span class="sub-fill" [class.is-gradient]="gradientOn()">
         @for (part of incomingParts(); track $index) {
           <span [class.latin]="part.latin">{{ part.text }}</span>
         }

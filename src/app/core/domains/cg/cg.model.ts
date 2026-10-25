@@ -8,6 +8,7 @@ import {
   CgPackageLook,
   CgPackageRole,
   CgSubtitlePreset,
+  CgTextWeight,
 } from './cg.constants';
 
 export interface CgLayout {
@@ -28,21 +29,37 @@ export interface CgLogoPayload {
 /** Text alignment inside the Subtitle box; independent of Anchor. */
 export type CgSubtitleAlign = 'left' | 'center' | 'right';
 
-export interface CgSubtitleStyle {
-  preset: CgSubtitlePreset;
+/**
+ * Shared text paint for Subtitle and later text Elements.
+ * Every field is optional so a missing value keeps the previous look.
+ */
+export interface CgTextPaint {
   fontFamily?: string;
   fontSize?: number;
-  scaleY?: number;
-  scaleX?: number;
+  /** `700` = bold. Absent = preset default (News 400, Show 500). */
+  fontWeight?: CgTextWeight;
+  italic?: boolean;
+  underline?: boolean;
+  strike?: boolean;
   color?: string;
+  /** Second stop. Present = linear gradient from `color`; absent = solid fill. */
+  gradientTo?: string;
+  /** CSS `linear-gradient` angle. `90` = left to right. */
+  gradientAngle?: number;
+  letterSpacing?: number;
+  lineHeight?: number;
+  scaleX?: number;
+  scaleY?: number;
   borderWidth?: number;
   borderColor?: string;
   shadowAngle?: number;
   shadowDistance?: number;
   shadowRadius?: number;
   shadowColor?: string;
-  letterSpacing?: number;
-  lineHeight?: number;
+}
+
+export interface CgSubtitleStyle extends CgTextPaint {
+  preset: CgSubtitlePreset;
   textAlign?: CgSubtitleAlign;
 }
 

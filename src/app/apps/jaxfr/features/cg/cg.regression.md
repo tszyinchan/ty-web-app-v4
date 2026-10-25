@@ -108,6 +108,7 @@
 | B17 | Load 含雙行 cue 的 .srt（約 2000 句）。點中段 queue、看 Panel On air 與 overlay | 同一句；queue 筆數 = cue 數（雙行 cue 不算兩筆）。重整 Panel 後筆數不變 |
 | B18 | 連按 Down 約 20 次 | overlay 最後停在與 Panel 相同的一句（不亂序、不拆行） |
 | B19 | 1920×1080 開 Subtitle desk | Place / Style / Cue / queue 都點得到；窄於約 1300px desk 時可捲。Font 有 Web fonts / Installed on OBS PC；Other… 會出現文字框 |
+| B20 | Subtitle：選華康中黑體 (DFHei)，句子含中文與 English 123。再點 Bold、Italic、Underline、Strikethrough，以及 Gradient | 中文、英文、數字都是同一字體（英文不再是 Segoe UI）；英數字距仍比中文緊。四個樣式作用在整句。Gradient 出現 End color 與 Angle，填色是雙色、描邊仍單色。關掉 Gradient 回到實色。沒有這些新欄位的舊字幕維持 Regular、無底線、實色 |
 
 ### C — Package Output
 
@@ -140,6 +141,7 @@
 | W3 | Subtitle desk：Size／字距／行距／Scale X／Scale Y／Stroke／Shadow Distance／Radius 各滾一格 | 步進依序 0.1／0.01／0.05／0.05／0.05／0.01／0.5／0.5；News 會變 Custom |
 | W4 | 字距（預設 0.104）往上滾一格 | 對齊格線 → 0.11，再一格 0.12 |
 | W5 | Shadow Angle：135 往上滾；滾過 360；0 往下滾 | 步進 15（Alt 1、Shift 45）；360 之後回 0；0 往下變 345 |
+| W5b | Gradient Angle（先開 Gradient） | 與 Shadow Angle 相同步進與回繞 |
 | W6 | Cue ms 往下滾到底 | 停在 50，不變成 Cut；ms 欄位不消失。往上到 5000 停住 |
 | W7 | Cue ms 連續滾約 2 秒，看 Network | 只有停手後約 0.5s 一次 `tyapp_cg_layer` update + 一次 publish |
 | W8 | Package Appear ms 滾輪（Studio） | 步進 50；Studio 要 Take 才上 OBS |

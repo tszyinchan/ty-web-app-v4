@@ -14,8 +14,15 @@ import {
   CG_SAMPLE_LOGO_URL,
   CG_STAGE_REFERENCE_WIDTH_PX,
   CG_SAMPLE_SUBTITLE_LINES,
+  CG_LATIN_FONT_ALIASES,
+  CG_SUBTITLE_FONT_OPTIONS,
   CG_SUBTITLE_FONT_VH,
   CG_SUBTITLE_SHOW_FONT_VH,
+  CG_TEXT_GRADIENT_ANGLE,
+  CG_TEXT_WEIGHT_BOLD,
+  CG_TEXT_WEIGHT_MEDIUM,
+  CG_TEXT_WEIGHT_REGULAR,
+  CgTextWeight,
   CgAnchor,
   CgElementDef,
   CgElementType,
@@ -42,6 +49,7 @@ import {
   CgPublicOutput,
   CgSubtitleAlign,
   CgSubtitleStyle,
+  CgTextPaint,
 } from './cg.model';
 
 /** Which side of the 3x3 grid an Anchor sits on, per axis. */
@@ -390,6 +398,17 @@ export function normalizeSubtitleStyle(raw: unknown): CgSubtitleStyle {
   if (textAlign === 'left' || textAlign === 'center' || textAlign === 'right') {
     style.textAlign = textAlign;
   }
+
+  const fontWeight = asTextWeight(value['fontWeight']);
+  if (fontWeight != null) style.fontWeight = fontWeight;
+  if (value['italic'] === true) style.italic = true;
+  if (value['underline'] === true) style.underline = true;
+  if (value['strike'] === true) style.strike = true;
+
+  const gradientTo = asString(value['gradientTo']);
+  if (gradientTo) style.gradientTo = gradientTo;
+  const gradientAngle = toOptionalNumber(value['gradientAngle']);
+  if (gradientAngle != null) style.gradientAngle = gradientAngle;
 
   return style;
 }
@@ -776,23 +795,6 @@ export function subtitleLayoutToCss(
   const scale = Number.isFinite(layout.scale) ? layout.scale : 1;
   css['--cg-sub-font'] = String(baseFont * scale);
 
-  if (style.fontFamily) {
-    css['--cg-sub-font-family'] = style.fontFamily;
-  }
-
-  const scaleX = style.scaleX ?? 1.0;
-  const scaleY = style.scaleY ?? (isShow ? 1.0 : 1.11);
-  css['--cg-sub-scale-x'] = String(scaleX);
-  css['--cg-sub-scale-y'] = String(scaleY);
-
-  const defaultLetterSpacing = isShow ? 0.06 : 0.104;
-  const letterSpacing =
-    style.letterSpacing != null ? style.letterSpacing : defaultLetterSpacing;
-  css['--cg-sub-letter-spacing'] = `${letterSpacing}em`;
-
-  const lineHeight = style.lineHeight != null ? style.lineHeight : 1.15;
-  css['--cg-sub-line-height'] = String(lineHeight);
-
   // Anchor + X / Y give the Anchor point. Alignment says which part of the
   // shrink-to-fit caption box sits on that point horizontally: left edge,
   // centre or right edge. Vertical placement stays with Anchor. The box is not
@@ -854,26 +856,25 @@ export function subtitleLayoutToCss(
   }
 
   const color = style.color || (isShow ? '#fff6d8' : '#ffffff');
-  css['--cg-sub-color'] = color;
-
-  const borderWidth = style.borderWidth ?? (isShow ? 0.16 : 0.12);
-  const borderColor = style.borderColor || '#000000';
-  css['--cg-sub-stroke-width'] = `${borderWidth}em`;
-  css['--cg-sub-stroke-color'] = borderColor;
-
-  const shadowDist = style.shadowDistance ?? (isShow ? 2 : 0);
-  const shadowRad = style.shadowRadius ?? 2;
-  const shadowCol = style.shadowColor || 'rgba(0, 0, 0, 0.8)';
-  const shadowAngle = style.shadowAngle ?? 135;
-
-  if (shadowDist > 0 && shadowCol && shadowCol !== 'transparent') {
-    const rad = (shadowAngle * Math.PI) / 180;
-    const dx = Math.round(Math.cos(rad) * shadowDist * 10) / 10;
-    const dy = Math.round(Math.sin(rad) * shadowDist * 10) / 10;
-    css['--cg-sub-filter'] = `drop-shadow(${dx}px ${dy}px ${shadowRad}px ${shadowCol})`;
-  } else {
-    css['--cg-sub-filter'] = 'none';
-  }
+  const defaultLetterSpacing = isShow ? 0.06 : 0.104;
+  Object.assign(
+    css,
+    textPaintToCss({
+      ...style,
+      color,
+      scaleX: style.scaleX ?? 1,
+      scaleY: style.scaleY ?? (isShow ? 1 : 1.11),
+      letterSpacing:
+        style.letterSpacing != null ? style.letterSpacing : defaultLetterSpacing,
+      lineHeight: style.lineHeight != null ? style.lineHeight : 1.15,
+      borderWidth: style.borderWidth ?? (isShow ? 0.16 : 0.12),
+      borderColor: style.borderColor || '#000000',
+      shadowDistance: style.shadowDistance ?? (isShow ? 2 : 0),
+      shadowRadius: style.shadowRadius ?? 2,
+      shadowColor: style.shadowColor || 'rgba(0, 0, 0, 0.8)',
+      shadowAngle: style.shadowAngle ?? 135,
+    }),
+  );
 
   return css;
 }
@@ -913,6 +914,102 @@ export function primaryFontFamily(stack: string | undefined): string {
   if (!stack) return '';
   const first = stack.split(',')[0]?.trim() ?? '';
   return first.replace(/^['"]+|['"]+$/g, '');
+}
+
+/**
+ * Latin faces use the full 字距. CJK faces (including DFHei) keep English and
+ * digits at 0.4× so CJK tracking does not blow the Latin runs apart.
+ */
+export function isLatinFontStack(stack: string | undefined): boolean {
+  const name = primaryFontFamily(stack).toLowerCase();
+  if (!name) return false;
+  if (CG_LATIN_FONT_ALIASES.some((alias) => alias.toLowerCase() === name)) {
+    return true;
+  }
+  return CG_SUBTITLE_FONT_OPTIONS.some(
+    (font) =>
+      font.latin === true &&
+      primaryFontFamily(font.value).toLowerCase() === name,
+  );
+}
+
+/** CSS variables for fill, stroke, shadow, and Latin tracking. Layout stays separate. */
+export function textPaintToCss(paint: CgTextPaint): Record<string, string> {
+  const css: Record<string, string> = {};
+
+  if (paint.fontFamily) {
+    css['--cg-sub-font-family'] = paint.fontFamily;
+  }
+  if (paint.fontWeight != null) {
+    css['--cg-sub-font-weight'] = String(paint.fontWeight);
+  }
+  if (paint.italic) {
+    css['--cg-sub-font-style'] = 'italic';
+  }
+  const decoration = textDecorationLine(paint);
+  if (decoration) {
+    css['--cg-sub-decoration'] = decoration;
+  }
+  if (paint.color) {
+    css['--cg-sub-color'] = paint.color;
+  }
+  if (paint.gradientTo) {
+    const from = paint.color || '#ffffff';
+    const angle =
+      paint.gradientAngle != null && Number.isFinite(paint.gradientAngle)
+        ? paint.gradientAngle
+        : CG_TEXT_GRADIENT_ANGLE;
+    css['--cg-sub-fill-image'] =
+      `linear-gradient(${angle}deg, ${from}, ${paint.gradientTo})`;
+  }
+  css['--cg-sub-latin-track'] = isLatinFontStack(paint.fontFamily) ? '1' : '0.4';
+
+  if (paint.letterSpacing != null) {
+    css['--cg-sub-letter-spacing'] = `${paint.letterSpacing}em`;
+  }
+  if (paint.lineHeight != null) {
+    css['--cg-sub-line-height'] = String(paint.lineHeight);
+  }
+  if (paint.scaleX != null) {
+    css['--cg-sub-scale-x'] = String(paint.scaleX);
+  }
+  if (paint.scaleY != null) {
+    css['--cg-sub-scale-y'] = String(paint.scaleY);
+  }
+  if (paint.borderWidth != null) {
+    css['--cg-sub-stroke-width'] = `${paint.borderWidth}em`;
+  }
+  if (paint.borderColor) {
+    css['--cg-sub-stroke-color'] = paint.borderColor;
+  }
+
+  const shadowDist = paint.shadowDistance;
+  const shadowCol = paint.shadowColor;
+  if (
+    shadowDist != null &&
+    shadowDist > 0 &&
+    shadowCol &&
+    shadowCol !== 'transparent'
+  ) {
+    const shadowAngle = paint.shadowAngle ?? 135;
+    const shadowRad = paint.shadowRadius ?? 0;
+    const rad = (shadowAngle * Math.PI) / 180;
+    const dx = Math.round(Math.cos(rad) * shadowDist * 10) / 10;
+    const dy = Math.round(Math.sin(rad) * shadowDist * 10) / 10;
+    css['--cg-sub-filter'] =
+      `drop-shadow(${dx}px ${dy}px ${shadowRad}px ${shadowCol})`;
+  } else if (shadowDist === 0) {
+    css['--cg-sub-filter'] = 'none';
+  }
+
+  return css;
+}
+
+function textDecorationLine(paint: CgTextPaint): string {
+  const lines: string[] = [];
+  if (paint.underline) lines.push('underline');
+  if (paint.strike) lines.push('line-through');
+  return lines.join(' ');
 }
 
 export function buildCgOverlayUrl(token: string, location: Location): string {
@@ -1051,6 +1148,18 @@ function toOptionalNumber(raw: unknown): number | null {
   if (raw == null || raw === '') return null;
   const value = typeof raw === 'number' ? raw : Number(raw);
   return Number.isFinite(value) ? value : null;
+}
+
+function asTextWeight(raw: unknown): CgTextWeight | null {
+  const value = toOptionalNumber(raw);
+  if (
+    value === CG_TEXT_WEIGHT_REGULAR ||
+    value === CG_TEXT_WEIGHT_MEDIUM ||
+    value === CG_TEXT_WEIGHT_BOLD
+  ) {
+    return value;
+  }
+  return null;
 }
 
 function isAnchor(raw: unknown): raw is CgAnchor {

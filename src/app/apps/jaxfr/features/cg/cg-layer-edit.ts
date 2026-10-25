@@ -30,6 +30,9 @@ import {
   CG_SUBTITLE_ALIGN_OPTIONS,
   CG_SUBTITLE_FONT_GROUPS,
   CG_SUBTITLE_FONT_OPTIONS,
+  CG_TEXT_GRADIENT_ANGLE,
+  CG_TEXT_GRADIENT_TO,
+  CG_TEXT_WEIGHT_BOLD,
   CG_WHEEL_MIN_FADE_MS,
   CgAnchor,
   CgElementType,
@@ -101,6 +104,8 @@ export class CgLayerEdit implements OnInit {
   readonly cutMs = CG_CUT_DURATION_MS;
   readonly maxDurationMs = CG_MAX_DURATION_MS;
   readonly wheelMinMs = CG_WHEEL_MIN_FADE_MS;
+  readonly textGradientAngle = CG_TEXT_GRADIENT_ANGLE;
+  readonly textGradientTo = CG_TEXT_GRADIENT_TO;
   /** Font wheel order = dropdown order; "Other…" is left out on purpose. */
   readonly fontWheelValues: readonly string[] = [
     '',
@@ -612,6 +617,73 @@ export class CgLayerEdit implements OnInit {
   onStyleFieldChange(layer: CgLayerDraft): void {
     this.ensureCustomPreset(layer);
     this.touchPreview();
+  }
+
+  textPaintToggles(style: CgSubtitleStyle): string[] {
+    const values: string[] = [];
+    if (style.fontWeight === CG_TEXT_WEIGHT_BOLD) values.push('bold');
+    if (style.italic) values.push('italic');
+    if (style.underline) values.push('underline');
+    if (style.strike) values.push('strike');
+    return values;
+  }
+
+  onTextPaintToggle(layer: CgLayerDraft, event: MatButtonToggleChange): void {
+    const raw = Array.isArray(event.value)
+      ? event.value
+      : event.source.buttonToggleGroup?.value;
+    const selected = new Set(
+      Array.isArray(raw)
+        ? raw.filter((item): item is string => typeof item === 'string')
+        : [],
+    );
+    const style = this.getSubtitleStyle(layer);
+    if (selected.has('bold')) style.fontWeight = CG_TEXT_WEIGHT_BOLD;
+    else if (style.fontWeight === CG_TEXT_WEIGHT_BOLD) delete style.fontWeight;
+    this.setPaintFlag(style, 'italic', selected.has('italic'));
+    this.setPaintFlag(style, 'underline', selected.has('underline'));
+    this.setPaintFlag(style, 'strike', selected.has('strike'));
+    this.onStyleFieldChange(layer);
+  }
+
+  gradientOn(style: CgSubtitleStyle): boolean {
+    return style.gradientTo !== undefined;
+  }
+
+  onFillToggle(layer: CgLayerDraft, event: MatButtonToggleChange): void {
+    const style = this.getSubtitleStyle(layer);
+    const value = event.value;
+    if (value !== 'solid' && value !== 'gradient') {
+      if (event.source?.buttonToggleGroup) {
+        event.source.buttonToggleGroup.value =
+          style.gradientTo !== undefined ? 'gradient' : 'solid';
+      }
+      return;
+    }
+    if (value === 'gradient') {
+      if (!style.gradientTo) style.gradientTo = CG_TEXT_GRADIENT_TO;
+      if (style.gradientAngle == null) style.gradientAngle = CG_TEXT_GRADIENT_ANGLE;
+    } else {
+      delete style.gradientTo;
+      delete style.gradientAngle;
+    }
+    this.onStyleFieldChange(layer);
+  }
+
+  onGradientToChange(layer: CgLayerDraft, value: string): void {
+    const style = this.getSubtitleStyle(layer);
+    const next = value.trim();
+    style.gradientTo = next || CG_TEXT_GRADIENT_TO;
+    this.onStyleFieldChange(layer);
+  }
+
+  private setPaintFlag(
+    style: CgSubtitleStyle,
+    key: 'italic' | 'underline' | 'strike',
+    on: boolean,
+  ): void {
+    if (on) style[key] = true;
+    else delete style[key];
   }
 
   getSubtitleStyle(layer: CgLayerDraft): CgSubtitleStyle {

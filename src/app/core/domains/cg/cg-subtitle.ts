@@ -51,6 +51,10 @@ export class CgSubtitle {
   readonly css = computed(() =>
     subtitleLayoutToCss(this.layout(), this.effectiveStyle()),
   );
+  /** OBS CEF drops `background-clip: text` when it arrives through a CSS variable. */
+  readonly gradientOn = computed(
+    () => this.effectiveStyle().gradientTo !== undefined,
+  );
   readonly incomingParts = computed(() => subtitleTextParts(this.incoming()));
   readonly outgoingParts = computed(() => subtitleTextParts(this.outgoing()));
 

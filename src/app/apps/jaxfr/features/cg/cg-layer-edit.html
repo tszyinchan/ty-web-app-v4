@@ -594,6 +594,40 @@
                 </div>
               }
 
+              <div class="cg-text-paint-row">
+                <mat-button-toggle-group
+                  class="cg-seg-toggle cg-text-paint-toggle"
+                  multiple
+                  [value]="textPaintToggles(subStyle)"
+                  (change)="onTextPaintToggle(layer, $event)"
+                  hideMultipleSelectionIndicator
+                  aria-label="Text style"
+                >
+                  <mat-button-toggle value="bold" title="Bold" aria-label="Bold">
+                    <mat-icon>format_bold</mat-icon>
+                  </mat-button-toggle>
+                  <mat-button-toggle value="italic" title="Italic" aria-label="Italic">
+                    <mat-icon>format_italic</mat-icon>
+                  </mat-button-toggle>
+                  <mat-button-toggle value="underline" title="Underline" aria-label="Underline">
+                    <mat-icon>format_underlined</mat-icon>
+                  </mat-button-toggle>
+                  <mat-button-toggle value="strike" title="Strikethrough" aria-label="Strikethrough">
+                    <mat-icon>format_strikethrough</mat-icon>
+                  </mat-button-toggle>
+                </mat-button-toggle-group>
+                <mat-button-toggle-group
+                  class="cg-seg-toggle"
+                  [value]="gradientOn(subStyle) ? 'gradient' : 'solid'"
+                  (change)="onFillToggle(layer, $event)"
+                  hideSingleSelectionIndicator
+                  aria-label="Fill"
+                >
+                  <mat-button-toggle value="solid">Solid</mat-button-toggle>
+                  <mat-button-toggle value="gradient">Gradient</mat-button-toggle>
+                </mat-button-toggle-group>
+              </div>
+
               <div class="cg-fields cg-spacing-row">
                 <label class="cg-field">
                   <span>字距 (em)</span>
@@ -651,7 +685,7 @@
                   />
                 </label>
                 <label class="cg-field">
-                  <span>Text Color</span>
+                  <span>{{ gradientOn(subStyle) ? 'Start' : 'Text Color' }}</span>
                   <div class="cg-color-input-wrap">
                     <input
                       type="color"
@@ -668,6 +702,44 @@
                   </div>
                 </label>
               </div>
+
+              @if (gradientOn(subStyle)) {
+                <div class="cg-fields cg-gradient-row">
+                  <label class="cg-field">
+                    <span>End color</span>
+                    <div class="cg-color-input-wrap">
+                      <input
+                        type="color"
+                        class="cg-color-swatch"
+                        [ngModel]="subStyle.gradientTo || textGradientTo"
+                        (ngModelChange)="onGradientToChange(layer, $event)"
+                      />
+                      <input
+                        type="text"
+                        class="cg-color-hex"
+                        [ngModel]="subStyle.gradientTo || textGradientTo"
+                        (ngModelChange)="onGradientToChange(layer, $event)"
+                      />
+                    </div>
+                  </label>
+                  <label class="cg-field">
+                    <span>Angle</span>
+                    <input
+                      type="number"
+                      appCgWheel
+                      appCgWheelWrap
+                      [appCgWheelFine]="1"
+                      [appCgWheelCoarse]="45"
+                      step="15"
+                      min="0"
+                      max="360"
+                      [ngModel]="subStyle.gradientAngle ?? textGradientAngle"
+                      (ngModelChange)="subStyle.gradientAngle = $event; onStyleFieldChange(layer)"
+                      (appCgWheelChange)="subStyle.gradientAngle = $event; onStyleFieldChange(layer)"
+                    />
+                  </label>
+                </div>
+              }
 
               <div class="cg-fields cg-border-row">
                 <label class="cg-field">

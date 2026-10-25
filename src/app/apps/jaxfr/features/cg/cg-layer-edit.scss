@@ -267,8 +267,9 @@ $cg-control-height: 28px;
   color: var(--app-text-muted);
 }
 
-/* Subtitle Align: three icon buttons under the Anchor grid. */
-mat-button-toggle-group.cg-seg-toggle.cg-align-toggle-group {
+/* Subtitle Align and text paint: icon buttons inside the 28px toggle. */
+mat-button-toggle-group.cg-seg-toggle.cg-align-toggle-group,
+mat-button-toggle-group.cg-seg-toggle.cg-text-paint-toggle {
   mat-icon {
     font-size: 18px;
     width: 18px;
@@ -858,6 +859,13 @@ button.mat-mdc-outlined-button.cg-mini-btn {
   gap: 8px;
 }
 
+.cg-text-paint-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
 .cg-custom-font-row {
   grid-template-columns: 1fr;
 }
@@ -873,7 +881,8 @@ button.mat-mdc-outlined-button.cg-mini-btn {
 .cg-scale-row,
 .cg-border-row,
 .cg-shadow-row,
-.cg-spacing-row {
+.cg-spacing-row,
+.cg-gradient-row {
   grid-template-columns: repeat(auto-fit, minmax(76px, 1fr));
 }
 
