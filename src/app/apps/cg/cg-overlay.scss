@@ -32,3 +32,7 @@ html.cg-overlay-on app-cg-stage {
 html.cg-overlay-on .sub-text {
   font-size: calc(var(--cg-sub-font, 5.6) * 1vh);
 }
+
+html.cg-overlay-on .wx-cluster {
+  font-size: calc(var(--cg-sub-font, 3.5) * 1vh);
+}

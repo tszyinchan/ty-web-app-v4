@@ -18,6 +18,11 @@
   gap: 0;
   width: max-content;
   white-space: nowrap;
+  /* Size lives here, not on the positioned row. OBS shrinks vh/cqh on that box. */
+  font-size: calc(var(--cg-sub-font, 3.5) * 1vh);
+  font-size: calc(var(--cg-sub-font, 3.5) * 1cqh);
+  transform: scale(var(--cg-sub-scale-x, 1), var(--cg-sub-scale-y, 1));
+  transform-origin: var(--cg-sub-transform-origin, right top);
 }
 
 .wx-text {
@@ -29,15 +34,10 @@
     --cg-sub-font-family,
     ('華康中黑體', '華康中黑體(P)', 'Microsoft JhengHei', 'Segoe UI', sans-serif)
   );
-  /* Size lives on the text, not the positioned box. OBS shrinks vh/cqh on that box. */
-  font-size: calc(var(--cg-sub-font, 3.5) * 1vh);
-  font-size: calc(var(--cg-sub-font, 3.5) * 1cqh);
   font-weight: var(--cg-sub-font-weight, 700);
   font-style: var(--cg-sub-font-style, normal);
   letter-spacing: var(--cg-sub-letter-spacing, 0.02em);
   line-height: 1;
-  transform: scale(var(--cg-sub-scale-x, 1), var(--cg-sub-scale-y, 1));
-  transform-origin: center center;
   filter: var(--cg-sub-filter, none);
 }
 
@@ -76,8 +76,9 @@
 .wx-icon {
   flex: none;
   margin-left: var(--wx-gap-icon, 0.35em);
-  height: calc(var(--cg-sub-font, 3.5) * 1.35vh);
-  height: calc(var(--cg-sub-font, 3.5) * 1.35cqh);
+  height: 1.35em;
   width: auto;
+  min-width: 0;
+  min-height: 0;
   display: block;
 }
