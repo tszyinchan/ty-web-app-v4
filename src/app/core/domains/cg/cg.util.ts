@@ -1,6 +1,9 @@
 import { SUBDOMAINS } from '../../../app.constants';
 import { RecordStatus } from '../../models/status.enum';
 import {
+  CG_BUG_FONT_VH,
+  CG_CLOCK_FORMAT_OPTIONS,
+  CG_CLOCK_TIMEZONE_LOCAL,
   CG_CUT_DURATION_MS,
   CG_DEFAULT_DURATION_MS,
   CG_DEFAULT_PACKAGE_EDIT_MODE,
@@ -22,6 +25,9 @@ import {
   CG_TEXT_WEIGHT_BOLD,
   CG_TEXT_WEIGHT_MEDIUM,
   CG_TEXT_WEIGHT_REGULAR,
+  DEFAULT_BUG_BACKGROUND_LAYOUT,
+  DEFAULT_CLOCK_LAYOUT,
+  DEFAULT_WEATHER_LAYOUT,
   CgTextWeight,
   CgAnchor,
   CgElementDef,
@@ -37,10 +43,13 @@ import {
   DEFAULT_SUBTITLE_LAYOUT,
 } from './cg.constants';
 import {
+  CgBackground,
+  CgClockSettings,
   CgLayer,
   CgLayerDraft,
   CgLayerPayload,
   CgLayout,
+  CgWeatherSettings,
   CgLogoPayload,
   CgOutputState,
   CgOutputStateCue,
@@ -150,6 +159,28 @@ export function createEmptySubtitleLayer(sortOrder: number): CgLayerDraft {
   };
 }
 
+function createEmptyBugLayer(
+  type: CgElementType.Clock | CgElementType.Weather,
+  sortOrder: number,
+  layout: CgLayout,
+): CgLayerDraft {
+  return {
+    clientId: `temp-${crypto.randomUUID()}`,
+    element_type: type,
+    public_token: createCgPublicToken(),
+    name: '',
+    layout: { ...layout },
+    payload:
+      type === CgElementType.Clock
+        ? emptyClockPayload()
+        : emptyWeatherPayload(),
+    visible: true,
+    look: CgLayerLook.Color,
+    sort_order: sortOrder,
+    status: RecordStatus.Active,
+  };
+}
+
 export function createEmptyLayer(
   type: CgElementType,
   sortOrder: number,
@@ -158,7 +189,69 @@ export function createEmptyLayer(
   if (type === CgElementType.Subtitle) {
     return createEmptySubtitleLayer(sortOrder);
   }
+  if (type === CgElementType.Clock) {
+    return createEmptyBugLayer(type, sortOrder, { ...DEFAULT_CLOCK_LAYOUT });
+  }
+  if (type === CgElementType.Weather) {
+    return createEmptyBugLayer(type, sortOrder, { ...DEFAULT_WEATHER_LAYOUT });
+  }
   return null;
+}
+
+export function defaultBugStyle(): CgSubtitleStyle {
+  return {
+    preset: CgSubtitlePreset.Custom,
+    fontSize: CG_BUG_FONT_VH,
+    fontWeight: CG_TEXT_WEIGHT_BOLD,
+    color: '#ffffff',
+    letterSpacing: 0.02,
+    lineHeight: 1.1,
+    scaleX: 1,
+    scaleY: 1,
+    borderWidth: 0.08,
+    borderColor: '#000000',
+    shadowDistance: 0,
+    shadowRadius: 2,
+    shadowAngle: 135,
+    shadowColor: '#000000',
+    textAlign: 'right',
+  };
+}
+
+export function emptyClockSettings(): CgClockSettings {
+  return {
+    format: 'HH:mm:ss',
+    locale: 'zh-Hant',
+    timeZone: 'Asia/Hong_Kong',
+    mode: 'live',
+    customBaseMs: null,
+    customPushedAtMs: null,
+  };
+}
+
+export function emptyWeatherSettings(): CgWeatherSettings {
+  return {
+    location: { name: 'Hong Kong', lat: 22.3193, lon: 114.1694 },
+    unitMode: 'alternate',
+    gapHum: 0.45,
+    gapIcon: 0.35,
+  };
+}
+
+export function emptyClockPayload(): CgLayerPayload {
+  return {
+    ...emptyLogoPayload(),
+    style: defaultBugStyle(),
+    clock: emptyClockSettings(),
+  };
+}
+
+export function emptyWeatherPayload(): CgLayerPayload {
+  return {
+    ...emptyLogoPayload(),
+    style: defaultBugStyle(),
+    weather: emptyWeatherSettings(),
+  };
 }
 
 export function emptyLogoPayload(imageUrl = '', fileName?: string): CgLayerPayload {
@@ -659,6 +752,65 @@ export function normalizeOutputState(raw: unknown): CgOutputState | null {
   return { rev, cues };
 }
 
+function normalizeBackground(raw: unknown): CgBackground | undefined {
+  const value = asRecord(raw);
+  const imageUrl = asString(value['imageUrl']).trim();
+  if (!imageUrl || isEmbeddedImageUrl(imageUrl)) return undefined;
+  const fileName = asString(value['fileName']).trim();
+  return {
+    imageUrl,
+    ...(fileName ? { fileName } : {}),
+    layout: normalizeLayout(value['layout'] ?? { ...DEFAULT_BUG_BACKGROUND_LAYOUT }),
+  };
+}
+
+function normalizeClockSettings(raw: unknown): CgClockSettings {
+  const value = asRecord(raw);
+  const base = emptyClockSettings();
+  const format = asString(value['format']);
+  const locale = value['locale'] === 'en' ? 'en' : 'zh-Hant';
+  const timeZoneRaw = asString(value['timeZone']);
+  const knownZone =
+    timeZoneRaw === CG_CLOCK_TIMEZONE_LOCAL ||
+    timeZoneRaw === 'UTC' ||
+    /^[A-Za-z_]+\/[A-Za-z0-9_+-]+$/.test(timeZoneRaw);
+  const mode = value['mode'] === 'custom' ? 'custom' : 'live';
+  const baseMs = toOptionalNumber(value['customBaseMs']);
+  const pushedMs = toOptionalNumber(value['customPushedAtMs']);
+  return {
+    format: format || base.format,
+    locale,
+    timeZone: knownZone ? timeZoneRaw : base.timeZone,
+    mode,
+    customBaseMs: baseMs,
+    customPushedAtMs: pushedMs,
+  };
+}
+
+function clampWeatherGap(raw: unknown, fallback: number): number {
+  const value = toOptionalNumber(raw);
+  if (value == null) return fallback;
+  return Math.min(4, Math.max(0, value));
+}
+
+function normalizeWeatherSettings(raw: unknown): CgWeatherSettings {
+  const value = asRecord(raw);
+  const loc = asRecord(value['location']);
+  const lat = toOptionalNumber(loc['lat']);
+  const lon = toOptionalNumber(loc['lon']);
+  const name = asString(loc['name']).trim();
+  const unit = value['unitMode'];
+  return {
+    location:
+      lat != null && lon != null && name
+        ? { name, lat, lon }
+        : emptyWeatherSettings().location,
+    unitMode: unit === 'c' || unit === 'f' ? unit : 'alternate',
+    gapHum: clampWeatherGap(value['gapHum'], 0.45),
+    gapIcon: clampWeatherGap(value['gapIcon'], 0.35),
+  };
+}
+
 export function normalizeLayerPayload(
   type: CgElementType,
   raw: unknown,
@@ -666,7 +818,93 @@ export function normalizeLayerPayload(
   if (type === CgElementType.Subtitle) {
     return normalizeSubtitlePayload(raw);
   }
+  if (type === CgElementType.Clock || type === CgElementType.Weather) {
+    const value = asRecord(raw);
+    const style = normalizeSubtitleStyle(value['style']);
+    style.preset = CgSubtitlePreset.Custom;
+    const payload: CgLayerPayload = {
+      ...emptyLogoPayload(),
+      style,
+      background: normalizeBackground(value['background']),
+    };
+    if (type === CgElementType.Clock) {
+      payload.clock = normalizeClockSettings(value['clock']);
+    } else {
+      payload.weather = normalizeWeatherSettings(value['weather']);
+    }
+    return payload;
+  }
   return normalizeLogoPayload(raw);
+}
+
+export function clockFormatIsKnown(format: string): boolean {
+  return CG_CLOCK_FORMAT_OPTIONS.some((option) => option.value === format);
+}
+
+/** Offset string DatePipe accepts (`+0800`). Empty time zone = viewer local (no offset). */
+export function timeZoneOffsetArg(timeZone: string, date: Date): string {
+  if (!timeZone) return '';
+  if (timeZone === 'UTC') return '+0000';
+  let label = '';
+  try {
+    label =
+      new Intl.DateTimeFormat('en-US', {
+        timeZone,
+        timeZoneName: 'shortOffset',
+        hour: '2-digit',
+      })
+        .formatToParts(date)
+        .find((part) => part.type === 'timeZoneName')?.value ?? '';
+  } catch {
+    return '+0000';
+  }
+  const match = /GMT([+-])(\d{1,2})(?::(\d{2}))?/.exec(label);
+  if (!match) return '+0000';
+  return `${match[1]}${match[2].padStart(2, '0')}${match[3] ?? '00'}`;
+}
+
+function zoneOffsetMinutes(timeZone: string, date: Date): number {
+  const arg = timeZoneOffsetArg(timeZone, date);
+  const match = /^([+-])(\d{2})(\d{2})$/.exec(arg);
+  if (!match) return -date.getTimezoneOffset();
+  const sign = match[1] === '-' ? -1 : 1;
+  return sign * (Number(match[2]) * 60 + Number(match[3]));
+}
+
+/**
+ * `datetime-local` value is a wall clock. Interpret it in `timeZone`
+ * (empty = the Panel's zone) and return the UTC instant.
+ */
+export function wallClockToUtcMs(localValue: string, timeZone: string): number | null {
+  const match =
+    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?/.exec(localValue);
+  if (!match) return null;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const hour = Number(match[4]);
+  const minute = Number(match[5]);
+  const second = Number(match[6] ?? '0');
+  if (!timeZone) {
+    return new Date(year, month - 1, day, hour, minute, second).getTime();
+  }
+  const guess = Date.UTC(year, month - 1, day, hour, minute, second);
+  const first = zoneOffsetMinutes(timeZone, new Date(guess));
+  let ms = guess - first * 60_000;
+  const secondOffset = zoneOffsetMinutes(timeZone, new Date(ms));
+  if (secondOffset !== first) ms = guess - secondOffset * 60_000;
+  return ms;
+}
+
+export function clockInstantMs(settings: CgClockSettings, nowMs: number): number {
+  if (
+    settings.mode === 'custom' &&
+    settings.customBaseMs != null &&
+    settings.customPushedAtMs != null
+  ) {
+    return settings.customBaseMs + (nowMs - settings.customPushedAtMs);
+  }
+  return nowMs;
 }
 
 /**
@@ -683,6 +921,12 @@ export function layerContentSignature(
   delete payload['index'];
   delete payload['cursor'];
   delete payload['fileName'];
+  const background = payload['background'];
+  if (background && typeof background === 'object') {
+    const copy = { ...(background as Record<string, unknown>) };
+    delete copy['fileName'];
+    payload['background'] = copy;
+  }
   return JSON.stringify({
     layout: layer.layout,
     look: normalizeLayerLook(layer.look),
@@ -876,6 +1120,72 @@ export function subtitleLayoutToCss(
     }),
   );
 
+  return css;
+}
+
+/**
+ * Clock / Weather text box. Same Anchor point + Alignment model as Subtitle,
+ * with the bug defaults (no News / Show preset).
+ */
+export function textBoxLayoutToCss(
+  layout: CgLayout,
+  style: CgSubtitleStyle,
+  options?: { clamp?: boolean },
+): Record<string, string> {
+  const css = anchoredBoxCss(layout, { scaleAsTransform: false });
+  const anchor = layout.anchor || CgAnchor.TopRight;
+  const sideX = anchorSideX(anchor);
+  const sideY = anchorSideY(anchor);
+  const textAlign = resolveSubtitleAlign(style, anchor);
+  const x = Number.isFinite(layout.x) ? layout.x : 0;
+  const insetX = logoLength(x, layout.unit);
+  const pointX =
+    sideX === 'center'
+      ? '50%'
+      : sideX === 'right'
+        ? `calc(100% - ${insetX})`
+        : insetX;
+  const shiftX =
+    textAlign === 'left' ? '0' : textAlign === 'center' ? '-50%' : '-100%';
+  const shiftY = sideY === 'center' ? '-50%' : '0';
+  css['left'] = pointX;
+  css['right'] = 'auto';
+  css['width'] = 'max-content';
+  css['maxWidth'] = options?.clamp === false ? 'none' : '100%';
+  css['transform'] =
+    shiftX === '0' && shiftY === '0'
+      ? 'none'
+      : `translate(${shiftX}, ${shiftY})`;
+  const isTop = sideY === 'top';
+  css['--cg-sub-box-align'] = isTop
+    ? 'flex-start'
+    : sideY === 'center'
+      ? 'center'
+      : 'flex-end';
+  css['--cg-sub-text-align'] = textAlign;
+  const originY = isTop ? 'top' : sideY === 'center' ? 'center' : 'bottom';
+  css['--cg-sub-transform-origin'] = `${textAlign} ${originY}`;
+  const baseFont =
+    style.fontSize != null && style.fontSize > 0 ? style.fontSize : CG_BUG_FONT_VH;
+  const scale = Number.isFinite(layout.scale) ? layout.scale : 1;
+  css['--cg-sub-font'] = String(baseFont * scale);
+  Object.assign(
+    css,
+    textPaintToCss({
+      ...style,
+      color: style.color || '#ffffff',
+      scaleX: style.scaleX ?? 1,
+      scaleY: style.scaleY ?? 1,
+      letterSpacing: style.letterSpacing ?? 0.02,
+      lineHeight: style.lineHeight ?? 1.1,
+      borderWidth: style.borderWidth ?? 0.08,
+      borderColor: style.borderColor || '#000000',
+      shadowDistance: style.shadowDistance ?? 0,
+      shadowRadius: style.shadowRadius ?? 2,
+      shadowColor: style.shadowColor || '#000000',
+      shadowAngle: style.shadowAngle ?? 135,
+    }),
+  );
   return css;
 }
 

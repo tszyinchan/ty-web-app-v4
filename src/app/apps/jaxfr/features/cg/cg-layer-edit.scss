@@ -41,8 +41,9 @@ $cg-control-height: 28px;
   max-width: 450px;
   min-height: 0;
   height: 100%;
-  overflow-x: hidden;
+  overflow-x: clip;
   overflow-y: auto;
+  scrollbar-gutter: auto;
   padding-right: 8px;
   box-sizing: border-box;
 }
@@ -57,6 +58,45 @@ $cg-control-height: 28px;
   overflow-x: hidden;
   overflow-y: auto;
   padding-left: 8px;
+}
+
+.bug-desk .cg-desk-config {
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.cg-bug-places {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 16px 28px;
+}
+
+.cg-bug-places .cg-block,
+.bug-desk .cg-desk-config > .cg-block {
+  width: max-content;
+  max-width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--app-card-border);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--app-card-bg) 70%, transparent);
+}
+
+.cg-clock-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px 12px;
+}
+
+.bug-desk .cg-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  width: max-content;
+  max-width: 100%;
 }
 
 .cg-sub-cue-col,
@@ -593,6 +633,16 @@ mat-button-toggle-group.cg-seg-toggle {
   transform: translateX(20px);
 }
 
+.cg-desk-preview .cg-field select,
+.bug-desk .cg-field select {
+  width: 200px;
+  max-width: 100%;
+}
+
+.bug-desk .cg-field input[type='number'] {
+  width: 72px;
+}
+
 .cg-field {
   display: flex;
   flex-direction: column;
@@ -950,6 +1000,53 @@ button.mat-mdc-outlined-button.cg-mini-btn {
 .cg-queue-n {
   font-size: 11px;
   color: var(--app-text-muted);
+}
+
+.cg-place-search input {
+  flex: 1;
+  min-width: 0;
+  height: $cg-control-height;
+  box-sizing: border-box;
+  padding: 0 8px;
+  border: 1px solid var(--app-input-border);
+  border-radius: 4px;
+  background: var(--app-input-bg);
+  color: var(--app-text-primary);
+  font: 13px var(--app-font);
+}
+
+.cg-clock-push {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  input[type='datetime-local'] {
+    flex: 1;
+    min-width: 0;
+    height: $cg-control-height;
+    box-sizing: border-box;
+    padding: 0 8px;
+    border: 1px solid var(--app-input-border);
+    border-radius: 4px;
+    background: var(--app-input-bg);
+    color: var(--app-text-primary);
+    font: 13px var(--app-font);
+  }
+}
+
+.cg-place-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+button.cg-place {
+  text-align: left;
+  height: 28px;
+  border: 1px solid var(--app-card-border);
+  background: var(--app-page-bg);
+  color: inherit;
+  cursor: pointer;
 }
 
 .cg-queue-line {

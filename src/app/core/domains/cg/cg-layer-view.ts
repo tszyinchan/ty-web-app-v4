@@ -1,6 +1,8 @@
 import { Component, input } from '@angular/core';
+import { CgClock } from './cg-clock';
 import { CgLogo } from './cg-logo';
 import { CgSubtitle } from './cg-subtitle';
+import { CgWeather } from './cg-weather';
 import {
   CG_DEFAULT_DURATION_MS,
   CgElementType,
@@ -11,7 +13,7 @@ import { subtitleLine, subtitlePresetOf, subtitleStyleOf, innerDurationMs } from
 @Component({
   selector: 'app-cg-layer-view',
   standalone: true,
-  imports: [CgLogo, CgSubtitle],
+  imports: [CgLogo, CgSubtitle, CgClock, CgWeather],
   template: `
     @switch (elementType()) {
       @case (Logo) {
@@ -19,6 +21,20 @@ import { subtitleLine, subtitlePresetOf, subtitleStyleOf, innerDurationMs } from
           [imageUrl]="payload().imageUrl"
           [layout]="layout()"
           [visible]="true"
+          [outline]="outline()"
+        />
+      }
+      @case (Clock) {
+        <app-cg-clock
+          [payload]="payload()"
+          [layout]="layout()"
+          [outline]="outline()"
+        />
+      }
+      @case (Weather) {
+        <app-cg-weather
+          [payload]="payload()"
+          [layout]="layout()"
           [outline]="outline()"
         />
       }
@@ -62,6 +78,8 @@ import { subtitleLine, subtitlePresetOf, subtitleStyleOf, innerDurationMs } from
 })
 export class CgLayerView {
   readonly Logo = CgElementType.Logo;
+  readonly Clock = CgElementType.Clock;
+  readonly Weather = CgElementType.Weather;
   readonly Subtitle = CgElementType.Subtitle;
   readonly subtitleLine = subtitleLine;
   readonly subtitlePresetOf = subtitlePresetOf;

@@ -149,6 +149,19 @@
 | W10 | Copy to package 下拉滾輪 | 在「Choose…」與各 package 間移動；不會自動 Copy |
 | W11 | X 被置中錨點忽略（顯示 `—`） | 滾輪無作用 |
 
+### Clock / Weather
+
+| # | 操作 | 預期 |
+|---|---|---|
+| K1 | 新增 Clock layer | Desk 有 Background、Text place、Style、Clock。Stage 右上顯示香港時間，每秒 +1 |
+| K2 | Format 改 `y年M月d日 HH:mm:ss`，Language 繁體中文 | 畫面上有「年」「月」「日」與中文星期（若格式含 EEEE） |
+| K3 | Timezone 改 Tokyo | 時間改成東京，與香港差 1 小時 |
+| K4 | Custom，輸入一個整分時間，按 Push | 立刻顯示該時間，下一秒 +1。只改輸入、不按 Push 不會上 OBS |
+| K5 | 切回 Live | 回到現在時間 |
+| K6 | Background 選一張圖，Anchor 與文字不同 | 圖與文字各自定位；Clear 後只剩文字 |
+| K7 | 新增 Weather，地點搜尋 Tokyo 並選取 | 一列顯示溫度、濕度、圖示。預設 Hong Kong 在選取前就有資料 |
+| K8 | 等分鐘交界（或把 Temperature 改成 Celsius / Fahrenheit） | alternate 在奇偶分鐘切換 °C / °F；固定單位不切換 |
+
 ### CLEANUP
 
 | # | 操作 | 預期 |

@@ -3,6 +3,7 @@
     class="cg-layer-form"
     [class.logo-desk]="layer.element_type === Logo"
     [class.sub-desk]="layer.element_type === Subtitle"
+    [class.bug-desk]="layer.element_type === Clock || layer.element_type === Weather"
   >
     <div class="cg-desk-split">
       <aside class="cg-desk-preview">
@@ -176,6 +177,90 @@
             </div>
           </section>
         }
+        @if (layer.element_type === Clock || layer.element_type === Weather) {
+          <section class="cg-block">
+            <h3 class="cg-block-title">Background</h3>
+            <div class="cg-inline cg-source-pick">
+              <button mat-stroked-button type="button" class="cg-seg-btn" (click)="bgFile.click()">
+                Choose local image
+              </button>
+              <input #bgFile class="cg-file-input" type="file" [accept]="logoAccept" (change)="onBackgroundFile(layer, $event)" />
+              @if (layer.payload.background?.fileName) {
+                <span class="cg-file-name">{{ layer.payload.background?.fileName }}</span>
+              }
+              @if (hasBackground(layer)) {
+                <button mat-stroked-button type="button" class="cg-seg-btn" (click)="clearBackground(layer)">Clear</button>
+              }
+            </div>
+            <input class="cg-source-url" type="text"
+              [ngModel]="layer.payload.background?.imageUrl ?? ''"
+              (ngModelChange)="onBackgroundUrl(layer, $event)"
+              placeholder="Optional image URL" aria-label="Background image URL" />
+          </section>
+          @if (layer.element_type === Clock) {
+            <section class="cg-block">
+              <h3 class="cg-block-title">Clock</h3>
+              <div class="cg-clock-meta">
+                <label class="cg-field">
+                  <span>Language</span>
+                  <select [ngModel]="clockOf(layer).locale" (ngModelChange)="clockOf(layer).locale = $event; touchPreview()">
+                    @for (option of clockLocales; track option.value) {
+                      <option [value]="option.value">{{ option.label }}</option>
+                    }
+                  </select>
+                </label>
+                @if (clockOf(layer).mode === 'live') {
+                  <label class="cg-field">
+                    <span>Timezone</span>
+                    <select [ngModel]="clockOf(layer).timeZone" (ngModelChange)="clockOf(layer).timeZone = $event; touchPreview()">
+                      @for (option of clockZones; track option.value) {
+                        <option [value]="option.value">{{ option.label }}</option>
+                      }
+                    </select>
+                  </label>
+                }
+              </div>
+              <mat-button-toggle-group class="cg-seg-toggle" [value]="clockOf(layer).mode"
+                (change)="onClockMode(layer, $event)" hideSingleSelectionIndicator aria-label="Clock mode">
+                <mat-button-toggle value="live">Live</mat-button-toggle>
+                <mat-button-toggle value="custom">Custom</mat-button-toggle>
+              </mat-button-toggle-group>
+              @if (clockOf(layer).mode === 'custom') {
+                <div class="cg-clock-push">
+                  <input type="datetime-local" step="1" [ngModel]="clockDraft()" (ngModelChange)="clockDraft.set($event)" aria-label="Custom time" />
+                  <button mat-stroked-button type="button" class="cg-seg-btn" (click)="useClockNow(layer)">Use now</button>
+                  <button mat-flat-button type="button" color="primary" class="cg-seg-btn" (click)="pushClock(layer)">Push</button>
+                </div>
+                <p class="cg-hint">Push sends this time, then it counts up each second.</p>
+              }
+            </section>
+          } @else {
+            <section class="cg-block">
+              <h3 class="cg-block-title">Weather</h3>
+              <p class="cg-hint">{{ weatherOf(layer).location?.name || 'No place' }}</p>
+              <div class="cg-inline cg-place-search">
+                <input type="text" [ngModel]="placeQuery()" (ngModelChange)="placeQuery.set($event)"
+                  (keydown.enter)="searchPlaces()" placeholder="City, anywhere" aria-label="Place" />
+                <button mat-stroked-button type="button" class="cg-seg-btn" (click)="searchPlaces()">Search</button>
+              </div>
+              @if (placeResults().length) {
+                <div class="cg-place-list">
+                  @for (place of placeResults(); track place.lat + place.lon) {
+                    <button type="button" class="cg-place" (click)="pickPlace(layer, place)">{{ place.label }}</button>
+                  }
+                </div>
+              }
+              <label class="cg-field">
+                <span>Temperature</span>
+                <select [ngModel]="weatherOf(layer).unitMode" (ngModelChange)="weatherOf(layer).unitMode = $event; touchPreview()">
+                  @for (option of weatherUnits; track option.value) {
+                    <option [value]="option.value">{{ option.label }}</option>
+                  }
+                </select>
+              </label>
+            </section>
+          }
+        }
         <footer class="cg-desk-foot">
           <div class="cg-foot-copy">
             <span class="cg-block-title">Copy to package</span>
@@ -314,6 +399,146 @@
               </button>
               <span class="cg-outline-label">Outline</span>
             </div>
+          </section>
+        } @else if (layer.element_type === Clock || layer.element_type === Weather) {
+          <div class="cg-bug-places">
+          <section class="cg-block">
+            <h3 class="cg-block-title">Background place</h3>
+            <div class="cg-anchor-grid">
+              <mat-button-toggle-group class="cg-anchor-toggle-group"
+                [value]="backgroundLayout(layer).anchor"
+                (change)="onBackgroundAnchor(layer, $event)" hideSingleSelectionIndicator>
+                @for (anchor of anchorGridOptions; track anchor.value) {
+                  <mat-button-toggle [value]="anchor.value" [attr.aria-label]="anchor.label">
+                    <mat-icon>{{ anchor.icon }}</mat-icon>
+                  </mat-button-toggle>
+                }
+              </mat-button-toggle-group>
+            </div>
+            <div class="cg-fields">
+              <label class="cg-field">
+                <span>{{ backgroundAxisLabel(layer, 'x') }}</span>
+                @if (backgroundIgnores(layer, 'x')) {
+                  <input type="text" value="—" disabled />
+                } @else {
+                  <input type="number" appCgWheel step="0.1" [ngModel]="backgroundLayout(layer).x"
+                    (ngModelChange)="backgroundLayout(layer).x = $event; touchPreview()"
+                    (appCgWheelChange)="backgroundLayout(layer).x = $event; touchPreview()" />
+                }
+              </label>
+              <label class="cg-field">
+                <span>{{ backgroundAxisLabel(layer, 'y') }}</span>
+                @if (backgroundIgnores(layer, 'y')) {
+                  <input type="text" value="—" disabled />
+                } @else {
+                  <input type="number" appCgWheel step="0.1" [ngModel]="backgroundLayout(layer).y"
+                    (ngModelChange)="backgroundLayout(layer).y = $event; touchPreview()"
+                    (appCgWheelChange)="backgroundLayout(layer).y = $event; touchPreview()" />
+                }
+              </label>
+              <label class="cg-field">
+                <span>Scale</span>
+                <input type="number" appCgWheel step="0.05" min="0.05" max="8"
+                  [ngModel]="backgroundLayout(layer).scale"
+                  (ngModelChange)="backgroundLayout(layer).scale = $event; touchPreview()"
+                  (appCgWheelChange)="backgroundLayout(layer).scale = $event; touchPreview()" />
+              </label>
+            </div>
+            <div class="cg-outline-row">
+              <button type="button" class="cg-switch" [class.on]="logoOutline()" role="switch"
+                [attr.aria-checked]="logoOutline()" (click)="logoOutline.set(!logoOutline())">
+                <span class="cg-switch-thumb"></span>
+              </button>
+              <span class="cg-outline-label">Outline</span>
+            </div>
+          </section>
+          <section class="cg-block">
+            <h3 class="cg-block-title">Text place</h3>
+            <div class="cg-anchor-grid">
+              <mat-button-toggle-group class="cg-anchor-toggle-group" [value]="layer.layout.anchor"
+                (change)="onAnchorToggle(layer, $event)" hideSingleSelectionIndicator>
+                @for (anchor of anchorGridOptions; track anchor.value) {
+                  <mat-button-toggle [value]="anchor.value" [attr.aria-label]="anchor.label">
+                    <mat-icon>{{ anchor.icon }}</mat-icon>
+                  </mat-button-toggle>
+                }
+              </mat-button-toggle-group>
+            </div>
+            <mat-button-toggle-group class="cg-seg-toggle" [value]="subtitleAlign(layer)"
+              (change)="onAlignToggle(layer, $event)" hideSingleSelectionIndicator aria-label="Align">
+              @for (align of alignOptions; track align.value) {
+                <mat-button-toggle [value]="align.value" [attr.aria-label]="align.label">
+                  <mat-icon>{{ align.icon }}</mat-icon>
+                </mat-button-toggle>
+              }
+            </mat-button-toggle-group>
+            <div class="cg-fields">
+              <label class="cg-field">
+                <span>{{ placeAxisLabel(layer, 'x') }}</span>
+                @if (ignoresAxis(layer, 'x')) {
+                  <input type="text" value="—" disabled />
+                } @else {
+                  <input type="number" appCgWheel step="0.1" [ngModel]="layer.layout.x"
+                    (ngModelChange)="layer.layout.x = $event; touchPreview()"
+                    (appCgWheelChange)="layer.layout.x = $event; touchPreview()" />
+                }
+              </label>
+              <label class="cg-field">
+                <span>{{ placeAxisLabel(layer, 'y') }}</span>
+                @if (ignoresAxis(layer, 'y')) {
+                  <input type="text" value="—" disabled />
+                } @else {
+                  <input type="number" appCgWheel step="0.1" [ngModel]="layer.layout.y"
+                    (ngModelChange)="layer.layout.y = $event; touchPreview()"
+                    (appCgWheelChange)="layer.layout.y = $event; touchPreview()" />
+                }
+              </label>
+            </div>
+          </section>
+          @if (layer.element_type === Clock) {
+            <section class="cg-block">
+              <h3 class="cg-block-title">Format</h3>
+              <label class="cg-field">
+                <span>Pattern</span>
+                <select [ngModel]="clockFormatValue(layer)" (ngModelChange)="onClockFormat(layer, $event)">
+                  @for (option of clockFormats; track option.value) {
+                    <option [value]="option.value">{{ option.label }}</option>
+                  }
+                  <option [value]="clockFormatCustom">Custom pattern…</option>
+                </select>
+              </label>
+              @if (clockFormatValue(layer) === clockFormatCustom) {
+                <input class="cg-source-url" type="text" [ngModel]="clockOf(layer).format"
+                  (ngModelChange)="clockOf(layer).format = $event; touchPreview()"
+                  placeholder="yyyy-MM-dd HH:mm:ss" aria-label="Custom pattern" />
+              }
+            </section>
+          }
+          </div>
+          @if (layer.element_type === Weather) {
+            <section class="cg-block">
+              <h3 class="cg-block-title">Spacing</h3>
+              <div class="cg-fields">
+                <label class="cg-field">
+                  <span>Temp to humidity (em)</span>
+                  <input type="number" appCgWheel step="0.05" min="0" max="4"
+                    [ngModel]="weatherOf(layer).gapHum"
+                    (ngModelChange)="weatherOf(layer).gapHum = $event; touchPreview()"
+                    (appCgWheelChange)="weatherOf(layer).gapHum = $event; touchPreview()" />
+                </label>
+                <label class="cg-field">
+                  <span>Humidity to icon (em)</span>
+                  <input type="number" appCgWheel step="0.05" min="0" max="4"
+                    [ngModel]="weatherOf(layer).gapIcon"
+                    (ngModelChange)="weatherOf(layer).gapIcon = $event; touchPreview()"
+                    (appCgWheelChange)="weatherOf(layer).gapIcon = $event; touchPreview()" />
+                </label>
+              </div>
+            </section>
+          }
+          <section class="cg-block">
+            <h3 class="cg-block-title">Style</h3>
+            <app-cg-text-style-editor [paint]="bugStyle(layer)" (changed)="touchPreview()" />
           </section>
         } @else if (layer.element_type === Subtitle) {
           <div class="cg-sub-cue-col">

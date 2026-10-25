@@ -16,10 +16,17 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleChange, MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatIconModule } from '@angular/material/icon';
+import { CgWeatherPlace, CgWeatherService } from '../../../../core/domains/cg/cg-weather.service';
 import { CgMixPreview } from '../../../../core/domains/cg/cg-mix-preview';
 import { CgWheelSelect, CgWheelStep } from '../../../../core/domains/cg/cg-wheel.directive';
 import {
   CG_ANCHOR_GRID_OPTIONS,
+  CG_CLOCK_FORMAT_CUSTOM,
+  CG_CLOCK_FORMAT_OPTIONS,
+  CG_CLOCK_LOCALE_OPTIONS,
+  CG_CLOCK_TIMEZONE_OPTIONS,
+  CG_WEATHER_UNIT_OPTIONS,
+  DEFAULT_BUG_BACKGROUND_LAYOUT,
   CG_ANCHOR_OPTIONS,
   CG_CUT_DURATION_MS,
   CG_DEFAULT_DURATION_MS,
@@ -42,12 +49,20 @@ import {
   CgSubtitlePreset,
 } from '../../../../core/domains/cg/cg.constants';
 import {
+  CgClockSettings,
   CgLayerDraft,
+  CgLayout,
   CgSubtitleAlign,
   CgSubtitleStyle,
+  CgWeatherSettings,
 } from '../../../../core/domains/cg/cg.model';
 import { CgService } from '../../../../core/domains/cg/cg.service';
 import {
+  clockFormatIsKnown,
+  defaultBugStyle,
+  emptyClockSettings,
+  emptyWeatherSettings,
+  wallClockToUtcMs,
   anchorIgnoresAxis,
   anchorSideX,
   anchorSideY,
@@ -64,6 +79,7 @@ import {
   subtitleStyleOf,
 } from '../../../../core/domains/cg/cg.util';
 import { NotificationService } from '../../../../core/services/notification.service';
+import { CgTextStyleEditor } from './cg-text-style-editor';
 import { copyTextToClipboard } from '../../../../core/utils/copy-text.util';
 
 @Component({
@@ -77,6 +93,7 @@ import { copyTextToClipboard } from '../../../../core/utils/copy-text.util';
     CgMixPreview,
     CgWheelSelect,
     CgWheelStep,
+    CgTextStyleEditor,
   ],
   templateUrl: './cg-layer-edit.html',
   styleUrl: './cg-layer-edit.scss',
@@ -85,10 +102,21 @@ export class CgLayerEdit implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private notification = inject(NotificationService);
+  private readonly weatherApi = inject(CgWeatherService);
   readonly cg = inject(CgService);
 
   readonly Logo = CgElementType.Logo;
+  readonly Clock = CgElementType.Clock;
+  readonly Weather = CgElementType.Weather;
   readonly Subtitle = CgElementType.Subtitle;
+  readonly clockFormats = CG_CLOCK_FORMAT_OPTIONS;
+  readonly clockLocales = CG_CLOCK_LOCALE_OPTIONS;
+  readonly clockZones = CG_CLOCK_TIMEZONE_OPTIONS;
+  readonly weatherUnits = CG_WEATHER_UNIT_OPTIONS;
+  readonly clockFormatCustom = CG_CLOCK_FORMAT_CUSTOM;
+  readonly clockDraft = signal('');
+  readonly placeQuery = signal('');
+  readonly placeResults = signal<CgWeatherPlace[]>([]);
   readonly lookOptions = CG_LAYER_LOOK_OPTIONS;
   readonly fontOptions = CG_SUBTITLE_FONT_OPTIONS;
   readonly fontGroups = CG_SUBTITLE_FONT_GROUPS;
@@ -154,6 +182,9 @@ export class CgLayerEdit implements OnInit {
       if (bindKey === this.boundLayerKey) return;
       this.boundLayerKey = bindKey;
       this.syncCustomFontOpen(layer);
+      this.syncClockDraft(layer);
+      this.placeQuery.set('');
+      this.placeResults.set([]);
     });
   });
 
@@ -508,7 +539,7 @@ export class CgLayerEdit implements OnInit {
     // X / Y keep their meaning (inset from the Anchor edge), so nothing is
     // rewritten here. Subtitle Alignment follows the Anchor's side once; the
     // operator can still pick any other combination afterwards.
-    if (layer.element_type === this.Subtitle) {
+    if (layer.element_type === this.Subtitle || this.isBug(layer)) {
       this.getSubtitleStyle(layer).textAlign = anchorSideX(value);
     }
     this.touchPreview();
@@ -725,6 +756,191 @@ export class CgLayerEdit implements OnInit {
     } catch (error: unknown) {
       this.notification.handleError('Copy failed', error);
     }
+  }
+
+  isBug(layer: CgLayerDraft): boolean {
+    return layer.element_type === this.Clock || layer.element_type === this.Weather;
+  }
+
+  bugStyle(layer: CgLayerDraft): CgSubtitleStyle {
+    layer.payload.style ??= defaultBugStyle();
+    return layer.payload.style;
+  }
+
+  clockOf(layer: CgLayerDraft): CgClockSettings {
+    layer.payload.clock ??= emptyClockSettings();
+    return layer.payload.clock;
+  }
+
+  weatherOf(layer: CgLayerDraft): CgWeatherSettings {
+    layer.payload.weather ??= emptyWeatherSettings();
+    const weather = layer.payload.weather;
+    if (weather.gapHum == null) weather.gapHum = 0.45;
+    if (weather.gapIcon == null) weather.gapIcon = 0.35;
+    return weather;
+  }
+
+  backgroundLayout(layer: CgLayerDraft): CgLayout {
+    if (!layer.payload.background) {
+      layer.payload.background = {
+        imageUrl: '',
+        layout: { ...DEFAULT_BUG_BACKGROUND_LAYOUT },
+      };
+    }
+    return layer.payload.background.layout;
+  }
+
+  hasBackground(layer: CgLayerDraft): boolean {
+    return !!layer.payload.background?.imageUrl;
+  }
+
+  clearBackground(layer: CgLayerDraft): void {
+    layer.payload.background = undefined;
+    this.touchPreview();
+  }
+
+  onBackgroundUrl(layer: CgLayerDraft, url: string): void {
+    const layout = this.backgroundLayout(layer);
+    if (!layer.payload.background) return;
+    if (isLocalFilesystemPath(url) || isEmbeddedImageUrl(url)) {
+      this.notification.handleError(
+        'Image',
+        'Use Choose local image or an http(s) URL.',
+      );
+      layer.payload.background.imageUrl = '';
+      return;
+    }
+    layer.payload.background.imageUrl = url.trim();
+    layer.payload.background.layout = layout;
+    if (!layer.payload.background.imageUrl) layer.payload.background = undefined;
+    this.touchPreview();
+  }
+
+  async onBackgroundFile(layer: CgLayerDraft, event: Event): Promise<void> {
+    const input = event.target;
+    if (!(input instanceof HTMLInputElement)) return;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+    if (file.size > CG_LOGO_MAX_BYTES) {
+      this.notification.handleError('Image', 'File is larger than 1.5 MB.');
+      return;
+    }
+    const url = await this.cg.uploadLogoImage(layer.public_token, file);
+    if (!url) return;
+    layer.payload.background = {
+      imageUrl: url,
+      fileName: file.name,
+      layout: layer.payload.background?.layout ?? { ...DEFAULT_BUG_BACKGROUND_LAYOUT },
+    };
+    this.touchPreview();
+  }
+
+  onBackgroundAnchor(layer: CgLayerDraft, event: MatButtonToggleChange): void {
+    const value = event.value as CgAnchor;
+    const layout = this.backgroundLayout(layer);
+    if (!value) return;
+    layout.anchor = value;
+    this.touchPreview();
+  }
+
+  backgroundIgnores(layer: CgLayerDraft, axis: 'x' | 'y'): boolean {
+    const layout = layer.payload.background?.layout;
+    if (!layout) return false;
+    return anchorIgnoresAxis(layout.anchor)[axis];
+  }
+
+  backgroundAxisLabel(layer: CgLayerDraft, axis: 'x' | 'y'): string {
+    const layout = this.backgroundLayout(layer);
+    if (axis === 'x') {
+      const side = anchorSideX(layout.anchor);
+      return side === 'center' ? 'X · centered' : `From ${side}`;
+    }
+    const side = anchorSideY(layout.anchor);
+    return side === 'center' ? 'Y · centered' : `From ${side}`;
+  }
+
+  clockFormatValue(layer: CgLayerDraft): string {
+    const format = this.clockOf(layer).format;
+    return clockFormatIsKnown(format) ? format : this.clockFormatCustom;
+  }
+
+  onClockFormat(layer: CgLayerDraft, value: string): void {
+    if (value === this.clockFormatCustom) {
+      if (clockFormatIsKnown(this.clockOf(layer).format)) {
+        this.clockOf(layer).format = '';
+      }
+      this.touchPreview();
+      return;
+    }
+    this.clockOf(layer).format = value;
+    this.touchPreview();
+  }
+
+  onClockMode(layer: CgLayerDraft, event: MatButtonToggleChange): void {
+    if (event.value !== 'live' && event.value !== 'custom') return;
+    this.clockOf(layer).mode = event.value;
+    this.touchPreview();
+  }
+
+  useClockNow(layer: CgLayerDraft): void {
+    this.clockDraft.set(this.formatWallClock(Date.now(), this.clockOf(layer).timeZone));
+  }
+
+  async pushClock(layer: CgLayerDraft): Promise<void> {
+    const settings = this.clockOf(layer);
+    const ms = wallClockToUtcMs(this.clockDraft(), settings.timeZone);
+    if (ms == null) {
+      this.notification.handleError('Clock', 'Enter a full date and time.');
+      return;
+    }
+    settings.mode = 'custom';
+    settings.customBaseMs = ms;
+    settings.customPushedAtMs = Date.now();
+    this.touchPreview();
+    await this.cg.flushPendingLayerContent();
+  }
+
+  async searchPlaces(): Promise<void> {
+    const results = await this.weatherApi.search(this.placeQuery());
+    this.placeResults.set(results);
+  }
+
+  pickPlace(layer: CgLayerDraft, place: CgWeatherPlace): void {
+    this.weatherOf(layer).location = {
+      name: place.name,
+      lat: place.lat,
+      lon: place.lon,
+    };
+    this.placeQuery.set(place.label);
+    this.placeResults.set([]);
+    this.touchPreview();
+  }
+
+  private syncClockDraft(layer: CgLayerDraft | null): void {
+    if (!layer || layer.element_type !== this.Clock) {
+      this.clockDraft.set('');
+      return;
+    }
+    const settings = layer.payload.clock ?? emptyClockSettings();
+    const ms = settings.customBaseMs ?? Date.now();
+    this.clockDraft.set(this.formatWallClock(ms, settings.timeZone));
+  }
+
+  private formatWallClock(ms: number, timeZone: string): string {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: timeZone || undefined,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hourCycle: 'h23',
+    }).formatToParts(new Date(ms));
+    const read = (type: Intl.DateTimeFormatPartTypes) =>
+      parts.find((part) => part.type === type)?.value ?? '00';
+    return `${read('year')}-${read('month')}-${read('day')}T${read('hour')}:${read('minute')}:${read('second')}`;
   }
 
   removeLayer(layer: CgLayerDraft): void {

@@ -1,0 +1,117 @@
+@use "@angular/material" as mat;
+
+:host {
+  display: block;
+  min-width: 0;
+}
+
+:host mat-button-toggle-group.cg-seg-toggle {
+  height: 28px;
+  min-height: 28px;
+  max-height: 28px;
+  border: 1px solid var(--app-button-border);
+  border-radius: var(--app-radius);
+  overflow: hidden;
+  @include mat.button-toggle-overrides(
+    (
+      shape: 0,
+      height: 26px,
+      background-color: transparent,
+      text-color: var(--app-text-primary),
+      divider-color: var(--app-button-border),
+      selected-state-background-color: var(--app-accent),
+      selected-state-text-color: var(--app-accent-contrast),
+    )
+  );
+
+  mat-button-toggle {
+    background: var(--app-button-bg);
+    font-size: 12px;
+  }
+
+  mat-button-toggle.mat-button-toggle-checked {
+    background: var(--app-button-primary-bg);
+  }
+}
+
+.cg-sub-styling {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cg-style-row,
+.cg-spacing-row,
+.cg-border-row,
+.cg-gradient-row,
+.cg-scale-row,
+.cg-shadow-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px 12px;
+}
+
+.cg-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  font-size: 11px;
+  color: var(--app-text-muted);
+
+  input,
+  select {
+    box-sizing: border-box;
+    height: 28px;
+    padding: 0 8px;
+    border: 1px solid var(--app-input-border);
+    border-radius: 4px;
+    background: var(--app-input-bg);
+    color: var(--app-text-primary);
+    font: 13px var(--app-font);
+  }
+
+  input[type='number'] {
+    width: 72px;
+  }
+
+  input[type='text']:not(.cg-color-hex) {
+    width: 220px;
+  }
+
+  select {
+    width: 220px;
+    max-width: 100%;
+  }
+}
+
+.cg-text-paint-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.cg-color-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+
+  input[type='color'].cg-color-swatch {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 1px solid var(--app-input-border);
+    border-radius: 4px;
+    background: transparent;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  input[type='text'].cg-color-hex {
+    width: 84px;
+    flex: none;
+  }
+}

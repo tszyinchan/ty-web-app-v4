@@ -1,0 +1,83 @@
+:host {
+  display: contents;
+}
+
+.wx-row {
+  box-sizing: border-box;
+  display: block;
+  width: max-content;
+  max-width: none;
+  overflow: visible;
+  pointer-events: none;
+  user-select: none;
+}
+
+.wx-cluster {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  width: max-content;
+  white-space: nowrap;
+}
+
+.wx-text {
+  position: relative;
+  display: inline-block;
+  flex: none;
+  color: var(--cg-sub-color, #fff);
+  font-family: var(
+    --cg-sub-font-family,
+    ('華康中黑體', '華康中黑體(P)', 'Microsoft JhengHei', 'Segoe UI', sans-serif)
+  );
+  /* Size lives on the text, not the positioned box. OBS shrinks vh/cqh on that box. */
+  font-size: calc(var(--cg-sub-font, 3.5) * 1vh);
+  font-size: calc(var(--cg-sub-font, 3.5) * 1cqh);
+  font-weight: var(--cg-sub-font-weight, 700);
+  font-style: var(--cg-sub-font-style, normal);
+  letter-spacing: var(--cg-sub-letter-spacing, 0.02em);
+  line-height: 1;
+  transform: scale(var(--cg-sub-scale-x, 1), var(--cg-sub-scale-y, 1));
+  transform-origin: center center;
+  filter: var(--cg-sub-filter, none);
+}
+
+.sub-stroke,
+.sub-fill {
+  display: block;
+  white-space: nowrap;
+}
+
+.sub-stroke {
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: var(--cg-sub-stroke-color, #000);
+  -webkit-text-stroke: var(--cg-sub-stroke-width, 0.08em) var(--cg-sub-stroke-color, #000);
+}
+
+.sub-fill {
+  position: relative;
+  color: var(--cg-sub-color, #fff);
+  text-decoration-line: var(--cg-sub-decoration, none);
+  background-image: var(--cg-sub-fill-image, none);
+  background-repeat: no-repeat;
+}
+
+.sub-fill.is-gradient {
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.wx-hum {
+  margin-left: var(--wx-gap-hum, 0.45em);
+}
+
+.wx-icon {
+  flex: none;
+  margin-left: var(--wx-gap-icon, 0.35em);
+  height: calc(var(--cg-sub-font, 3.5) * 1.35vh);
+  height: calc(var(--cg-sub-font, 3.5) * 1.35cqh);
+  width: auto;
+  display: block;
+}

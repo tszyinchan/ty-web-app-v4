@@ -63,6 +63,46 @@ export interface CgSubtitleStyle extends CgTextPaint {
   textAlign?: CgSubtitleAlign;
 }
 
+/** Optional image behind Clock / Weather text. Place is independent of the text box. */
+export interface CgBackground {
+  imageUrl: string;
+  fileName?: string;
+  layout: CgLayout;
+}
+
+export type CgClockLocale = 'en' | 'zh-Hant';
+export type CgClockMode = 'live' | 'custom';
+
+export interface CgClockSettings {
+  /** Angular `DatePipe` name or pattern. */
+  format: string;
+  locale: CgClockLocale;
+  /** IANA zone. Empty = the viewer's local zone. */
+  timeZone: string;
+  mode: CgClockMode;
+  /** UTC instant of the wall-clock time the operator pushed. */
+  customBaseMs: number | null;
+  /** `Date.now()` on the Panel when Push was clicked. */
+  customPushedAtMs: number | null;
+}
+
+export interface CgWeatherLocation {
+  name: string;
+  lat: number;
+  lon: number;
+}
+
+export type CgWeatherUnitMode = 'alternate' | 'c' | 'f';
+
+export interface CgWeatherSettings {
+  location: CgWeatherLocation | null;
+  unitMode: CgWeatherUnitMode;
+  /** Space between temperature and humidity, in em. */
+  gapHum: number;
+  /** Space between humidity and the condition icon, in em. */
+  gapIcon: number;
+}
+
 /** Inner cue / future Layer animation. Not Package Appear. */
 export interface CgLayerTransition {
   duration_ms: number;
@@ -78,7 +118,12 @@ export interface CgSubtitlePayload {
   transition: CgLayerTransition;
 }
 
-export type CgLayerPayload = CgLogoPayload & CgSubtitlePayload;
+export type CgLayerPayload = CgLogoPayload &
+  CgSubtitlePayload & {
+    background?: CgBackground;
+    clock?: CgClockSettings;
+    weather?: CgWeatherSettings;
+  };
 
 export interface CgPackage {
   tb_tyapp_cgpk_id: string;

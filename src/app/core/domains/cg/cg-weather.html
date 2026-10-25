@@ -1,0 +1,20 @@
+@if (backgroundUrl()) {
+  <app-cg-logo
+    [imageUrl]="backgroundUrl()"
+    [layout]="backgroundLayout()"
+    [outline]="outline()"
+  />
+}
+<div class="wx-row" [ngStyle]="rowCss()">
+  <div class="wx-cluster">
+    <span class="wx-text">
+      <span class="sub-stroke" aria-hidden="true">{{ tempText() }}</span>
+      <span class="sub-fill" [class.is-gradient]="gradientOn()">{{ tempText() }}</span>
+    </span>
+    <span class="wx-text wx-hum">
+      <span class="sub-stroke" aria-hidden="true">{{ humidityText() }}</span>
+      <span class="sub-fill" [class.is-gradient]="gradientOn()">{{ humidityText() }}</span>
+    </span>
+    <img class="wx-icon" [src]="iconUrl()" alt="" />
+  </div>
+</div>

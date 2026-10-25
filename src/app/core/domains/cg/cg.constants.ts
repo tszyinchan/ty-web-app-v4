@@ -99,7 +99,7 @@ export const CG_ELEMENT_CATALOG: ReadonlyArray<CgElementDef> = [
     type: CgElementType.Clock,
     label: 'Clock',
     description: 'On-air clock',
-    shipped: false,
+    shipped: true,
   },
   {
     type: CgElementType.Title,
@@ -129,7 +129,7 @@ export const CG_ELEMENT_CATALOG: ReadonlyArray<CgElementDef> = [
     type: CgElementType.Weather,
     label: 'Weather',
     description: 'Temperature bug',
-    shipped: false,
+    shipped: true,
   },
 ];
 
@@ -415,3 +415,105 @@ export const CG_LOGO_MAX_BYTES = 1_500_000;
 // listens on Realtime and only re-fetches the RPC on connect / safety poll.
 // See supabase/sql/cg-logo-storage.sql.
 export const CG_LOGO_BUCKET = 'cg-logo';
+
+/** Clock and Weather text box. Top right matches a typical bug. */
+export const DEFAULT_CLOCK_LAYOUT = {
+  x: 3,
+  y: 3,
+  unit: CgLayoutUnit.Percent,
+  anchor: CgAnchor.TopRight,
+  scale: 1,
+} as const;
+
+export const DEFAULT_WEATHER_LAYOUT = {
+  x: 3,
+  y: 8,
+  unit: CgLayoutUnit.Percent,
+  anchor: CgAnchor.TopRight,
+  scale: 1,
+} as const;
+
+export const DEFAULT_BUG_BACKGROUND_LAYOUT = {
+  x: 2,
+  y: 2,
+  unit: CgLayoutUnit.Percent,
+  anchor: CgAnchor.TopRight,
+  scale: 1,
+} as const;
+
+/** Default type size for Clock / Weather (vh). */
+export const CG_BUG_FONT_VH = 3.5;
+
+export const CG_CLOCK_FORMAT_CUSTOM = '__custom__';
+
+export interface CgClockFormatOption {
+  value: string;
+  label: string;
+}
+
+/** Predefined DatePipe names plus patterns. Chinese literals pass through the pattern. */
+export const CG_CLOCK_FORMAT_OPTIONS: ReadonlyArray<CgClockFormatOption> = [
+  { value: 'HH:mm:ss', label: 'HH:mm:ss' },
+  { value: 'HH:mm', label: 'HH:mm' },
+  { value: 'hh:mm:ss a', label: 'hh:mm:ss AM/PM' },
+  { value: 'hh:mm a', label: 'hh:mm AM/PM' },
+  { value: 'yyyy-MM-dd HH:mm:ss', label: 'YYYY-MM-DD HH:mm:ss' },
+  { value: 'yyyy-MM-dd HH:mm', label: 'YYYY-MM-DD HH:mm' },
+  { value: 'yyyy-MM-dd', label: 'YYYY-MM-DD' },
+  { value: 'y年M月d日', label: '年月日' },
+  { value: 'y年M月d日 HH:mm:ss', label: '年月日 HH:mm:ss' },
+  { value: 'y年M月d日 EEEE HH:mm', label: '年月日 星期 HH:mm' },
+  { value: 'short', label: 'short' },
+  { value: 'medium', label: 'medium' },
+  { value: 'long', label: 'long' },
+  { value: 'full', label: 'full' },
+  { value: 'shortDate', label: 'shortDate' },
+  { value: 'mediumDate', label: 'mediumDate' },
+  { value: 'longDate', label: 'longDate' },
+  { value: 'fullDate', label: 'fullDate' },
+  { value: 'shortTime', label: 'shortTime' },
+  { value: 'mediumTime', label: 'mediumTime' },
+  { value: 'longTime', label: 'longTime' },
+  { value: 'fullTime', label: 'fullTime' },
+];
+
+export const CG_CLOCK_LOCALE_OPTIONS: ReadonlyArray<{
+  value: 'en' | 'zh-Hant';
+  label: string;
+}> = [
+  { value: 'zh-Hant', label: '繁體中文' },
+  { value: 'en', label: 'English' },
+];
+
+export const CG_CLOCK_TIMEZONE_LOCAL = '';
+
+export const CG_CLOCK_TIMEZONE_OPTIONS: ReadonlyArray<{
+  value: string;
+  label: string;
+}> = [
+  { value: CG_CLOCK_TIMEZONE_LOCAL, label: 'Local' },
+  { value: 'Asia/Hong_Kong', label: 'Hong Kong' },
+  { value: 'Asia/Taipei', label: 'Taipei' },
+  { value: 'Asia/Tokyo', label: 'Tokyo' },
+  { value: 'Asia/Seoul', label: 'Seoul' },
+  { value: 'Asia/Singapore', label: 'Singapore' },
+  { value: 'Asia/Shanghai', label: 'Shanghai' },
+  { value: 'UTC', label: 'UTC' },
+  { value: 'Europe/London', label: 'London' },
+  { value: 'Europe/Paris', label: 'Paris' },
+  { value: 'America/New_York', label: 'New York' },
+  { value: 'America/Los_Angeles', label: 'Los Angeles' },
+  { value: 'Australia/Sydney', label: 'Sydney' },
+];
+
+export const CG_WEATHER_UNIT_OPTIONS: ReadonlyArray<{
+  value: 'alternate' | 'c' | 'f';
+  label: string;
+}> = [
+  { value: 'alternate', label: 'C / F each minute' },
+  { value: 'c', label: 'Celsius' },
+  { value: 'f', label: 'Fahrenheit' },
+];
+
+/** Open-Meteo current conditions. Shared by every Stage that shows the same place. */
+export const CG_WEATHER_CACHE_MS = 10 * 60 * 1000;

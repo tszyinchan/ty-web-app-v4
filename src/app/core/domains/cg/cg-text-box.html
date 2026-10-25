@@ -1,0 +1,16 @@
+@if (text()) {
+  <div class="sub-box" [ngStyle]="rowCss()">
+    <span class="sub-text">
+      <span class="sub-stroke" aria-hidden="true">
+        @for (part of parts(); track $index) {
+          <span [class.latin]="part.latin">{{ part.text }}</span>
+        }
+      </span>
+      <span class="sub-fill" [class.is-gradient]="gradientOn()">
+        @for (part of parts(); track $index) {
+          <span [class.latin]="part.latin">{{ part.text }}</span>
+        }
+      </span>
+    </span>
+  </div>
+}
