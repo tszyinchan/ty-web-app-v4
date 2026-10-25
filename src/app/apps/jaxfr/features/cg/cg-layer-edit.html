@@ -494,15 +494,6 @@
                     }
                   </label>
                   <label class="cg-field cg-control-field">
-                    <span>Width (%)</span>
-                    <input
-                      type="number"
-                      [(ngModel)]="layer.layout.width"
-                      (ngModelChange)="touchPreview()"
-                      (wheel)="onPlaceWheel($event, layer, 'width')"
-                    />
-                  </label>
-                  <label class="cg-field cg-control-field">
                     <span>Scale</span>
                     <input
                       type="number"
@@ -515,8 +506,8 @@
                 </div>
               </div>
               <p class="cg-hint">
-                Anchor places the box; Align sets text inside it. A centered
-                axis ignores its value · Scale type size · Width wrap %.
+                Align puts the box's left / middle / right on the Anchor point.
+                A centered axis ignores its value · Scale is type size.
               </p>
             </section>
             <section class="cg-sub-styling">

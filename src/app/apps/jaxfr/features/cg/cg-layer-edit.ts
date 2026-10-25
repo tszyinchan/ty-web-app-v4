@@ -217,7 +217,7 @@ export class CgLayerEdit implements OnInit {
   onPlaceWheel(
     event: WheelEvent,
     layer: CgLayerDraft,
-    field: 'x' | 'y' | 'scale' | 'width',
+    field: 'x' | 'y' | 'scale',
   ): void {
     event.preventDefault();
     if ((field === 'x' || field === 'y') && this.ignoresAxis(layer, field)) {
@@ -227,9 +227,6 @@ export class CgLayerEdit implements OnInit {
     if (field === 'scale') {
       const next = Math.round((layer.layout.scale + dir * 0.05) * 100) / 100;
       layer.layout.scale = Math.max(0.05, next);
-    } else if (field === 'width') {
-      const current = layer.layout.width ?? 88;
-      layer.layout.width = Math.max(10, Math.min(100, Math.round(current + dir)));
     } else {
       layer.layout[field] = Math.round((layer.layout[field] + dir) * 10) / 10;
     }

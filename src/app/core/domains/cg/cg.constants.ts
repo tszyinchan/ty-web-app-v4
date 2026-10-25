@@ -177,7 +177,6 @@ export const DEFAULT_SUBTITLE_LAYOUT = {
   unit: CgLayoutUnit.Percent,
   anchor: CgAnchor.BottomCenter,
   scale: 1,
-  width: 88,
 } as const;
 
 /** Scale 1 type size: percent of Stage / OBS viewport height (ffmpeg FontSize 16.1 on PlayRes 288). */

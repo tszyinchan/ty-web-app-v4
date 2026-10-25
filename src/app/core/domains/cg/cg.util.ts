@@ -760,10 +760,7 @@ export function subtitleLayoutToCss(
   layout: CgLayout,
   styleOrPreset: CgSubtitleStyle | CgSubtitlePreset = CgSubtitlePreset.News,
 ): Record<string, string> {
-  const css = anchoredBoxCss(layout, {
-    scaleAsTransform: false,
-    defaultWidth: DEFAULT_SUBTITLE_LAYOUT.width,
-  });
+  const css = anchoredBoxCss(layout, { scaleAsTransform: false });
   const style: CgSubtitleStyle =
     typeof styleOrPreset === 'string'
       ? { preset: normalizeSubtitlePreset(styleOrPreset) }
@@ -796,41 +793,64 @@ export function subtitleLayoutToCss(
   const lineHeight = style.lineHeight != null ? style.lineHeight : 1.15;
   css['--cg-sub-line-height'] = String(lineHeight);
 
-  // Anchor decides where the box sits (vertical here). Alignment decides where
-  // the text sits inside that box, independent of Anchor.
+  // Anchor + X / Y give the Anchor point. Alignment says which part of the
+  // shrink-to-fit caption box sits on that point horizontally: left edge,
+  // centre or right edge. Vertical placement stays with Anchor. The box is not
+  // clamped to the Stage, so it may overflow on purpose.
   const anchor = layout.anchor || CgAnchor.BottomCenter;
+  const sideX = anchorSideX(anchor);
   const sideY = anchorSideY(anchor);
   const isTop = sideY === 'top';
   const isCenterY = sideY === 'center';
   const textAlign = resolveSubtitleAlign(style, anchor);
 
-  const boxJustify =
-    textAlign === 'left'
-      ? 'flex-start'
-      : textAlign === 'right'
-        ? 'flex-end'
-        : 'center';
+  const x = Number.isFinite(layout.x) ? layout.x : 0;
+  const insetX = logoLength(x, layout.unit);
+  const pointX =
+    sideX === 'center'
+      ? '50%'
+      : sideX === 'right'
+        ? `calc(100% - ${insetX})`
+        : insetX;
+  const shiftX =
+    textAlign === 'left' ? '0' : textAlign === 'center' ? '-50%' : '-100%';
+  const shiftY = isCenterY ? '-50%' : '0';
+
+  css['left'] = pointX;
+  css['right'] = 'auto';
+  css['width'] = 'max-content';
+  css['maxWidth'] = '100%';
+  css['transform'] =
+    shiftX === '0' && shiftY === '0'
+      ? 'none'
+      : `translate(${shiftX}, ${shiftY})`;
+
   const boxAlign = isTop ? 'flex-start' : isCenterY ? 'center' : 'flex-end';
   const originY = isTop ? 'top' : isCenterY ? 'center' : 'bottom';
-  const originX = textAlign;
 
-  css['--cg-sub-box-justify'] = boxJustify;
   css['--cg-sub-box-align'] = boxAlign;
   css['--cg-sub-text-align'] = textAlign;
-  css['--cg-sub-transform-origin'] = `${originX} ${originY}`;
+  css['--cg-sub-transform-origin'] = `${textAlign} ${originY}`;
 
+  // The fading-out cue stays pinned to the same edge as the incoming one.
+  const outShiftX = textAlign === 'center' ? '-50%' : '0';
+  css['--cg-sub-outgoing-left'] =
+    textAlign === 'left' ? '0' : textAlign === 'center' ? '50%' : 'auto';
+  css['--cg-sub-outgoing-right'] = textAlign === 'right' ? '0' : 'auto';
   if (isTop) {
     css['--cg-sub-outgoing-top'] = '0';
     css['--cg-sub-outgoing-bottom'] = 'auto';
-    css['--cg-sub-outgoing-transform'] = 'none';
+    css['--cg-sub-outgoing-transform'] =
+      outShiftX === '0' ? 'none' : `translateX(${outShiftX})`;
   } else if (isCenterY) {
     css['--cg-sub-outgoing-top'] = '50%';
     css['--cg-sub-outgoing-bottom'] = 'auto';
-    css['--cg-sub-outgoing-transform'] = 'translateY(-50%)';
+    css['--cg-sub-outgoing-transform'] = `translate(${outShiftX}, -50%)`;
   } else {
     css['--cg-sub-outgoing-top'] = 'auto';
     css['--cg-sub-outgoing-bottom'] = '0';
-    css['--cg-sub-outgoing-transform'] = 'none';
+    css['--cg-sub-outgoing-transform'] =
+      outShiftX === '0' ? 'none' : `translateX(${outShiftX})`;
   }
 
   const color = style.color || (isShow ? '#fff6d8' : '#ffffff');

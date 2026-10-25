@@ -6,7 +6,6 @@
   box-sizing: border-box;
   display: flex;
   align-items: var(--cg-sub-box-align, flex-end);
-  justify-content: var(--cg-sub-box-justify, center);
   min-width: 0;
   pointer-events: none;
   user-select: none;
@@ -69,8 +68,10 @@
 
 .sub-text.outgoing {
   position: absolute;
-  left: 0;
-  right: 0;
+  left: var(--cg-sub-outgoing-left, 0);
+  right: var(--cg-sub-outgoing-right, auto);
+  width: max-content;
+  max-width: none;
   top: var(--cg-sub-outgoing-top, auto);
   bottom: var(--cg-sub-outgoing-bottom, 0);
   transform: var(--cg-sub-outgoing-transform, none);

@@ -54,7 +54,7 @@
 
 | # | 操作 | 預期 |
 |---|---|---|
-| A1 | Welcome 點 **CG**，或開 `/cg/list` | 進入 package 清單。**有**全域 AppToolbar（跟 Attendance / Article 一樣：標題 CG、回 Welcome、Refresh、New package）。內容是 `standard-list-view` 列 + Article 同款 `mat-form-field` 搜尋（不是自製卡片格子）。**沒有** 200ms 整頁 crossfade。Panel（`/cg/edit`）仍**沒有**全域 toolbar。清單不再鎖 `width=1280`；進 Panel 才鎖桌面寬 |
+| A1 | Welcome 點 **CG**，或開 `/cg/list` | 進入 package 清單。**有**全域 AppToolbar（跟 Attendance / Article 一樣：標題 CG、回 Welcome、Refresh、New package）。內容是 `standard-list-view` 列 + Article 同款 `mat-form-field` 搜尋（不是自製卡片格子）。**沒有**頁面切換動畫。Panel（`/cg/edit`）仍**沒有**全域 toolbar。清單不再鎖 `width=1280`；進 Panel 才鎖桌面寬 |
 | A2 | 點 **New package**。預設 **Studio mode**。Name = `PKG_A`。頂列順序：**Take/Create** 在雲端狀態**左邊**。點 **Create** | 建立成功；狀態變 **On air**；Copy OBS（content_copy）可用 |
 | A3 | 再 New，Name = `PKG_B`，Role = Source，Create | 兩個 package 並存 |
 
@@ -76,9 +76,11 @@
 | B2k | 九宮格定位（Logo 與 Subtitle 都測）：X=4、Y=4，逐一點 9 個 Anchor | 四個角落各自靠對應角落、離邊約 4；Top/Bottom center 只靠上/下邊；Center left/right 只靠左/右邊；永遠在畫面內 |
 | B2l | Logo／Subtitle 選 Top center | X 欄變灰顯示「—」且不能輸入、滾輪無效；Y 照用。改選 Center left → Y 灰、X 可用。選正中 Center → X、Y 都灰，內容在畫面正中 |
 | B2m | 先在 Top left 把 X 設 20，換成 Top center，再換回 Top left | 換成 Top center 時 X 被忽略；換回後 X 仍是 20（數值沒被改寫） |
-| B2n | Subtitle Place：Anchor 下方有 Align 三顆按鈕。點 Anchor Top left | Align 自動變 Left，字幕靠左上。再手動點 Align right → 字幕在方塊內靠右；News／Show preset 不變 Custom |
-| B2o | Subtitle 九個 Anchor × 三種 Align（含 Bottom left + Align right） | 全部不跑出畫面；單行字也看得出靠左／置中／靠右；tile、desk、overlay 一致 |
-| B2p | 新加 Subtitle | 預設 Bottom center、Align center，約離底部 11%（外觀同舊預設）；Style 區沒有「文字對齊」下拉 |
+| B2n | Subtitle Place：Anchor 下方有 Align 三顆按鈕。點 Anchor Top left | Align 自動變 Left，字幕框左邊緣在 Anchor 點（離左、上各 X、Y），字幕框貼著文字大小。再手動點 Align right → 框的右邊緣移到同一個 Anchor 點、往左延伸；News／Show preset 不變 Custom |
+| B2o | Subtitle Anchor Bottom right（X=4、Y=11），依序點 Align right / center / left | right：框右邊緣在 Anchor 點，整個框在畫面內；center：框中心在 Anchor 點，一半超出畫面右側；left：框左邊緣在 Anchor 點，整個框在畫面外。垂直位置三次相同；tile、desk、overlay 一致 |
+| B2o2 | Subtitle Anchor Bottom center + Align left / right；Anchor Bottom left + Align right | Bottom center：框左（或右）邊緣在畫面水平中心，不自動夾回畫面；Bottom left + right：框右邊緣在離左邊 X 處、往左超出畫面。皆不被限制在畫面內 |
+| B2o3 | Subtitle 一句兩行（含 `\n`）的 cue，各 Align 值 | 框寬跟最長那行；兩行文字靠左／置中／靠右與 Align 同方向；cue 換句淡出時舊句貼在同一邊緣，不跳位 |
+| B2p | 新加 Subtitle | 預設 Bottom center、Align center，約離底部 11%（外觀同舊預設）；Place 沒有 Width 欄（只有 X / Y / Scale）；Style 區沒有「文字對齊」下拉 |
 | B2b | Logo desk 沒有 Studio mode / Apply / Discard。離開 desk（關 tile、Back）不會出現 confirm | 一律 Live，沒有「Discard and leave」提示 |
 | B2e | On air 監看 = 實際播出：Studio 與 Direct 都做：改 Scale、撥 On/Off（Take）、改 Look、cue Down，同時開 overlay 分頁 | Panel **On air** 與 overlay 逐項一致（位置、大小、灰階、字幕句）；On air 比編輯晚約 0.5–1s（debounce + RPC）。Direct 模式 On air 也走這條，不是草稿 |
 | B2f | 斷網（或封鎖 Realtime）後改 Logo Scale | 出現錯誤提示；Panel **On air** 不更新（不顯示沒送到 OBS 的內容） |
