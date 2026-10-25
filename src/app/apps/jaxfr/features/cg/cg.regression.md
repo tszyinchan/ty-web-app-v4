@@ -131,6 +131,22 @@
 | T6 | Take 後看 Network | 沒有緊接的 `tyapp_cg_package` + `tyapp_cg_layer` 完整重抓；Panel 狀態（On air、Layer id）正確 |
 | T7 | 暫時斷網 30s 後復網 | overlay 保持原畫面不變空白；復網後自動對齊（一次 full fetch） |
 
+### W — 滑鼠滾輪（Layer desk 與 Package Appear）
+
+| # | 操作 | 預期 |
+|---|---|---|
+| W1 | Logo desk：滑鼠停在 X 上滾（不點）：往上、往下 | 每格 ±0.1；Alt ±0.01；Shift ±1；預覽立刻變；desk 不跟著捲動 |
+| W2 | Scale 滾到底（往下） | 停在 0.05，不再變；到底後繼續滾不產生新的 Network 寫入 |
+| W3 | Subtitle desk：Size／字距／行距／Scale X／Scale Y／Stroke／Shadow Distance／Radius 各滾一格 | 步進依序 0.1／0.01／0.05／0.05／0.05／0.01／0.5／0.5；News 會變 Custom |
+| W4 | 字距（預設 0.104）往上滾一格 | 對齊格線 → 0.11，再一格 0.12 |
+| W5 | Shadow Angle：135 往上滾；滾過 360；0 往下滾 | 步進 15（Alt 1、Shift 45）；360 之後回 0；0 往下變 345 |
+| W6 | Cue ms 往下滾到底 | 停在 50，不變成 Cut；ms 欄位不消失。往上到 5000 停住 |
+| W7 | Cue ms 連續滾約 2 秒，看 Network | 只有停手後約 0.5s 一次 `tyapp_cg_layer` update + 一次 publish |
+| W8 | Package Appear ms 滾輪（Studio） | 步進 50；Studio 要 Take 才上 OBS |
+| W9 | Font 下拉：滑鼠停在上面往下滾到底 | 依選單順序換字體（含 Default），不會選到「Other…」；到底停住 |
+| W10 | Copy to package 下拉滾輪 | 在「Choose…」與各 package 間移動；不會自動 Copy |
+| W11 | X 被置中錨點忽略（顯示 `—`） | 滾輪無作用 |
+
 ### CLEANUP
 
 | # | 操作 | 預期 |

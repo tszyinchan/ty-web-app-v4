@@ -72,6 +72,7 @@ export class CgService {
    */
   private lastPublishedSig = new Map<string, string>();
   private layerContentPersistTimers = new Map<string, number>();
+  private transitionPersistTimers = new Map<string, number>();
   private layerContentPersistInFlight = new Set<string>();
   private cueSeqByClient = new Map<string, number>();
   private cueWriteQueue = new Map<
@@ -681,6 +682,11 @@ export class CgService {
 
   /** Drop a pending Live write (layer removed from the draft). */
   cancelPersistLayerContent(clientId: string): void {
+    const transition = this.transitionPersistTimers.get(clientId);
+    if (transition !== undefined) {
+      window.clearTimeout(transition);
+      this.transitionPersistTimers.delete(clientId);
+    }
     const previous = this.layerContentPersistTimers.get(clientId);
     if (previous === undefined) return;
     window.clearTimeout(previous);
@@ -695,7 +701,16 @@ export class CgService {
       if (handle !== undefined) window.clearTimeout(handle);
       this.layerContentPersistTimers.delete(clientId);
     }
-    await Promise.all(pending.map((id) => this.persistLayerContent(id)));
+    const pendingTransitions = [...this.transitionPersistTimers.keys()];
+    for (const clientId of pendingTransitions) {
+      const handle = this.transitionPersistTimers.get(clientId);
+      if (handle !== undefined) window.clearTimeout(handle);
+      this.transitionPersistTimers.delete(clientId);
+    }
+    await Promise.all([
+      ...pending.map((id) => this.persistLayerContent(id)),
+      ...pendingTransitions.map((id) => this.persistLayerTransition(id)),
+    ]);
     for (let i = 0; i < 40 && this.layerContentPersistInFlight.size > 0; i++) {
       await new Promise<void>((resolve) => window.setTimeout(resolve, 50));
     }
@@ -898,14 +913,32 @@ export class CgService {
       );
     });
 
-    const layerId = current.tb_tyapp_cgly_id;
-    if (!layerId) return true;
+    if (!current.tb_tyapp_cgly_id) return true;
 
+    // Local draft is already updated. The DB write + publish are coalesced
+    // (latest wins) so typing or wheel scrubbing the ms field sends one write.
+    const previous = this.transitionPersistTimers.get(clientId);
+    if (previous !== undefined) window.clearTimeout(previous);
+    this.transitionPersistTimers.set(
+      clientId,
+      window.setTimeout(() => {
+        this.transitionPersistTimers.delete(clientId);
+        void this.persistLayerTransition(clientId);
+      }, LAYER_CONTENT_AUTOSAVE_MS),
+    );
+    return true;
+  }
+
+  private async persistLayerTransition(clientId: string): Promise<boolean> {
+    await this.waitForPendingCueWrites();
+    const current = this.draftLayers().find((layer) => layer.clientId === clientId);
+    const layerId = current?.tb_tyapp_cgly_id;
+    if (!current || !layerId) return false;
     try {
       const { error } = await this.supabase
         .from('tyapp_cg_layer')
         .update({
-          payload: nextDraft,
+          payload: current.payload,
           updated_at: new Date().toISOString(),
         })
         .eq('tb_tyapp_cgly_id', layerId);

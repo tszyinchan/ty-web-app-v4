@@ -157,11 +157,16 @@
               <span>ms</span>
               <input
                 type="number"
+                appCgWheel
                 [min]="cutMs"
                 [max]="maxDurationMs"
+                [appCgWheelMin]="wheelMinMs"
+                [appCgWheelFine]="10"
+                [appCgWheelCoarse]="500"
                 step="50"
                 [(ngModel)]="pkg.duration_ms"
                 (ngModelChange)="onDurationMsChange($event)"
+                (appCgWheelChange)="onDurationMsChange($event)"
               />
             </label>
           }

@@ -31,12 +31,14 @@ import { MatIconModule } from '@angular/material/icon';
 import { filter, map, startWith } from 'rxjs/operators';
 import { CgMixPreview } from '../../../../core/domains/cg/cg-mix-preview';
 import { CgProgram } from '../../../../core/domains/cg/cg-program';
+import { CgWheelStep } from '../../../../core/domains/cg/cg-wheel.directive';
 import {
   CG_CUT_DURATION_MS,
   CG_DEFAULT_DURATION_MS,
   CG_ELEMENT_CATALOG,
   CG_MAX_DURATION_MS,
   CG_PACKAGE_ROLE_OPTIONS,
+  CG_WHEEL_MIN_FADE_MS,
   CgElementType,
   CgPackageEditMode,
   CgPackageLook,
@@ -78,6 +80,7 @@ const DIRECT_AUTOSAVE_MS = 450;
     CdkDragHandle,
     CgMixPreview,
     CgProgram,
+    CgWheelStep,
   ],
   templateUrl: './cg-package-edit.html',
   styleUrl: './cg-package-edit.scss',
@@ -95,6 +98,7 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
   readonly backdrops = CgPreviewBackdrop;
   readonly cutMs = CG_CUT_DURATION_MS;
   readonly maxDurationMs = CG_MAX_DURATION_MS;
+  readonly wheelMinMs = CG_WHEEL_MIN_FADE_MS;
   readonly looks = CgPackageLook;
   readonly returnUrl = '/cg/list';
 

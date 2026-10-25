@@ -17,6 +17,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleChange, MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatIconModule } from '@angular/material/icon';
 import { CgMixPreview } from '../../../../core/domains/cg/cg-mix-preview';
+import { CgWheelSelect, CgWheelStep } from '../../../../core/domains/cg/cg-wheel.directive';
 import {
   CG_ANCHOR_GRID_OPTIONS,
   CG_ANCHOR_OPTIONS,
@@ -29,6 +30,7 @@ import {
   CG_SUBTITLE_ALIGN_OPTIONS,
   CG_SUBTITLE_FONT_GROUPS,
   CG_SUBTITLE_FONT_OPTIONS,
+  CG_WHEEL_MIN_FADE_MS,
   CgAnchor,
   CgElementType,
   CgLayerLook,
@@ -70,6 +72,8 @@ import { copyTextToClipboard } from '../../../../core/utils/copy-text.util';
     MatButtonToggleModule,
     MatIconModule,
     CgMixPreview,
+    CgWheelSelect,
+    CgWheelStep,
   ],
   templateUrl: './cg-layer-edit.html',
   styleUrl: './cg-layer-edit.scss',
@@ -96,6 +100,16 @@ export class CgLayerEdit implements OnInit {
   readonly scriptAccept = '.txt,.srt,text/plain,application/x-subrip';
   readonly cutMs = CG_CUT_DURATION_MS;
   readonly maxDurationMs = CG_MAX_DURATION_MS;
+  readonly wheelMinMs = CG_WHEEL_MIN_FADE_MS;
+  /** Font wheel order = dropdown order; "Other…" is left out on purpose. */
+  readonly fontWheelValues: readonly string[] = [
+    '',
+    ...CG_SUBTITLE_FONT_GROUPS.flatMap((group) =>
+      CG_SUBTITLE_FONT_OPTIONS.filter((font) => font.group === group.id).map(
+        (font) => font.value,
+      ),
+    ),
+  ];
   readonly layersBackdrop = this.cg.layersBackdrop;
   readonly copyTargetId = signal('');
   quickInputText = '';
@@ -144,6 +158,11 @@ export class CgLayerEdit implements OnInit {
       .packages()
       .filter((pkg) => pkg.tb_tyapp_cgpk_id !== current);
   });
+
+  readonly copyWheelValues = computed(() => [
+    '',
+    ...this.copyTargets().map((pkg) => pkg.tb_tyapp_cgpk_id),
+  ]);
 
   private readonly queueRows =
     viewChildren<ElementRef<HTMLButtonElement>>('queueRow');
@@ -212,25 +231,6 @@ export class CgLayerEdit implements OnInit {
     const layer = this.layer();
     if (!layer) return;
     this.cg.schedulePersistLayerContent(layer.clientId);
-  }
-
-  onPlaceWheel(
-    event: WheelEvent,
-    layer: CgLayerDraft,
-    field: 'x' | 'y' | 'scale',
-  ): void {
-    event.preventDefault();
-    if ((field === 'x' || field === 'y') && this.ignoresAxis(layer, field)) {
-      return;
-    }
-    const dir = event.deltaY < 0 ? 1 : -1;
-    if (field === 'scale') {
-      const next = Math.round((layer.layout.scale + dir * 0.05) * 100) / 100;
-      layer.layout.scale = Math.max(0.05, next);
-    } else {
-      layer.layout[field] = Math.round((layer.layout[field] + dir) * 10) / 10;
-    }
-    this.touchPreview();
   }
 
   toggleVisible(layer: CgLayerDraft): void {

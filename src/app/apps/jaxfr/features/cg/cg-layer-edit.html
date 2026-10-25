@@ -182,8 +182,10 @@
             @if (copyTargets().length > 0) {
               <select
                 class="cg-copy-select"
+                [appCgWheelSelect]="copyWheelValues()"
                 [ngModel]="copyTargetId()"
                 (ngModelChange)="copyTargetId.set($event)"
+                (appCgWheelChange)="copyTargetId.set($event)"
               >
                 <option value="">Choose…</option>
                 @for (pkg of copyTargets(); track pkg.tb_tyapp_cgpk_id) {
@@ -263,9 +265,11 @@
                 } @else {
                   <input
                     type="number"
+                    appCgWheel
+                    step="0.1"
                     [(ngModel)]="layer.layout.x"
                     (ngModelChange)="touchPreview()"
-                    (wheel)="onPlaceWheel($event, layer, 'x')"
+                    (appCgWheelChange)="layer.layout.x = $event; touchPreview()"
                   />
                 }
               </label>
@@ -276,9 +280,11 @@
                 } @else {
                   <input
                     type="number"
+                    appCgWheel
+                    step="0.1"
                     [(ngModel)]="layer.layout.y"
                     (ngModelChange)="touchPreview()"
-                    (wheel)="onPlaceWheel($event, layer, 'y')"
+                    (appCgWheelChange)="layer.layout.y = $event; touchPreview()"
                   />
                 }
               </label>
@@ -286,10 +292,12 @@
                 <span>Scale</span>
                 <input
                   type="number"
+                  appCgWheel
                   step="0.05"
+                  min="0.05"
                   [(ngModel)]="layer.layout.scale"
                   (ngModelChange)="touchPreview()"
-                  (wheel)="onPlaceWheel($event, layer, 'scale')"
+                  (appCgWheelChange)="layer.layout.scale = $event; touchPreview()"
                 />
               </label>
             </div>
@@ -357,11 +365,16 @@
                     <span>ms</span>
                     <input
                       type="number"
+                      appCgWheel
                       [min]="cutMs"
                       [max]="maxDurationMs"
+                      [appCgWheelMin]="wheelMinMs"
+                      [appCgWheelFine]="10"
+                      [appCgWheelCoarse]="500"
                       step="50"
                       [ngModel]="cueDurationMs(layer)"
                       (ngModelChange)="onCueDurationMsChange(layer, $event)"
+                      (appCgWheelChange)="onCueDurationMsChange(layer, $event)"
                     />
                   </label>
                   <div class="cg-cue-presets">
@@ -474,9 +487,11 @@
                     } @else {
                       <input
                         type="number"
+                        appCgWheel
+                        step="0.1"
                         [(ngModel)]="layer.layout.x"
                         (ngModelChange)="touchPreview()"
-                        (wheel)="onPlaceWheel($event, layer, 'x')"
+                        (appCgWheelChange)="layer.layout.x = $event; touchPreview()"
                       />
                     }
                   </label>
@@ -487,9 +502,11 @@
                     } @else {
                       <input
                         type="number"
+                        appCgWheel
+                        step="0.1"
                         [(ngModel)]="layer.layout.y"
                         (ngModelChange)="touchPreview()"
-                        (wheel)="onPlaceWheel($event, layer, 'y')"
+                        (appCgWheelChange)="layer.layout.y = $event; touchPreview()"
                       />
                     }
                   </label>
@@ -497,10 +514,12 @@
                     <span>Scale</span>
                     <input
                       type="number"
+                      appCgWheel
                       step="0.05"
+                      min="0.05"
                       [(ngModel)]="layer.layout.scale"
                       (ngModelChange)="touchPreview()"
-                      (wheel)="onPlaceWheel($event, layer, 'scale')"
+                      (appCgWheelChange)="layer.layout.scale = $event; touchPreview()"
                     />
                   </label>
                 </div>
@@ -515,8 +534,10 @@
                 <label class="cg-field cg-font-field">
                   <span>Font</span>
                   <select
+                    [appCgWheelSelect]="fontWheelValues"
                     [ngModel]="selectedFontValue(layer)"
                     (ngModelChange)="onFontSelectChange(layer, $event)"
+                    (appCgWheelChange)="onFontSelectChange(layer, $event)"
                   >
                     <option value="">Default (DFHei / JhengHei)</option>
                     @for (group of fontGroups; track group.id) {
@@ -544,11 +565,13 @@
                     <span>Size (vh)</span>
                     <input
                       type="number"
-                      step="0.2"
+                      appCgWheel
+                      step="0.1"
                       min="1"
                       max="20"
                       [ngModel]="subStyle.fontSize ?? (isPreset(PresetShow) ? 7.2 : 5.6)"
                       (ngModelChange)="subStyle.fontSize = $event; onStyleFieldChange(layer)"
+                      (appCgWheelChange)="subStyle.fontSize = $event; onStyleFieldChange(layer)"
                     />
                   </label>
                 }
@@ -559,11 +582,13 @@
                     <span>Size (vh)</span>
                     <input
                       type="number"
-                      step="0.2"
+                      appCgWheel
+                      step="0.1"
                       min="1"
                       max="20"
                       [ngModel]="subStyle.fontSize ?? (isPreset(PresetShow) ? 7.2 : 5.6)"
                       (ngModelChange)="subStyle.fontSize = $event; onStyleFieldChange(layer)"
+                      (appCgWheelChange)="subStyle.fontSize = $event; onStyleFieldChange(layer)"
                     />
                   </label>
                 </div>
@@ -574,22 +599,26 @@
                   <span>字距 (em)</span>
                   <input
                     type="number"
+                    appCgWheel
                     step="0.01"
                     min="-0.2"
                     max="1.0"
                     [ngModel]="subStyle.letterSpacing ?? (isPreset(PresetShow) ? 0.06 : 0.104)"
                     (ngModelChange)="subStyle.letterSpacing = $event; onStyleFieldChange(layer)"
+                    (appCgWheelChange)="subStyle.letterSpacing = $event; onStyleFieldChange(layer)"
                   />
                 </label>
                 <label class="cg-field">
                   <span>行距 (倍數)</span>
                   <input
                     type="number"
+                    appCgWheel
                     step="0.05"
                     min="0.8"
                     max="3.0"
                     [ngModel]="subStyle.lineHeight ?? 1.15"
                     (ngModelChange)="subStyle.lineHeight = $event; onStyleFieldChange(layer)"
+                    (appCgWheelChange)="subStyle.lineHeight = $event; onStyleFieldChange(layer)"
                   />
                 </label>
               </div>
@@ -599,22 +628,26 @@
                   <span>Scale X (寬比)</span>
                   <input
                     type="number"
+                    appCgWheel
                     step="0.05"
                     min="0.5"
                     max="2.5"
                     [ngModel]="subStyle.scaleX ?? 1.0"
                     (ngModelChange)="subStyle.scaleX = $event; onStyleFieldChange(layer)"
+                    (appCgWheelChange)="subStyle.scaleX = $event; onStyleFieldChange(layer)"
                   />
                 </label>
                 <label class="cg-field">
                   <span>Scale Y (高比)</span>
                   <input
                     type="number"
+                    appCgWheel
                     step="0.05"
                     min="0.5"
                     max="2.5"
                     [ngModel]="subStyle.scaleY ?? (isPreset(PresetShow) ? 1.0 : 1.11)"
                     (ngModelChange)="subStyle.scaleY = $event; onStyleFieldChange(layer)"
+                    (appCgWheelChange)="subStyle.scaleY = $event; onStyleFieldChange(layer)"
                   />
                 </label>
                 <label class="cg-field">
@@ -641,11 +674,13 @@
                   <span>Stroke (em)</span>
                   <input
                     type="number"
+                    appCgWheel
                     step="0.01"
                     min="0"
                     max="0.4"
                     [ngModel]="subStyle.borderWidth ?? (isPreset(PresetShow) ? 0.16 : 0.12)"
                     (ngModelChange)="subStyle.borderWidth = $event; onStyleFieldChange(layer)"
+                    (appCgWheelChange)="subStyle.borderWidth = $event; onStyleFieldChange(layer)"
                   />
                 </label>
                 <label class="cg-field">
@@ -672,33 +707,42 @@
                   <span>Shadow Angle</span>
                   <input
                     type="number"
+                    appCgWheel
+                    appCgWheelWrap
+                    [appCgWheelFine]="1"
+                    [appCgWheelCoarse]="45"
                     step="15"
                     min="0"
                     max="360"
                     [ngModel]="subStyle.shadowAngle ?? 135"
                     (ngModelChange)="subStyle.shadowAngle = $event; onStyleFieldChange(layer)"
+                    (appCgWheelChange)="subStyle.shadowAngle = $event; onStyleFieldChange(layer)"
                   />
                 </label>
                 <label class="cg-field">
                   <span>Distance</span>
                   <input
                     type="number"
+                    appCgWheel
                     step="0.5"
                     min="0"
                     max="15"
                     [ngModel]="subStyle.shadowDistance ?? (isPreset(PresetShow) ? 2 : 0)"
                     (ngModelChange)="subStyle.shadowDistance = $event; onStyleFieldChange(layer)"
+                    (appCgWheelChange)="subStyle.shadowDistance = $event; onStyleFieldChange(layer)"
                   />
                 </label>
                 <label class="cg-field">
                   <span>Radius</span>
                   <input
                     type="number"
+                    appCgWheel
                     step="0.5"
                     min="0"
                     max="15"
                     [ngModel]="subStyle.shadowRadius ?? 2"
                     (ngModelChange)="subStyle.shadowRadius = $event; onStyleFieldChange(layer)"
+                    (appCgWheelChange)="subStyle.shadowRadius = $event; onStyleFieldChange(layer)"
                   />
                 </label>
                 <label class="cg-field">

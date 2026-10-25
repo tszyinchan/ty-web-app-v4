@@ -160,6 +160,8 @@ export const CG_PAGE_VIEWPORT = 'width=device-width, initial-scale=1';
 export const CG_CUT_DURATION_MS = 0;
 export const CG_DEFAULT_DURATION_MS = 400;
 export const CG_MAX_DURATION_MS = 5000;
+/** Mouse wheel never goes below this; use Cut for 0 (the ms field hides on Cut). */
+export const CG_WHEEL_MIN_FADE_MS = 50;
 
 /** Logo Place uses inset-from-anchor: X/Y are offsets from the Anchor edges. */
 export const DEFAULT_LOGO_LAYOUT = {

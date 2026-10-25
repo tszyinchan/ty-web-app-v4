@@ -37,6 +37,11 @@ Layer content (Logo and Subtitle) is always Live: edits write through to DB, the
 - `.cg-seg-btn`: `height/min-height/max-height/line-height: 28px` (overrides Aero 32px).
 - `.cg-monitor-toolbar` locked to 28px (`flex-shrink: 0; overflow: hidden`) so preview position is stable with or without Apply / Discard.
 
+## Mouse wheel (every number input and dropdown)
+Hover is enough (no focus needed); the field swallows the wheel. Directives `appCgWheel` (number `input`) and `appCgWheelSelect` (`select`) live in `core/domains/cg/cg-wheel.directive.ts`; they read the ngModel value and emit the next one (`appCgWheelChange`), the component writes the model the same way typing does. Up = increase; dropdown down = next option, stops at both ends. Alt = fine (step ÷10), Shift = coarse (×10; Windows moves the delta to `deltaX`). Off-grid values snap to the grid first (0.104 → 0.11). Clamped to `min` / `max`; an unchanged value emits nothing. Layer content is Live, so wheel edits go to OBS like typing (450ms debounce); no lock when on air.
+- Steps: X / Y 0.1, Scale 0.05, ms 50 (fine 10, coarse 500; wheel floor `CG_WHEEL_MIN_FADE_MS` so it never turns into Cut), Size (vh) 0.1, 字距 0.01, 行距 0.05, Scale X / Y 0.05, Stroke 0.01, Shadow Angle 15 (fine 1, coarse 45, wraps 360 → 0), Shadow Distance / Radius 0.5.
+- Font wheel skips "Other…". Cue ms writes are debounced and coalesced in `CgService.patchLayerTransition` (draft updates at once).
+
 ## Always desktop (Panel only)
 `/cg/new`, `/cg/edit/…` lock viewport `width=1280`, `min-width: 1280px`. No stacked `@media` reflow. **List** is responsive. Overlay `/o` and `/cg-live` stay `width=device-width`. Unlock when leaving Panel.
 
@@ -57,7 +62,7 @@ Layer content (Logo and Subtitle) is always Live: edits write through to DB, the
 ## Layer desk
 - Single preview for that one Layer, own local Alpha/Dim backdrop. Desk Look is **Layer Look only** (`layerLookOnly`); Package B&W does not grey the desk. Desk force-shows the layer even when Package Off (`forceVisible`). Desk does not bind Package Appear duration.
 - Tiles: chrome on top (`drag_indicator` + z + On/Off), Stage thumb, **name** at bottom (custom `name`, or Element type if blank).
-- Desk left: live-on-air warning row + Stage ~450px + **Name | Look** side by side + **Source** (Logo / Subtitle load-paste) + footer one row: Copy to package + Delete layer + Copy layer OBS. Right: **Place** (Anchor / X / Y / Scale + Outline switch) for Logo. Subtitle right is two columns (Cue+queue | Place+Style) when the desk is ≥1300px (`@container`); narrower stacks and scrolls. Place numbers accept wheel adjust on hover and use fixed width. No Inherit / Follow package option. Tiles (`.cg-drive`) shrink while a desk is open.
+- Desk left: live-on-air warning row + Stage ~450px + **Name | Look** side by side + **Source** (Logo / Subtitle load-paste) + footer one row: Copy to package + Delete layer + Copy layer OBS. Right: **Place** (Anchor / X / Y / Scale + Outline switch) for Logo. Subtitle right is two columns (Cue+queue | Place+Style) when the desk is ≥1300px (`@container`); narrower stacks and scrolls. Place numbers use fixed width. No Inherit / Follow package option. Tiles (`.cg-drive`) shrink while a desk is open.
 - Greyscale is a per-layer host `filter` and always cuts. Package Appear only drives host opacity. Must not change z-order.
 
 ## Logo / Subtitle desk details
