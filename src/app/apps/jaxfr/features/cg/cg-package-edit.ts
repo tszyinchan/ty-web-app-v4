@@ -123,6 +123,7 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
   private lastFadeMs = CG_DEFAULT_DURATION_MS;
   private layerDragged = false;
   private autoSaveTimer = 0;
+  private pendingAutoSaveSnapshot = '';
   private autoSaveInFlight = false;
 
   syncStatus = computed<'loading' | 'up-to-date' | 'unsaved' | 'none'>(() => {
@@ -164,8 +165,8 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
     const original = this.cg.draftOriginal();
     if (!original || !this.item()) return;
     // Mix only — Layer content never dirties Package / Take.
-    const currentlyDirty =
-      JSON.stringify(this.cg.mixSnapshot()) !== original;
+    const snapshot = JSON.stringify(this.cg.mixSnapshot());
+    const currentlyDirty = snapshot !== original;
     if (this.isDirty() !== currentlyDirty) {
       this.isDirty.set(currentlyDirty);
     }
@@ -176,7 +177,7 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
     if (this.isSaveDisabled() !== disabled) {
       this.isSaveDisabled.set(disabled);
     }
-    this.scheduleDirectAutoSave(currentlyDirty, invalid);
+    this.scheduleDirectAutoSave(currentlyDirty, invalid, snapshot);
   }
 
   async ngOnInit(): Promise<void> {
@@ -200,7 +201,7 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
   }
 
   ngOnDestroy(): void {
-    window.clearTimeout(this.autoSaveTimer);
+    this.cancelDirectAutoSave();
     setCgDesktopViewport(this.document, false);
     // Panel closed: leave its Realtime send channels (re-joined lazily).
     void this.cg.releaseOverlaySendChannels();
@@ -360,7 +361,7 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
     if (!data || packageHasUnsavedIdentity(data as Pick<CgPackage, 'name'>)) {
       return;
     }
-    window.clearTimeout(this.autoSaveTimer);
+    this.cancelDirectAutoSave();
     const previousClientId = this.selectedLayerId();
     const previousToken = this.layers().find(
       (row) => row.clientId === previousClientId,
@@ -415,21 +416,40 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
     }
   }
 
-  private scheduleDirectAutoSave(dirty: boolean, invalid: boolean): void {
-    window.clearTimeout(this.autoSaveTimer);
-    if (
-      !this.isDirectMode() ||
-      !this.packageId ||
-      !dirty ||
-      invalid ||
-      this.cg.loading() ||
-      this.autoSaveInFlight
-    ) {
+  private scheduleDirectAutoSave(
+    dirty: boolean,
+    invalid: boolean,
+    snapshot: string,
+  ): void {
+    const canSave =
+      this.isDirectMode() &&
+      !!this.packageId &&
+      dirty &&
+      !invalid &&
+      !this.cg.loading() &&
+      !this.autoSaveInFlight;
+    if (!canSave) {
+      this.cancelDirectAutoSave();
       return;
     }
+    // Ticker / Clock frames re-enter ngDoCheck constantly. Keep the pending
+    // timer unless the mix itself changed (typing still collapses to one save).
+    if (this.autoSaveTimer !== 0 && this.pendingAutoSaveSnapshot === snapshot) {
+      return;
+    }
+    window.clearTimeout(this.autoSaveTimer);
+    this.pendingAutoSaveSnapshot = snapshot;
     this.autoSaveTimer = window.setTimeout(() => {
+      this.autoSaveTimer = 0;
+      this.pendingAutoSaveSnapshot = '';
       void this.runDirectAutoSave();
     }, DIRECT_AUTOSAVE_MS);
+  }
+
+  private cancelDirectAutoSave(): void {
+    window.clearTimeout(this.autoSaveTimer);
+    this.autoSaveTimer = 0;
+    this.pendingAutoSaveSnapshot = '';
   }
 
   private async runDirectAutoSave(): Promise<void> {

@@ -64,6 +64,7 @@
 |---|---|---|
 | B0 | 打開 `PKG_A`（Studio mode 開）。關掉 **Studio mode** switch（在監看區上方） | 單監看 176px；**Take** 隱藏（留 spacer）。再開 → 兩監看與 **Take**（在 On air 狀態左邊）回來 |
 | B0a | Studio mode **關**（Direct）：撥 Logo On/Off，或改 Look | ~0.5s auto-save；無 Take 鈕 |
+| B0b | Package 含 Ticker（tile 在跑）。Studio mode **關**：撥 On/Off，或改 Look | ~0.5s 後狀態回到 **On air**；On air 監看與 overlay 跟上。Ticker 動畫不會把自動存一直清掉 |
 | B1 | Studio mode 開。監看區上方：Studio mode switch、緊挨右邊的 **Take**、右側 ☁ On air。頂列 Back + Package + Alpha/Dim + Copy OBS。左下深紅白字 Delete package。Layers 標題旁 Alpha/Dim。點 Logo tile | tile：**上** drag_indicator+序號+On-Off，**下** 名稱。desk **左** Stage + Name\|Look 並排（**沒有** Layer Studio mode；Layer 在 On air 時 Stage 上方出現「This layer is on air. Edits go to OBS now.」） + Source + Copy to package + 深紅白字 Delete layer + Copy layer OBS；**右** Place |
 | B1b | 開任一 Layer desk → Delete layer → confirm | 留在同一 Package Panel（`/cg/edit/:id`），**不要**跳 `/login`。draft 少一 tile；Studio 下需 Take 才寫 DB |
 | B1c | List 點 package → Panel；點 tile 開 desk → 再點同 tile 關；Back → list；New package | URL 皆為絕對 `/cg/…`，不要進 `/login`。Overlay 複製鈕產生 `cg.*.tszyin.com/o/…`（或 localhost） |
