@@ -176,8 +176,11 @@
 | N8 | 加 Ticker。開 Fade left / Fade right | 文字由右向左循環，項目之間有空隙。左右邊緣漸隱，底圖不被漸隱。Speed、Gap、Width、Height 會改視窗與速度 |
 | N9 | Ticker 正在捲的一行按刪除 | 那一行繼續捲出左緣，不會瞬間消失 |
 | N10 | Package 把 Breaking 或 Ticker 從 Off 再 On | overlay 與 On air 監看從第一則重來（Ticker 從右邊重新進入）。Desk 監看因為 force-show，不必與 OBS 同一格 |
-| N11 | Breaking 有底圖時看 desk、瀏覽器 `/o/`、OBS | 直排文字出現在底圖上，寬度跟字數走。不是只有底圖 |
+| N11 | Breaking 有底圖時看 desk、瀏覽器 `/o/`、OBS | 直排文字出現在底圖上。字寬不隨字數變。不是只有底圖 |
 | N12 | Ticker 在 OBS 把 Style 的 Size 調大再調小 | OBS 字級跟著變，間距（Gap）也跟著字級。與瀏覽器 `/o/` 接近 |
+| N13 | Breaking 一則接近 24 字、下一則只有幾個字 | 兩則字寬相同。長的那則只在垂直方向變扁 |
+| N14 | Fade 從長那則切到短那則 | 短的那則淡入時已是自己的高度，淡出結束後不會再放大 |
+| N15 | 一行含 【】、。「」— … | 直排時這些符號用直排字形（字體有 vert）。英數仍一字一行、不躺平 |
 
 ### CLEANUP
 

@@ -7,12 +7,12 @@
 }
 <div class="brk-window" [ngStyle]="windowCss()" aria-hidden="true">
   @if (outgoing(); as out) {
-    <div class="brk-stack outgoing" [class.fade]="fading()">
+    <div class="brk-stack outgoing" [class.fade]="fading()" [ngStyle]="stackCss(out.text)">
       <ng-container *ngTemplateOutlet="column; context: { $implicit: out.text }" />
     </div>
   }
   @if (shown(); as current) {
-    <div class="brk-stack incoming" [class.fade-in]="fading()">
+    <div class="brk-stack incoming" [class.fade-in]="fading()" [ngStyle]="stackCss(current.text)">
       <ng-container *ngTemplateOutlet="column; context: { $implicit: current.text }" />
     </div>
   }
@@ -20,15 +20,7 @@
 
 <ng-template #column let-text>
   <span class="brk-text">
-    <span class="brk-paint brk-stroke" aria-hidden="true">
-      @for (ch of glyphs(text); track $index) {
-        <span class="brk-ch">{{ ch }}</span>
-      }
-    </span>
-    <span class="brk-paint brk-fill" [class.is-gradient]="gradientOn()">
-      @for (ch of glyphs(text); track $index) {
-        <span class="brk-ch">{{ ch }}</span>
-      }
-    </span>
+    <span class="brk-paint brk-stroke" aria-hidden="true">{{ text }}</span>
+    <span class="brk-paint brk-fill" [class.is-gradient]="gradientOn()">{{ text }}</span>
   </span>
 </ng-template>

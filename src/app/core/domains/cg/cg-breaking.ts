@@ -18,7 +18,7 @@ import {
 } from './cg.constants';
 import { CgLayerPayload, CgLayout } from './cg.model';
 import {
-  breakingFontCqh,
+  breakingFitScale,
   breakingWindowCss,
   defaultBreakingStyle,
   emptyBreakingSettings,
@@ -92,27 +92,24 @@ export class CgBreaking {
     });
   }
 
-  glyphs(text: string): string[] {
-    return [...text].map((ch) => (ch === ' ' ? '\u00a0' : ch));
-  }
-
   gradientOn(): boolean {
     return this.textStyle().gradientTo !== undefined;
   }
 
   windowCss(): Record<string, string> {
-    const count = Math.max(
-      newsCharCount(this.shown()?.text ?? ''),
-      newsCharCount(this.outgoing()?.text ?? ''),
-      1,
-    );
-    const css = breakingWindowCss(
-      this.layout(),
-      this.textStyle(),
-      breakingFontCqh(this.layout(), this.textStyle(), count),
-    );
+    const css = breakingWindowCss(this.layout(), this.textStyle());
     css['--cg-cue-ms'] = `${this.fadeMs()}ms`;
     return css;
+  }
+
+  /** Per line, so a short incoming line does not inherit the outgoing squash. */
+  stackCss(text: string): Record<string, string> {
+    const fit = breakingFitScale(
+      this.layout(),
+      this.textStyle(),
+      newsCharCount(text),
+    );
+    return { '--cg-brk-fit': String(fit) };
   }
 
   private fadeMs(): number {

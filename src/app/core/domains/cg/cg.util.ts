@@ -1514,8 +1514,8 @@ export function textBoxLayoutToCss(
   return css;
 }
 
-/** Auto-fit Breaking type size (cqh) so `charCount` rows fill the fixed height. */
-export function breakingFontCqh(
+/** Vertical squash (0–1) so `charCount` rows fit the fixed height. Type size stays put. */
+export function breakingFitScale(
   layout: CgLayout,
   style: CgSubtitleStyle,
   charCount: number,
@@ -1531,12 +1531,14 @@ export function breakingFontCqh(
     layout.unit === CgLayoutUnit.Pixel
       ? (height / CG_STAGE_REFERENCE_WIDTH_PX) * 100 * (16 / 9)
       : height;
-  const fitted = boxCqh / (chars * lineHeight);
   const scale = Number.isFinite(layout.scale) ? layout.scale : 1;
-  const maxSize =
+  const font =
     (style.fontSize != null && style.fontSize > 0 ? style.fontSize : CG_NEWS_FONT_VH) *
     scale;
-  return Math.max(0.8, Math.min(maxSize, fitted));
+  const scaleY = style.scaleY != null && style.scaleY > 0 ? style.scaleY : 1;
+  const natural = chars * lineHeight * font * scaleY;
+  if (!(natural > 0)) return 1;
+  return Math.min(1, boxCqh / natural);
 }
 
 function newsPaintCss(style: CgSubtitleStyle): Record<string, string> {
@@ -1556,17 +1558,20 @@ function newsPaintCss(style: CgSubtitleStyle): Record<string, string> {
   });
 }
 
-/** Fixed-height Breaking text box. Width follows the glyphs. */
+/** Fixed-height Breaking text box. Column width is one em at the Style size. */
 export function breakingWindowCss(
   layout: CgLayout,
   style: CgSubtitleStyle,
-  fontCqh: number,
 ): Record<string, string> {
   const height = layout.height ?? CG_BREAKING_HEIGHT_DEFAULT;
   const css = anchoredBoxCss({ ...layout, height }, { scaleAsTransform: false });
   css['width'] = 'max-content';
   css['overflow'] = 'hidden';
-  css['--cg-brk-font'] = String(fontCqh);
+  const scale = Number.isFinite(layout.scale) ? layout.scale : 1;
+  const font =
+    (style.fontSize != null && style.fontSize > 0 ? style.fontSize : CG_NEWS_FONT_VH) *
+    scale;
+  css['--cg-brk-font'] = String(font);
   Object.assign(css, newsPaintCss(style));
   return css;
 }

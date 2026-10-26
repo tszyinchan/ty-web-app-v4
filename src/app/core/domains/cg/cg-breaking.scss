@@ -12,8 +12,7 @@
   user-select: none;
 }
 
-/* Both stacks stay in flow so width:max-content follows the glyphs.
-   Absolute children made that width 0 and overflow:hidden hid the text. */
+/* Both stacks stay in flow (one grid cell) so the window width is the 1em column. */
 .brk-stack {
   grid-area: 1 / 1;
   display: flex;
@@ -37,6 +36,16 @@
 
 .brk-text {
   position: relative;
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  /* vert swaps 【】。、「」— … into upright forms when the face has them. */
+  font-feature-settings: 'vert' on;
+  width: 1em;
+  margin-left: 0.15em;
+  margin-right: 0.15em;
+  white-space: pre;
+  line-height: 1;
+  letter-spacing: calc((var(--cg-sub-line-height, 1.05) - 1) * 1em);
   color: var(--cg-sub-color, #fff);
   font-family: var(
     --cg-sub-font-family,
@@ -47,33 +56,24 @@
   );
   font-size: calc(var(--cg-brk-font, 3.2) * 1vh);
   font-size: calc(var(--cg-brk-font, 3.2) * 1cqh);
-  /* Stroke paints outside the glyphs; the window clips overflow. */
-  padding-inline: 0.15em;
   font-weight: var(--cg-sub-font-weight, 700);
   font-style: var(--cg-sub-font-style, normal);
   filter: var(--cg-sub-filter, none);
-  transform: scale(var(--cg-sub-scale-x, 1), var(--cg-sub-scale-y, 1));
+  transform: scale(
+    var(--cg-sub-scale-x, 1),
+    calc(var(--cg-sub-scale-y, 1) * var(--cg-brk-fit, 1))
+  );
   transform-origin: center top;
 }
 
 .brk-paint {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.brk-ch {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: calc(1em * var(--cg-sub-line-height, 1.05));
-  line-height: 1;
+  display: block;
+  width: 1em;
 }
 
 .brk-stroke {
   position: absolute;
   left: 0;
-  right: 0;
   top: 0;
   color: var(--cg-sub-stroke-color, #000);
   -webkit-text-stroke: var(--cg-sub-stroke-width, 0.08em) var(--cg-sub-stroke-color, #000);
