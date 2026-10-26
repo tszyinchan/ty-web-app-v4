@@ -7,13 +7,15 @@
 
 .brk-window {
   box-sizing: border-box;
+  display: grid;
   pointer-events: none;
   user-select: none;
 }
 
+/* Both stacks stay in flow so width:max-content follows the glyphs.
+   Absolute children made that width 0 and overflow:hidden hid the text. */
 .brk-stack {
-  position: absolute;
-  inset: 0;
+  grid-area: 1 / 1;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -45,6 +47,8 @@
   );
   font-size: calc(var(--cg-brk-font, 3.2) * 1vh);
   font-size: calc(var(--cg-brk-font, 3.2) * 1cqh);
+  /* Stroke paints outside the glyphs; the window clips overflow. */
+  padding-inline: 0.15em;
   font-weight: var(--cg-sub-font-weight, 700);
   font-style: var(--cg-sub-font-style, normal);
   filter: var(--cg-sub-filter, none);

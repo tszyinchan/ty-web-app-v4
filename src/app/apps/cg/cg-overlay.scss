@@ -36,3 +36,11 @@ html.cg-overlay-on .sub-text {
 html.cg-overlay-on .wx-cluster {
   font-size: calc(var(--cg-sub-font, 3.5) * 1vh);
 }
+
+html.cg-overlay-on .ticker-text {
+  font-size: calc(var(--cg-sub-font, 3.2) * 1vh);
+}
+
+html.cg-overlay-on .brk-text {
+  font-size: calc(var(--cg-brk-font, 3.2) * 1vh);
+}

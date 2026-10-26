@@ -32,15 +32,16 @@
   height: 100%;
   display: flex;
   align-items: center;
-  padding-right: calc(var(--cg-ticker-gap, 4) * 1em);
   white-space: nowrap;
   will-change: transform;
-  font-size: calc(var(--cg-sub-font, 3.2) * 1vh);
-  font-size: calc(var(--cg-sub-font, 3.2) * 1cqh);
 }
 
 .ticker-text {
   position: relative;
+  /* Size lives here, not on the positioned item. OBS shrinks vh/cqh on that box. */
+  font-size: calc(var(--cg-sub-font, 3.2) * 1vh);
+  font-size: calc(var(--cg-sub-font, 3.2) * 1cqh);
+  padding-right: calc(var(--cg-ticker-gap, 4) * 1em);
   color: var(--cg-sub-color, #fff);
   font-family: var(
     --cg-sub-font-family,
