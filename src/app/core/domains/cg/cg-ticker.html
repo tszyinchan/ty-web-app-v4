@@ -1,0 +1,30 @@
+@if (backgroundUrl()) {
+  <app-cg-logo
+    [imageUrl]="backgroundUrl()"
+    [layout]="backgroundLayout()"
+    [outline]="outline()"
+  />
+}
+<div #window class="ticker-window" [ngStyle]="windowCss()" aria-hidden="true">
+  @for (entry of entries(); track entry.key) {
+    <span
+      #item
+      class="ticker-item"
+      [attr.data-key]="entry.key"
+      [ngStyle]="{ transform: 'translate3d(' + entry.x + 'px, 0, 0)' }"
+    >
+      <span class="ticker-text">
+        <span class="ticker-paint ticker-stroke" aria-hidden="true">
+          @for (part of parts(entry.text); track $index) {
+            <span [class.latin]="part.latin">{{ part.text }}</span>
+          }
+        </span>
+        <span class="ticker-paint ticker-fill" [class.is-gradient]="gradientOn()">
+          @for (part of parts(entry.text); track $index) {
+            <span [class.latin]="part.latin">{{ part.text }}</span>
+          }
+        </span>
+      </span>
+    </span>
+  }
+</div>

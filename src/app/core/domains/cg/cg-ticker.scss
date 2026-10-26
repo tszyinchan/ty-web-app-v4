@@ -1,0 +1,93 @@
+:host {
+  display: block;
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.ticker-window {
+  box-sizing: border-box;
+  pointer-events: none;
+  user-select: none;
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 var(--cg-ticker-fade-left, 0%),
+    #000 calc(100% - var(--cg-ticker-fade-right, 0%)),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 var(--cg-ticker-fade-left, 0%),
+    #000 calc(100% - var(--cg-ticker-fade-right, 0%)),
+    transparent 100%
+  );
+}
+
+.ticker-item {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding-right: calc(var(--cg-ticker-gap, 4) * 1em);
+  white-space: nowrap;
+  will-change: transform;
+  font-size: calc(var(--cg-sub-font, 3.2) * 1vh);
+  font-size: calc(var(--cg-sub-font, 3.2) * 1cqh);
+}
+
+.ticker-text {
+  position: relative;
+  color: var(--cg-sub-color, #fff);
+  font-family: var(
+    --cg-sub-font-family,
+    '華康中黑體',
+    'Microsoft JhengHei',
+    'Segoe UI',
+    sans-serif
+  );
+  font-weight: var(--cg-sub-font-weight, 700);
+  font-style: var(--cg-sub-font-style, normal);
+  letter-spacing: var(--cg-sub-letter-spacing, 0.04em);
+  line-height: var(--cg-sub-line-height, 1);
+  filter: var(--cg-sub-filter, none);
+  transform: scale(var(--cg-sub-scale-x, 1), var(--cg-sub-scale-y, 1));
+  transform-origin: left center;
+  white-space: nowrap;
+}
+
+.ticker-paint {
+  white-space: nowrap;
+}
+
+.ticker-stroke {
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: var(--cg-sub-stroke-color, #000);
+  -webkit-text-stroke: var(--cg-sub-stroke-width, 0.08em) var(--cg-sub-stroke-color, #000);
+}
+
+.ticker-fill {
+  position: relative;
+  color: var(--cg-sub-color, #fff);
+  text-decoration-line: var(--cg-sub-decoration, none);
+  text-decoration-thickness: 0.08em;
+  background-image: var(--cg-sub-fill-image, none);
+  background-repeat: no-repeat;
+}
+
+.ticker-fill.is-gradient {
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.ticker-text .latin {
+  letter-spacing: calc(
+    var(--cg-sub-letter-spacing, 0.04em) * var(--cg-sub-latin-track, 0.4)
+  );
+}

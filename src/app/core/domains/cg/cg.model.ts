@@ -103,6 +103,31 @@ export interface CgWeatherSettings {
   gapIcon: number;
 }
 
+/** One news line. `id` stays put for "Apply now"; "Next pass" mints a new id. */
+export interface CgNewsItem {
+  id: string;
+  text: string;
+  enabled: boolean;
+}
+
+export type CgNewsInsertAt = 'top' | 'after' | 'bottom';
+
+export interface CgBreakingSettings {
+  /** How long each enabled line stays up, then the next one. */
+  secondsPerItem: number;
+}
+
+export interface CgTickerSettings {
+  /** Percent of Stage width per second, right to left. */
+  speed: number;
+  /** Space between items, in em. */
+  gap: number;
+  fadeLeft: boolean;
+  fadeRight: boolean;
+  /** Fade length as a percent of the text window. */
+  fadeWidth: number;
+}
+
 /** Inner cue / future Layer animation. Not Package Appear. */
 export interface CgLayerTransition {
   duration_ms: number;
@@ -123,6 +148,10 @@ export type CgLayerPayload = CgLogoPayload &
     background?: CgBackground;
     clock?: CgClockSettings;
     weather?: CgWeatherSettings;
+    /** Breaking and Ticker queue. Stable ids drive on-air retention. */
+    items?: CgNewsItem[];
+    breaking?: CgBreakingSettings;
+    ticker?: CgTickerSettings;
   };
 
 export interface CgPackage {

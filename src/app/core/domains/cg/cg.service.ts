@@ -657,7 +657,13 @@ export class CgService {
       list.map((layer) => ({
         ...layer,
         layout: { ...layer.layout },
-        payload: { ...layer.payload, lines: [...layer.payload.lines] },
+        payload: {
+          ...layer.payload,
+          lines: [...layer.payload.lines],
+          ...(layer.payload.items
+            ? { items: layer.payload.items.map((item) => ({ ...item })) }
+            : {}),
+        },
       })),
     );
   }

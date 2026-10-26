@@ -4,6 +4,7 @@
     [class.logo-desk]="layer.element_type === Logo"
     [class.sub-desk]="layer.element_type === Subtitle"
     [class.bug-desk]="layer.element_type === Clock || layer.element_type === Weather"
+    [class.news-desk]="layer.element_type === Breaking || layer.element_type === Ticker"
   >
     <div class="cg-desk-split">
       <aside class="cg-desk-preview">
@@ -260,6 +261,27 @@
               </label>
             </section>
           }
+        }
+        @if (isNews(layer)) {
+          <section class="cg-block">
+            <h3 class="cg-block-title">Background</h3>
+            <div class="cg-inline cg-source-pick">
+              <button mat-stroked-button type="button" class="cg-seg-btn" (click)="newsBgFile.click()">
+                Choose local image
+              </button>
+              <input #newsBgFile class="cg-file-input" type="file" [accept]="logoAccept" (change)="onBackgroundFile(layer, $event)" />
+              @if (layer.payload.background?.fileName) {
+                <span class="cg-file-name">{{ layer.payload.background?.fileName }}</span>
+              }
+              @if (hasBackground(layer)) {
+                <button mat-stroked-button type="button" class="cg-seg-btn" (click)="clearBackground(layer)">Clear</button>
+              }
+            </div>
+            <input class="cg-source-url" type="text"
+              [ngModel]="layer.payload.background?.imageUrl ?? ''"
+              (ngModelChange)="onBackgroundUrl(layer, $event)"
+              placeholder="Optional image URL" aria-label="Background image URL" />
+          </section>
         }
         <footer class="cg-desk-foot">
           <div class="cg-foot-copy">
@@ -540,6 +562,211 @@
             <h3 class="cg-block-title">Style</h3>
             <app-cg-text-style-editor [paint]="bugStyle(layer)" (changed)="touchPreview()" />
           </section>
+        } @else if (isNews(layer)) {
+          <div class="cg-news-col">
+            <app-cg-news-queue
+              [items]="newsItems(layer)"
+              [maxChars]="layer.element_type === Breaking ? breakingMaxChars : null"
+              [onAir]="isLiveOnAir()"
+              (itemsChange)="onNewsItems(layer, $event)"
+            />
+          </div>
+          <div class="cg-news-side">
+            @if (layer.element_type === Breaking) {
+              <section class="cg-block">
+                <h3 class="cg-block-title">Timing</h3>
+                <div class="cg-fields">
+                  <label class="cg-field">
+                    <span>Seconds each</span>
+                    <input type="number" appCgWheel step="1"
+                      [min]="breakingSecondsMin" [max]="breakingSecondsMax"
+                      [appCgWheelFine]="1" [appCgWheelCoarse]="5"
+                      [ngModel]="breakingOf(layer).secondsPerItem"
+                      (ngModelChange)="onBreakingSeconds(layer, $event)"
+                      (appCgWheelChange)="onBreakingSeconds(layer, $event)" />
+                  </label>
+                </div>
+                <div class="cg-cue-nav">
+                  <mat-button-toggle-group class="cg-seg-toggle"
+                    [value]="isCueCut(layer) ? 'cut' : 'fade'"
+                    (change)="onCueAppearToggle(layer, $event)" hideSingleSelectionIndicator>
+                    <mat-button-toggle value="fade">Fade</mat-button-toggle>
+                    <mat-button-toggle value="cut">Cut</mat-button-toggle>
+                  </mat-button-toggle-group>
+                  @if (!isCueCut(layer)) {
+                    <label class="cg-field cg-duration">
+                      <span>ms</span>
+                      <input type="number" appCgWheel [min]="cutMs" [max]="maxDurationMs"
+                        [appCgWheelMin]="wheelMinMs" [appCgWheelFine]="10" [appCgWheelCoarse]="500"
+                        step="50" [ngModel]="cueDurationMs(layer)"
+                        (ngModelChange)="onCueDurationMsChange(layer, $event)"
+                        (appCgWheelChange)="onCueDurationMsChange(layer, $event)" />
+                    </label>
+                  }
+                </div>
+                <p class="cg-hint">One line stays up. Several lines loop. Height is fixed, so a longer line uses smaller type.</p>
+              </section>
+            } @else {
+              <section class="cg-block">
+                <h3 class="cg-block-title">Crawl</h3>
+                <div class="cg-fields">
+                  <label class="cg-field">
+                    <span>Speed</span>
+                    <input type="number" appCgWheel step="0.5"
+                      [min]="tickerSpeedMin" [max]="tickerSpeedMax"
+                      [appCgWheelFine]="0.1" [appCgWheelCoarse]="5"
+                      [ngModel]="tickerOf(layer).speed"
+                      (ngModelChange)="onTickerSpeed(layer, $event)"
+                      (appCgWheelChange)="onTickerSpeed(layer, $event)" />
+                  </label>
+                  <label class="cg-field">
+                    <span>Gap (em)</span>
+                    <input type="number" appCgWheel step="0.5"
+                      [min]="tickerGapMin" [max]="tickerGapMax"
+                      [appCgWheelFine]="0.1" [appCgWheelCoarse]="2"
+                      [ngModel]="tickerOf(layer).gap"
+                      (ngModelChange)="onTickerGap(layer, $event)"
+                      (appCgWheelChange)="onTickerGap(layer, $event)" />
+                  </label>
+                  <label class="cg-field">
+                    <span>Fade width (%)</span>
+                    <input type="number" appCgWheel step="1"
+                      [min]="tickerFadeMin" [max]="tickerFadeMax"
+                      [ngModel]="tickerOf(layer).fadeWidth"
+                      (ngModelChange)="onTickerFadeWidth(layer, $event)"
+                      (appCgWheelChange)="onTickerFadeWidth(layer, $event)" />
+                  </label>
+                </div>
+                <div class="cg-outline-row">
+                  <button type="button" class="cg-switch" [class.on]="tickerOf(layer).fadeLeft" role="switch"
+                    [attr.aria-checked]="tickerOf(layer).fadeLeft" (click)="toggleTickerFade(layer, 'left')">
+                    <span class="cg-switch-thumb"></span>
+                  </button>
+                  <span class="cg-outline-label">Fade left</span>
+                  <button type="button" class="cg-switch" [class.on]="tickerOf(layer).fadeRight" role="switch"
+                    [attr.aria-checked]="tickerOf(layer).fadeRight" (click)="toggleTickerFade(layer, 'right')">
+                    <span class="cg-switch-thumb"></span>
+                  </button>
+                  <span class="cg-outline-label">Fade right</span>
+                </div>
+                <p class="cg-hint">Speed is percent of the Stage width per second. The fade sits on the text window only.</p>
+              </section>
+            }
+            <section class="cg-block">
+              <h3 class="cg-block-title">Background place</h3>
+              <div class="cg-anchor-grid">
+                <mat-button-toggle-group class="cg-anchor-toggle-group"
+                  [value]="backgroundLayout(layer).anchor"
+                  (change)="onBackgroundAnchor(layer, $event)" hideSingleSelectionIndicator>
+                  @for (anchor of anchorGridOptions; track anchor.value) {
+                    <mat-button-toggle [value]="anchor.value" [attr.aria-label]="anchor.label">
+                      <mat-icon>{{ anchor.icon }}</mat-icon>
+                    </mat-button-toggle>
+                  }
+                </mat-button-toggle-group>
+              </div>
+              <div class="cg-fields">
+                <label class="cg-field">
+                  <span>{{ backgroundAxisLabel(layer, 'x') }}</span>
+                  @if (backgroundIgnores(layer, 'x')) {
+                    <input type="text" value="—" disabled />
+                  } @else {
+                    <input type="number" appCgWheel step="0.1" [ngModel]="backgroundLayout(layer).x"
+                      (ngModelChange)="backgroundLayout(layer).x = $event; touchPreview()"
+                      (appCgWheelChange)="backgroundLayout(layer).x = $event; touchPreview()" />
+                  }
+                </label>
+                <label class="cg-field">
+                  <span>{{ backgroundAxisLabel(layer, 'y') }}</span>
+                  @if (backgroundIgnores(layer, 'y')) {
+                    <input type="text" value="—" disabled />
+                  } @else {
+                    <input type="number" appCgWheel step="0.1" [ngModel]="backgroundLayout(layer).y"
+                      (ngModelChange)="backgroundLayout(layer).y = $event; touchPreview()"
+                      (appCgWheelChange)="backgroundLayout(layer).y = $event; touchPreview()" />
+                  }
+                </label>
+                <label class="cg-field">
+                  <span>Scale</span>
+                  <input type="number" appCgWheel step="0.05" min="0.05" max="8"
+                    [ngModel]="backgroundLayout(layer).scale"
+                    (ngModelChange)="backgroundLayout(layer).scale = $event; touchPreview()"
+                    (appCgWheelChange)="backgroundLayout(layer).scale = $event; touchPreview()" />
+                </label>
+              </div>
+              <div class="cg-outline-row">
+                <button type="button" class="cg-switch" [class.on]="logoOutline()" role="switch"
+                  [attr.aria-checked]="logoOutline()" (click)="logoOutline.set(!logoOutline())">
+                  <span class="cg-switch-thumb"></span>
+                </button>
+                <span class="cg-outline-label">Outline</span>
+              </div>
+            </section>
+            <section class="cg-block">
+              <h3 class="cg-block-title">Text place</h3>
+              <div class="cg-anchor-grid">
+                <mat-button-toggle-group class="cg-anchor-toggle-group" [value]="layer.layout.anchor"
+                  (change)="onAnchorToggle(layer, $event)" hideSingleSelectionIndicator>
+                  @for (anchor of anchorGridOptions; track anchor.value) {
+                    <mat-button-toggle [value]="anchor.value" [attr.aria-label]="anchor.label">
+                      <mat-icon>{{ anchor.icon }}</mat-icon>
+                    </mat-button-toggle>
+                  }
+                </mat-button-toggle-group>
+              </div>
+              <div class="cg-fields">
+                <label class="cg-field">
+                  <span>{{ placeAxisLabel(layer, 'x') }}</span>
+                  @if (ignoresAxis(layer, 'x')) {
+                    <input type="text" value="—" disabled />
+                  } @else {
+                    <input type="number" appCgWheel step="0.1" [ngModel]="layer.layout.x"
+                      (ngModelChange)="layer.layout.x = $event; touchPreview()"
+                      (appCgWheelChange)="layer.layout.x = $event; touchPreview()" />
+                  }
+                </label>
+                <label class="cg-field">
+                  <span>{{ placeAxisLabel(layer, 'y') }}</span>
+                  @if (ignoresAxis(layer, 'y')) {
+                    <input type="text" value="—" disabled />
+                  } @else {
+                    <input type="number" appCgWheel step="0.1" [ngModel]="layer.layout.y"
+                      (ngModelChange)="layer.layout.y = $event; touchPreview()"
+                      (appCgWheelChange)="layer.layout.y = $event; touchPreview()" />
+                  }
+                </label>
+                @if (layer.element_type === Breaking) {
+                  <label class="cg-field">
+                    <span>Height</span>
+                    <input type="number" appCgWheel step="1" min="8" max="90"
+                      [appCgWheelFine]="0.5" [appCgWheelCoarse]="5"
+                      [ngModel]="layer.layout.height ?? breakingHeightDefault"
+                      (ngModelChange)="layer.layout.height = $event; touchPreview()"
+                      (appCgWheelChange)="layer.layout.height = $event; touchPreview()" />
+                  </label>
+                } @else {
+                  <label class="cg-field">
+                    <span>Width</span>
+                    <input type="number" appCgWheel step="1" min="10" max="100"
+                      [ngModel]="layer.layout.width ?? tickerWidthDefault"
+                      (ngModelChange)="layer.layout.width = $event; touchPreview()"
+                      (appCgWheelChange)="layer.layout.width = $event; touchPreview()" />
+                  </label>
+                  <label class="cg-field">
+                    <span>Height</span>
+                    <input type="number" appCgWheel step="0.5" min="3" max="30"
+                      [ngModel]="layer.layout.height ?? tickerHeightDefault"
+                      (ngModelChange)="layer.layout.height = $event; touchPreview()"
+                      (appCgWheelChange)="layer.layout.height = $event; touchPreview()" />
+                  </label>
+                }
+              </div>
+            </section>
+            <section class="cg-block">
+              <h3 class="cg-block-title">Style</h3>
+              <app-cg-text-style-editor [paint]="newsStyle(layer)" (changed)="touchPreview()" />
+            </section>
+          </div>
         } @else if (layer.element_type === Subtitle) {
           <div class="cg-sub-cue-col">
             <div class="cg-cue-bar">

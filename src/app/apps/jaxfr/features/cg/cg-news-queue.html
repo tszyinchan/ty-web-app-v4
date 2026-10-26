@@ -1,0 +1,208 @@
+<section class="cg-news">
+  <div class="cg-news-add">
+    <input
+      type="text"
+      [(ngModel)]="lineText"
+      (keydown.enter)="addLine($event)"
+      placeholder="One news line"
+      aria-label="News line"
+    />
+    @if (maxChars(); as max) {
+      <span
+        class="cg-news-count"
+        [class.over]="charCount(lineText) > max"
+        [class.tight]="isTight(lineText)"
+      >
+        {{ charCount(lineText.trim()) }}/{{ max }}
+      </span>
+    }
+    <select
+      [ngModel]="insertAt"
+      (ngModelChange)="onInsert($event)"
+      [appCgWheelSelect]="insertValues"
+      (appCgWheelChange)="onInsert($event)"
+      aria-label="Insert position"
+    >
+      @for (option of insertOptions; track option.value) {
+        <option [value]="option.value">{{ option.label }}</option>
+      }
+    </select>
+    <button
+      mat-stroked-button
+      type="button"
+      class="cg-seg-btn"
+      [disabled]="!lineText.trim()"
+      (click)="addLine()"
+    >
+      Add
+    </button>
+  </div>
+
+  <textarea
+    rows="4"
+    [(ngModel)]="bulkText"
+    placeholder="One news line per row"
+    aria-label="Several news lines"
+  ></textarea>
+  <div class="cg-news-bulk">
+    <button
+      mat-stroked-button
+      type="button"
+      class="cg-seg-btn"
+      [disabled]="!bulkText.trim()"
+      (click)="appendBulk()"
+    >
+      Append
+    </button>
+    <button
+      mat-stroked-button
+      type="button"
+      class="cg-seg-btn"
+      [disabled]="!bulkText.trim()"
+      (click)="replaceAll()"
+    >
+      Replace all
+    </button>
+    <button mat-stroked-button type="button" class="cg-seg-btn" (click)="fileInput.click()">
+      Load .txt
+    </button>
+    <input
+      #fileInput
+      class="cg-file"
+      type="file"
+      accept=".txt,text/plain"
+      (change)="onFile($event)"
+    />
+    <button
+      mat-stroked-button
+      type="button"
+      class="cg-seg-btn"
+      [disabled]="items().length === 0"
+      (click)="clearAll()"
+    >
+      Clear all
+    </button>
+  </div>
+  @if (notice()) {
+    <p class="cg-news-notice">{{ notice() }}</p>
+  }
+  @if (maxChars()) {
+    <p class="cg-news-hint">
+      Up to {{ maxChars() }} characters. {{ warnAt }} or more will be small on air.
+    </p>
+  }
+
+  <div
+    class="cg-news-list"
+    cdkDropList
+    cdkDropListLockAxis="y"
+    (cdkDropListDropped)="onDrop($event)"
+    role="list"
+    aria-label="News lines"
+  >
+    @for (item of items(); track item.id; let index = $index) {
+      <div
+        class="cg-news-row"
+        cdkDrag
+        role="listitem"
+        [class.selected]="item.id === selectedId()"
+        [class.off]="!item.enabled"
+        (click)="selectedId.set(item.id)"
+      >
+        <button
+          type="button"
+          class="cg-drag"
+          cdkDragHandle
+          aria-label="Reorder"
+          (click)="$event.stopPropagation()"
+        >
+          <mat-icon>drag_indicator</mat-icon>
+        </button>
+        <span class="cg-news-n">{{ index + 1 }}</span>
+        @if (editingId() === item.id) {
+          <input
+            class="cg-news-edit"
+            type="text"
+            [(ngModel)]="editText"
+            (click)="$event.stopPropagation()"
+            (keydown.enter)="commitEdit('now', $event)"
+            (keydown.escape)="cancelEdit($event)"
+            aria-label="Edit news line"
+          />
+          @if (onAir()) {
+            <button mat-stroked-button type="button" class="cg-seg-btn" (click)="commitEdit('now', $event)">
+              Apply now
+            </button>
+            <button mat-stroked-button type="button" class="cg-seg-btn" (click)="commitEdit('next', $event)">
+              Next pass
+            </button>
+          } @else {
+            <button mat-stroked-button type="button" class="cg-seg-btn" (click)="commitEdit('now', $event)">
+              Save
+            </button>
+          }
+          <button mat-stroked-button type="button" class="cg-seg-btn" (click)="cancelEdit($event)">
+            Cancel
+          </button>
+        } @else {
+          <span class="cg-news-text">{{ item.text }}</span>
+          @if (maxChars() !== null && isTight(item.text)) {
+            <span class="cg-news-tight">Small</span>
+          }
+          <button
+            type="button"
+            class="cg-switch"
+            [class.on]="item.enabled"
+            role="switch"
+            [attr.aria-checked]="item.enabled"
+            aria-label="Enabled"
+            title="Enabled"
+            (click)="toggleEnabled(item, $event)"
+          >
+            <span class="cg-switch-thumb"></span>
+          </button>
+          <button
+            mat-stroked-button
+            type="button"
+            class="cg-seg-btn cg-icon-btn"
+            aria-label="Move up"
+            [disabled]="index === 0"
+            (click)="move(index, -1, $event)"
+          >
+            <mat-icon>keyboard_arrow_up</mat-icon>
+          </button>
+          <button
+            mat-stroked-button
+            type="button"
+            class="cg-seg-btn cg-icon-btn"
+            aria-label="Move down"
+            [disabled]="index === items().length - 1"
+            (click)="move(index, 1, $event)"
+          >
+            <mat-icon>keyboard_arrow_down</mat-icon>
+          </button>
+          <button
+            mat-stroked-button
+            type="button"
+            class="cg-seg-btn cg-icon-btn"
+            aria-label="Edit"
+            (click)="beginEdit(item, $event)"
+          >
+            <mat-icon>edit</mat-icon>
+          </button>
+          <button
+            mat-stroked-button
+            type="button"
+            class="cg-seg-btn cg-icon-btn"
+            aria-label="Delete"
+            (click)="remove(item, $event)"
+          >
+            <mat-icon>delete</mat-icon>
+          </button>
+        }
+      </div>
+    } @empty {
+      <p class="cg-news-empty">No lines yet.</p>
+    }
+  </div>
+</section>

@@ -1,6 +1,12 @@
 import { SUBDOMAINS } from '../../../app.constants';
 import { RecordStatus } from '../../models/status.enum';
 import {
+  CG_BREAKING_HEIGHT_DEFAULT,
+  CG_BREAKING_MAX_CHARS,
+  CG_BREAKING_WARN_CHARS,
+  CG_BREAKING_SECONDS_DEFAULT,
+  CG_BREAKING_SECONDS_MAX,
+  CG_BREAKING_SECONDS_MIN,
   CG_BUG_FONT_VH,
   CG_CLOCK_FORMAT_OPTIONS,
   CG_CLOCK_TIMEZONE_LOCAL,
@@ -13,8 +19,11 @@ import {
   CG_OVERLAY_CUE_KIND,
   CG_ELEMENT_CATALOG,
   CG_MAX_DURATION_MS,
+  CG_NEWS_FONT_VH,
   CG_PAGE_VIEWPORT,
+  CG_SAMPLE_BREAKING_LINES,
   CG_SAMPLE_LOGO_URL,
+  CG_SAMPLE_TICKER_LINES,
   CG_STAGE_REFERENCE_WIDTH_PX,
   CG_SAMPLE_SUBTITLE_LINES,
   CG_LATIN_FONT_ALIASES,
@@ -25,8 +34,21 @@ import {
   CG_TEXT_WEIGHT_BOLD,
   CG_TEXT_WEIGHT_MEDIUM,
   CG_TEXT_WEIGHT_REGULAR,
+  CG_TICKER_FADE_WIDTH_DEFAULT,
+  CG_TICKER_FADE_WIDTH_MAX,
+  CG_TICKER_FADE_WIDTH_MIN,
+  CG_TICKER_GAP_DEFAULT,
+  CG_TICKER_GAP_MAX,
+  CG_TICKER_GAP_MIN,
+  CG_TICKER_HEIGHT_DEFAULT,
+  CG_TICKER_SPEED_DEFAULT,
+  CG_TICKER_SPEED_MAX,
+  CG_TICKER_SPEED_MIN,
+  CG_TICKER_WIDTH_DEFAULT,
+  DEFAULT_BREAKING_LAYOUT,
   DEFAULT_BUG_BACKGROUND_LAYOUT,
   DEFAULT_CLOCK_LAYOUT,
+  DEFAULT_TICKER_LAYOUT,
   DEFAULT_WEATHER_LAYOUT,
   CgTextWeight,
   CgAnchor,
@@ -44,8 +66,11 @@ import {
 } from './cg.constants';
 import {
   CgBackground,
+  CgBreakingSettings,
   CgClockSettings,
   CgLayer,
+  CgNewsInsertAt,
+  CgNewsItem,
   CgLayerDraft,
   CgLayerPayload,
   CgLayout,
@@ -59,6 +84,7 @@ import {
   CgSubtitleAlign,
   CgSubtitleStyle,
   CgTextPaint,
+  CgTickerSettings,
 } from './cg.model';
 
 /** Which side of the 3x3 grid an Anchor sits on, per axis. */
@@ -195,7 +221,35 @@ export function createEmptyLayer(
   if (type === CgElementType.Weather) {
     return createEmptyBugLayer(type, sortOrder, { ...DEFAULT_WEATHER_LAYOUT });
   }
+  if (type === CgElementType.Breaking) {
+    return createEmptyNewsLayer(type, sortOrder, { ...DEFAULT_BREAKING_LAYOUT });
+  }
+  if (type === CgElementType.Ticker) {
+    return createEmptyNewsLayer(type, sortOrder, { ...DEFAULT_TICKER_LAYOUT });
+  }
   return null;
+}
+
+function createEmptyNewsLayer(
+  type: CgElementType.Breaking | CgElementType.Ticker,
+  sortOrder: number,
+  layout: CgLayout,
+): CgLayerDraft {
+  return {
+    clientId: `temp-${crypto.randomUUID()}`,
+    element_type: type,
+    public_token: createCgPublicToken(),
+    name: '',
+    layout: { ...layout },
+    payload:
+      type === CgElementType.Breaking
+        ? emptyBreakingPayload()
+        : emptyTickerPayload(),
+    visible: true,
+    look: CgLayerLook.Color,
+    sort_order: sortOrder,
+    status: RecordStatus.Active,
+  };
 }
 
 export function defaultBugStyle(): CgSubtitleStyle {
@@ -252,6 +306,216 @@ export function emptyWeatherPayload(): CgLayerPayload {
     style: defaultBugStyle(),
     weather: emptyWeatherSettings(),
   };
+}
+
+export function newsCharCount(text: string): number {
+  return [...text].length;
+}
+
+export function breakingTextIsTight(text: string): boolean {
+  const count = newsCharCount(text);
+  return count >= CG_BREAKING_WARN_CHARS && count <= CG_BREAKING_MAX_CHARS;
+}
+
+export function createNewsItem(text: string, enabled = true): CgNewsItem {
+  return { id: crypto.randomUUID(), text, enabled };
+}
+
+export function emptyBreakingSettings(): CgBreakingSettings {
+  return { secondsPerItem: CG_BREAKING_SECONDS_DEFAULT };
+}
+
+export function emptyTickerSettings(): CgTickerSettings {
+  return {
+    speed: CG_TICKER_SPEED_DEFAULT,
+    gap: CG_TICKER_GAP_DEFAULT,
+    fadeLeft: false,
+    fadeRight: false,
+    fadeWidth: CG_TICKER_FADE_WIDTH_DEFAULT,
+  };
+}
+
+export function defaultBreakingStyle(): CgSubtitleStyle {
+  return {
+    preset: CgSubtitlePreset.Custom,
+    fontSize: CG_NEWS_FONT_VH,
+    fontWeight: CG_TEXT_WEIGHT_BOLD,
+    color: '#ffffff',
+    letterSpacing: 0.02,
+    lineHeight: 1.05,
+    scaleX: 1,
+    scaleY: 1,
+    borderWidth: 0.08,
+    borderColor: '#000000',
+    shadowDistance: 0,
+    shadowRadius: 2,
+    shadowAngle: 135,
+    shadowColor: '#000000',
+    textAlign: 'center',
+  };
+}
+
+export function defaultTickerStyle(): CgSubtitleStyle {
+  return {
+    ...defaultBreakingStyle(),
+    lineHeight: 1,
+    letterSpacing: 0.04,
+    textAlign: 'left',
+  };
+}
+
+export function emptyBreakingPayload(): CgLayerPayload {
+  return {
+    ...emptyLogoPayload(),
+    items: CG_SAMPLE_BREAKING_LINES.map((text) => createNewsItem(text)),
+    style: defaultBreakingStyle(),
+    breaking: emptyBreakingSettings(),
+  };
+}
+
+export function emptyTickerPayload(): CgLayerPayload {
+  return {
+    ...emptyLogoPayload(),
+    items: CG_SAMPLE_TICKER_LINES.map((text) => createNewsItem(text)),
+    style: defaultTickerStyle(),
+    ticker: emptyTickerSettings(),
+  };
+}
+
+/** Blank lines are dropped. Over-limit lines (Breaking only) are reported, not loaded. */
+export function parseNewsLines(
+  raw: string,
+  maxChars: number | null,
+): { accepted: string[]; skipped: number[] } {
+  const accepted: string[] = [];
+  const skipped: number[] = [];
+  raw
+    .replace(/^\uFEFF/, '')
+    .split(/\r?\n/)
+    .forEach((line, index) => {
+      const text = line.trim();
+      if (!text) return;
+      if (maxChars != null && newsCharCount(text) > maxChars) {
+        skipped.push(index + 1);
+        return;
+      }
+      accepted.push(text);
+    });
+  return { accepted, skipped };
+}
+
+export function newsSkipMessage(skipped: readonly number[], maxChars: number): string {
+  if (skipped.length === 0) return '';
+  const shown = skipped.slice(0, 12).join(', ');
+  const more = skipped.length > 12 ? ` +${skipped.length - 12}` : '';
+  const noun = skipped.length === 1 ? 'line' : 'lines';
+  return `Skipped ${skipped.length} ${noun} (over ${maxChars} characters): ${shown}${more}`;
+}
+
+export function insertNewsItems(
+  items: readonly CgNewsItem[],
+  incoming: readonly CgNewsItem[],
+  at: CgNewsInsertAt,
+  selectedId: string | null,
+): CgNewsItem[] {
+  if (at === 'top') return [...incoming, ...items];
+  if (at === 'after') {
+    const index = selectedId
+      ? items.findIndex((item) => item.id === selectedId)
+      : -1;
+    if (index >= 0) {
+      return [
+        ...items.slice(0, index + 1),
+        ...incoming,
+        ...items.slice(index + 1),
+      ];
+    }
+  }
+  return [...items, ...incoming];
+}
+
+/** `now` keeps the id (on-air copy updates). `next` retires it so the copy finishes. */
+export function editNewsItem(
+  items: readonly CgNewsItem[],
+  id: string,
+  text: string,
+  mode: 'now' | 'next',
+): CgNewsItem[] {
+  return items.map((item) => {
+    if (item.id !== id) return item;
+    if (mode === 'next') return { ...item, id: crypto.randomUUID(), text };
+    return { ...item, text };
+  });
+}
+
+export function newsItemsKey(items: readonly CgNewsItem[] | undefined): string {
+  return (items ?? [])
+    .map((item) => `${item.id}\u0001${item.enabled ? '1' : '0'}\u0001${item.text}`)
+    .join('\n');
+}
+
+/**
+ * Next enabled line after `lastId`. If that id was deleted, a follower that
+ * slid into its index plays next (delete). A brand-new id in that slot is a
+ * "next pass" edit and is skipped until the rotation comes around.
+ */
+export function nextNewsItem(
+  items: readonly CgNewsItem[],
+  lastId: string | null,
+  lastIndex: number,
+  previousIds: readonly string[],
+): { item: CgNewsItem; index: number } | null {
+  if (items.length === 0) return null;
+  let start = -1;
+  if (lastId != null) {
+    const found = items.findIndex((item) => item.id === lastId);
+    if (found >= 0) {
+      start = found;
+    } else {
+      const follower = previousIds[lastIndex + 1];
+      const slid = items[lastIndex];
+      start = follower && slid && slid.id === follower ? lastIndex - 1 : lastIndex;
+    }
+  }
+  for (let step = 1; step <= items.length; step += 1) {
+    const index = modIndex(start + step, items.length);
+    const item = items[index];
+    if (item && item.enabled && item.text.trim()) return { item, index };
+  }
+  return null;
+}
+
+function modIndex(value: number, length: number): number {
+  return ((value % length) + length) % length;
+}
+
+export function clampBreakingSeconds(raw: unknown): number {
+  const value = toOptionalNumber(raw);
+  const rounded = value == null ? CG_BREAKING_SECONDS_DEFAULT : Math.round(value);
+  return Math.min(CG_BREAKING_SECONDS_MAX, Math.max(CG_BREAKING_SECONDS_MIN, rounded));
+}
+
+export function clampTickerSpeed(raw: unknown): number {
+  return clampRange(raw, CG_TICKER_SPEED_DEFAULT, CG_TICKER_SPEED_MIN, CG_TICKER_SPEED_MAX);
+}
+
+export function clampTickerGap(raw: unknown): number {
+  return clampRange(raw, CG_TICKER_GAP_DEFAULT, CG_TICKER_GAP_MIN, CG_TICKER_GAP_MAX);
+}
+
+export function clampTickerFadeWidth(raw: unknown): number {
+  return clampRange(
+    raw,
+    CG_TICKER_FADE_WIDTH_DEFAULT,
+    CG_TICKER_FADE_WIDTH_MIN,
+    CG_TICKER_FADE_WIDTH_MAX,
+  );
+}
+
+function clampRange(raw: unknown, fallback: number, min: number, max: number): number {
+  const value = toOptionalNumber(raw);
+  if (value == null) return fallback;
+  return Math.min(max, Math.max(min, value));
 }
 
 export function emptyLogoPayload(imageUrl = '', fileName?: string): CgLayerPayload {
@@ -811,6 +1075,63 @@ function normalizeWeatherSettings(raw: unknown): CgWeatherSettings {
   };
 }
 
+function normalizeNewsItems(raw: unknown, maxChars: number | null): CgNewsItem[] {
+  if (!Array.isArray(raw)) return [];
+  const used = new Set<string>();
+  const items: CgNewsItem[] = [];
+  raw.forEach((row, index) => {
+    const value = asRecord(row);
+    const text = asString(value['text']).replace(/[\r\n]+/g, '').trim();
+    if (!text) return;
+    if (maxChars != null && newsCharCount(text) > maxChars) return;
+    let id = asString(value['id']).trim();
+    if (!id || used.has(id)) id = `news-${index}`;
+    if (used.has(id)) id = `news-${index}-${items.length}`;
+    used.add(id);
+    items.push({ id, text, enabled: value['enabled'] !== false });
+  });
+  return items;
+}
+
+function normalizeBreakingSettings(raw: unknown): CgBreakingSettings {
+  const value = asRecord(raw);
+  return { secondsPerItem: clampBreakingSeconds(value['secondsPerItem']) };
+}
+
+function normalizeTickerSettings(raw: unknown): CgTickerSettings {
+  const value = asRecord(raw);
+  return {
+    speed: clampTickerSpeed(value['speed']),
+    gap: clampTickerGap(value['gap']),
+    fadeLeft: value['fadeLeft'] === true,
+    fadeRight: value['fadeRight'] === true,
+    fadeWidth: clampTickerFadeWidth(value['fadeWidth']),
+  };
+}
+
+function normalizeNewsPayload(
+  raw: unknown,
+  kind: 'breaking' | 'ticker',
+): CgLayerPayload {
+  const value = asRecord(raw);
+  const style = normalizeSubtitleStyle(value['style']);
+  style.preset = CgSubtitlePreset.Custom;
+  const transitionRaw = asRecord(value['transition']);
+  const payload: CgLayerPayload = {
+    ...emptyLogoPayload(),
+    items: normalizeNewsItems(
+      value['items'],
+      kind === 'breaking' ? CG_BREAKING_MAX_CHARS : null,
+    ),
+    style,
+    background: normalizeBackground(value['background']),
+    transition: { duration_ms: normalizeDurationMs(transitionRaw['duration_ms']) },
+  };
+  if (kind === 'breaking') payload.breaking = normalizeBreakingSettings(value['breaking']);
+  else payload.ticker = normalizeTickerSettings(value['ticker']);
+  return payload;
+}
+
 export function normalizeLayerPayload(
   type: CgElementType,
   raw: unknown,
@@ -818,6 +1139,8 @@ export function normalizeLayerPayload(
   if (type === CgElementType.Subtitle) {
     return normalizeSubtitlePayload(raw);
   }
+  if (type === CgElementType.Breaking) return normalizeNewsPayload(raw, 'breaking');
+  if (type === CgElementType.Ticker) return normalizeNewsPayload(raw, 'ticker');
   if (type === CgElementType.Clock || type === CgElementType.Weather) {
     const value = asRecord(raw);
     const style = normalizeSubtitleStyle(value['style']);
@@ -910,7 +1233,9 @@ export function clockInstantMs(settings: CgClockSettings, nowMs: number): number
 /**
  * What OBS can actually see of a Layer's content: layout, look and payload
  * without the live cue (`index` / `cursor`) and `fileName`. `name` is not part
- * of it. Equal signatures mean a re-publish would change nothing on air.
+ * of it. News `items` (including ids) stay in the signature so a delete or a
+ * next-pass edit still publishes. Equal signatures mean a re-publish would
+ * change nothing on air.
  */
 export function layerContentSignature(
   layer: Pick<CgLayerDraft, 'element_type' | 'layout' | 'look' | 'payload'>,
@@ -1186,6 +1511,87 @@ export function textBoxLayoutToCss(
       shadowAngle: style.shadowAngle ?? 135,
     }),
   );
+  return css;
+}
+
+/** Auto-fit Breaking type size (cqh) so `charCount` rows fill the fixed height. */
+export function breakingFontCqh(
+  layout: CgLayout,
+  style: CgSubtitleStyle,
+  charCount: number,
+): number {
+  const chars = Math.max(1, charCount);
+  const lineHeight =
+    style.lineHeight != null && style.lineHeight > 0 ? style.lineHeight : 1.05;
+  const height =
+    layout.height != null && Number.isFinite(layout.height)
+      ? layout.height
+      : CG_BREAKING_HEIGHT_DEFAULT;
+  const boxCqh =
+    layout.unit === CgLayoutUnit.Pixel
+      ? (height / CG_STAGE_REFERENCE_WIDTH_PX) * 100 * (16 / 9)
+      : height;
+  const fitted = boxCqh / (chars * lineHeight);
+  const scale = Number.isFinite(layout.scale) ? layout.scale : 1;
+  const maxSize =
+    (style.fontSize != null && style.fontSize > 0 ? style.fontSize : CG_NEWS_FONT_VH) *
+    scale;
+  return Math.max(0.8, Math.min(maxSize, fitted));
+}
+
+function newsPaintCss(style: CgSubtitleStyle): Record<string, string> {
+  return textPaintToCss({
+    ...style,
+    color: style.color || '#ffffff',
+    scaleX: style.scaleX ?? 1,
+    scaleY: style.scaleY ?? 1,
+    letterSpacing: style.letterSpacing ?? 0.02,
+    lineHeight: style.lineHeight ?? 1.05,
+    borderWidth: style.borderWidth ?? 0.08,
+    borderColor: style.borderColor || '#000000',
+    shadowDistance: style.shadowDistance ?? 0,
+    shadowRadius: style.shadowRadius ?? 2,
+    shadowColor: style.shadowColor || '#000000',
+    shadowAngle: style.shadowAngle ?? 135,
+  });
+}
+
+/** Fixed-height Breaking text box. Width follows the glyphs. */
+export function breakingWindowCss(
+  layout: CgLayout,
+  style: CgSubtitleStyle,
+  fontCqh: number,
+): Record<string, string> {
+  const height = layout.height ?? CG_BREAKING_HEIGHT_DEFAULT;
+  const css = anchoredBoxCss({ ...layout, height }, { scaleAsTransform: false });
+  css['width'] = 'max-content';
+  css['overflow'] = 'hidden';
+  css['--cg-brk-font'] = String(fontCqh);
+  Object.assign(css, newsPaintCss(style));
+  return css;
+}
+
+/** Ticker text window. Fade and gap are CSS variables on the same box. */
+export function tickerWindowCss(
+  layout: CgLayout,
+  style: CgSubtitleStyle,
+  ticker: CgTickerSettings,
+): Record<string, string> {
+  const width = layout.width ?? CG_TICKER_WIDTH_DEFAULT;
+  const height = layout.height ?? CG_TICKER_HEIGHT_DEFAULT;
+  const css = anchoredBoxCss(
+    { ...layout, width, height },
+    { scaleAsTransform: false },
+  );
+  css['overflow'] = 'hidden';
+  const scale = Number.isFinite(layout.scale) ? layout.scale : 1;
+  const base =
+    style.fontSize != null && style.fontSize > 0 ? style.fontSize : CG_NEWS_FONT_VH;
+  css['--cg-sub-font'] = String(base * scale);
+  css['--cg-ticker-gap'] = String(ticker.gap);
+  css['--cg-ticker-fade-left'] = ticker.fadeLeft ? `${ticker.fadeWidth}%` : '0%';
+  css['--cg-ticker-fade-right'] = ticker.fadeRight ? `${ticker.fadeWidth}%` : '0%';
+  Object.assign(css, newsPaintCss(style));
   return css;
 }
 

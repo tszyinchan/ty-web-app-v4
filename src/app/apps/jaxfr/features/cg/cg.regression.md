@@ -162,6 +162,21 @@
 | K7 | 新增 Weather，地點搜尋 Tokyo 並選取 | 一列顯示溫度、濕度、圖示。預設 Hong Kong 在選取前就有資料 |
 | K8 | 等分鐘交界（或把 Temperature 改成 Celsius / Fahrenheit） | alternate 在奇偶分鐘切換 °C / °F；固定單位不切換 |
 
+### Breaking / Ticker
+
+| # | 操作 | 預期 |
+|---|---|---|
+| N1 | Catalog 加 Breaking | Desk 左有 Background，右有 queue、Seconds each、Fade/Cut、Background place、Text place（Height）、Style。直排顯示兩則範例，每字一行 |
+| N2 | 單行輸入超過 24 字按 Add | 不加入，錯誤提示。20–24 字可以加入，列上有 Small |
+| N3 | Textarea 貼三行（一行超過 24 字）按 Append | 合法行加入；提示被跳過的行號。Replace all 會換成 textarea 的內容。Load .txt 是附加 |
+| N4 | 拖曳、上下、Enabled 關掉一行、刪一行、Clear all（要 confirm） | 順序與開關即時反映。關掉的行不再輪到。Clear 之後畫面空白 |
+| N5 | 多行時看 desk 與 overlay | 每隔「Seconds each」換下一則，最後回到第一則。Fade 有交疊；Cut 直接切。單行則一直停著 |
+| N6 | 某一則正在播時刪掉它 | 畫面上那則播完才消失，不會突然抽走。下一則接已啟用的行 |
+| N7 | Layer 在 On air 時改一行，選 Next pass，再選另一行 Apply now | Next pass：畫面上的舊字播完，新字下一輪才出現。Apply now：若該則正在播，字立刻換 |
+| N8 | 加 Ticker。開 Fade left / Fade right | 文字由右向左循環，項目之間有空隙。左右邊緣漸隱，底圖不被漸隱。Speed、Gap、Width、Height 會改視窗與速度 |
+| N9 | Ticker 正在捲的一行按刪除 | 那一行繼續捲出左緣，不會瞬間消失 |
+| N10 | Package 把 Breaking 或 Ticker 從 Off 再 On | overlay 與 On air 監看從第一則重來（Ticker 從右邊重新進入）。Desk 監看因為 force-show，不必與 OBS 同一格 |
+
 ### CLEANUP
 
 | # | 操作 | 預期 |

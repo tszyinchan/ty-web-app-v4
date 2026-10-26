@@ -116,14 +116,14 @@ export const CG_ELEMENT_CATALOG: ReadonlyArray<CgElementDef> = [
   {
     type: CgElementType.Breaking,
     label: 'Breaking',
-    description: 'Breaking banner',
-    shipped: false,
+    description: 'Vertical breaking news',
+    shipped: true,
   },
   {
     type: CgElementType.Ticker,
     label: 'Ticker',
-    description: 'Crawl / 跑馬',
-    shipped: false,
+    description: 'Scrolling news bar',
+    shipped: true,
   },
   {
     type: CgElementType.Weather,
@@ -443,6 +443,94 @@ export const DEFAULT_BUG_BACKGROUND_LAYOUT = {
 
 /** Default type size for Clock / Weather (vh). */
 export const CG_BUG_FONT_VH = 3.5;
+
+/**
+ * Breaking counts every code point as 1 (CJK, letters, digits, spaces).
+ * A line over the max is rejected. The warn threshold still saves, but the
+ * auto-fit size will be small inside the fixed-height bar.
+ */
+export const CG_BREAKING_MAX_CHARS = 24;
+export const CG_BREAKING_WARN_CHARS = 20;
+export const CG_BREAKING_SECONDS_DEFAULT = 8;
+export const CG_BREAKING_SECONDS_MIN = 2;
+export const CG_BREAKING_SECONDS_MAX = 60;
+/** Fixed text-box height, percent of Stage height. */
+export const CG_BREAKING_HEIGHT_DEFAULT = 54;
+
+/** Default type size for Breaking / Ticker (vh). Breaking may auto-fit smaller. */
+export const CG_NEWS_FONT_VH = 3.2;
+
+/** Ticker speed is a percent of Stage width per second. */
+export const CG_TICKER_SPEED_DEFAULT = 6;
+export const CG_TICKER_SPEED_MIN = 1;
+export const CG_TICKER_SPEED_MAX = 40;
+/** Gap between ticker items, in em. */
+export const CG_TICKER_GAP_DEFAULT = 4;
+export const CG_TICKER_GAP_MIN = 0;
+export const CG_TICKER_GAP_MAX = 12;
+/** Fade width as a percent of the ticker text window. */
+export const CG_TICKER_FADE_WIDTH_DEFAULT = 8;
+export const CG_TICKER_FADE_WIDTH_MIN = 0;
+export const CG_TICKER_FADE_WIDTH_MAX = 40;
+export const CG_TICKER_WIDTH_DEFAULT = 100;
+export const CG_TICKER_HEIGHT_DEFAULT = 8;
+
+export const CG_NEWS_INSERT_OPTIONS: ReadonlyArray<{
+  value: 'top' | 'after' | 'bottom';
+  label: string;
+}> = [
+  { value: 'top', label: 'Top' },
+  { value: 'after', label: 'After selected' },
+  { value: 'bottom', label: 'Bottom' },
+];
+
+export const CG_SAMPLE_BREAKING_LINES: readonly string[] = [
+  '突發新聞測試',
+  '第二則直排',
+];
+
+export const CG_SAMPLE_TICKER_LINES: readonly string[] = [
+  '這是第一則跑馬新聞',
+  '第二則從右邊接著進來',
+];
+
+/** Vertical breaking bar. Height is the fixed text box; width shrinks to the glyphs. */
+export const DEFAULT_BREAKING_LAYOUT = {
+  x: 2,
+  y: 8,
+  unit: CgLayoutUnit.Percent,
+  anchor: CgAnchor.TopLeft,
+  scale: 1,
+  height: CG_BREAKING_HEIGHT_DEFAULT,
+} as const;
+
+/** Full-width crawl along the bottom. Width is the visible window. */
+export const DEFAULT_TICKER_LAYOUT = {
+  x: 0,
+  y: 0,
+  unit: CgLayoutUnit.Percent,
+  anchor: CgAnchor.BottomCenter,
+  scale: 1,
+  width: CG_TICKER_WIDTH_DEFAULT,
+  height: CG_TICKER_HEIGHT_DEFAULT,
+} as const;
+
+export const DEFAULT_BREAKING_BACKGROUND_LAYOUT = {
+  x: 1,
+  y: 4,
+  unit: CgLayoutUnit.Percent,
+  anchor: CgAnchor.TopLeft,
+  scale: 1,
+} as const;
+
+export const DEFAULT_TICKER_BACKGROUND_LAYOUT = {
+  x: 0,
+  y: 0,
+  unit: CgLayoutUnit.Percent,
+  anchor: CgAnchor.BottomCenter,
+  scale: 1,
+  width: CG_TICKER_WIDTH_DEFAULT,
+} as const;
 
 export const CG_CLOCK_FORMAT_CUSTOM = '__custom__';
 

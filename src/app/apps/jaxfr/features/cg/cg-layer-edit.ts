@@ -19,8 +19,13 @@ import { MatIconModule } from '@angular/material/icon';
 import { CgWeatherPlace, CgWeatherService } from '../../../../core/domains/cg/cg-weather.service';
 import { CgMixPreview } from '../../../../core/domains/cg/cg-mix-preview';
 import { CgWheelSelect, CgWheelStep } from '../../../../core/domains/cg/cg-wheel.directive';
+import { CgNewsQueue } from './cg-news-queue';
 import {
   CG_ANCHOR_GRID_OPTIONS,
+  CG_BREAKING_HEIGHT_DEFAULT,
+  CG_BREAKING_MAX_CHARS,
+  CG_BREAKING_SECONDS_MAX,
+  CG_BREAKING_SECONDS_MIN,
   CG_CLOCK_FORMAT_CUSTOM,
   CG_CLOCK_FORMAT_OPTIONS,
   CG_CLOCK_LOCALE_OPTIONS,
@@ -40,7 +45,17 @@ import {
   CG_TEXT_GRADIENT_ANGLE,
   CG_TEXT_GRADIENT_TO,
   CG_TEXT_WEIGHT_BOLD,
+  CG_TICKER_FADE_WIDTH_MAX,
+  CG_TICKER_FADE_WIDTH_MIN,
+  CG_TICKER_GAP_MAX,
+  CG_TICKER_GAP_MIN,
+  CG_TICKER_HEIGHT_DEFAULT,
+  CG_TICKER_SPEED_MAX,
+  CG_TICKER_SPEED_MIN,
+  CG_TICKER_WIDTH_DEFAULT,
   CG_WHEEL_MIN_FADE_MS,
+  DEFAULT_BREAKING_BACKGROUND_LAYOUT,
+  DEFAULT_TICKER_BACKGROUND_LAYOUT,
   CgAnchor,
   CgElementType,
   CgLayerLook,
@@ -49,18 +64,29 @@ import {
   CgSubtitlePreset,
 } from '../../../../core/domains/cg/cg.constants';
 import {
+  CgBreakingSettings,
   CgClockSettings,
   CgLayerDraft,
   CgLayout,
+  CgNewsItem,
   CgSubtitleAlign,
   CgSubtitleStyle,
+  CgTickerSettings,
   CgWeatherSettings,
 } from '../../../../core/domains/cg/cg.model';
 import { CgService } from '../../../../core/domains/cg/cg.service';
 import {
+  clampBreakingSeconds,
+  clampTickerFadeWidth,
+  clampTickerGap,
+  clampTickerSpeed,
   clockFormatIsKnown,
+  defaultBreakingStyle,
   defaultBugStyle,
+  defaultTickerStyle,
+  emptyBreakingSettings,
   emptyClockSettings,
+  emptyTickerSettings,
   emptyWeatherSettings,
   wallClockToUtcMs,
   anchorIgnoresAxis,
@@ -94,6 +120,7 @@ import { copyTextToClipboard } from '../../../../core/utils/copy-text.util';
     CgWheelSelect,
     CgWheelStep,
     CgTextStyleEditor,
+    CgNewsQueue,
   ],
   templateUrl: './cg-layer-edit.html',
   styleUrl: './cg-layer-edit.scss',
@@ -108,7 +135,21 @@ export class CgLayerEdit implements OnInit {
   readonly Logo = CgElementType.Logo;
   readonly Clock = CgElementType.Clock;
   readonly Weather = CgElementType.Weather;
+  readonly Breaking = CgElementType.Breaking;
+  readonly Ticker = CgElementType.Ticker;
   readonly Subtitle = CgElementType.Subtitle;
+  readonly breakingMaxChars = CG_BREAKING_MAX_CHARS;
+  readonly breakingSecondsMin = CG_BREAKING_SECONDS_MIN;
+  readonly breakingSecondsMax = CG_BREAKING_SECONDS_MAX;
+  readonly breakingHeightDefault = CG_BREAKING_HEIGHT_DEFAULT;
+  readonly tickerSpeedMin = CG_TICKER_SPEED_MIN;
+  readonly tickerSpeedMax = CG_TICKER_SPEED_MAX;
+  readonly tickerGapMin = CG_TICKER_GAP_MIN;
+  readonly tickerGapMax = CG_TICKER_GAP_MAX;
+  readonly tickerFadeMin = CG_TICKER_FADE_WIDTH_MIN;
+  readonly tickerFadeMax = CG_TICKER_FADE_WIDTH_MAX;
+  readonly tickerWidthDefault = CG_TICKER_WIDTH_DEFAULT;
+  readonly tickerHeightDefault = CG_TICKER_HEIGHT_DEFAULT;
   readonly clockFormats = CG_CLOCK_FORMAT_OPTIONS;
   readonly clockLocales = CG_CLOCK_LOCALE_OPTIONS;
   readonly clockZones = CG_CLOCK_TIMEZONE_OPTIONS;
@@ -762,6 +803,64 @@ export class CgLayerEdit implements OnInit {
     return layer.element_type === this.Clock || layer.element_type === this.Weather;
   }
 
+  isNews(layer: CgLayerDraft): boolean {
+    return layer.element_type === this.Breaking || layer.element_type === this.Ticker;
+  }
+
+  newsItems(layer: CgLayerDraft): CgNewsItem[] {
+    return layer.payload.items ?? [];
+  }
+
+  onNewsItems(layer: CgLayerDraft, items: CgNewsItem[]): void {
+    layer.payload.items = items;
+    this.touchPreview();
+  }
+
+  breakingOf(layer: CgLayerDraft): CgBreakingSettings {
+    layer.payload.breaking ??= emptyBreakingSettings();
+    return layer.payload.breaking;
+  }
+
+  tickerOf(layer: CgLayerDraft): CgTickerSettings {
+    layer.payload.ticker ??= emptyTickerSettings();
+    return layer.payload.ticker;
+  }
+
+  newsStyle(layer: CgLayerDraft): CgSubtitleStyle {
+    if (!layer.payload.style) {
+      layer.payload.style =
+        layer.element_type === this.Ticker ? defaultTickerStyle() : defaultBreakingStyle();
+    }
+    return layer.payload.style;
+  }
+
+  onBreakingSeconds(layer: CgLayerDraft, value: number): void {
+    this.breakingOf(layer).secondsPerItem = clampBreakingSeconds(value);
+    this.touchPreview();
+  }
+
+  onTickerSpeed(layer: CgLayerDraft, value: number): void {
+    this.tickerOf(layer).speed = clampTickerSpeed(value);
+    this.touchPreview();
+  }
+
+  onTickerGap(layer: CgLayerDraft, value: number): void {
+    this.tickerOf(layer).gap = clampTickerGap(value);
+    this.touchPreview();
+  }
+
+  onTickerFadeWidth(layer: CgLayerDraft, value: number): void {
+    this.tickerOf(layer).fadeWidth = clampTickerFadeWidth(value);
+    this.touchPreview();
+  }
+
+  toggleTickerFade(layer: CgLayerDraft, side: 'left' | 'right'): void {
+    const ticker = this.tickerOf(layer);
+    if (side === 'left') ticker.fadeLeft = !ticker.fadeLeft;
+    else ticker.fadeRight = !ticker.fadeRight;
+    this.touchPreview();
+  }
+
   bugStyle(layer: CgLayerDraft): CgSubtitleStyle {
     layer.payload.style ??= defaultBugStyle();
     return layer.payload.style;
@@ -784,10 +883,20 @@ export class CgLayerEdit implements OnInit {
     if (!layer.payload.background) {
       layer.payload.background = {
         imageUrl: '',
-        layout: { ...DEFAULT_BUG_BACKGROUND_LAYOUT },
+        layout: { ...this.backgroundDefault(layer) },
       };
     }
     return layer.payload.background.layout;
+  }
+
+  private backgroundDefault(layer: CgLayerDraft): CgLayout {
+    if (layer.element_type === this.Breaking) {
+      return { ...DEFAULT_BREAKING_BACKGROUND_LAYOUT };
+    }
+    if (layer.element_type === this.Ticker) {
+      return { ...DEFAULT_TICKER_BACKGROUND_LAYOUT };
+    }
+    return { ...DEFAULT_BUG_BACKGROUND_LAYOUT };
   }
 
   hasBackground(layer: CgLayerDraft): boolean {
@@ -831,7 +940,7 @@ export class CgLayerEdit implements OnInit {
     layer.payload.background = {
       imageUrl: url,
       fileName: file.name,
-      layout: layer.payload.background?.layout ?? { ...DEFAULT_BUG_BACKGROUND_LAYOUT },
+      layout: layer.payload.background?.layout ?? { ...this.backgroundDefault(layer) },
     };
     this.touchPreview();
   }

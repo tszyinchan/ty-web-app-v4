@@ -56,6 +56,11 @@ export class CgMixPreview {
     return {
       ...layer.payload,
       lines: [...layer.payload.lines],
+      ...(layer.payload.items
+        ? { items: layer.payload.items.map((item) => ({ ...item })) }
+        : {}),
+      ...(layer.payload.breaking ? { breaking: { ...layer.payload.breaking } } : {}),
+      ...(layer.payload.ticker ? { ticker: { ...layer.payload.ticker } } : {}),
       style: subtitleStyleOf(layer.payload),
       transition: {
         duration_ms: innerDurationMs(layer.payload),
