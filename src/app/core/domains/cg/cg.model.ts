@@ -9,6 +9,9 @@ import {
   CgPackageRole,
   CgSubtitlePreset,
   CgTextWeight,
+  CgTitleField,
+  CgTitleStyleKey,
+  CgTitleVariant,
 } from './cg.constants';
 
 export interface CgLayout {
@@ -133,6 +136,43 @@ export interface CgLayerTransition {
   duration_ms: number;
 }
 
+/** One saved Title. Empty strings are kept so an edit can clear a field. */
+export interface CgTitleItem {
+  id: string;
+  variant: CgTitleVariant;
+  a: string;
+  b: string;
+  c: string;
+  source: string;
+}
+
+/** Live breaking bar. Text stays put until that field is Pushed. */
+export interface CgTitleLive {
+  a: string;
+  b: string;
+  source: string;
+  on: boolean;
+}
+
+/** Per-variant background image and text box. They are placed separately. */
+export interface CgTitleVariantLayout {
+  background?: CgBackground;
+  text: CgLayout;
+  /** Text box width, percent of Stage width. */
+  width: number;
+}
+
+export interface CgTitleSettings {
+  items: CgTitleItem[];
+  /** Item ids on screen. Same variant may overlap; the operator manages that. */
+  onAir: string[];
+  live: CgTitleLive;
+  styles: Record<CgTitleStyleKey, CgSubtitleStyle>;
+  variants: Record<CgTitleVariant, CgTitleVariantLayout>;
+}
+
+export type CgTitleFieldMap = Record<CgTitleField, string>;
+
 export interface CgSubtitlePayload {
   lines: string[];
   /** On-air cue. `null` = blank air. */
@@ -152,6 +192,11 @@ export type CgLayerPayload = CgLogoPayload &
     items?: CgNewsItem[];
     breaking?: CgBreakingSettings;
     ticker?: CgTickerSettings;
+    /**
+     * Title queue, styles, and per-variant place. Nested so it does not
+     * collide with the Breaking / Ticker `items` array.
+     */
+    title?: CgTitleSettings;
   };
 
 export interface CgPackage {
@@ -219,10 +264,19 @@ export interface CgOutputStateCue {
   cursor: number;
 }
 
-/** Tiny safety-poll response: content `rev` + stored cues. */
+/** Title air as stored in the DB (safety-poll drift check only). */
+export interface CgOutputStateTitle {
+  id: string;
+  onAir: string[];
+  liveOn: boolean;
+}
+
+/** Tiny safety-poll response: content `rev` + stored cues and Title air. */
 export interface CgOutputState {
   rev: string;
   cues: CgOutputStateCue[];
+  /** Empty until `cg-title.sql` is applied, or when no Title Layer is on the output. */
+  titles: CgOutputStateTitle[];
 }
 
 /** Live cue on the overlay broadcast — not a full output snapshot. */
@@ -231,5 +285,14 @@ export interface CgOverlayCueMessage {
   layerId: string;
   index: number | null;
   cursor: number;
+  seq: number;
+}
+
+/** Title On/Off or Live Push. Not a full output snapshot. */
+export interface CgOverlayTitleMessage {
+  kind: 'title';
+  layerId: string;
+  onAir: string[];
+  live: CgTitleLive;
   seq: number;
 }

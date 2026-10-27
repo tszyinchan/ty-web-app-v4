@@ -30,6 +30,31 @@ export enum CgElementType {
   Weather = 'weather',
 }
 
+/** One Title look. Queue items pick one; Style A/B/C is shared by the Layer. */
+export enum CgTitleVariant {
+  Headline = 'headline',
+  NameTag = 'name-tag',
+  SmallTag = 'small-tag',
+  Live = 'live',
+  TwoLine = 'two-line',
+  Special = 'special',
+}
+
+/** Which text Style a Title run paints with. */
+export enum CgTitleStyleKey {
+  A = 'a',
+  B = 'b',
+  C = 'c',
+}
+
+/** Fields a Title variant asks the operator to fill. */
+export enum CgTitleField {
+  A = 'a',
+  B = 'b',
+  C = 'c',
+  Source = 'source',
+}
+
 export enum CgOutputKind {
   Package = 'package',
   Layer = 'layer',
@@ -104,8 +129,8 @@ export const CG_ELEMENT_CATALOG: ReadonlyArray<CgElementDef> = [
   {
     type: CgElementType.Title,
     label: 'Title',
-    description: 'Name tag / lower-third title',
-    shipped: false,
+    description: 'Lower-third title and name tag',
+    shipped: true,
   },
   {
     type: CgElementType.Subtitle,
@@ -138,6 +163,11 @@ export const CG_OVERLAY_CHANNEL_PREFIX = 'cg-output:';
 export const CG_OVERLAY_BROADCAST_EVENT = 'sync';
 /** Small live-cue payload on the same broadcast event (not a full output snapshot). */
 export const CG_OVERLAY_CUE_KIND = 'cue';
+/**
+ * Title On/Off and Live Push. Same broadcast event as a cue. Not a full snapshot.
+ * `onAir` and `live.on` are excluded from content `rev`; Live text is not.
+ */
+export const CG_OVERLAY_TITLE_KIND = 'title';
 /**
  * If Realtime drops a packet, overlay catches up. Not the live cue path.
  * Each tick calls the tiny `tyapp_cg_get_output_state_by_token` (content
@@ -531,6 +561,94 @@ export const DEFAULT_TICKER_BACKGROUND_LAYOUT = {
   scale: 1,
   width: CG_TICKER_WIDTH_DEFAULT,
 } as const;
+
+/** Layer row layout. Title places each variant from `payload.title.variants`. */
+export const DEFAULT_TITLE_LAYOUT = {
+  x: 0,
+  y: 0,
+  unit: CgLayoutUnit.Percent,
+  anchor: CgAnchor.BottomLeft,
+  scale: 1,
+} as const;
+
+/** Style A / B / C type size (vh) before Place Scale. */
+export const CG_TITLE_FONT_A = 4.6;
+export const CG_TITLE_FONT_B = 3;
+export const CG_TITLE_FONT_C = 5.6;
+
+/** Text box width, percent of Stage width. Longer text squashes to fit. */
+export const CG_TITLE_WIDTH_MIN = 8;
+export const CG_TITLE_WIDTH_MAX = 100;
+export const CG_TITLE_WIDTH_WIDE = 72;
+export const CG_TITLE_WIDTH_NAME = 52;
+export const CG_TITLE_WIDTH_SMALL = 28;
+export const CG_TITLE_WIDTH_LIVE = 18;
+
+export const CG_TITLE_FONT_STACK =
+  "'華康中黑體', '華康中黑體(P)', 'DFHei', 'Microsoft JhengHei', 'Segoe UI', sans-serif";
+
+export interface CgTitleFieldDef {
+  key: CgTitleField;
+  label: string;
+}
+
+export interface CgTitleVariantDef {
+  value: CgTitleVariant;
+  label: string;
+  fields: readonly CgTitleFieldDef[];
+}
+
+export const CG_TITLE_VARIANTS: readonly CgTitleVariantDef[] = [
+  {
+    value: CgTitleVariant.Headline,
+    label: 'Headline',
+    fields: [{ key: CgTitleField.A, label: 'Headline' }],
+  },
+  {
+    value: CgTitleVariant.NameTag,
+    label: 'Name tag',
+    fields: [
+      { key: CgTitleField.A, label: 'Name' },
+      { key: CgTitleField.B, label: 'Title' },
+    ],
+  },
+  {
+    value: CgTitleVariant.SmallTag,
+    label: 'Small tag',
+    fields: [
+      { key: CgTitleField.B, label: 'Title' },
+      { key: CgTitleField.A, label: 'Name' },
+    ],
+  },
+  {
+    value: CgTitleVariant.Live,
+    label: 'Live',
+    fields: [{ key: CgTitleField.A, label: 'Label' }],
+  },
+  {
+    value: CgTitleVariant.TwoLine,
+    label: 'Two-line',
+    fields: [
+      { key: CgTitleField.A, label: 'Line 1' },
+      { key: CgTitleField.B, label: 'Line 2' },
+      { key: CgTitleField.Source, label: 'Source' },
+    ],
+  },
+  {
+    value: CgTitleVariant.Special,
+    label: 'Special',
+    fields: [{ key: CgTitleField.C, label: 'Headline' }],
+  },
+];
+
+export const CG_TITLE_STYLE_OPTIONS: readonly {
+  value: CgTitleStyleKey;
+  label: string;
+}[] = [
+  { value: CgTitleStyleKey.A, label: 'Style A' },
+  { value: CgTitleStyleKey.B, label: 'Style B' },
+  { value: CgTitleStyleKey.C, label: 'Style C' },
+];
 
 export const CG_CLOCK_FORMAT_CUSTOM = '__custom__';
 

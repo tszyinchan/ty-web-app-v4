@@ -30,10 +30,12 @@ import {
   CG_SUBTITLE_FONT_OPTIONS,
   CG_SUBTITLE_FONT_VH,
   CG_SUBTITLE_SHOW_FONT_VH,
+  CG_OVERLAY_TITLE_KIND,
   CG_TEXT_GRADIENT_ANGLE,
   CG_TEXT_WEIGHT_BOLD,
   CG_TEXT_WEIGHT_MEDIUM,
   CG_TEXT_WEIGHT_REGULAR,
+  CG_TITLE_VARIANTS,
   CG_TICKER_FADE_WIDTH_DEFAULT,
   CG_TICKER_FADE_WIDTH_MAX,
   CG_TICKER_FADE_WIDTH_MIN,
@@ -49,8 +51,11 @@ import {
   DEFAULT_BUG_BACKGROUND_LAYOUT,
   DEFAULT_CLOCK_LAYOUT,
   DEFAULT_TICKER_LAYOUT,
+  DEFAULT_TITLE_LAYOUT,
   DEFAULT_WEATHER_LAYOUT,
   CgTextWeight,
+  CgTitleStyleKey,
+  CgTitleVariant,
   CgAnchor,
   CgElementDef,
   CgElementType,
@@ -78,7 +83,13 @@ import {
   CgLogoPayload,
   CgOutputState,
   CgOutputStateCue,
+  CgOutputStateTitle,
   CgOverlayCueMessage,
+  CgOverlayTitleMessage,
+  CgTitleItem,
+  CgTitleLive,
+  CgTitleSettings,
+  CgTitleVariantLayout,
   CgPackage,
   CgPublicOutput,
   CgSubtitleAlign,
@@ -86,6 +97,14 @@ import {
   CgTextPaint,
   CgTickerSettings,
 } from './cg.model';
+import {
+  clampTitleWidth,
+  defaultTitleStyles,
+  defaultTitleVariantLayouts,
+  emptyTitleLive,
+  emptyTitleSettings,
+  isTitleVariant,
+} from './cg-title.util';
 
 /** Which side of the 3x3 grid an Anchor sits on, per axis. */
 export type CgAnchorSideX = 'left' | 'center' | 'right';
@@ -227,7 +246,25 @@ export function createEmptyLayer(
   if (type === CgElementType.Ticker) {
     return createEmptyNewsLayer(type, sortOrder, { ...DEFAULT_TICKER_LAYOUT });
   }
+  if (type === CgElementType.Title) {
+    return createEmptyTitleLayer(sortOrder);
+  }
   return null;
+}
+
+function createEmptyTitleLayer(sortOrder: number): CgLayerDraft {
+  return {
+    clientId: `temp-${crypto.randomUUID()}`,
+    element_type: CgElementType.Title,
+    public_token: createCgPublicToken(),
+    name: '',
+    layout: { ...DEFAULT_TITLE_LAYOUT },
+    payload: emptyTitlePayload(),
+    visible: true,
+    look: CgLayerLook.Color,
+    sort_order: sortOrder,
+    status: RecordStatus.Active,
+  };
 }
 
 function createEmptyNewsLayer(
@@ -370,6 +407,13 @@ export function emptyBreakingPayload(): CgLayerPayload {
     items: CG_SAMPLE_BREAKING_LINES.map((text) => createNewsItem(text)),
     style: defaultBreakingStyle(),
     breaking: emptyBreakingSettings(),
+  };
+}
+
+export function emptyTitlePayload(): CgLayerPayload {
+  return {
+    ...emptyLogoPayload(),
+    title: emptyTitleSettings(),
   };
 }
 
@@ -1013,7 +1057,21 @@ export function normalizeOutputState(raw: unknown): CgOutputState | null {
       cues.push({ id, index, cursor });
     }
   }
-  return { rev, cues };
+  const titlesRaw = value['titles'];
+  const titles: CgOutputStateTitle[] = [];
+  if (Array.isArray(titlesRaw)) {
+    for (const row of titlesRaw) {
+      const title = asRecord(row);
+      const id = asString(title['id']);
+      if (!id) continue;
+      const onAirRaw = title['onAir'];
+      const onAir = Array.isArray(onAirRaw)
+        ? onAirRaw.map((item) => asString(item)).filter((item) => item.length > 0)
+        : [];
+      titles.push({ id, onAir, liveOn: title['liveOn'] === true });
+    }
+  }
+  return { rev, cues, titles };
 }
 
 function normalizeBackground(raw: unknown): CgBackground | undefined {
@@ -1132,6 +1190,137 @@ function normalizeNewsPayload(
   return payload;
 }
 
+function normalizeTitlePaint(
+  raw: unknown,
+  fallback: CgSubtitleStyle,
+): CgSubtitleStyle {
+  const parsed = normalizeSubtitleStyle(raw);
+  return { ...fallback, ...parsed, preset: CgSubtitlePreset.Custom };
+}
+
+function normalizeTitleLive(raw: unknown): CgTitleLive {
+  const value = asRecord(raw);
+  const base = emptyTitleLive();
+  return {
+    a: asString(value['a']).trim() || base.a,
+    b: asString(value['b']).trim() || base.b,
+    source: asString(value['source']).trim() || base.source,
+    on: value['on'] === true,
+  };
+}
+
+function normalizeTitleItems(raw: unknown): CgTitleItem[] {
+  if (!Array.isArray(raw)) return [];
+  const used = new Set<string>();
+  const items: CgTitleItem[] = [];
+  raw.forEach((row, index) => {
+    const value = asRecord(row);
+    if (!isTitleVariant(value['variant'])) return;
+    const item: CgTitleItem = {
+      id: '',
+      variant: value['variant'],
+      a: asString(value['a']).trim(),
+      b: asString(value['b']).trim(),
+      c: asString(value['c']).trim(),
+      source: asString(value['source']).trim(),
+    };
+    if (!item.a && !item.b && !item.c && !item.source) return;
+    let id = asString(value['id']).trim();
+    if (!id || used.has(id)) id = `title-${index}`;
+    if (used.has(id)) id = `title-${index}-${items.length}`;
+    used.add(id);
+    item.id = id;
+    items.push(item);
+  });
+  return items;
+}
+
+function normalizeTitleVariantLayout(
+  raw: unknown,
+  fallback: CgTitleVariantLayout,
+): CgTitleVariantLayout {
+  const value = asRecord(raw);
+  const text = normalizeLayout(value['text'] ?? fallback.text);
+  const background = normalizeTitleBackground(value['background'], fallback.text);
+  return {
+    text,
+    width: clampTitleWidth(value['width'], fallback.width),
+    ...(background ? { background } : {}),
+  };
+}
+
+function normalizeTitleBackground(
+  raw: unknown,
+  fallbackLayout: CgLayout,
+): CgTitleVariantLayout['background'] {
+  const value = asRecord(raw);
+  if (Object.keys(value).length === 0) return undefined;
+  const imageUrl = asString(value['imageUrl']).trim();
+  if (isEmbeddedImageUrl(imageUrl)) return undefined;
+  const fileName = asString(value['fileName']).trim();
+  return {
+    imageUrl,
+    ...(fileName ? { fileName } : {}),
+    layout: normalizeLayout(value['layout'] ?? fallbackLayout),
+  };
+}
+
+function normalizeTitleVariants(
+  raw: unknown,
+): Record<CgTitleVariant, CgTitleVariantLayout> {
+  const value = asRecord(raw);
+  const defaults = defaultTitleVariantLayouts();
+  const variants = {} as Record<CgTitleVariant, CgTitleVariantLayout>;
+  for (const variant of CG_TITLE_VARIANTS) {
+    variants[variant.value] = normalizeTitleVariantLayout(
+      value[variant.value],
+      defaults[variant.value],
+    );
+  }
+  return variants;
+}
+
+function normalizeTitleStyles(
+  raw: unknown,
+): Record<CgTitleStyleKey, CgSubtitleStyle> {
+  const value = asRecord(raw);
+  const defaults = defaultTitleStyles();
+  return {
+    [CgTitleStyleKey.A]: normalizeTitlePaint(value['a'], defaults[CgTitleStyleKey.A]),
+    [CgTitleStyleKey.B]: normalizeTitlePaint(value['b'], defaults[CgTitleStyleKey.B]),
+    [CgTitleStyleKey.C]: normalizeTitlePaint(value['c'], defaults[CgTitleStyleKey.C]),
+  };
+}
+
+function normalizeTitleSettings(raw: unknown): CgTitleSettings {
+  const value = asRecord(raw);
+  const items = normalizeTitleItems(value['items']);
+  const known = new Set(items.map((item) => item.id));
+  const onAirRaw = value['onAir'];
+  const onAir = Array.isArray(onAirRaw)
+    ? onAirRaw
+        .map((id) => asString(id).trim())
+        .filter((id) => known.has(id))
+    : [];
+  return {
+    items,
+    onAir,
+    live: normalizeTitleLive(value['live']),
+    styles: normalizeTitleStyles(value['styles']),
+    variants: normalizeTitleVariants(value['variants']),
+  };
+}
+
+function normalizeTitlePayload(raw: unknown): CgLayerPayload {
+  const value = asRecord(raw);
+  const transitionRaw = asRecord(value['transition']);
+  return {
+    ...emptyLogoPayload(),
+    title: normalizeTitleSettings(value['title']),
+    transition: { duration_ms: normalizeDurationMs(transitionRaw['duration_ms']) },
+  };
+}
+
 export function normalizeLayerPayload(
   type: CgElementType,
   raw: unknown,
@@ -1141,6 +1330,7 @@ export function normalizeLayerPayload(
   }
   if (type === CgElementType.Breaking) return normalizeNewsPayload(raw, 'breaking');
   if (type === CgElementType.Ticker) return normalizeNewsPayload(raw, 'ticker');
+  if (type === CgElementType.Title) return normalizeTitlePayload(raw);
   if (type === CgElementType.Clock || type === CgElementType.Weather) {
     const value = asRecord(raw);
     const style = normalizeSubtitleStyle(value['style']);
@@ -1246,6 +1436,7 @@ export function layerContentSignature(
   delete payload['index'];
   delete payload['cursor'];
   delete payload['fileName'];
+  stripTitleSignature(payload);
   const background = payload['background'];
   if (background && typeof background === 'object') {
     const copy = { ...(background as Record<string, unknown>) };
@@ -1257,6 +1448,40 @@ export function layerContentSignature(
     look: normalizeLayerLook(layer.look),
     payload,
   });
+}
+
+/** On/Off and Live `on` are not content. Live text and the queue are. */
+function stripTitleSignature(payload: Record<string, unknown>): void {
+  const title = payload['title'];
+  if (!title || typeof title !== 'object') return;
+  const copy = { ...(title as Record<string, unknown>) };
+  delete copy['onAir'];
+  const live = copy['live'];
+  if (live && typeof live === 'object') {
+    const liveCopy = { ...(live as Record<string, unknown>) };
+    delete liveCopy['on'];
+    copy['live'] = liveCopy;
+  }
+  const variants = copy['variants'];
+  if (variants && typeof variants === 'object') {
+    const next: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(variants as Record<string, unknown>)) {
+      if (!value || typeof value !== 'object') {
+        next[key] = value;
+        continue;
+      }
+      const row = { ...(value as Record<string, unknown>) };
+      const background = row['background'];
+      if (background && typeof background === 'object') {
+        const bg = { ...(background as Record<string, unknown>) };
+        delete bg['fileName'];
+        row['background'] = bg;
+      }
+      next[key] = row;
+    }
+    copy['variants'] = next;
+  }
+  payload['title'] = copy;
 }
 
 /**
@@ -1610,6 +1835,27 @@ export function resolveSubtitleAlign(
 
 export function cgOutputChannelName(token: string): string {
   return `${CG_OVERLAY_CHANNEL_PREFIX}${token}`;
+}
+
+export function isOverlayTitleMessage(raw: unknown): raw is CgOverlayTitleMessage {
+  const value = asRecord(raw);
+  const seq = value['seq'];
+  const layerId = value['layerId'];
+  const onAir = value['onAir'];
+  const live = asRecord(value['live']);
+  return (
+    value['kind'] === CG_OVERLAY_TITLE_KIND &&
+    typeof layerId === 'string' &&
+    layerId.length > 0 &&
+    typeof seq === 'number' &&
+    Number.isFinite(seq) &&
+    Array.isArray(onAir) &&
+    onAir.every((id) => typeof id === 'string') &&
+    typeof live['a'] === 'string' &&
+    typeof live['b'] === 'string' &&
+    typeof live['source'] === 'string' &&
+    typeof live['on'] === 'boolean'
+  );
 }
 
 export function isOverlayCueMessage(raw: unknown): raw is CgOverlayCueMessage {

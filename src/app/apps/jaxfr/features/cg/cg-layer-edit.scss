@@ -104,6 +104,15 @@ $cg-control-height: 28px;
   align-content: start;
 }
 
+.title-desk .cg-desk-config {
+  overflow: hidden;
+}
+
+.title-desk app-cg-title-desk {
+  min-height: 0;
+  min-width: 0;
+}
+
 .cg-news-col,
 .cg-news-side {
   display: flex;

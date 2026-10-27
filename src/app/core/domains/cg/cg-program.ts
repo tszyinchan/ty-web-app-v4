@@ -14,7 +14,12 @@ import {
   CgPackageLook,
   CgPreviewBackdrop,
 } from './cg.constants';
-import { CgLayer, CgOverlayCueMessage, CgPublicOutput } from './cg.model';
+import {
+  CgLayer,
+  CgOverlayCueMessage,
+  CgOverlayTitleMessage,
+  CgPublicOutput,
+} from './cg.model';
 import { layerIsMono, normalizeDurationMs, normalizeLook } from './cg.util';
 
 /**
@@ -35,6 +40,7 @@ import { layerIsMono, normalizeDurationMs, normalizeLook } from './cg.util';
 export class CgProgram implements OnDestroy {
   readonly output = input<CgPublicOutput | null>(null);
   readonly cue = input<CgOverlayCueMessage | null>(null);
+  readonly titleAir = input<CgOverlayTitleMessage | null>(null);
   readonly preview = input(false);
   readonly backdrop = input(CgPreviewBackdrop.Dim);
   readonly label = input('');
@@ -63,6 +69,11 @@ export class CgProgram implements OnDestroy {
       const cue = this.cue();
       if (!cue) return;
       untracked(() => this.applyCue(cue));
+    });
+    effect(() => {
+      const titleAir = this.titleAir();
+      if (!titleAir) return;
+      untracked(() => this.applyTitle(titleAir));
     });
   }
 
@@ -96,6 +107,46 @@ export class CgProgram implements OnDestroy {
         ...layer.payload,
         index: cue.index,
         cursor: cue.cursor,
+      },
+    };
+    this.stagedLayers.set(next);
+    this.lastHash = outputHash(next.filter((row) => row.visible));
+  }
+
+  private applyTitle(message: CgOverlayTitleMessage): void {
+    const applied = this.lastCueSeq.get(message.layerId) ?? 0;
+    if (message.seq <= applied) return;
+    this.lastCueSeq.set(message.layerId, message.seq);
+
+    const current = this.stagedLayers();
+    const at = current.findIndex(
+      (layer) => layer.tb_tyapp_cgly_id === message.layerId,
+    );
+    if (at < 0) return;
+    const layer = current[at];
+    if (!layer.payload.title) return;
+    const title = layer.payload.title;
+    const sameAir =
+      title.onAir.length === message.onAir.length &&
+      title.onAir.every((id, index) => id === message.onAir[index]);
+    const live = title.live;
+    const sameLive =
+      live.a === message.live.a &&
+      live.b === message.live.b &&
+      live.source === message.live.source &&
+      live.on === message.live.on;
+    if (sameAir && sameLive) return;
+
+    const next = [...current];
+    next[at] = {
+      ...layer,
+      payload: {
+        ...layer.payload,
+        title: {
+          ...title,
+          onAir: [...message.onAir],
+          live: { ...message.live },
+        },
       },
     };
     this.stagedLayers.set(next);

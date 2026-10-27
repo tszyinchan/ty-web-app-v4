@@ -5,6 +5,7 @@
     [class.sub-desk]="layer.element_type === Subtitle"
     [class.bug-desk]="layer.element_type === Clock || layer.element_type === Weather"
     [class.news-desk]="layer.element_type === Breaking || layer.element_type === Ticker"
+    [class.title-desk]="layer.element_type === Title"
   >
     <div class="cg-desk-split">
       <aside class="cg-desk-preview">
@@ -767,6 +768,12 @@
               <app-cg-text-style-editor [paint]="newsStyle(layer)" (changed)="touchPreview()" />
             </section>
           </div>
+        } @else if (layer.element_type === Title) {
+          <app-cg-title-desk
+            [layer]="layer"
+            [outline]="logoOutline()"
+            (outlineChange)="logoOutline.set($event)"
+          />
         } @else if (layer.element_type === Subtitle) {
           <div class="cg-sub-cue-col">
             <div class="cg-cue-bar">

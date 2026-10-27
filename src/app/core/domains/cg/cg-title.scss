@@ -1,0 +1,115 @@
+:host {
+  display: block;
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.title-hold {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--cg-cue-ms, 400ms) ease;
+}
+
+.title-hold.is-on {
+  opacity: 1;
+}
+
+.title-text {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-end;
+  gap: 0.06em;
+  pointer-events: none;
+  user-select: none;
+}
+
+.title-text.outline {
+  outline: 3px solid #ffe14a;
+  box-shadow: 0 0 0 2px #c40000;
+}
+
+.title-line {
+  display: block;
+  width: 100%;
+  white-space: nowrap;
+  text-align: left;
+  transform: scaleX(var(--cg-title-fit, 1));
+  transform-origin: left center;
+}
+
+.title-line.is-right {
+  text-align: right;
+  transform-origin: right center;
+}
+
+.title-run {
+  position: relative;
+  display: inline-block;
+  max-width: none;
+  box-sizing: border-box;
+  color: var(--cg-sub-color, #fff);
+  font-family: var(
+    --cg-sub-font-family,
+    '華康中黑體',
+    'Microsoft JhengHei',
+    'Segoe UI',
+    sans-serif
+  );
+  font-size: calc(var(--cg-sub-font, 4.6) * 1vh);
+  font-size: calc(var(--cg-sub-font, 4.6) * 1cqh);
+  font-weight: var(--cg-sub-font-weight, 700);
+  font-style: var(--cg-sub-font-style, normal);
+  letter-spacing: var(--cg-sub-letter-spacing, 0.04em);
+  line-height: var(--cg-sub-line-height, 1.15);
+  vertical-align: baseline;
+  filter: var(--cg-sub-filter, none);
+  white-space: nowrap;
+}
+
+.title-run + .title-run {
+  margin-left: 0.5em;
+}
+
+.title-stroke,
+.title-fill {
+  box-sizing: border-box;
+  display: block;
+  padding: 0.08em 0.4em;
+  white-space: nowrap;
+}
+
+.title-stroke {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  color: var(--cg-sub-stroke-color, #000);
+  -webkit-text-stroke: var(--cg-sub-stroke-width, 0) var(--cg-sub-stroke-color, #000);
+}
+
+.title-fill {
+  position: relative;
+  color: var(--cg-sub-color, #fff);
+  text-decoration-line: var(--cg-sub-decoration, none);
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.12em;
+  background-image: var(--cg-sub-fill-image, none);
+  background-repeat: no-repeat;
+}
+
+.title-fill.is-gradient {
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.title-run .latin {
+  letter-spacing: calc(
+    var(--cg-sub-letter-spacing, 0.04em) * var(--cg-sub-latin-track, 0.4)
+  );
+}

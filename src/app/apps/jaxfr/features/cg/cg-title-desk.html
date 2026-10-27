@@ -1,0 +1,409 @@
+<div class="cg-title">
+  <mat-button-toggle-group
+    class="cg-seg-toggle"
+    [value]="tab"
+    (change)="onTab($event)"
+    hideSingleSelectionIndicator
+    aria-label="Title desk"
+  >
+    <mat-button-toggle value="queue">Queue</mat-button-toggle>
+    <mat-button-toggle value="live">Live</mat-button-toggle>
+    <mat-button-toggle value="look">Style</mat-button-toggle>
+  </mat-button-toggle-group>
+
+  @if (tab === 'queue') {
+    <section class="cg-block">
+      <h3 class="cg-block-title">New item</h3>
+      <label class="cg-field">
+        <span>Variant</span>
+        <select
+          [appCgWheelSelect]="variantValues"
+          [ngModel]="variant"
+          (ngModelChange)="onComposerVariant($event)"
+          (appCgWheelChange)="onComposerVariant($event)"
+        >
+          @for (option of variants; track option.value) {
+            <option [value]="option.value">{{ option.label }}</option>
+          }
+        </select>
+      </label>
+      @for (field of composerFields(); track field.key) {
+        <label class="cg-field">
+          <span>{{ field.label }}</span>
+          <input
+            type="text"
+            [(ngModel)]="fields[field.key]"
+            [attr.aria-label]="field.label"
+            (keydown.enter)="pushItem($event)"
+          />
+        </label>
+      }
+      <div class="cg-inline">
+        <button mat-stroked-button type="button" class="cg-seg-btn" (click)="pushItem()">
+          {{ editingId ? 'Update' : 'Push' }}
+        </button>
+        @if (editingId) {
+          <button mat-stroked-button type="button" class="cg-seg-btn" (click)="cancelEdit()">
+            Cancel
+          </button>
+        }
+      </div>
+      <p class="cg-hint">
+        Push adds a row. Turn a row on to show it. Two rows of the same variant
+        stack on the same place.
+      </p>
+    </section>
+
+    <div
+      class="cg-title-list"
+      cdkDropList
+      cdkDropListLockAxis="y"
+      (cdkDropListDropped)="onDrop($event)"
+      role="list"
+      aria-label="Title queue"
+    >
+      @for (item of title().items; track item.id) {
+        <div class="cg-title-row" cdkDrag role="listitem" [class.on]="isOn(item)">
+          <button
+            type="button"
+            class="cg-drag"
+            cdkDragHandle
+            aria-label="Reorder"
+            (click)="$event.stopPropagation()"
+          >
+            <mat-icon>drag_indicator</mat-icon>
+          </button>
+          <button
+            type="button"
+            class="cg-switch"
+            [class.on]="isOn(item)"
+            role="switch"
+            [attr.aria-checked]="isOn(item)"
+            [attr.aria-label]="'On air ' + summary(item)"
+            (click)="toggleItem(item)"
+          >
+            <span class="cg-switch-thumb"></span>
+          </button>
+          <span class="cg-title-text">{{ summary(item) }}</span>
+          <button mat-stroked-button type="button" class="cg-seg-btn" (click)="beginEdit(item, $event)">
+            Edit
+          </button>
+          <button mat-stroked-button type="button" class="cg-seg-btn" (click)="removeItem(item, $event)">
+            Delete
+          </button>
+        </div>
+      }
+    </div>
+    <button
+      mat-stroked-button
+      type="button"
+      class="cg-seg-btn"
+      [disabled]="title().items.length === 0"
+      (click)="clearAll()"
+    >
+      Clear all
+    </button>
+  } @else if (tab === 'live') {
+    <section class="cg-block">
+      <h3 class="cg-block-title">Live bar</h3>
+      <p class="cg-hint">
+        Two-line place. Push sends that field. Nothing goes out before Push.
+        Turning this on takes Two-line queue items off air.
+      </p>
+      <div class="cg-outline-row">
+        <button
+          type="button"
+          class="cg-switch"
+          [class.on]="title().live.on"
+          role="switch"
+          [attr.aria-checked]="title().live.on"
+          aria-label="Live bar on"
+          (click)="toggleLive()"
+        >
+          <span class="cg-switch-thumb"></span>
+        </button>
+        <span class="cg-outline-label">On air</span>
+      </div>
+      <label class="cg-field">
+        <span>Line 1 (Style A)</span>
+        <div class="cg-inline">
+          <input
+            type="text"
+            [(ngModel)]="liveA"
+            aria-label="Live line 1"
+            (keydown.enter)="pushLive('a', $event)"
+          />
+          <button mat-stroked-button type="button" class="cg-seg-btn" (click)="pushLive('a')">
+            Push
+          </button>
+        </div>
+      </label>
+      <label class="cg-field">
+        <span>Line 2 (Style B)</span>
+        <div class="cg-inline">
+          <input
+            type="text"
+            [(ngModel)]="liveB"
+            aria-label="Live line 2"
+            (keydown.enter)="pushLive('b', $event)"
+          />
+          <button mat-stroked-button type="button" class="cg-seg-btn" (click)="pushLive('b')">
+            Push
+          </button>
+        </div>
+      </label>
+      <label class="cg-field">
+        <span>Source (Style B)</span>
+        <div class="cg-inline">
+          <input
+            type="text"
+            [(ngModel)]="liveSource"
+            aria-label="Live source"
+            (keydown.enter)="pushLive('source', $event)"
+          />
+          <button mat-stroked-button type="button" class="cg-seg-btn" (click)="pushLive('source')">
+            Push
+          </button>
+        </div>
+      </label>
+    </section>
+  } @else {
+    <section class="cg-block">
+      <h3 class="cg-block-title">Style</h3>
+      <mat-button-toggle-group
+        class="cg-seg-toggle"
+        [value]="styleKey"
+        (change)="onStyleKey($event)"
+        hideSingleSelectionIndicator
+        aria-label="Text style"
+      >
+        @for (option of styleOptions; track option.value) {
+          <mat-button-toggle [value]="option.value">{{ option.label }}</mat-button-toggle>
+        }
+      </mat-button-toggle-group>
+      <app-cg-text-style-editor [paint]="stylePaint()" (changed)="saveContent()" />
+    </section>
+
+    <section class="cg-block">
+      <h3 class="cg-block-title">Place</h3>
+      <label class="cg-field">
+        <span>Variant</span>
+        <select
+          [appCgWheelSelect]="variantValues"
+          [ngModel]="placeVariant"
+          (ngModelChange)="onPlaceVariant($event)"
+          (appCgWheelChange)="onPlaceVariant($event)"
+        >
+          @for (option of variants; track option.value) {
+            <option [value]="option.value">{{ option.label }}</option>
+          }
+        </select>
+      </label>
+      <p class="cg-hint">Background and text are placed separately. Width is the text box; longer text squashes to fit.</p>
+      <h3 class="cg-block-title">Background</h3>
+      <div class="cg-inline">
+        <button mat-stroked-button type="button" class="cg-seg-btn" (click)="bgFile.click()">
+          Choose local image
+        </button>
+        <input #bgFile class="cg-file-input" type="file" [accept]="logoAccept" (change)="onBackgroundFile($event)" />
+        @if (place().background?.fileName) {
+          <span class="cg-file-name">{{ place().background?.fileName }}</span>
+        }
+        @if (hasBackground()) {
+          <button mat-stroked-button type="button" class="cg-seg-btn" (click)="clearBackground()">
+            Clear
+          </button>
+        }
+      </div>
+      <input
+        class="cg-source-url"
+        type="text"
+        [ngModel]="place().background?.imageUrl ?? ''"
+        (ngModelChange)="onBackgroundUrl($event)"
+        placeholder="Optional image URL"
+        aria-label="Background image URL"
+      />
+      <div class="cg-anchor-grid">
+        <mat-button-toggle-group
+          class="cg-anchor-toggle-group"
+          [value]="bgLayout().anchor"
+          (change)="onBgAnchor($event)"
+          hideSingleSelectionIndicator
+          aria-label="Background anchor"
+        >
+          @for (anchor of anchors; track anchor.value) {
+            <mat-button-toggle [value]="anchor.value" [attr.aria-label]="anchor.label">
+              <mat-icon>{{ anchor.icon }}</mat-icon>
+            </mat-button-toggle>
+          }
+        </mat-button-toggle-group>
+      </div>
+      <div class="cg-fields">
+        <label class="cg-field">
+          <span>{{ axisLabel(bgLayout(), 'x') }}</span>
+          @if (bgIgnores('x')) {
+            <input type="text" value="—" disabled />
+          } @else {
+            <input
+              type="number"
+              appCgWheel
+              step="0.1"
+              [ngModel]="bgLayout().x"
+              (ngModelChange)="setBgNumber('x', $event)"
+              (appCgWheelChange)="setBgNumber('x', $event)"
+            />
+          }
+        </label>
+        <label class="cg-field">
+          <span>{{ axisLabel(bgLayout(), 'y') }}</span>
+          @if (bgIgnores('y')) {
+            <input type="text" value="—" disabled />
+          } @else {
+            <input
+              type="number"
+              appCgWheel
+              step="0.1"
+              [ngModel]="bgLayout().y"
+              (ngModelChange)="setBgNumber('y', $event)"
+              (appCgWheelChange)="setBgNumber('y', $event)"
+            />
+          }
+        </label>
+        <label class="cg-field">
+          <span>Scale</span>
+          <input
+            type="number"
+            appCgWheel
+            step="0.05"
+            min="0.05"
+            max="8"
+            [ngModel]="bgLayout().scale"
+            (ngModelChange)="setBgNumber('scale', $event)"
+            (appCgWheelChange)="setBgNumber('scale', $event)"
+          />
+        </label>
+      </div>
+      <h3 class="cg-block-title">Text</h3>
+      <div class="cg-anchor-grid">
+        <mat-button-toggle-group
+          class="cg-anchor-toggle-group"
+          [value]="textLayout().anchor"
+          (change)="onTextAnchor($event)"
+          hideSingleSelectionIndicator
+          aria-label="Text anchor"
+        >
+          @for (anchor of anchors; track anchor.value) {
+            <mat-button-toggle [value]="anchor.value" [attr.aria-label]="anchor.label">
+              <mat-icon>{{ anchor.icon }}</mat-icon>
+            </mat-button-toggle>
+          }
+        </mat-button-toggle-group>
+      </div>
+      <div class="cg-fields">
+        <label class="cg-field">
+          <span>{{ axisLabel(textLayout(), 'x') }}</span>
+          @if (textIgnores('x')) {
+            <input type="text" value="—" disabled />
+          } @else {
+            <input
+              type="number"
+              appCgWheel
+              step="0.1"
+              [ngModel]="textLayout().x"
+              (ngModelChange)="setTextNumber('x', $event)"
+              (appCgWheelChange)="setTextNumber('x', $event)"
+            />
+          }
+        </label>
+        <label class="cg-field">
+          <span>{{ axisLabel(textLayout(), 'y') }}</span>
+          @if (textIgnores('y')) {
+            <input type="text" value="—" disabled />
+          } @else {
+            <input
+              type="number"
+              appCgWheel
+              step="0.1"
+              [ngModel]="textLayout().y"
+              (ngModelChange)="setTextNumber('y', $event)"
+              (appCgWheelChange)="setTextNumber('y', $event)"
+            />
+          }
+        </label>
+        <label class="cg-field">
+          <span>Scale</span>
+          <input
+            type="number"
+            appCgWheel
+            step="0.05"
+            min="0.05"
+            max="8"
+            [ngModel]="textLayout().scale"
+            (ngModelChange)="setTextNumber('scale', $event)"
+            (appCgWheelChange)="setTextNumber('scale', $event)"
+          />
+        </label>
+        <label class="cg-field">
+          <span>Width</span>
+          <input
+            type="number"
+            appCgWheel
+            step="1"
+            [min]="widthMin"
+            [max]="widthMax"
+            [ngModel]="place().width"
+            (ngModelChange)="setWidth($event)"
+            (appCgWheelChange)="setWidth($event)"
+          />
+        </label>
+      </div>
+      <div class="cg-outline-row">
+        <button
+          type="button"
+          class="cg-switch"
+          [class.on]="outline()"
+          role="switch"
+          [attr.aria-checked]="outline()"
+          (click)="toggleOutline()"
+        >
+          <span class="cg-switch-thumb"></span>
+        </button>
+        <span class="cg-outline-label">Outline</span>
+      </div>
+    </section>
+
+    <section class="cg-block">
+      <h3 class="cg-block-title">Fade</h3>
+      <div class="cg-inline">
+        <mat-button-toggle-group
+          class="cg-seg-toggle"
+          [value]="isCut() ? 'cut' : 'fade'"
+          (change)="onAppear($event)"
+          hideSingleSelectionIndicator
+        >
+          <mat-button-toggle value="fade">Fade</mat-button-toggle>
+          <mat-button-toggle value="cut">Cut</mat-button-toggle>
+        </mat-button-toggle-group>
+        @if (!isCut()) {
+          <label class="cg-field">
+            <span>ms</span>
+            <input
+              type="number"
+              appCgWheel
+              [min]="cutMs"
+              [max]="maxDurationMs"
+              [appCgWheelMin]="wheelMinMs"
+              [appCgWheelFine]="10"
+              [appCgWheelCoarse]="500"
+              step="50"
+              [ngModel]="cueMs()"
+              (ngModelChange)="onCueMs($event)"
+              (appCgWheelChange)="onCueMs($event)"
+            />
+          </label>
+        }
+      </div>
+      <p class="cg-hint">Fade is this Title going on or off. It is not Package Appear.</p>
+    </section>
+  }
+</div>

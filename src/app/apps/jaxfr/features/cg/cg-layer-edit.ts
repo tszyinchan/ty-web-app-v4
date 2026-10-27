@@ -20,6 +20,7 @@ import { CgWeatherPlace, CgWeatherService } from '../../../../core/domains/cg/cg
 import { CgMixPreview } from '../../../../core/domains/cg/cg-mix-preview';
 import { CgWheelSelect, CgWheelStep } from '../../../../core/domains/cg/cg-wheel.directive';
 import { CgNewsQueue } from './cg-news-queue';
+import { CgTitleDesk } from './cg-title-desk';
 import {
   CG_ANCHOR_GRID_OPTIONS,
   CG_BREAKING_HEIGHT_DEFAULT,
@@ -121,6 +122,7 @@ import { copyTextToClipboard } from '../../../../core/utils/copy-text.util';
     CgWheelStep,
     CgTextStyleEditor,
     CgNewsQueue,
+    CgTitleDesk,
   ],
   templateUrl: './cg-layer-edit.html',
   styleUrl: './cg-layer-edit.scss',
@@ -138,6 +140,7 @@ export class CgLayerEdit implements OnInit {
   readonly Breaking = CgElementType.Breaking;
   readonly Ticker = CgElementType.Ticker;
   readonly Subtitle = CgElementType.Subtitle;
+  readonly Title = CgElementType.Title;
   readonly breakingMaxChars = CG_BREAKING_MAX_CHARS;
   readonly breakingSecondsMin = CG_BREAKING_SECONDS_MIN;
   readonly breakingSecondsMax = CG_BREAKING_SECONDS_MAX;

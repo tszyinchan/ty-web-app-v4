@@ -1,0 +1,39 @@
+@for (hold of holds(); track hold.key) {
+  <div
+    class="title-hold"
+    [class.is-on]="hold.phase === 'on'"
+    [style.--cg-cue-ms]="cueMs()"
+  >
+    @if (hold.backgroundUrl) {
+      <app-cg-logo
+        [imageUrl]="hold.backgroundUrl"
+        [layout]="hold.backgroundLayout"
+        [outline]="outline()"
+      />
+    }
+    <div class="title-text" [class.outline]="outline()" [ngStyle]="boxCss(hold)">
+      @for (line of hold.lines; track $index) {
+        <div
+          class="title-line"
+          [class.is-right]="line.align === 'right'"
+          [style.--cg-title-fit]="lineFit(hold, line)"
+        >
+          @for (run of line.runs; track $index) {
+            <span class="title-run" [ngStyle]="paintCss(hold, run.styleKey)">
+              <span class="title-stroke" aria-hidden="true">
+                @for (part of parts(run.text); track $index) {
+                  <span [class.latin]="part.latin">{{ part.text }}</span>
+                }
+              </span>
+              <span class="title-fill" [class.is-gradient]="gradientOn(run.styleKey)">
+                @for (part of parts(run.text); track $index) {
+                  <span [class.latin]="part.latin">{{ part.text }}</span>
+                }
+              </span>
+            </span>
+          }
+        </div>
+      }
+    </div>
+  </div>
+}

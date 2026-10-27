@@ -4,6 +4,7 @@ import { CgClock } from './cg-clock';
 import { CgLogo } from './cg-logo';
 import { CgSubtitle } from './cg-subtitle';
 import { CgTicker } from './cg-ticker';
+import { CgTitle } from './cg-title';
 import { CgWeather } from './cg-weather';
 import {
   CG_DEFAULT_DURATION_MS,
@@ -15,7 +16,7 @@ import { subtitleLine, subtitlePresetOf, subtitleStyleOf, innerDurationMs } from
 @Component({
   selector: 'app-cg-layer-view',
   standalone: true,
-  imports: [CgLogo, CgSubtitle, CgClock, CgWeather, CgBreaking, CgTicker],
+  imports: [CgLogo, CgSubtitle, CgClock, CgWeather, CgBreaking, CgTicker, CgTitle],
   template: `
     @switch (elementType()) {
       @case (Logo) {
@@ -55,6 +56,9 @@ import { subtitleLine, subtitlePresetOf, subtitleStyleOf, innerDurationMs } from
           [visible]="visible()"
           [outline]="outline()"
         />
+      }
+      @case (Title) {
+        <app-cg-title [payload]="payload()" [outline]="outline()" />
       }
       @case (Subtitle) {
         <app-cg-subtitle
@@ -100,6 +104,7 @@ export class CgLayerView {
   readonly Weather = CgElementType.Weather;
   readonly Breaking = CgElementType.Breaking;
   readonly Ticker = CgElementType.Ticker;
+  readonly Title = CgElementType.Title;
   readonly Subtitle = CgElementType.Subtitle;
   readonly subtitleLine = subtitleLine;
   readonly subtitlePresetOf = subtitlePresetOf;

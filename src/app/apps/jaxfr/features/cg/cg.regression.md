@@ -42,6 +42,7 @@
 - [ ] 已在 Supabase 跑過 `supabase/sql/cg-layer-look.sql`（layer `look` inherit/color/mono；**不要**再跑一次 v2）
 - [ ] 已在 Supabase 跑過 `supabase/sql/cg-logo-storage.sql`（public bucket `cg-logo` + 清掉 `payload.imageUrl` 的 `data:image`；**不要**再跑一次 v2、**不要** drop `tyapp_cg_*`）
 - [ ] 已在 Supabase 跑過 `supabase/sql/cg-traffic-v1.sql`（流量最佳化：`rev`、`tyapp_cg_get_output_state_by_token`；**一定要在前端部署前跑**，可重跑）
+- [ ] 已在 Supabase 跑過 `supabase/sql/cg-title.sql`（Title On/Off RPC、`rev` 不含 `title.onAir` / `live.on`、state 多 `titles`；**一定要在前端部署前跑**，可重跑）
 - [ ] `.cursor/test-credentials.local.json` 存在；用 **user-a** 登入成功
 - [ ] user-a 已有 CG feature grant（沒有則 Welcome 看不到，`/cg/list` 會被送回 Welcome）
 - [ ] `/cg/list` 沒有名稱以 `[TEST] CG` 開頭的 package；有的話先當 leftover 刪掉
@@ -182,6 +183,21 @@
 | N13 | Breaking 一則接近 24 字、下一則只有幾個字 | 兩則字寬相同。長的那則只在垂直方向變扁 |
 | N14 | Fade 從長那則切到短那則 | 短的那則淡入時已是自己的高度，淡出結束後不會再放大 |
 | N15 | 一行含 【】、。「」— … | 直排時這些符號用直排字形（字體有 vert）。英數仍一字一行、不躺平 |
+
+### Title
+
+| # | 操作 | 預期 |
+|---|---|---|
+| T1 | Catalog 加 Title | Desk 有 Queue / Live / Style。Queue 有一則「標題範例」，畫面上還沒有字 |
+| T2 | 選 Headline，輸入一句，Push，把該列 On | 畫面底部出現白字。再 On 關掉，字淡出（Cut 則立刻消失） |
+| T3 | Name tag 填姓名 + 職稱，Small tag 把職稱放前面，Live 只填一個詞，Special 填紅字那欄，Two-line 填兩行加 Source | 每一種只顯示自己的欄位。Name tag 是大字在前。Small tag 是小字在前。Two-line 的 Source 在右上 |
+| T4 | 同一 variant 開兩列 | 兩列疊在同一個位置。不同 variant 可以同時 On，各用自己的 Place |
+| T5 | Style 把 Style A 加大、Style C 改色 | Headline 與 Name tag 的名字一起變。Special 用 Style C。Live bar 正在 On 時，Line 1 用 Style A，也會變大。輸入框裡還沒 Push 的字不會上畫面 |
+| T6 | 某個 variant 上傳底圖，Anchor 跟文字不同，再 Clear | 圖與文字各自定位。Clear 後只剩文字。Outline 只在 desk，OBS 沒有框 |
+| T7 | 把 Width 調小，打一行很長的 Headline | 字在寬度內水平變扁，不會換行 |
+| T8 | Live：只改 Line 1、不按 Push | OBS 與 On air 監看不變。按該欄 Push（或 Enter）後只有那一欄更新。On 打開後是 Two-line 的位置，並且 queue 裡正在 On 的 Two-line 會關掉 |
+| T9 | Layer 在 On air 時撥 queue On/Off | 約一次往返就上畫面，不是等整包 snapshot。改 Style 或改已在播的列文字仍會整包更新 |
+| T10 | Copy to package | 新 layer 的 queue 還在，但沒有任何一列 On，Live 也是 Off |
 
 ### CLEANUP
 

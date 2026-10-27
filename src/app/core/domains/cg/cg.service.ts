@@ -8,6 +8,7 @@ import {
   CG_LOGO_BUCKET,
   CG_OVERLAY_BROADCAST_EVENT,
   CG_OVERLAY_CUE_KIND,
+  CG_OVERLAY_TITLE_KIND,
   CG_OVERLAY_PRESENCE_ROLE,
   CG_PRESENCE_SYNC_WAIT_MS,
   CgElementType,
@@ -22,7 +23,9 @@ import {
   CgLayerPayload,
   CgOutputState,
   CgOverlayCueMessage,
+  CgOverlayTitleMessage,
   CgPackage,
+  CgTitleLive,
   CgPublicOutput,
 } from './cg.model';
 import {
@@ -31,6 +34,7 @@ import {
   createEmptyLogoLayer,
   emptySubtitlePayload,
   isOverlayCueMessage,
+  isOverlayTitleMessage,
   layerContentSignature,
   layerToDraft,
   normalizeDurationMs,
@@ -44,6 +48,7 @@ import {
   readPackageEditMode,
   writePackageEditMode,
 } from './cg.util';
+import { blankTitleAir as blankTitleSettings } from './cg-title.util';
 
 /** Debounce Layer content writes (always Direct — not Package Take). */
 const LAYER_CONTENT_AUTOSAVE_MS = 450;
@@ -80,6 +85,17 @@ export class CgService {
     { index: number | null; cursor: number }
   >();
   private cueFlushPromises = new Map<string, Promise<void>>();
+  private titleSeqByClient = new Map<string, number>();
+  private titleWriteQueue = new Map<
+    string,
+    { onAir: string[]; live: CgTitleLive }
+  >();
+  private titleFlushPromises = new Map<string, Promise<void>>();
+  /** Title messages sent while a full publish was already fetching. */
+  private latestTitleByLayer = new Map<
+    string,
+    { message: CgOverlayTitleMessage; at: number }
+  >();
 
   packages = signal<CgPackage[]>([]);
   layers = signal<CgLayer[]>([]);
@@ -102,6 +118,8 @@ export class CgService {
   onAirOutput = signal<CgPublicOutput | null>(null);
   /** Latest live cue that reached OBS (package token). */
   onAirCue = signal<CgOverlayCueMessage | null>(null);
+  /** Latest Title On/Off or Live Push that reached OBS (package token). */
+  onAirTitle = signal<CgOverlayTitleMessage | null>(null);
   /** Direct = live to air; Studio = Pending then Save. Per package in localStorage. */
   editMode = signal(CgPackageEditMode.Studio);
   /** Panel Stage checkerboard / dim — Package column monitors. */
@@ -650,6 +668,7 @@ export class CgService {
   private clearOnAir(): void {
     this.onAirOutput.set(null);
     this.onAirCue.set(null);
+    this.onAirTitle.set(null);
   }
 
   touchPreview(): void {
@@ -721,10 +740,12 @@ export class CgService {
       await new Promise<void>((resolve) => window.setTimeout(resolve, 50));
     }
     await this.waitForPendingCueWrites();
+    await this.waitForPendingTitleWrites();
   }
 
   async persistLayerContent(clientId: string): Promise<boolean> {
     await this.waitForPendingCueWrites();
+    await this.waitForPendingTitleWrites();
     const current = this.draftLayers().find((layer) => layer.clientId === clientId);
     if (!current?.tb_tyapp_cgly_id) return false;
     if (this.layerContentPersistInFlight.has(clientId)) {
@@ -847,6 +868,69 @@ export class CgService {
     return true;
   }
 
+  /**
+   * Title On/Off and Live Push. Broadcast first, then a small RPC that only
+   * writes `title.onAir` and `title.live` (same idea as a subtitle cue).
+   */
+  async setTitleAir(
+    clientId: string,
+    onAir: readonly string[],
+    live: CgTitleLive,
+  ): Promise<boolean> {
+    const current = this.draftLayers().find((layer) => layer.clientId === clientId);
+    if (!current?.payload.title) return false;
+
+    const nextOnAir = [...onAir];
+    const nextLive: CgTitleLive = { ...live };
+    this.zone.run(() => {
+      this.draftLayers.update((list) =>
+        list.map((layer) =>
+          layer.clientId === clientId && layer.payload.title
+            ? {
+                ...layer,
+                payload: {
+                  ...layer.payload,
+                  title: {
+                    ...layer.payload.title,
+                    onAir: nextOnAir,
+                    live: nextLive,
+                  },
+                },
+              }
+            : layer,
+        ),
+      );
+    });
+
+    const seq = Math.max(
+      (this.titleSeqByClient.get(clientId) ?? 0) + 1,
+      Date.now(),
+    );
+    this.titleSeqByClient.set(clientId, seq);
+    const layerId = current.tb_tyapp_cgly_id;
+    const message: CgOverlayTitleMessage = {
+      kind: CG_OVERLAY_TITLE_KIND,
+      layerId: layerId ?? clientId,
+      onAir: nextOnAir,
+      live: nextLive,
+      seq,
+    };
+    void this.broadcastTitle(
+      [this.draftItem()?.public_token, current.public_token],
+      message,
+    );
+    if (!layerId) return true;
+
+    this.titleWriteQueue.set(clientId, { onAir: nextOnAir, live: nextLive });
+    if (!this.titleFlushPromises.has(clientId)) {
+      const flush = this.flushTitleWrites(clientId, layerId).finally(() => {
+        this.titleFlushPromises.delete(clientId);
+      });
+      this.titleFlushPromises.set(clientId, flush);
+    }
+    return true;
+  }
+
   async patchLayerPayload(
     clientId: string,
     payload: CgLayerPayload,
@@ -937,6 +1021,7 @@ export class CgService {
 
   private async persistLayerTransition(clientId: string): Promise<boolean> {
     await this.waitForPendingCueWrites();
+    await this.waitForPendingTitleWrites();
     const current = this.draftLayers().find((layer) => layer.clientId === clientId);
     const layerId = current?.tb_tyapp_cgly_id;
     if (!current || !layerId) return false;
@@ -985,7 +1070,9 @@ export class CgService {
             payload.style,
             payload.transition?.duration_ms,
           )
-        : payload;
+        : source.element_type === CgElementType.Title && payload.title
+          ? { ...payload, title: blankTitleSettings(payload.title) }
+          : payload;
     const siblings = this.layers().filter(
       (layer) => layer.package_id === targetPackageId,
     );
@@ -1165,6 +1252,97 @@ export class CgService {
     await Promise.all(pending);
   }
 
+  private async flushTitleWrites(
+    clientId: string,
+    layerId: string,
+  ): Promise<void> {
+    try {
+      while (this.titleWriteQueue.has(clientId)) {
+        while (this.layerContentPersistInFlight.has(clientId)) {
+          await new Promise<void>((resolve) => window.setTimeout(resolve, 40));
+        }
+        const next = this.titleWriteQueue.get(clientId);
+        if (!next) break;
+        this.titleWriteQueue.delete(clientId);
+        const { error } = await this.supabase.rpc('tyapp_cg_layer_set_title_air', {
+          p_layer_id: layerId,
+          p_on_air: next.onAir,
+          p_live: next.live,
+        });
+        if (error) {
+          const source = this.draftLayers().find(
+            (layer) => layer.clientId === clientId,
+          )?.payload;
+          if (!source?.title) throw error;
+          const { error: fallbackError } = await this.supabase
+            .from('tyapp_cg_layer')
+            .update({
+              payload: {
+                ...source,
+                title: {
+                  ...source.title,
+                  onAir: [...next.onAir],
+                  live: { ...next.live },
+                },
+              },
+              updated_at: new Date().toISOString(),
+            })
+            .eq('tb_tyapp_cgly_id', layerId);
+          if (fallbackError) throw error;
+        }
+        if (this.titleWriteQueue.has(clientId)) continue;
+        const current = this.draftLayers().find(
+          (layer) => layer.clientId === clientId,
+        );
+        void this.broadcastTitle(
+          [this.draftItem()?.public_token, current?.public_token],
+          {
+            kind: CG_OVERLAY_TITLE_KIND,
+            layerId,
+            onAir: [...next.onAir],
+            live: { ...next.live },
+            seq: this.titleSeqByClient.get(clientId) ?? 0,
+          },
+        );
+      }
+    } catch (error: unknown) {
+      this.notification.handleError('Title air failed', error);
+    }
+  }
+
+  private async broadcastTitle(
+    tokens: Array<string | null | undefined>,
+    message: CgOverlayTitleMessage,
+  ): Promise<void> {
+    this.latestTitleByLayer.set(message.layerId, {
+      message,
+      at: Date.now(),
+    });
+    const unique = [
+      ...new Set(tokens.filter((token): token is string => !!token)),
+    ];
+    await Promise.all(
+      unique.map(async (token) => {
+        const channel = await this.ensureOverlaySendChannel(token);
+        if (!channel) return;
+        const result = await channel.send({
+          type: 'broadcast',
+          event: CG_OVERLAY_BROADCAST_EVENT,
+          payload: message,
+        });
+        if (result === 'ok' && token === this.draftItem()?.public_token) {
+          this.zone.run(() => this.onAirTitle.set(message));
+        }
+      }),
+    );
+  }
+
+  private async waitForPendingTitleWrites(): Promise<void> {
+    const pending = [...this.titleFlushPromises.values()];
+    if (pending.length === 0) return;
+    await Promise.all(pending);
+  }
+
   async fetchPublicOutput(token: string): Promise<CgPublicOutput | null> {
     return (await this.fetchPublicOutputResult(token)).output;
   }
@@ -1219,6 +1397,7 @@ export class CgService {
     onSync: (output: CgPublicOutput | null) => void,
     onCue?: (cue: CgOverlayCueMessage) => void,
     onResubscribed?: () => void,
+    onTitle?: (title: CgOverlayTitleMessage) => void,
   ): void {
     void this.unsubscribeOverlayOutput();
     if (!token) return;
@@ -1232,6 +1411,11 @@ export class CgService {
           if (isOverlayCueMessage(message.payload)) {
             const cue = message.payload;
             this.zone.run(() => onCue?.(cue));
+            return;
+          }
+          if (isOverlayTitleMessage(message.payload)) {
+            const title = message.payload;
+            this.zone.run(() => onTitle?.(title));
             return;
           }
           const output = normalizePublicOutput(message.payload);
@@ -1270,6 +1454,7 @@ export class CgService {
     layerTokens: Array<string | null | undefined>,
   ): Promise<boolean> {
     await this.waitForPendingCueWrites();
+    await this.waitForPendingTitleWrites();
     const layers = [
       ...new Set(
         layerTokens.filter(
@@ -1293,19 +1478,50 @@ export class CgService {
   private async publishOverlayOutput(token: string): Promise<boolean> {
     const channel = await this.ensureOverlaySendChannel(token);
     if (!channel) return false;
+    const startedAt = Date.now();
     const { ok, output } = await this.fetchPublicOutputResult(token);
     // A failed read must never look like "nothing on air" to OBS.
     if (!ok) return false;
+    const live = this.withNewerTitles(output, startedAt);
     const result = await channel.send({
       type: 'broadcast',
       event: CG_OVERLAY_BROADCAST_EVENT,
-      payload: output ?? {},
+      payload: live ?? {},
     });
     // Panel On air = the exact output that just reached OBS.
     if (result === 'ok' && token === this.draftItem()?.public_token) {
-      this.zone.run(() => this.onAirOutput.set(output));
+      this.zone.run(() => this.onAirOutput.set(live));
     }
     return result === 'ok';
+  }
+
+  /**
+   * A Title On/Off that landed while this fetch was in flight is newer than
+   * the row the RPC just returned. Keep it so the snapshot does not step back.
+   */
+  private withNewerTitles(
+    output: CgPublicOutput | null,
+    startedAt: number,
+  ): CgPublicOutput | null {
+    if (!output) return output;
+    let changed = false;
+    const layers = output.layers.map((layer) => {
+      const seen = this.latestTitleByLayer.get(layer.tb_tyapp_cgly_id);
+      if (!seen || seen.at < startedAt || !layer.payload.title) return layer;
+      changed = true;
+      return {
+        ...layer,
+        payload: {
+          ...layer.payload,
+          title: {
+            ...layer.payload.title,
+            onAir: [...seen.message.onAir],
+            live: { ...seen.message.live },
+          },
+        },
+      };
+    });
+    return changed ? { ...output, layers } : output;
   }
 
   /**

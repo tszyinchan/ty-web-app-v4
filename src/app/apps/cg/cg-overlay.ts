@@ -13,12 +13,16 @@ import { CgProgram } from '../../core/domains/cg/cg-program';
 import {
   CG_OVERLAY_CUE_KIND,
   CG_OVERLAY_SAFETY_POLL_MS,
+  CG_OVERLAY_TITLE_KIND,
 } from '../../core/domains/cg/cg.constants';
 import {
   CgOutputState,
   CgOutputStateCue,
+  CgOutputStateTitle,
   CgOverlayCueMessage,
+  CgOverlayTitleMessage,
   CgPublicOutput,
+  CgTitleLive,
 } from '../../core/domains/cg/cg.model';
 import { CgService } from '../../core/domains/cg/cg.service';
 
@@ -40,6 +44,17 @@ interface ShownCue {
 /** First time the DB cue disagreed with what is on screen (see checkCueDrift). */
 interface CueDrift {
   key: string;
+  at: number;
+}
+
+interface ShownTitle {
+  onAir: string[];
+  liveOn: boolean;
+}
+
+interface BroadcastTitle {
+  onAir: string[];
+  live: CgTitleLive;
   at: number;
 }
 
@@ -66,6 +81,7 @@ export class CgOverlay implements OnInit, OnDestroy {
 
   readonly output = signal<CgPublicOutput | null>(null);
   readonly cue = signal<CgOverlayCueMessage | null>(null);
+  readonly titleAir = signal<CgOverlayTitleMessage | null>(null);
 
   private safetyPollId = 0;
   private token = '';
@@ -77,6 +93,10 @@ export class CgOverlay implements OnInit, OnDestroy {
   private shownCues = new Map<string, ShownCue>();
   private cueSeq = new Map<string, number>();
   private drift = new Map<string, CueDrift>();
+  private broadcastTitles = new Map<string, BroadcastTitle>();
+  private shownTitles = new Map<string, ShownTitle>();
+  private titleSeq = new Map<string, number>();
+  private titleDrift = new Map<string, CueDrift>();
 
   ngOnInit(): void {
     this.document.documentElement.classList.add(OVERLAY_HTML_CLASS);
@@ -88,6 +108,7 @@ export class CgOverlay implements OnInit, OnDestroy {
       (cue) => this.applyBroadcastCue(cue),
       // Channel rejoined after a drop: catch up on whatever was missed.
       () => void this.refresh(true),
+      (title) => this.applyBroadcastTitle(title),
     );
     void this.refresh();
     this.safetyPollId = window.setInterval(() => {
@@ -116,6 +137,7 @@ export class CgOverlay implements OnInit, OnDestroy {
         if (state === undefined && this.lastRev) return;
         if (state && state.rev === this.lastRev) {
           this.checkCueDrift(state, startedAt);
+          this.checkTitleDrift(state, startedAt);
           return;
         }
         // Token gone (null), content changed, or no `rev` known yet.
@@ -131,7 +153,9 @@ export class CgOverlay implements OnInit, OnDestroy {
     const { ok, output } = await this.cg.fetchPublicOutputResult(this.token);
     // A failed request is not "nothing on air": keep the current picture.
     if (!ok && !this.firstPaint) return;
-    this.applySnapshot(this.keepNewerCues(output, startedAt));
+    this.applySnapshot(
+      this.keepNewerTitles(this.keepNewerCues(output, startedAt), startedAt),
+    );
     this.firstPaint = false;
   }
 
@@ -139,6 +163,17 @@ export class CgOverlay implements OnInit, OnDestroy {
     this.lastRev = output?.rev ?? '';
     this.shownCues.clear();
     this.drift.clear();
+    this.shownTitles.clear();
+    this.titleDrift.clear();
+    for (const layer of output?.layers ?? []) {
+      const title = layer.payload.title;
+      if (title) {
+        this.shownTitles.set(layer.tb_tyapp_cgly_id, {
+          onAir: [...title.onAir],
+          liveOn: title.live.on,
+        });
+      }
+    }
     for (const layer of output?.layers ?? []) {
       if (typeof layer.payload.cursor !== 'number') continue;
       this.shownCues.set(layer.tb_tyapp_cgly_id, {
@@ -234,4 +269,100 @@ export class CgOverlay implements OnInit, OnDestroy {
       seq,
     });
   }
+
+  private applyBroadcastTitle(message: CgOverlayTitleMessage): void {
+    if (message.seq > (this.titleSeq.get(message.layerId) ?? 0)) {
+      this.titleSeq.set(message.layerId, message.seq);
+      this.broadcastTitles.set(message.layerId, {
+        onAir: [...message.onAir],
+        live: { ...message.live },
+        at: performance.now(),
+      });
+      this.shownTitles.set(message.layerId, {
+        onAir: [...message.onAir],
+        liveOn: message.live.on,
+      });
+      this.titleDrift.delete(message.layerId);
+    }
+    this.titleAir.set(message);
+  }
+
+  private keepNewerTitles(
+    output: CgPublicOutput | null,
+    startedAt: number,
+  ): CgPublicOutput | null {
+    if (!output) return output;
+    let changed = false;
+    const layers = output.layers.map((layer) => {
+      const seen = this.broadcastTitles.get(layer.tb_tyapp_cgly_id);
+      if (!seen || seen.at <= startedAt || !layer.payload.title) return layer;
+      changed = true;
+      return {
+        ...layer,
+        payload: {
+          ...layer.payload,
+          title: {
+            ...layer.payload.title,
+            onAir: [...seen.onAir],
+            live: { ...seen.live },
+          },
+        },
+      };
+    });
+    return changed ? { ...output, layers } : output;
+  }
+
+  private checkTitleDrift(state: CgOutputState, startedAt: number): void {
+    for (const stored of state.titles) {
+      const shown = this.shownTitles.get(stored.id);
+      if (!shown) continue;
+      if (titleAirKey(shown.onAir, shown.liveOn) === titleAirKey(stored.onAir, stored.liveOn)) {
+        this.titleDrift.delete(stored.id);
+        continue;
+      }
+      const seenAt = this.broadcastTitles.get(stored.id)?.at ?? 0;
+      if (seenAt > startedAt) {
+        this.titleDrift.delete(stored.id);
+        continue;
+      }
+      const key = titleAirKey(stored.onAir, stored.liveOn);
+      const first = this.titleDrift.get(stored.id);
+      if (first && first.key === key && seenAt <= first.at) {
+        this.titleDrift.delete(stored.id);
+        this.applyDriftTitle(stored);
+        continue;
+      }
+      this.titleDrift.set(stored.id, { key, at: startedAt });
+    }
+  }
+
+  private applyDriftTitle(stored: CgOutputStateTitle): void {
+    const layer = this.output()?.layers.find(
+      (row) => row.tb_tyapp_cgly_id === stored.id,
+    );
+    const current = layer?.payload.title?.live;
+    const live: CgTitleLive = {
+      a: current?.a ?? '',
+      b: current?.b ?? '',
+      source: current?.source ?? '',
+      on: stored.liveOn,
+    };
+    const seq = (this.titleSeq.get(stored.id) ?? 0) + 1;
+    this.titleSeq.set(stored.id, seq);
+    this.shownTitles.set(stored.id, {
+      onAir: [...stored.onAir],
+      liveOn: stored.liveOn,
+    });
+    this.titleAir.set({
+      kind: CG_OVERLAY_TITLE_KIND,
+      layerId: stored.id,
+      onAir: [...stored.onAir],
+      live,
+      seq,
+    });
+  }
+}
+
+function titleAirKey(onAir: readonly string[], liveOn: boolean): string {
+  return `${liveOn ? '1' : '0'}|${onAir.join('\n')}`;
 }

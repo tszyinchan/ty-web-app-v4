@@ -44,3 +44,7 @@ html.cg-overlay-on .ticker-text {
 html.cg-overlay-on .brk-text {
   font-size: calc(var(--cg-brk-font, 3.2) * 1vh);
 }
+
+html.cg-overlay-on .title-run {
+  font-size: calc(var(--cg-sub-font, 4.6) * 1vh);
+}
