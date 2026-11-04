@@ -30,25 +30,28 @@ export enum CgElementType {
   Weather = 'weather',
 }
 
-/** One Title look. Queue items pick one; Style A/B/C is shared by the Layer. */
+/** One Title template. Queue items pick one. Primary / Secondary / Accent are shared by the Layer. */
 export enum CgTitleVariant {
-  Headline = 'headline',
-  NameTag = 'name-tag',
-  SmallTag = 'small-tag',
-  Live = 'live',
-  TwoLine = 'two-line',
-  Special = 'special',
+  Strap = 'strap',
+  NameSuper = 'name-super',
+  Credit = 'credit',
+  NameSource = 'name-source',
+  NameStack = 'name-stack',
+  Banner = 'banner',
+  Locator = 'locator',
+  StoryLocator = 'story-locator',
 }
 
-/** Which text Style a Title run paints with. */
+/** Which text Style a Title run paints with. Stored keys stay `a` / `b` / `c`. */
 export enum CgTitleStyleKey {
   A = 'a',
   B = 'b',
   C = 'c',
 }
 
-/** Fields a Title variant asks the operator to fill. */
+/** Fields a Title template asks the operator to fill. */
 export enum CgTitleField {
+  Index = 'index',
   A = 'a',
   B = 'b',
   C = 'c',
@@ -571,18 +574,23 @@ export const DEFAULT_TITLE_LAYOUT = {
   scale: 1,
 } as const;
 
-/** Style A / B / C type size (vh) before Place Scale. */
+/** Primary / Secondary / Accent type size (vh) before Place Scale. */
 export const CG_TITLE_FONT_A = 4.6;
 export const CG_TITLE_FONT_B = 3;
 export const CG_TITLE_FONT_C = 5.6;
 
-/** Text box width, percent of Stage width. Longer text squashes to fit. */
-export const CG_TITLE_WIDTH_MIN = 8;
-export const CG_TITLE_WIDTH_MAX = 100;
-export const CG_TITLE_WIDTH_WIDE = 72;
-export const CG_TITLE_WIDTH_NAME = 52;
-export const CG_TITLE_WIDTH_SMALL = 28;
-export const CG_TITLE_WIDTH_LIVE = 18;
+/**
+ * Title box X / Y / Width, design pixels on a 1920-wide stage.
+ * 1 unit is 1/1920 of Stage width (the same share Logo uses for px).
+ */
+export const CG_TITLE_PX_X_MIN = -960;
+export const CG_TITLE_PX_X_MAX = 1920;
+export const CG_TITLE_PX_Y_MIN = -540;
+export const CG_TITLE_PX_Y_MAX = 1080;
+export const CG_TITLE_PX_W_MIN = 8;
+export const CG_TITLE_PX_W_MAX = 1920;
+/** Run padding used when estimating ink width (0.4em each side). */
+export const CG_TITLE_RUN_PAD_X_EM = 0.8;
 
 export const CG_TITLE_FONT_STACK =
   "'華康中黑體', '華康中黑體(P)', 'DFHei', 'Microsoft JhengHei', 'Segoe UI', sans-serif";
@@ -590,6 +598,7 @@ export const CG_TITLE_FONT_STACK =
 export interface CgTitleFieldDef {
   key: CgTitleField;
   label: string;
+  styleKey: CgTitleStyleKey;
 }
 
 export interface CgTitleVariantDef {
@@ -600,44 +609,64 @@ export interface CgTitleVariantDef {
 
 export const CG_TITLE_VARIANTS: readonly CgTitleVariantDef[] = [
   {
-    value: CgTitleVariant.Headline,
-    label: 'Headline',
-    fields: [{ key: CgTitleField.A, label: 'Headline' }],
-  },
-  {
-    value: CgTitleVariant.NameTag,
-    label: 'Name tag',
+    value: CgTitleVariant.Strap,
+    label: 'Strap',
     fields: [
-      { key: CgTitleField.A, label: 'Name' },
-      { key: CgTitleField.B, label: 'Title' },
+      { key: CgTitleField.Index, label: 'Index', styleKey: CgTitleStyleKey.B },
+      { key: CgTitleField.A, label: 'Headline', styleKey: CgTitleStyleKey.A },
     ],
   },
   {
-    value: CgTitleVariant.SmallTag,
-    label: 'Small tag',
+    value: CgTitleVariant.NameSuper,
+    label: 'Name super',
     fields: [
-      { key: CgTitleField.B, label: 'Title' },
-      { key: CgTitleField.A, label: 'Name' },
+      { key: CgTitleField.A, label: 'Name', styleKey: CgTitleStyleKey.A },
+      { key: CgTitleField.B, label: 'Title', styleKey: CgTitleStyleKey.B },
     ],
   },
   {
-    value: CgTitleVariant.Live,
-    label: 'Live',
-    fields: [{ key: CgTitleField.A, label: 'Label' }],
-  },
-  {
-    value: CgTitleVariant.TwoLine,
-    label: 'Two-line',
+    value: CgTitleVariant.Credit,
+    label: 'Credit',
     fields: [
-      { key: CgTitleField.A, label: 'Line 1' },
-      { key: CgTitleField.B, label: 'Line 2' },
-      { key: CgTitleField.Source, label: 'Source' },
+      { key: CgTitleField.B, label: 'Role', styleKey: CgTitleStyleKey.B },
+      { key: CgTitleField.A, label: 'Name', styleKey: CgTitleStyleKey.A },
     ],
   },
   {
-    value: CgTitleVariant.Special,
-    label: 'Special',
-    fields: [{ key: CgTitleField.C, label: 'Headline' }],
+    value: CgTitleVariant.NameSource,
+    label: 'Name + source',
+    fields: [
+      { key: CgTitleField.A, label: 'Name', styleKey: CgTitleStyleKey.A },
+      { key: CgTitleField.B, label: 'Title', styleKey: CgTitleStyleKey.B },
+      { key: CgTitleField.Source, label: 'Source', styleKey: CgTitleStyleKey.B },
+    ],
+  },
+  {
+    value: CgTitleVariant.NameStack,
+    label: 'Name stack',
+    fields: [
+      { key: CgTitleField.A, label: 'Name', styleKey: CgTitleStyleKey.A },
+      { key: CgTitleField.B, label: 'Title', styleKey: CgTitleStyleKey.B },
+    ],
+  },
+  {
+    value: CgTitleVariant.Banner,
+    label: 'Banner',
+    fields: [{ key: CgTitleField.C, label: 'Headline', styleKey: CgTitleStyleKey.C }],
+  },
+  {
+    value: CgTitleVariant.Locator,
+    label: 'Locator',
+    fields: [{ key: CgTitleField.A, label: 'Label', styleKey: CgTitleStyleKey.A }],
+  },
+  {
+    value: CgTitleVariant.StoryLocator,
+    label: 'Story + locator',
+    fields: [
+      { key: CgTitleField.A, label: 'Headline', styleKey: CgTitleStyleKey.A },
+      { key: CgTitleField.B, label: 'Subhead', styleKey: CgTitleStyleKey.B },
+      { key: CgTitleField.Source, label: 'Locator', styleKey: CgTitleStyleKey.B },
+    ],
   },
 ];
 
@@ -645,9 +674,9 @@ export const CG_TITLE_STYLE_OPTIONS: readonly {
   value: CgTitleStyleKey;
   label: string;
 }[] = [
-  { value: CgTitleStyleKey.A, label: 'Style A' },
-  { value: CgTitleStyleKey.B, label: 'Style B' },
-  { value: CgTitleStyleKey.C, label: 'Style C' },
+  { value: CgTitleStyleKey.A, label: 'Primary' },
+  { value: CgTitleStyleKey.B, label: 'Secondary' },
+  { value: CgTitleStyleKey.C, label: 'Accent' },
 ];
 
 export const CG_CLOCK_FORMAT_CUSTOM = '__custom__';

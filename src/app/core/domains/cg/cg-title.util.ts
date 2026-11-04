@@ -1,17 +1,19 @@
 import {
+  CG_STAGE_REFERENCE_WIDTH_PX,
   CG_TEXT_WEIGHT_BOLD,
   CG_TEXT_WEIGHT_MEDIUM,
   CG_TITLE_FONT_A,
   CG_TITLE_FONT_B,
   CG_TITLE_FONT_C,
   CG_TITLE_FONT_STACK,
+  CG_TITLE_PX_W_MAX,
+  CG_TITLE_PX_W_MIN,
+  CG_TITLE_PX_X_MAX,
+  CG_TITLE_PX_X_MIN,
+  CG_TITLE_PX_Y_MAX,
+  CG_TITLE_PX_Y_MIN,
+  CG_TITLE_RUN_PAD_X_EM,
   CG_TITLE_VARIANTS,
-  CG_TITLE_WIDTH_LIVE,
-  CG_TITLE_WIDTH_MAX,
-  CG_TITLE_WIDTH_MIN,
-  CG_TITLE_WIDTH_NAME,
-  CG_TITLE_WIDTH_SMALL,
-  CG_TITLE_WIDTH_WIDE,
   CgAnchor,
   CgLayoutUnit,
   CgSubtitlePreset,
@@ -23,36 +25,61 @@ import {
   CgLayout,
   CgSubtitleStyle,
   CgTextPaint,
+  CgTitleAlign,
   CgTitleFieldMap,
   CgTitleItem,
   CgTitleLive,
   CgTitleSettings,
+  CgTitleSlot,
+  CgTitleSlots,
   CgTitleVariantLayout,
 } from './cg.model';
 
-/** One painted run inside a Title line. */
-export interface CgTitleRunModel {
+/** One word before it is placed inside the text box. */
+export interface CgTitleElementModel {
+  field: CgTitleField;
   text: string;
   styleKey: CgTitleStyleKey;
+  slot: CgTitleSlot;
 }
 
-/** One row. `fit` is applied later from the current Style and width. */
-export interface CgTitleLineModel {
-  align: 'left' | 'right';
-  runs: CgTitleRunModel[];
+/** One word placed in its own box on the Stage. */
+export interface CgTitlePlacedElement {
+  field: CgTitleField;
+  text: string;
+  styleKey: CgTitleStyleKey;
+  anchor: CgAnchor;
+  x: number;
+  y: number;
+  width: number;
+  align: CgTitleAlign;
+  /** Horizontal squash so the ink fits this box. 1 = no squash. */
+  fit: number;
+}
+
+export interface CgTitlePlace {
+  elements: CgTitlePlacedElement[];
 }
 
 /** What the renderer holds for one on-screen Title, before fade phase. */
 export interface CgTitleCardModel {
   key: string;
-  lines: CgTitleLineModel[];
-  textLayout: CgLayout;
-  width: number;
+  elements: CgTitleElementModel[];
   backgroundUrl: string;
   backgroundLayout: CgLayout;
 }
 
-const STAGE_ASPECT = 16 / 9;
+/** 1vh on a 1080-tall 16:9 stage, in 1920-wide design pixels. */
+const TITLE_VH_PX = (CG_STAGE_REFERENCE_WIDTH_PX * 9) / 16 / 100;
+
+const LEGACY_LAYOUT_KEY: Partial<Record<CgTitleVariant, string>> = {
+  [CgTitleVariant.Strap]: 'headline',
+  [CgTitleVariant.NameSuper]: 'name-tag',
+  [CgTitleVariant.Credit]: 'small-tag',
+  [CgTitleVariant.Locator]: 'live',
+  [CgTitleVariant.Banner]: 'special',
+  [CgTitleVariant.StoryLocator]: 'two-line',
+};
 
 export function emptyTitleLive(): CgTitleLive {
   return { a: '', b: '', source: '', on: false };
@@ -60,6 +87,7 @@ export function emptyTitleLive(): CgTitleLive {
 
 export function emptyTitleFields(): CgTitleFieldMap {
   return {
+    [CgTitleField.Index]: '',
     [CgTitleField.A]: '',
     [CgTitleField.B]: '',
     [CgTitleField.C]: '',
@@ -71,39 +99,158 @@ export function isTitleVariant(raw: unknown): raw is CgTitleVariant {
   return CG_TITLE_VARIANTS.some((variant) => variant.value === raw);
 }
 
+/** Stored layout key from the six grouped templates, when this template inherited it. */
+export function legacyTitleLayoutKey(variant: CgTitleVariant): string | undefined {
+  return LEGACY_LAYOUT_KEY[variant];
+}
+
+/**
+ * Read a template id. Grouped keys map forward.
+ * `two-line` with a source becomes Story + locator; without one, Name stack.
+ */
+export function migrateTitleVariant(raw: unknown, source: string): CgTitleVariant | null {
+  if (isTitleVariant(raw)) return raw;
+  if (raw === 'two-line') {
+    return source.trim()
+      ? CgTitleVariant.StoryLocator
+      : CgTitleVariant.NameStack;
+  }
+  switch (raw) {
+    case 'headline':
+      return CgTitleVariant.Strap;
+    case 'name-tag':
+      return CgTitleVariant.NameSuper;
+    case 'small-tag':
+      return CgTitleVariant.Credit;
+    case 'live':
+      return CgTitleVariant.Locator;
+    case 'special':
+      return CgTitleVariant.Banner;
+    default:
+      return null;
+  }
+}
+
 export function titleVariantDef(variant: CgTitleVariant) {
   return (
     CG_TITLE_VARIANTS.find((row) => row.value === variant) ?? CG_TITLE_VARIANTS[0]
   );
 }
 
-function textLayout(y: number): CgLayout {
+function isTitleAnchor(raw: unknown): raw is CgAnchor {
+  return (
+    raw === CgAnchor.TopLeft ||
+    raw === CgAnchor.TopCenter ||
+    raw === CgAnchor.TopRight ||
+    raw === CgAnchor.CenterLeft ||
+    raw === CgAnchor.Center ||
+    raw === CgAnchor.CenterRight ||
+    raw === CgAnchor.BottomLeft ||
+    raw === CgAnchor.BottomCenter ||
+    raw === CgAnchor.BottomRight
+  );
+}
+
+export function clampTitleSlot(raw: unknown, fallback: CgTitleSlot): CgTitleSlot {
+  const value =
+    typeof raw === 'object' && raw !== null ? (raw as Record<string, unknown>) : {};
+  if (!isTitleAnchor(value['anchor'])) return { ...fallback };
+  const storedAlign = value['align'];
+  const align: CgTitleAlign =
+    storedAlign === 'left' || storedAlign === 'center' || storedAlign === 'right'
+      ? storedAlign
+      : fallback.align;
   return {
-    x: 2,
-    y,
-    unit: CgLayoutUnit.Percent,
-    anchor: CgAnchor.BottomLeft,
-    scale: 1,
+    anchor: value['anchor'],
+    x: clampRange(value['x'], CG_TITLE_PX_X_MIN, CG_TITLE_PX_X_MAX, fallback.x),
+    y: clampRange(value['y'], CG_TITLE_PX_Y_MIN, CG_TITLE_PX_Y_MAX, fallback.y),
+    width: clampRange(value['width'], CG_TITLE_PX_W_MIN, CG_TITLE_PX_W_MAX, fallback.width),
+    align,
   };
 }
 
-function backgroundLayout(y: number): CgLayout {
-  return {
-    x: 0,
-    y: Math.max(0, y - 1.5),
-    unit: CgLayoutUnit.Percent,
-    anchor: CgAnchor.BottomLeft,
-    scale: 1,
-  };
+function clampRange(raw: unknown, min: number, max: number, fallback: number): number {
+  const value = typeof raw === 'number' ? raw : Number(raw);
+  if (!Number.isFinite(value)) return fallback;
+  return Math.min(max, Math.max(min, value));
 }
 
-function variantLayout(y: number, width: number): CgTitleVariantLayout {
-  return { text: textLayout(y), width };
+/** Left inset, right inset, one-line row, and the two rows of a stack. Design px from the anchor edge. */
+const TITLE_INSET = 64;
+const TITLE_FROM_RIGHT = 64;
+const TITLE_LINE_Y = 64;
+const TITLE_HIGH_Y = 148;
+const TITLE_LOW_Y = 56;
+
+function at(
+  anchor: CgAnchor,
+  x: number,
+  y: number,
+  width: number,
+  align: CgTitleAlign = 'left',
+): CgTitleSlot {
+  return { anchor, x, y, width, align };
+}
+
+function slotsFor(variant: CgTitleVariant): CgTitleSlots {
+  const left = CgAnchor.BottomLeft;
+  const right = CgAnchor.BottomRight;
+  switch (variant) {
+    case CgTitleVariant.Strap:
+      return {
+        [CgTitleField.Index]: at(left, TITLE_INSET, TITLE_LINE_Y, 200),
+        [CgTitleField.A]: at(left, 280, TITLE_LINE_Y, 1540),
+      };
+    case CgTitleVariant.NameSuper:
+      return {
+        [CgTitleField.A]: at(left, TITLE_INSET, TITLE_LINE_Y, 360),
+        [CgTitleField.B]: at(left, 450, TITLE_LINE_Y, 680),
+      };
+    case CgTitleVariant.Credit:
+      return {
+        [CgTitleField.B]: at(left, TITLE_INSET, TITLE_LINE_Y, 160),
+        [CgTitleField.A]: at(left, 250, TITLE_LINE_Y, 420),
+      };
+    case CgTitleVariant.NameSource:
+      return {
+        [CgTitleField.A]: at(left, TITLE_INSET, TITLE_HIGH_Y, 460),
+        [CgTitleField.B]: at(left, TITLE_INSET, TITLE_LOW_Y, 1400),
+        [CgTitleField.Source]: at(right, TITLE_FROM_RIGHT, TITLE_HIGH_Y, 340, 'right'),
+      };
+    case CgTitleVariant.NameStack:
+      return {
+        [CgTitleField.A]: at(left, TITLE_INSET, TITLE_HIGH_Y, 460),
+        [CgTitleField.B]: at(left, TITLE_INSET, TITLE_LOW_Y, 1600),
+      };
+    case CgTitleVariant.Banner:
+      return { [CgTitleField.C]: at(left, TITLE_INSET, TITLE_LINE_Y, 1760) };
+    case CgTitleVariant.Locator:
+      return { [CgTitleField.A]: at(left, TITLE_INSET, TITLE_LINE_Y, 320) };
+    case CgTitleVariant.StoryLocator:
+      return {
+        [CgTitleField.A]: at(left, TITLE_INSET, TITLE_HIGH_Y, 1180),
+        [CgTitleField.B]: at(left, TITLE_INSET, TITLE_LOW_Y, 1760),
+        [CgTitleField.Source]: at(right, TITLE_FROM_RIGHT, TITLE_HIGH_Y, 320, 'right'),
+      };
+    default:
+      return { [CgTitleField.A]: at(left, TITLE_INSET, TITLE_LINE_Y, 1760) };
+  }
+}
+
+function variantLayout(variant: CgTitleVariant): CgTitleVariantLayout {
+  return { slots: slotsFor(variant) };
 }
 
 export function defaultTitleBackgroundLayout(variant: CgTitleVariant): CgLayout {
-  const text = defaultTitleVariantLayouts()[variant].text;
-  return backgroundLayout(text.y);
+  const high =
+    variant === CgTitleVariant.Credit || variant === CgTitleVariant.Locator;
+  return {
+    x: 0,
+    y: high ? 8 : 4,
+    unit: CgLayoutUnit.Percent,
+    anchor: CgAnchor.BottomLeft,
+    scale: 1,
+  };
 }
 
 export function defaultTitleVariantLayouts(): Record<
@@ -111,12 +258,14 @@ export function defaultTitleVariantLayouts(): Record<
   CgTitleVariantLayout
 > {
   return {
-    [CgTitleVariant.Headline]: variantLayout(11, CG_TITLE_WIDTH_WIDE),
-    [CgTitleVariant.NameTag]: variantLayout(11, CG_TITLE_WIDTH_NAME),
-    [CgTitleVariant.SmallTag]: variantLayout(18, CG_TITLE_WIDTH_SMALL),
-    [CgTitleVariant.Live]: variantLayout(18, CG_TITLE_WIDTH_LIVE),
-    [CgTitleVariant.TwoLine]: variantLayout(11, CG_TITLE_WIDTH_WIDE),
-    [CgTitleVariant.Special]: variantLayout(11, CG_TITLE_WIDTH_WIDE),
+    [CgTitleVariant.Strap]: variantLayout(CgTitleVariant.Strap),
+    [CgTitleVariant.NameSuper]: variantLayout(CgTitleVariant.NameSuper),
+    [CgTitleVariant.Credit]: variantLayout(CgTitleVariant.Credit),
+    [CgTitleVariant.NameSource]: variantLayout(CgTitleVariant.NameSource),
+    [CgTitleVariant.NameStack]: variantLayout(CgTitleVariant.NameStack),
+    [CgTitleVariant.Banner]: variantLayout(CgTitleVariant.Banner),
+    [CgTitleVariant.Locator]: variantLayout(CgTitleVariant.Locator),
+    [CgTitleVariant.StoryLocator]: variantLayout(CgTitleVariant.StoryLocator),
   };
 }
 
@@ -162,7 +311,8 @@ export function emptyTitleSettings(): CgTitleSettings {
     items: [
       {
         id: 'title-sample',
-        variant: CgTitleVariant.Headline,
+        variant: CgTitleVariant.Strap,
+        index: '',
         a: '標題範例',
         b: '',
         c: '',
@@ -176,30 +326,24 @@ export function emptyTitleSettings(): CgTitleSettings {
   };
 }
 
-export function clampTitleWidth(raw: unknown, fallback: number): number {
-  const value = typeof raw === 'number' ? raw : Number(raw);
-  if (!Number.isFinite(value)) return fallback;
-  return Math.min(CG_TITLE_WIDTH_MAX, Math.max(CG_TITLE_WIDTH_MIN, value));
-}
-
-/** Drop Two-line queue items while the Live bar is on. They share one place. */
+/** Drop Story + locator queue items while the Live bar is on. They share one place. */
 export function titleAirAfterLive(
   settings: CgTitleSettings,
   live: CgTitleLive,
 ): { onAir: string[]; live: CgTitleLive } {
   if (!live.on) return { onAir: [...settings.onAir], live };
-  const twoLine = new Set(
+  const story = new Set(
     settings.items
-      .filter((item) => item.variant === CgTitleVariant.TwoLine)
+      .filter((item) => item.variant === CgTitleVariant.StoryLocator)
       .map((item) => item.id),
   );
   return {
-    onAir: settings.onAir.filter((id) => !twoLine.has(id)),
+    onAir: settings.onAir.filter((id) => !story.has(id)),
     live,
   };
 }
 
-/** Same-variant overlap is allowed. A Two-line item turns the Live bar off. */
+/** Same-template overlap is allowed. A Story + locator item turns the Live bar off. */
 export function titleAirAfterItem(
   settings: CgTitleSettings,
   item: CgTitleItem,
@@ -208,7 +352,7 @@ export function titleAirAfterItem(
   const without = settings.onAir.filter((id) => id !== item.id);
   if (!on) return { onAir: without, live: { ...settings.live } };
   const live =
-    item.variant === CgTitleVariant.TwoLine
+    item.variant === CgTitleVariant.StoryLocator
       ? { ...settings.live, on: false }
       : { ...settings.live };
   return { onAir: [...without, item.id], live };
@@ -216,7 +360,7 @@ export function titleAirAfterItem(
 
 export function titleItemSummary(item: CgTitleItem): string {
   const variant = titleVariantDef(item.variant).label;
-  const text = [item.a, item.b, item.c, item.source]
+  const text = [item.index, item.a, item.b, item.c, item.source]
     .map((part) => part.trim())
     .filter((part) => part.length > 0)
     .join(' · ');
@@ -225,6 +369,7 @@ export function titleItemSummary(item: CgTitleItem): string {
 
 export function titleFieldsOf(item: CgTitleItem): CgTitleFieldMap {
   return {
+    [CgTitleField.Index]: item.index,
     [CgTitleField.A]: item.a,
     [CgTitleField.B]: item.b,
     [CgTitleField.C]: item.c,
@@ -243,88 +388,54 @@ export function titleItemFromFields(
   const item: CgTitleItem = {
     id,
     variant,
+    index: pick(CgTitleField.Index),
     a: pick(CgTitleField.A),
     b: pick(CgTitleField.B),
     c: pick(CgTitleField.C),
     source: pick(CgTitleField.Source),
   };
-  if (!item.a && !item.b && !item.c && !item.source) return null;
+  if (!item.index && !item.a && !item.b && !item.c && !item.source) return null;
   return item;
 }
 
-function runsOf(
-  parts: ReadonlyArray<{ text: string; styleKey: CgTitleStyleKey }>,
-): CgTitleRunModel[] {
-  return parts
-    .map((part) => ({ text: part.text.trim(), styleKey: part.styleKey }))
-    .filter((part) => part.text.length > 0);
-}
-
-function linesFor(item: Pick<CgTitleItem, 'variant' | 'a' | 'b' | 'c' | 'source'>): CgTitleLineModel[] {
-  const a = item.a.trim();
-  const b = item.b.trim();
-  const c = item.c.trim();
-  const source = item.source.trim();
-  switch (item.variant) {
-    case CgTitleVariant.Headline:
-      return a ? [{ align: 'left', runs: [{ text: a, styleKey: CgTitleStyleKey.A }] }] : [];
-    case CgTitleVariant.NameTag: {
-      const runs = runsOf([
-        { text: a, styleKey: CgTitleStyleKey.A },
-        { text: b, styleKey: CgTitleStyleKey.B },
-      ]);
-      return runs.length ? [{ align: 'left', runs }] : [];
-    }
-    case CgTitleVariant.SmallTag: {
-      const runs = runsOf([
-        { text: b, styleKey: CgTitleStyleKey.B },
-        { text: a, styleKey: CgTitleStyleKey.A },
-      ]);
-      return runs.length ? [{ align: 'left', runs }] : [];
-    }
-    case CgTitleVariant.Live:
-      return a ? [{ align: 'left', runs: [{ text: a, styleKey: CgTitleStyleKey.A }] }] : [];
-    case CgTitleVariant.TwoLine: {
-      const lines: CgTitleLineModel[] = [];
-      if (source) {
-        lines.push({
-          align: 'right',
-          runs: [{ text: source, styleKey: CgTitleStyleKey.B }],
-        });
-      }
-      if (a) {
-        lines.push({ align: 'left', runs: [{ text: a, styleKey: CgTitleStyleKey.A }] });
-      }
-      if (b) {
-        lines.push({ align: 'left', runs: [{ text: b, styleKey: CgTitleStyleKey.B }] });
-      }
-      return lines;
-    }
-    case CgTitleVariant.Special:
-      return c ? [{ align: 'left', runs: [{ text: c, styleKey: CgTitleStyleKey.C }] }] : [];
-    default:
-      return [];
+function elementsFor(
+  item: Pick<CgTitleItem, 'variant' | 'index' | 'a' | 'b' | 'c' | 'source'>,
+  slots: CgTitleSlots,
+): CgTitleElementModel[] {
+  const defaults = slotsFor(item.variant);
+  const fields = titleFieldsOf({ ...item, id: '' });
+  const elements: CgTitleElementModel[] = [];
+  for (const field of titleVariantDef(item.variant).fields) {
+    const text = fields[field.key].trim();
+    if (!text) continue;
+    const fallback =
+      defaults[field.key] ??
+      at(CgAnchor.BottomLeft, TITLE_INSET, TITLE_LINE_Y, 640);
+    elements.push({
+      field: field.key,
+      text,
+      styleKey: field.styleKey,
+      slot: slots[field.key] ?? fallback,
+    });
   }
+  return elements;
 }
 
 function cardFor(
   key: string,
   variant: CgTitleVariant,
   settings: CgTitleSettings,
-  item: Pick<CgTitleItem, 'variant' | 'a' | 'b' | 'c' | 'source'>,
+  item: Pick<CgTitleItem, 'variant' | 'index' | 'a' | 'b' | 'c' | 'source'>,
 ): CgTitleCardModel | null {
-  const lines = linesFor(item);
-  if (lines.length === 0) return null;
-  const place =
-    settings.variants[variant] ?? defaultTitleVariantLayouts()[variant];
+  const place = settings.variants[variant] ?? defaultTitleVariantLayouts()[variant];
+  const elements = elementsFor(item, place.slots);
+  if (elements.length === 0) return null;
   const background = place.background;
   return {
     key,
-    lines,
-    textLayout: place.text,
-    width: place.width,
+    elements,
     backgroundUrl: background?.imageUrl?.trim() ?? '',
-    backgroundLayout: background?.layout ?? place.text,
+    backgroundLayout: background?.layout ?? defaultTitleBackgroundLayout(variant),
   };
 }
 
@@ -332,8 +443,9 @@ function cardFor(
 export function titleCards(settings: CgTitleSettings): CgTitleCardModel[] {
   const cards: CgTitleCardModel[] = [];
   if (settings.live.on) {
-    const live = cardFor('live', CgTitleVariant.TwoLine, settings, {
-      variant: CgTitleVariant.TwoLine,
+    const live = cardFor('live', CgTitleVariant.StoryLocator, settings, {
+      variant: CgTitleVariant.StoryLocator,
+      index: '',
       a: settings.live.a,
       b: settings.live.b,
       c: '',
@@ -344,49 +456,60 @@ export function titleCards(settings: CgTitleSettings): CgTitleCardModel[] {
   for (const id of settings.onAir) {
     const item = settings.items.find((row) => row.id === id);
     if (!item) continue;
-    if (settings.live.on && item.variant === CgTitleVariant.TwoLine) continue;
+    if (settings.live.on && item.variant === CgTitleVariant.StoryLocator) continue;
     const card = cardFor(item.id, item.variant, settings, item);
     if (card) cards.push(card);
   }
   return cards;
 }
 
-function emWidthPercent(style: CgTextPaint, layoutScale: number): number {
-  const font =
-    (style.fontSize != null && style.fontSize > 0 ? style.fontSize : CG_TITLE_FONT_A) *
-    (Number.isFinite(layoutScale) && layoutScale > 0 ? layoutScale : 1);
+function fontVh(style: CgTextPaint, key: CgTitleStyleKey): number {
+  if (style.fontSize != null && style.fontSize > 0) return style.fontSize;
+  if (key === CgTitleStyleKey.B) return CG_TITLE_FONT_B;
+  if (key === CgTitleStyleKey.C) return CG_TITLE_FONT_C;
+  return CG_TITLE_FONT_A;
+}
+
+/** One em of this style, in 1920-wide design pixels. */
+function emPx(style: CgTextPaint, key: CgTitleStyleKey): number {
   const scaleX = style.scaleX != null && style.scaleX > 0 ? style.scaleX : 1;
-  return (font / STAGE_ASPECT) * scaleX;
+  return fontVh(style, key) * TITLE_VH_PX * scaleX;
 }
 
-function naturalWidthPercent(
-  charCount: number,
-  style: CgTextPaint,
-  layoutScale: number,
-): number {
-  const chars = Math.max(0, charCount);
+function inkPx(text: string, style: CgTextPaint, key: CgTitleStyleKey): number {
+  const chars = [...text].length;
   if (chars === 0) return 0;
-  const em = emWidthPercent(style, layoutScale);
+  const em = emPx(style, key);
   const tracking = style.letterSpacing ?? 0;
-  return chars * em + Math.max(0, chars - 1) * em * tracking;
+  const glyphs = chars * em + Math.max(0, chars - 1) * em * tracking;
+  return glyphs + em * CG_TITLE_RUN_PAD_X_EM;
 }
 
-/** Horizontal squash so the line's ink fits the text box. 1 = no squash. */
-export function titleLineFit(
-  widthPercent: number,
-  line: CgTitleLineModel,
+/**
+ * Place each word in its own box. A long word squashes to that box only.
+ */
+export function titlePlace(
+  elements: readonly CgTitleElementModel[],
   styles: Record<CgTitleStyleKey, CgTextPaint>,
-  layoutScale: number,
-): number {
-  let natural = 0;
-  line.runs.forEach((run, index) => {
-    const style = styles[run.styleKey];
-    natural += naturalWidthPercent([...run.text].length, style, layoutScale);
-    if (index > 0) natural += emWidthPercent(style, layoutScale) * 0.5;
+): CgTitlePlace {
+  if (elements.length === 0) return { elements: [] };
+  const placed: CgTitlePlacedElement[] = elements.map((element) => {
+    const style = styles[element.styleKey];
+    const ink = inkPx(element.text, style, element.styleKey);
+    const fit = ink > 0 ? Math.min(1, element.slot.width / ink) : 1;
+    return {
+      field: element.field,
+      text: element.text,
+      styleKey: element.styleKey,
+      anchor: element.slot.anchor,
+      x: element.slot.x,
+      y: element.slot.y,
+      width: element.slot.width,
+      align: element.slot.align,
+      fit,
+    };
   });
-  natural += emWidthPercent(styles[line.runs[0]?.styleKey ?? CgTitleStyleKey.A], layoutScale) * 0.8;
-  if (!(natural > 0) || !(widthPercent > 0)) return 1;
-  return Math.min(1, widthPercent / natural);
+  return { elements: placed };
 }
 
 /** Copy starts off air. The queue itself is kept. */

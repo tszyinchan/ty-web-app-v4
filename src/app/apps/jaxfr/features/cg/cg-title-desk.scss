@@ -17,6 +17,16 @@ $cg-control-height: 28px;
   min-width: 0;
 }
 
+.cg-style-pane,
+.cg-item-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--app-input-border);
+  border-radius: 6px;
+}
+
 .cg-block-title {
   margin: 0;
   font-size: 12px;
@@ -41,6 +51,10 @@ $cg-control-height: 28px;
 .cg-inline input[type='text'] {
   flex: 1;
   min-width: 0;
+}
+
+.cg-slot-align select {
+  width: 96px;
 }
 
 .cg-fields {
@@ -71,7 +85,7 @@ $cg-control-height: 28px;
   }
 
   input[type='number'] {
-    width: 72px;
+    width: 84px;
   }
 
   input[type='text'],

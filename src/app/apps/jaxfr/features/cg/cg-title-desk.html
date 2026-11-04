@@ -8,14 +8,15 @@
   >
     <mat-button-toggle value="queue">Queue</mat-button-toggle>
     <mat-button-toggle value="live">Live</mat-button-toggle>
-    <mat-button-toggle value="look">Style</mat-button-toggle>
+    <mat-button-toggle value="text">Text style</mat-button-toggle>
+    <mat-button-toggle value="item">Item style</mat-button-toggle>
   </mat-button-toggle-group>
 
   @if (tab === 'queue') {
     <section class="cg-block">
       <h3 class="cg-block-title">New item</h3>
       <label class="cg-field">
-        <span>Variant</span>
+        <span>Template</span>
         <select
           [appCgWheelSelect]="variantValues"
           [ngModel]="variant"
@@ -49,7 +50,7 @@
         }
       </div>
       <p class="cg-hint">
-        Push adds a row. Turn a row on to show it. Two rows of the same variant
+        Push adds a row. Turn a row on to show it. Two rows of the same template
         stack on the same place.
       </p>
     </section>
@@ -107,8 +108,8 @@
     <section class="cg-block">
       <h3 class="cg-block-title">Live bar</h3>
       <p class="cg-hint">
-        Two-line place. Push sends that field. Nothing goes out before Push.
-        Turning this on takes Two-line queue items off air.
+        Story + locator place. Push sends that field. Nothing goes out before Push.
+        Turning this on takes Story + locator queue items off air.
       </p>
       <div class="cg-outline-row">
         <button
@@ -125,12 +126,12 @@
         <span class="cg-outline-label">On air</span>
       </div>
       <label class="cg-field">
-        <span>Line 1 (Style A)</span>
+        <span>Headline (Primary)</span>
         <div class="cg-inline">
           <input
             type="text"
             [(ngModel)]="liveA"
-            aria-label="Live line 1"
+            aria-label="Live headline"
             (keydown.enter)="pushLive('a', $event)"
           />
           <button mat-stroked-button type="button" class="cg-seg-btn" (click)="pushLive('a')">
@@ -139,12 +140,12 @@
         </div>
       </label>
       <label class="cg-field">
-        <span>Line 2 (Style B)</span>
+        <span>Subhead (Secondary)</span>
         <div class="cg-inline">
           <input
             type="text"
             [(ngModel)]="liveB"
-            aria-label="Live line 2"
+            aria-label="Live subhead"
             (keydown.enter)="pushLive('b', $event)"
           />
           <button mat-stroked-button type="button" class="cg-seg-btn" (click)="pushLive('b')">
@@ -153,12 +154,12 @@
         </div>
       </label>
       <label class="cg-field">
-        <span>Source (Style B)</span>
+        <span>Locator (Secondary)</span>
         <div class="cg-inline">
           <input
             type="text"
             [(ngModel)]="liveSource"
-            aria-label="Live source"
+            aria-label="Live locator"
             (keydown.enter)="pushLive('source', $event)"
           />
           <button mat-stroked-button type="button" class="cg-seg-btn" (click)="pushLive('source')">
@@ -167,27 +168,17 @@
         </div>
       </label>
     </section>
-  } @else {
+  } @else if (tab === 'text') {
+    @for (option of styleOptions; track option.value) {
+      <section class="cg-style-pane">
+        <h3 class="cg-block-title">{{ option.label }}</h3>
+        <app-cg-text-style-editor [paint]="styleOf(option.value)" (changed)="saveContent()" />
+      </section>
+    }
+  } @else if (tab === 'item') {
     <section class="cg-block">
-      <h3 class="cg-block-title">Style</h3>
-      <mat-button-toggle-group
-        class="cg-seg-toggle"
-        [value]="styleKey"
-        (change)="onStyleKey($event)"
-        hideSingleSelectionIndicator
-        aria-label="Text style"
-      >
-        @for (option of styleOptions; track option.value) {
-          <mat-button-toggle [value]="option.value">{{ option.label }}</mat-button-toggle>
-        }
-      </mat-button-toggle-group>
-      <app-cg-text-style-editor [paint]="stylePaint()" (changed)="saveContent()" />
-    </section>
-
-    <section class="cg-block">
-      <h3 class="cg-block-title">Place</h3>
       <label class="cg-field">
-        <span>Variant</span>
+        <span>Template</span>
         <select
           [appCgWheelSelect]="variantValues"
           [ngModel]="placeVariant"
@@ -199,7 +190,7 @@
           }
         </select>
       </label>
-      <p class="cg-hint">Background and text are placed separately. Width is the text box; longer text squashes to fit.</p>
+      <p class="cg-hint">Background and each word are placed on their own. X and Y are design pixels from that word's anchor, on a 1920-wide stage. Width is the box. Align places the word inside it. A long word squashes only inside that box.</p>
       <h3 class="cg-block-title">Background</h3>
       <div class="cg-inline">
         <button mat-stroked-button type="button" class="cg-seg-btn" (click)="bgFile.click()">
@@ -284,79 +275,92 @@
         </label>
       </div>
       <h3 class="cg-block-title">Text</h3>
-      <div class="cg-anchor-grid">
-        <mat-button-toggle-group
-          class="cg-anchor-toggle-group"
-          [value]="textLayout().anchor"
-          (change)="onTextAnchor($event)"
-          hideSingleSelectionIndicator
-          aria-label="Text anchor"
-        >
-          @for (anchor of anchors; track anchor.value) {
-            <mat-button-toggle [value]="anchor.value" [attr.aria-label]="anchor.label">
-              <mat-icon>{{ anchor.icon }}</mat-icon>
-            </mat-button-toggle>
-          }
-        </mat-button-toggle-group>
-      </div>
-      <div class="cg-fields">
-        <label class="cg-field">
-          <span>{{ axisLabel(textLayout(), 'x') }}</span>
-          @if (textIgnores('x')) {
-            <input type="text" value="—" disabled />
-          } @else {
-            <input
-              type="number"
-              appCgWheel
-              step="0.1"
-              [ngModel]="textLayout().x"
-              (ngModelChange)="setTextNumber('x', $event)"
-              (appCgWheelChange)="setTextNumber('x', $event)"
-            />
-          }
-        </label>
-        <label class="cg-field">
-          <span>{{ axisLabel(textLayout(), 'y') }}</span>
-          @if (textIgnores('y')) {
-            <input type="text" value="—" disabled />
-          } @else {
-            <input
-              type="number"
-              appCgWheel
-              step="0.1"
-              [ngModel]="textLayout().y"
-              (ngModelChange)="setTextNumber('y', $event)"
-              (appCgWheelChange)="setTextNumber('y', $event)"
-            />
-          }
-        </label>
-        <label class="cg-field">
-          <span>Scale</span>
-          <input
-            type="number"
-            appCgWheel
-            step="0.05"
-            min="0.05"
-            max="8"
-            [ngModel]="textLayout().scale"
-            (ngModelChange)="setTextNumber('scale', $event)"
-            (appCgWheelChange)="setTextNumber('scale', $event)"
-          />
-        </label>
-        <label class="cg-field">
-          <span>Width</span>
-          <input
-            type="number"
-            appCgWheel
-            step="1"
-            [min]="widthMin"
-            [max]="widthMax"
-            [ngModel]="place().width"
-            (ngModelChange)="setWidth($event)"
-            (appCgWheelChange)="setWidth($event)"
-          />
-        </label>
-      </div>
+      @for (field of placeFields(); track field.key) {
+        <section class="cg-item-pane">
+          <h3 class="cg-block-title">{{ field.label }}</h3>
+          <div class="cg-anchor-grid">
+            <mat-button-toggle-group
+              class="cg-anchor-toggle-group"
+              [value]="elementSlot(field.key).anchor"
+              (change)="onSlotAnchor(field.key, $event)"
+              hideSingleSelectionIndicator
+              [attr.aria-label]="field.label + ' anchor'"
+            >
+              @for (anchor of anchors; track anchor.value) {
+                <mat-button-toggle [value]="anchor.value" [attr.aria-label]="anchor.label">
+                  <mat-icon>{{ anchor.icon }}</mat-icon>
+                </mat-button-toggle>
+              }
+            </mat-button-toggle-group>
+          </div>
+          <div class="cg-fields">
+            <label class="cg-field">
+              <span>{{ slotAxisLabel(field.key, 'x') }}</span>
+              @if (slotIgnores(field.key, 'x')) {
+                <input type="text" value="—" disabled />
+              } @else {
+                <input
+                  type="number"
+                  appCgWheel
+                  step="1"
+                  [min]="slotXMin"
+                  [max]="slotXMax"
+                  [ngModel]="elementSlot(field.key).x"
+                  (ngModelChange)="setSlotNumber(field.key, 'x', $event)"
+                  (appCgWheelChange)="setSlotNumber(field.key, 'x', $event)"
+                  [attr.aria-label]="field.label + ' X'"
+                />
+              }
+            </label>
+            <label class="cg-field">
+              <span>{{ slotAxisLabel(field.key, 'y') }}</span>
+              @if (slotIgnores(field.key, 'y')) {
+                <input type="text" value="—" disabled />
+              } @else {
+                <input
+                  type="number"
+                  appCgWheel
+                  step="1"
+                  [min]="slotYMin"
+                  [max]="slotYMax"
+                  [ngModel]="elementSlot(field.key).y"
+                  (ngModelChange)="setSlotNumber(field.key, 'y', $event)"
+                  (appCgWheelChange)="setSlotNumber(field.key, 'y', $event)"
+                  [attr.aria-label]="field.label + ' Y'"
+                />
+              }
+            </label>
+            <label class="cg-field">
+              <span>Width</span>
+              <input
+                type="number"
+                appCgWheel
+                step="1"
+                [min]="slotWidthMin"
+                [max]="slotWidthMax"
+                [ngModel]="elementSlot(field.key).width"
+                (ngModelChange)="setSlotNumber(field.key, 'width', $event)"
+                (appCgWheelChange)="setSlotNumber(field.key, 'width', $event)"
+                [attr.aria-label]="field.label + ' width'"
+              />
+            </label>
+            <label class="cg-field cg-slot-align">
+              <span>Align</span>
+              <select
+                [appCgWheelSelect]="alignValues"
+                [ngModel]="elementSlot(field.key).align"
+                (ngModelChange)="setSlotAlign(field.key, $event)"
+                (appCgWheelChange)="setSlotAlign(field.key, $event)"
+                [attr.aria-label]="field.label + ' align'"
+              >
+                <option value="left">Left</option>
+                <option value="center">Center</option>
+                <option value="right">Right</option>
+              </select>
+            </label>
+          </div>
+        </section>
+      }
       <div class="cg-outline-row">
         <button
           type="button"

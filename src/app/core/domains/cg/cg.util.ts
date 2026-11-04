@@ -98,12 +98,15 @@ import {
   CgTickerSettings,
 } from './cg.model';
 import {
-  clampTitleWidth,
+  clampTitleSlot,
+  defaultTitleBackgroundLayout,
   defaultTitleStyles,
   defaultTitleVariantLayouts,
   emptyTitleLive,
   emptyTitleSettings,
-  isTitleVariant,
+  legacyTitleLayoutKey,
+  migrateTitleVariant,
+  titleVariantDef,
 } from './cg-title.util';
 
 /** Which side of the 3x3 grid an Anchor sits on, per axis. */
@@ -1215,16 +1218,19 @@ function normalizeTitleItems(raw: unknown): CgTitleItem[] {
   const items: CgTitleItem[] = [];
   raw.forEach((row, index) => {
     const value = asRecord(row);
-    if (!isTitleVariant(value['variant'])) return;
+    const source = asString(value['source']).trim();
+    const variant = migrateTitleVariant(value['variant'], source);
+    if (!variant) return;
     const item: CgTitleItem = {
       id: '',
-      variant: value['variant'],
+      variant,
+      index: asString(value['index']).trim(),
       a: asString(value['a']).trim(),
       b: asString(value['b']).trim(),
       c: asString(value['c']).trim(),
-      source: asString(value['source']).trim(),
+      source,
     };
-    if (!item.a && !item.b && !item.c && !item.source) return;
+    if (!item.index && !item.a && !item.b && !item.c && !item.source) return;
     let id = asString(value['id']).trim();
     if (!id || used.has(id)) id = `title-${index}`;
     if (used.has(id)) id = `title-${index}-${items.length}`;
@@ -1235,16 +1241,33 @@ function normalizeTitleItems(raw: unknown): CgTitleItem[] {
   return items;
 }
 
+function normalizeTitleSlots(
+  variant: CgTitleVariant,
+  raw: unknown,
+  fallback: CgTitleVariantLayout,
+): CgTitleVariantLayout['slots'] {
+  const value = asRecord(raw);
+  const slots: CgTitleVariantLayout['slots'] = {};
+  for (const field of titleVariantDef(variant).fields) {
+    const base = fallback.slots[field.key];
+    if (!base) continue;
+    slots[field.key] = clampTitleSlot(value[field.key], base);
+  }
+  return slots;
+}
+
 function normalizeTitleVariantLayout(
+  variant: CgTitleVariant,
   raw: unknown,
   fallback: CgTitleVariantLayout,
 ): CgTitleVariantLayout {
   const value = asRecord(raw);
-  const text = normalizeLayout(value['text'] ?? fallback.text);
-  const background = normalizeTitleBackground(value['background'], fallback.text);
+  const background = normalizeTitleBackground(
+    value['background'],
+    defaultTitleBackgroundLayout(variant),
+  );
   return {
-    text,
-    width: clampTitleWidth(value['width'], fallback.width),
+    slots: normalizeTitleSlots(variant, value['slots'], fallback),
     ...(background ? { background } : {}),
   };
 }
@@ -1272,8 +1295,11 @@ function normalizeTitleVariants(
   const defaults = defaultTitleVariantLayouts();
   const variants = {} as Record<CgTitleVariant, CgTitleVariantLayout>;
   for (const variant of CG_TITLE_VARIANTS) {
+    const legacyKey = legacyTitleLayoutKey(variant.value);
+    const stored = value[variant.value] ?? (legacyKey ? value[legacyKey] : undefined);
     variants[variant.value] = normalizeTitleVariantLayout(
-      value[variant.value],
+      variant.value,
+      stored,
       defaults[variant.value],
     );
   }

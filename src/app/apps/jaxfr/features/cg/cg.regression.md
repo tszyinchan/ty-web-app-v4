@@ -188,16 +188,17 @@
 
 | # | 操作 | 預期 |
 |---|---|---|
-| T1 | Catalog 加 Title | Desk 有 Queue / Live / Style。Queue 有一則「標題範例」，畫面上還沒有字 |
-| T2 | 選 Headline，輸入一句，Push，把該列 On | 畫面底部出現白字。再 On 關掉，字淡出（Cut 則立刻消失） |
-| T3 | Name tag 填姓名 + 職稱，Small tag 把職稱放前面，Live 只填一個詞，Special 填紅字那欄，Two-line 填兩行加 Source | 每一種只顯示自己的欄位。Name tag 是大字在前。Small tag 是小字在前。Two-line 的 Source 在右上 |
-| T4 | 同一 variant 開兩列 | 兩列疊在同一個位置。不同 variant 可以同時 On，各用自己的 Place |
-| T5 | Style 把 Style A 加大、Style C 改色 | Headline 與 Name tag 的名字一起變。Special 用 Style C。Live bar 正在 On 時，Line 1 用 Style A，也會變大。輸入框裡還沒 Push 的字不會上畫面 |
-| T6 | 某個 variant 上傳底圖，Anchor 跟文字不同，再 Clear | 圖與文字各自定位。Clear 後只剩文字。Outline 只在 desk，OBS 沒有框 |
-| T7 | 把 Width 調小，打一行很長的 Headline | 字在寬度內水平變扁，不會換行 |
-| T8 | Live：只改 Line 1、不按 Push | OBS 與 On air 監看不變。按該欄 Push（或 Enter）後只有那一欄更新。On 打開後是 Two-line 的位置，並且 queue 裡正在 On 的 Two-line 會關掉 |
+| T1 | Catalog 加 Title | Desk 有 Queue / Live / Text style / Item style。Queue 有一則「標題範例」，畫面上還沒有字 |
+| T2 | 選 Strap，輸入一句 Headline，Push，把該列 On | 畫面底部出現白字。再 On 關掉，字淡出（Cut 則立刻消失） |
+| T3 | 依序建 Name super（Name + Title）、Credit（Role + Name）、Name + source（Name、Title、Source）、Name stack（Name + Title）、Banner（紅字）、Locator（一個詞）、Story + locator（Headline、Subhead、Locator） | 每一種只顯示自己的欄位。Name super 與 Credit 各是左右兩個獨立框。Name + source 的 Name 在左上、Title 在下一行且較寬、Source 在右上。Name stack 的 Name 短、Title 長，沒有右側字。Story + locator 的 Locator 在右上，Subhead 在下一行且比 Headline 寬。Banner 用 Accent |
+| T4 | 同一 template 開兩列 | 兩列疊在同一個位置。不同 template 可以同時 On，各用自己的 Place |
+| T5 | Text style 把 Primary 加大、Accent 改色 | 三個編輯器同時在，中間有框線。字變大，框的寬度不變。Strap 的 Headline、Name super 的 Name、Locator、Story + locator 的 Headline、Live 的 Headline 一起變大。Banner 用 Accent。輸入框裡還沒 Push 的字不會上畫面 |
+| T6 | Item style 選一個 template，上傳底圖，把某個字的 Anchor 改到別的角落，再 Clear | 底圖與每個字各自定位。Clear 後只剩文字。Outline 畫出每個字的框，只在 desk，OBS 沒有框 |
+| T7 | 把 Name + source 的 Name 打很長，Source 也打很長 | Name 只在自己的框裡變扁。Source 的框與位置不變，字太長只壓自己的框，仍靠右 |
+| T8 | Live：只改 Headline、不按 Push | OBS 與 On air 監看不變。按該欄 Push（或 Enter）後只有那一欄更新。On 打開後是 Story + locator 的位置，並且 queue 裡正在 On 的 Story + locator 會關掉。Name + source 不受影響 |
 | T9 | Layer 在 On air 時撥 queue On/Off | 約一次往返就上畫面，不是等整包 snapshot。改 Style 或改已在播的列文字仍會整包更新 |
 | T10 | Copy to package | 新 layer 的 queue 還在，但沒有任何一列 On，Live 也是 Off |
+| T11 | Item style 選 Name + source。Source 的 Y 改成與 Name 不同再改回。把 Source 的 Width 改小，Align 改成 Center 再改回 Right。Anchor 改到中間那一列 | 兩個字不會互相推動。Y 不同就分開。Width 只改 Source 那塊框。短字依 Align 待在框裡。中間列的 X 或 Y 顯示 —，數字還留著 |
 
 ### CLEANUP
 

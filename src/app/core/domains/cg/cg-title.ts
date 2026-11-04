@@ -11,12 +11,13 @@ import {
 import { CgLogo } from './cg-logo';
 import {
   CgTitleCardModel,
-  CgTitleLineModel,
+  CgTitlePlace,
+  CgTitlePlacedElement,
   defaultTitleStyles,
   titleCards,
-  titleLineFit,
+  titlePlace,
 } from './cg-title.util';
-import { CG_CUT_DURATION_MS, CgTitleStyleKey } from './cg.constants';
+import { CG_CUT_DURATION_MS, CgLayoutUnit, CgTitleStyleKey } from './cg.constants';
 import { CgLayerPayload } from './cg.model';
 import {
   anchoredBoxCss,
@@ -62,22 +63,24 @@ export class CgTitle {
     return `${innerDurationMs(this.payload())}ms`;
   }
 
-  boxCss(hold: TitleHold): Record<string, string> {
+  elementCss(element: CgTitlePlacedElement): Record<string, string> {
     return anchoredBoxCss(
-      { ...hold.textLayout, width: hold.width },
+      {
+        x: element.x,
+        y: element.y,
+        unit: CgLayoutUnit.Pixel,
+        anchor: element.anchor,
+        scale: 1,
+        width: element.width,
+      },
       { scaleAsTransform: false },
     );
   }
 
-  paintCss(hold: TitleHold, key: CgTitleStyleKey): Record<string, string> {
+  paintCss(key: CgTitleStyleKey): Record<string, string> {
     const styles = this.payload().title?.styles ?? defaultTitleStyles();
     const style = styles[key];
-    const scale =
-      Number.isFinite(hold.textLayout.scale) && hold.textLayout.scale > 0
-        ? hold.textLayout.scale
-        : 1;
-    const font =
-      (style.fontSize != null && style.fontSize > 0 ? style.fontSize : 4.6) * scale;
+    const font = style.fontSize != null && style.fontSize > 0 ? style.fontSize : 4.6;
     return {
       ...textPaintToCss(style),
       '--cg-sub-font': String(font),
@@ -88,13 +91,9 @@ export class CgTitle {
     return this.payload().title?.styles[key]?.gradientTo !== undefined;
   }
 
-  lineFit(hold: TitleHold, line: CgTitleLineModel): number {
+  placeOf(hold: TitleHold): CgTitlePlace {
     const styles = this.payload().title?.styles ?? defaultTitleStyles();
-    const scale =
-      Number.isFinite(hold.textLayout.scale) && hold.textLayout.scale > 0
-        ? hold.textLayout.scale
-        : 1;
-    return titleLineFit(hold.width, line, styles, scale);
+    return titlePlace(hold.elements, styles);
   }
 
   private sync(payload: CgLayerPayload): void {

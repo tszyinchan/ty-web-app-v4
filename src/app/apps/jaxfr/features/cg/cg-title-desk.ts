@@ -13,12 +13,17 @@ import {
   CG_LOGO_ACCEPT,
   CG_LOGO_MAX_BYTES,
   CG_MAX_DURATION_MS,
+  CG_TITLE_PX_W_MAX,
+  CG_TITLE_PX_W_MIN,
+  CG_TITLE_PX_X_MAX,
+  CG_TITLE_PX_X_MIN,
+  CG_TITLE_PX_Y_MAX,
+  CG_TITLE_PX_Y_MIN,
   CG_TITLE_STYLE_OPTIONS,
   CG_TITLE_VARIANTS,
-  CG_TITLE_WIDTH_MAX,
-  CG_TITLE_WIDTH_MIN,
   CG_WHEEL_MIN_FADE_MS,
   CgAnchor,
+  CgTitleField,
   CgTitleStyleKey,
   CgTitleVariant,
 } from '../../../../core/domains/cg/cg.constants';
@@ -26,14 +31,18 @@ import {
   CgLayerDraft,
   CgLayout,
   CgSubtitleStyle,
+  CgTitleAlign,
   CgTitleFieldMap,
   CgTitleItem,
   CgTitleSettings,
+  CgTitleSlot,
   CgTitleVariantLayout,
 } from '../../../../core/domains/cg/cg.model';
 import { CgService } from '../../../../core/domains/cg/cg.service';
 import {
+  clampTitleSlot,
   defaultTitleBackgroundLayout,
+  defaultTitleVariantLayouts,
   emptyTitleFields,
   emptyTitleSettings,
   isTitleVariant,
@@ -53,7 +62,7 @@ import {
 } from '../../../../core/domains/cg/cg.util';
 import { NotificationService } from '../../../../core/services/notification.service';
 
-type TitleDeskTab = 'queue' | 'live' | 'look';
+type TitleDeskTab = 'queue' | 'live' | 'text' | 'item';
 
 @Component({
   selector: 'app-cg-title-desk',
@@ -87,8 +96,13 @@ export class CgTitleDesk {
   readonly styleOptions = CG_TITLE_STYLE_OPTIONS;
   readonly anchors = CG_ANCHOR_GRID_OPTIONS;
   readonly logoAccept = CG_LOGO_ACCEPT;
-  readonly widthMin = CG_TITLE_WIDTH_MIN;
-  readonly widthMax = CG_TITLE_WIDTH_MAX;
+  readonly slotXMin = CG_TITLE_PX_X_MIN;
+  readonly slotXMax = CG_TITLE_PX_X_MAX;
+  readonly slotYMin = CG_TITLE_PX_Y_MIN;
+  readonly slotYMax = CG_TITLE_PX_Y_MAX;
+  readonly slotWidthMin = CG_TITLE_PX_W_MIN;
+  readonly slotWidthMax = CG_TITLE_PX_W_MAX;
+  readonly alignValues = ['left', 'center', 'right'] as const;
   readonly cutMs = CG_CUT_DURATION_MS;
   readonly maxDurationMs = CG_MAX_DURATION_MS;
   readonly wheelMinMs = CG_WHEEL_MIN_FADE_MS;
@@ -96,11 +110,10 @@ export class CgTitleDesk {
   readonly variantLabel = (variant: CgTitleVariant) => titleVariantDef(variant).label;
 
   tab: TitleDeskTab = 'queue';
-  variant: CgTitleVariant = CgTitleVariant.Headline;
+  variant: CgTitleVariant = CgTitleVariant.Strap;
   fields: CgTitleFieldMap = emptyTitleFields();
   editingId: string | null = null;
-  placeVariant: CgTitleVariant = CgTitleVariant.Headline;
-  styleKey: CgTitleStyleKey = CgTitleStyleKey.A;
+  placeVariant: CgTitleVariant = CgTitleVariant.Strap;
   liveA = '';
   liveB = '';
   liveSource = '';
@@ -114,8 +127,7 @@ export class CgTitleDesk {
         if (layer.clientId === this.boundId) return;
         this.boundId = layer.clientId;
         this.resetComposer();
-        this.placeVariant = CgTitleVariant.Headline;
-        this.styleKey = CgTitleStyleKey.A;
+        this.placeVariant = CgTitleVariant.Strap;
         const live = layer.payload.title?.live;
         this.liveA = live?.a ?? '';
         this.liveB = live?.b ?? '';
@@ -132,7 +144,9 @@ export class CgTitleDesk {
 
   onTab(event: MatButtonToggleChange): void {
     const value = event.value;
-    if (value === 'queue' || value === 'live' || value === 'look') this.tab = value;
+    if (value === 'queue' || value === 'live' || value === 'text' || value === 'item') {
+      this.tab = value;
+    }
   }
 
   onComposerVariant(value: string): void {
@@ -143,19 +157,64 @@ export class CgTitleDesk {
     if (isTitleVariant(value)) this.placeVariant = value;
   }
 
-  onStyleKey(event: MatButtonToggleChange): void {
-    const value = event.value;
-    if (
-      value === CgTitleStyleKey.A ||
-      value === CgTitleStyleKey.B ||
-      value === CgTitleStyleKey.C
-    ) {
-      this.styleKey = value;
-    }
-  }
-
   composerFields() {
     return titleVariantDef(this.variant).fields;
+  }
+
+  placeFields() {
+    return titleVariantDef(this.placeVariant).fields;
+  }
+
+  elementSlot(field: CgTitleField): CgTitleSlot {
+    const slots = this.place().slots;
+    const found = slots[field];
+    if (found) return found;
+    const fallback = defaultTitleVariantLayouts()[this.placeVariant].slots[field] ?? {
+      anchor: CgAnchor.BottomLeft,
+      x: 64,
+      y: 64,
+      width: 640,
+      align: 'left' as const,
+    };
+    const slot: CgTitleSlot = { ...fallback };
+    slots[field] = slot;
+    return slot;
+  }
+
+  setSlotNumber(field: CgTitleField, key: 'x' | 'y' | 'width', value: number): void {
+    const current = this.elementSlot(field);
+    this.place().slots[field] = clampTitleSlot({ ...current, [key]: value }, current);
+    this.saveContent();
+  }
+
+  onSlotAnchor(field: CgTitleField, event: MatButtonToggleChange): void {
+    const value = event.value as CgAnchor;
+    if (!value) return;
+    const current = this.elementSlot(field);
+    this.place().slots[field] = { ...current, anchor: value };
+    this.saveContent();
+  }
+
+  slotIgnores(field: CgTitleField, axis: 'x' | 'y'): boolean {
+    return anchorIgnoresAxis(this.elementSlot(field).anchor)[axis];
+  }
+
+  slotAxisLabel(field: CgTitleField, axis: 'x' | 'y'): string {
+    const anchor = this.elementSlot(field).anchor;
+    if (axis === 'x') {
+      const side = anchorSideX(anchor);
+      return side === 'center' ? 'X · centered' : `From ${side}`;
+    }
+    const side = anchorSideY(anchor);
+    return side === 'center' ? 'Y · centered' : `From ${side}`;
+  }
+
+  setSlotAlign(field: CgTitleField, value: string): void {
+    if (value !== 'left' && value !== 'center' && value !== 'right') return;
+    const align: CgTitleAlign = value;
+    const current = this.elementSlot(field);
+    this.place().slots[field] = { ...current, align };
+    this.saveContent();
   }
 
   isOn(item: CgTitleItem): boolean {
@@ -242,16 +301,12 @@ export class CgTitleDesk {
     void this.cg.setTitleAir(this.layer().clientId, next.onAir, next.live);
   }
 
-  stylePaint(): CgSubtitleStyle {
-    return this.title().styles[this.styleKey];
+  styleOf(key: CgTitleStyleKey): CgSubtitleStyle {
+    return this.title().styles[key];
   }
 
   place(): CgTitleVariantLayout {
     return this.title().variants[this.placeVariant];
-  }
-
-  textLayout(): CgLayout {
-    return this.place().text;
   }
 
   bgLayout(): CgLayout {
@@ -263,10 +318,6 @@ export class CgTitleDesk {
 
   hasBackground(): boolean {
     return !!this.place().background?.imageUrl;
-  }
-
-  textIgnores(axis: 'x' | 'y'): boolean {
-    return anchorIgnoresAxis(this.textLayout().anchor)[axis];
   }
 
   bgIgnores(axis: 'x' | 'y'): boolean {
@@ -282,27 +333,10 @@ export class CgTitleDesk {
     return side === 'center' ? 'Y · centered' : `From ${side}`;
   }
 
-  onTextAnchor(event: MatButtonToggleChange): void {
-    const value = event.value as CgAnchor;
-    if (!value) return;
-    this.textLayout().anchor = value;
-    this.saveContent();
-  }
-
   onBgAnchor(event: MatButtonToggleChange): void {
     const value = event.value as CgAnchor;
     if (!value) return;
     this.ensureBackground().anchor = value;
-    this.saveContent();
-  }
-
-  setTextNumber(key: 'x' | 'y' | 'scale', value: number): void {
-    this.textLayout()[key] = value;
-    this.saveContent();
-  }
-
-  setWidth(value: number): void {
-    this.place().width = value;
     this.saveContent();
   }
 
@@ -396,7 +430,7 @@ export class CgTitleDesk {
 
   private resetComposer(): void {
     this.editingId = null;
-    this.variant = CgTitleVariant.Headline;
+    this.variant = CgTitleVariant.Strap;
     this.fields = emptyTitleFields();
   }
 

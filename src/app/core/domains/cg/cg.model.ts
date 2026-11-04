@@ -136,10 +136,30 @@ export interface CgLayerTransition {
   duration_ms: number;
 }
 
+/** Where the word sits inside its own box. */
+export type CgTitleAlign = 'left' | 'center' | 'right';
+
+/**
+ * One text box on the Stage. Anchor is the 9-grid cell; X / Y are design pixels
+ * inset from that cell (1920-wide canvas, same unit as Logo px). Width is the
+ * box in those pixels. Align places the word inside the box.
+ * Text longer than Width squashes inside that box only.
+ */
+export interface CgTitleSlot {
+  anchor: CgAnchor;
+  x: number;
+  y: number;
+  width: number;
+  align: CgTitleAlign;
+}
+
+export type CgTitleSlots = Partial<Record<CgTitleField, CgTitleSlot>>;
+
 /** One saved Title. Empty strings are kept so an edit can clear a field. */
 export interface CgTitleItem {
   id: string;
   variant: CgTitleVariant;
+  index: string;
   a: string;
   b: string;
   c: string;
@@ -154,17 +174,15 @@ export interface CgTitleLive {
   on: boolean;
 }
 
-/** Per-variant background image and text box. They are placed separately. */
+/** Per-template background and each word's own box. Background and words are placed separately. */
 export interface CgTitleVariantLayout {
   background?: CgBackground;
-  text: CgLayout;
-  /** Text box width, percent of Stage width. */
-  width: number;
+  slots: CgTitleSlots;
 }
 
 export interface CgTitleSettings {
   items: CgTitleItem[];
-  /** Item ids on screen. Same variant may overlap; the operator manages that. */
+  /** Item ids on screen. Same template may overlap; the operator manages that. */
   onAir: string[];
   live: CgTitleLive;
   styles: Record<CgTitleStyleKey, CgSubtitleStyle>;
