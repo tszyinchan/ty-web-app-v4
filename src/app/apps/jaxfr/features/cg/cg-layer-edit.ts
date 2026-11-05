@@ -109,6 +109,11 @@ import { NotificationService } from '../../../../core/services/notification.serv
 import { CgTextStyleEditor } from './cg-text-style-editor';
 import { copyTextToClipboard } from '../../../../core/utils/copy-text.util';
 
+interface CgCopyTargetOption {
+  id: string;
+  label: string;
+}
+
 @Component({
   selector: 'app-cg-layer-edit',
   standalone: true,
@@ -189,6 +194,8 @@ export class CgLayerEdit implements OnInit {
   ];
   readonly layersBackdrop = this.cg.layersBackdrop;
   readonly copyTargetId = signal('');
+  /** Unsaved package has no id yet; the dropdown still offers it. */
+  private readonly copySelfId = 'self';
   quickInputText = '';
   /** Desk-only Logo placement guide (not saved / not on OBS). */
   readonly logoOutline = signal(false);
@@ -232,16 +239,29 @@ export class CgLayerEdit implements OnInit {
     });
   });
 
-  readonly copyTargets = computed(() => {
-    const current = this.packageId;
-    return this.cg
+  readonly copyTargets = computed((): CgCopyTargetOption[] => {
+    const currentId = this.packageId;
+    const selfId = currentId ?? this.copySelfId;
+    const listed = this.cg
       .packages()
-      .filter((pkg) => pkg.tb_tyapp_cgpk_id !== current);
+      .find((pkg) => pkg.tb_tyapp_cgpk_id === currentId);
+    const draftName = this.cg.draftItem()?.name?.trim() ?? '';
+    const selfName = (listed?.name ?? draftName).trim() || 'This package';
+    const others = this.cg
+      .packages()
+      .filter((pkg) => pkg.tb_tyapp_cgpk_id !== currentId);
+    return [
+      { id: selfId, label: `${selfName} (this package)` },
+      ...others.map((pkg) => ({
+        id: pkg.tb_tyapp_cgpk_id,
+        label: pkg.name,
+      })),
+    ];
   });
 
   readonly copyWheelValues = computed(() => [
     '',
-    ...this.copyTargets().map((pkg) => pkg.tb_tyapp_cgpk_id),
+    ...this.copyTargets().map((pkg) => pkg.id),
   ]);
 
   private readonly queueRows =
@@ -777,6 +797,17 @@ export class CgLayerEdit implements OnInit {
     const layer = this.layer();
     const targetId = this.copyTargetId();
     if (!layer || !targetId) return;
+    if (targetId === (this.packageId ?? this.copySelfId)) {
+      const copy = this.cg.duplicateLayerInDraft(layer);
+      if (!copy) return;
+      const id = this.packageId;
+      await this.router.navigate(
+        id
+          ? ['/cg/edit', id, 'layer', copy.clientId]
+          : ['/cg/new', 'layer', copy.clientId],
+      );
+      return;
+    }
     await this.cg.copyLayerToPackage(layer, targetId);
   }
 

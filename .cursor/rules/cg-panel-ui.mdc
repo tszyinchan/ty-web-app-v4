@@ -62,7 +62,7 @@ Hover is enough (no focus needed); the field swallows the wheel. Directives `app
 ## Layer desk
 - Single preview for that one Layer, own local Alpha/Dim backdrop. Desk Look is **Layer Look only** (`layerLookOnly`); Package B&W does not grey the desk. Desk force-shows the layer even when Package Off (`forceVisible`). Desk does not bind Package Appear duration.
 - Tiles: chrome on top (`drag_indicator` + z + On/Off), Stage thumb, **name** at bottom (custom `name`, or Element type if blank).
-- Desk left: live-on-air warning row + Stage ~450px + **Name | Look** side by side + **Source** (Logo / Subtitle load-paste) + footer one row: Copy to package + Delete layer + Copy layer OBS. Right: **Place** (Anchor / X / Y / Scale + Outline switch) for Logo. Subtitle right is two columns (Cue+queue | Place+Style) when the desk is ≥1300px (`@container`); narrower stacks and scrolls. Place numbers use fixed width. No Inherit / Follow package option. Tiles (`.cg-drive`) shrink while a desk is open.
+- Desk left: live-on-air warning row + Stage ~450px + **Name | Look** side by side + **Source** (Logo / Subtitle load-paste) + footer one row: Copy to package (current package first, `Name (this package)`; that choice adds a draft copy like a new Element) + Delete layer + Copy layer OBS. Right: **Place** (Anchor / X / Y / Scale + Outline switch) for Logo. Subtitle right is two columns (Cue+queue | Place+Style) when the desk is ≥1300px (`@container`); narrower stacks and scrolls. Place numbers use fixed width. No Inherit / Follow package option. Tiles (`.cg-drive`) shrink while a desk is open.
 - Greyscale is a per-layer host `filter` and always cuts. Package Appear only drives host opacity. Must not change z-order.
 
 ## Logo / Subtitle desk details

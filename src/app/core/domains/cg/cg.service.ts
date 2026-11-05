@@ -11,7 +11,6 @@ import {
   CG_OVERLAY_TITLE_KIND,
   CG_OVERLAY_PRESENCE_ROLE,
   CG_PRESENCE_SYNC_WAIT_MS,
-  CgElementType,
   CgPackageEditMode,
   CgPackageLook,
   CgPackageRole,
@@ -32,9 +31,10 @@ import {
   cgOutputChannelName,
   createCgPublicToken,
   createEmptyLogoLayer,
-  emptySubtitlePayload,
   isOverlayCueMessage,
   isOverlayTitleMessage,
+  copiedLayerPayload,
+  duplicateLayerDraft,
   layerContentSignature,
   layerToDraft,
   normalizeDurationMs,
@@ -48,7 +48,6 @@ import {
   readPackageEditMode,
   writePackageEditMode,
 } from './cg.util';
-import { blankTitleAir as blankTitleSettings } from './cg-title.util';
 
 /** Debounce Layer content writes (always Direct — not Package Take). */
 const LAYER_CONTENT_AUTOSAVE_MS = 450;
@@ -1045,6 +1044,31 @@ export class CgService {
     }
   }
 
+  /**
+   * Same as adding an Element: a new draft row, filled from `source`,
+   * inserted just after it. Studio Take / Direct autosave writes it.
+   */
+  duplicateLayerInDraft(source: CgLayerDraft): CgLayerDraft | null {
+    const index = this.draftLayers().findIndex(
+      (row) => row.clientId === source.clientId,
+    );
+    if (index < 0) {
+      this.notification.handleError(
+        'Copy layer',
+        'That layer is not in this package.',
+      );
+      return null;
+    }
+    const copy = duplicateLayerDraft(source, index + 1);
+    this.draftLayers.update((list) => {
+      const next = [...list];
+      next.splice(index + 1, 0, copy);
+      return next.map((row, sortOrder) => ({ ...row, sort_order: sortOrder }));
+    });
+    this.notification.showSuccess('Layer copied');
+    return copy;
+  }
+
   async copyLayerToPackage(
     source: CgLayerDraft,
     targetPackageId: string,
@@ -1060,19 +1084,7 @@ export class CgService {
       return null;
     }
 
-    const payload = normalizeLayerPayload(source.element_type, source.payload);
-    const copiedPayload =
-      source.element_type === CgElementType.Subtitle
-        ? emptySubtitlePayload(
-            payload.lines,
-            null,
-            payload.cursor,
-            payload.style,
-            payload.transition?.duration_ms,
-          )
-        : source.element_type === CgElementType.Title && payload.title
-          ? { ...payload, title: blankTitleSettings(payload.title) }
-          : payload;
+    const copiedPayload = copiedLayerPayload(source);
     const siblings = this.layers().filter(
       (layer) => layer.package_id === targetPackageId,
     );

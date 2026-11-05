@@ -102,6 +102,7 @@ import {
   defaultTitleBackgroundLayout,
   defaultTitleStyles,
   defaultTitleVariantLayouts,
+  blankTitleAir,
   emptyTitleLive,
   emptyTitleSettings,
   legacyTitleLayoutKey,
@@ -696,6 +697,52 @@ export function layerDisplayName(
 ): string {
   const custom = layer.name?.trim();
   return custom || elementLabel(layer.element_type);
+}
+
+/**
+ * Layer content for a copy. New token is the caller's job.
+ * Subtitle cue is blank. Title cards and the Live bar start off.
+ */
+export function copiedLayerPayload(source: CgLayerDraft): CgLayerPayload {
+  const payload = normalizeLayerPayload(
+    source.element_type,
+    structuredClone(source.payload),
+  );
+  if (source.element_type === CgElementType.Subtitle) {
+    return emptySubtitlePayload(
+      payload.lines,
+      null,
+      payload.cursor,
+      payload.style,
+      payload.transition?.duration_ms,
+    );
+  }
+  if (source.element_type === CgElementType.Title && payload.title) {
+    return { ...payload, title: blankTitleAir(payload.title) };
+  }
+  return payload;
+}
+
+/**
+ * A new draft row, same path as adding an Element, filled from `source`.
+ * On, no DB id yet. Name is the tile name plus " copy".
+ */
+export function duplicateLayerDraft(
+  source: CgLayerDraft,
+  sortOrder: number,
+): CgLayerDraft {
+  return {
+    clientId: `temp-${crypto.randomUUID()}`,
+    element_type: source.element_type,
+    public_token: createCgPublicToken(),
+    name: `${layerDisplayName(source)} copy`,
+    layout: structuredClone(source.layout),
+    payload: copiedLayerPayload(source),
+    visible: true,
+    look: normalizeLayerLook(source.look),
+    sort_order: sortOrder,
+    status: source.status,
+  };
 }
 
 export function isLogoPayload(payload: unknown): payload is CgLogoPayload {

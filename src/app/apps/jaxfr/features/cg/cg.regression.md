@@ -104,6 +104,7 @@
 | B11 | Subtitle Look = Color，Package B&W，Take | 全部仍灰 |
 | B12 | Style = Show，不要 Take（已有 id） | Package On air / overlay 改 Show（Layer Direct）；Package 不 Unsaved |
 | B13 | Subtitle Copy to `PKG_B` | 新 Layer、Blank |
+| B13a | 同一個 Package，Copy to package 選 `Name (this package)`，Copy | 新 tile 緊接在來源後面，名稱是原名加 ` copy`，On。Desk 打開複本。內容與來源相同（字幕 Blank、Title 的卡片與 Live 為 Off）。Studio：Pending 有、On air 要等 Take。Direct：約 0.5s 後上 OBS。複本有自己的 OBS URL |
 | B14 | 未 Take 改 Scale（Studio，已有 id） | Package On air 也變（Layer Direct）；On/Off 仍要 Take；Package 不因 Scale 而 Unsaved |
 | B15 | Cue = Cut。↓（cue down） | 字幕瞬間換句 |
 | B16 | 視窗縮到手機寬 | 仍是桌面三欄 |
