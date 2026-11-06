@@ -12,7 +12,7 @@
         </a>
         <h2 class="cg-col-title">Package</h2>
         <mat-button-toggle-group
-          class="cg-seg-toggle"
+          class="cg-seg-toggle cg-pill"
           [value]="packageBackdrop()"
           (change)="packageBackdrop.set($event.value)"
           hideSingleSelectionIndicator
@@ -50,18 +50,16 @@
       <section class="cg-monitors-pane">
         <div class="cg-monitor-toolbar">
           <div class="cg-mode">
-            <span class="cg-mode-label">Studio mode</span>
-            <button
-              type="button"
-              class="cg-switch"
-              [class.on]="isStudioMode()"
-              role="switch"
-              [attr.aria-checked]="isStudioMode()"
-              aria-label="Studio mode"
-              (click)="toggleStudioMode()"
+            <mat-button-toggle-group
+              class="cg-seg-toggle cg-pill"
+              [value]="editMode()"
+              (change)="onEditMode($event)"
+              hideSingleSelectionIndicator
+              aria-label="Edit mode"
             >
-              <span class="cg-switch-thumb"></span>
-            </button>
+              <mat-button-toggle [value]="editModes.Studio">Studio</mat-button-toggle>
+              <mat-button-toggle [value]="editModes.Direct">Direct</mat-button-toggle>
+            </mat-button-toggle-group>
             @if (!packageId) {
               <button
                 mat-flat-button
@@ -131,7 +129,7 @@
           placeholder="CH36, News SNG, Live show…"
         />
         <mat-button-toggle-group
-          class="cg-seg-toggle"
+          class="cg-seg-toggle cg-pill"
           [value]="pkg.role"
           (change)="onRoleToggle($event)"
           hideSingleSelectionIndicator
@@ -145,7 +143,7 @@
         <div class="cg-appear">
           <span class="cg-kicker">Appear</span>
           <mat-button-toggle-group
-            class="cg-seg-toggle"
+            class="cg-seg-toggle cg-pill"
             [value]="isCut() ? 'cut' : 'fade'"
             (change)="onAppearToggle($event)"
             hideSingleSelectionIndicator
@@ -175,7 +173,7 @@
         <div class="cg-appear">
           <span class="cg-kicker">Look</span>
           <mat-button-toggle-group
-            class="cg-seg-toggle"
+            class="cg-seg-toggle cg-pill"
             [value]="pkg.look"
             (change)="onLookToggle($event)"
             hideSingleSelectionIndicator
@@ -206,7 +204,7 @@
       <header class="cg-col-head">
         <h2 class="cg-col-title">Layers</h2>
         <mat-button-toggle-group
-          class="cg-seg-toggle"
+          class="cg-seg-toggle cg-pill"
           [value]="layersBackdrop()"
           (change)="layersBackdrop.set($event.value)"
           hideSingleSelectionIndicator

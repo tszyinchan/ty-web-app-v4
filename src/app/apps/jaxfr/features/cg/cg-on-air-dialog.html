@@ -5,7 +5,7 @@
       <span class="cg-on-air-name">{{ data.packageName }}</span>
     }
     <mat-button-toggle-group
-      class="cg-seg-toggle"
+      class="cg-seg-toggle cg-pill"
       [value]="cg.packageBackdrop()"
       (change)="cg.packageBackdrop.set($event.value)"
       hideSingleSelectionIndicator

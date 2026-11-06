@@ -1,4 +1,5 @@
 @use "@angular/material" as mat;
+@use "./cg-pill" as cg-pill;
 
 $cg-control-height: 28px;
 
@@ -239,20 +240,4 @@ $cg-control-height: 28px;
   );
 }
 
-:host mat-button-toggle-group.cg-anchor-toggle-group {
-  display: inline-grid;
-  grid-template-columns: repeat(3, $cg-control-height);
-  grid-template-rows: repeat(3, $cg-control-height);
-  border: 1px solid var(--app-button-border);
-  border-radius: var(--app-radius);
-  overflow: hidden;
-
-  mat-button-toggle {
-    width: $cg-control-height;
-    height: $cg-control-height;
-  }
-
-  mat-button-toggle.mat-button-toggle-checked {
-    background: var(--app-button-primary-bg);
-  }
-}
+@include cg-pill.cg-pill;

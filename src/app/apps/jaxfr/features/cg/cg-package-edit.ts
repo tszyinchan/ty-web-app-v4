@@ -103,6 +103,7 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
   readonly maxDurationMs = CG_MAX_DURATION_MS;
   readonly wheelMinMs = CG_WHEEL_MIN_FADE_MS;
   readonly looks = CgPackageLook;
+  readonly editModes = CgPackageEditMode;
   readonly returnUrl = '/cg/list';
 
   readonly item = this.cg.draftItem;
@@ -154,10 +155,11 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
     return this.editMode() === CgPackageEditMode.Studio;
   }
 
-  toggleStudioMode(): void {
-    this.setEditMode(
-      this.isStudioMode() ? CgPackageEditMode.Direct : CgPackageEditMode.Studio,
-    );
+  onEditMode(event: MatButtonToggleChange): void {
+    const mode = event.value;
+    if (mode === CgPackageEditMode.Studio || mode === CgPackageEditMode.Direct) {
+      this.setEditMode(mode);
+    }
   }
 
   @HostListener('window:beforeunload', ['$event'])

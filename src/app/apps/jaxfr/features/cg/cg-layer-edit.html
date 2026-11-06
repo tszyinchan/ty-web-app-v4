@@ -40,7 +40,7 @@
           <section class="cg-block look">
             <h3 class="cg-block-title">Look</h3>
             <mat-button-toggle-group
-              class="cg-seg-toggle"
+              class="cg-seg-toggle cg-pill"
               [value]="layer.look"
               (change)="onLayerLookToggle($event)"
               hideSingleSelectionIndicator
@@ -222,7 +222,7 @@
                   </label>
                 }
               </div>
-              <mat-button-toggle-group class="cg-seg-toggle" [value]="clockOf(layer).mode"
+              <mat-button-toggle-group class="cg-seg-toggle cg-pill" [value]="clockOf(layer).mode"
                 (change)="onClockMode(layer, $event)" hideSingleSelectionIndicator aria-label="Clock mode">
                 <mat-button-toggle value="live">Live</mat-button-toggle>
                 <mat-button-toggle value="custom">Custom</mat-button-toggle>
@@ -344,7 +344,7 @@
             <div class="cg-anchor-field">
               <span class="cg-anchor-title">Anchor</span>
               <mat-button-toggle-group
-                class="cg-anchor-toggle-group"
+                class="cg-pill"
                 [value]="layer.layout.anchor"
                 (change)="onAnchorToggle(layer, $event)"
                 hideSingleSelectionIndicator
@@ -424,7 +424,7 @@
           <section class="cg-block">
             <h3 class="cg-block-title">Background place</h3>
             <div class="cg-anchor-grid">
-              <mat-button-toggle-group class="cg-anchor-toggle-group"
+              <mat-button-toggle-group class="cg-pill"
                 [value]="backgroundLayout(layer).anchor"
                 (change)="onBackgroundAnchor(layer, $event)" hideSingleSelectionIndicator>
                 @for (anchor of anchorGridOptions; track anchor.value) {
@@ -474,7 +474,7 @@
           <section class="cg-block">
             <h3 class="cg-block-title">Text place</h3>
             <div class="cg-anchor-grid">
-              <mat-button-toggle-group class="cg-anchor-toggle-group" [value]="layer.layout.anchor"
+              <mat-button-toggle-group class="cg-pill" [value]="layer.layout.anchor"
                 (change)="onAnchorToggle(layer, $event)" hideSingleSelectionIndicator>
                 @for (anchor of anchorGridOptions; track anchor.value) {
                   <mat-button-toggle [value]="anchor.value" [attr.aria-label]="anchor.label">
@@ -483,7 +483,7 @@
                 }
               </mat-button-toggle-group>
             </div>
-            <mat-button-toggle-group class="cg-seg-toggle" [value]="subtitleAlign(layer)"
+            <mat-button-toggle-group class="cg-seg-toggle cg-pill" [value]="subtitleAlign(layer)"
               (change)="onAlignToggle(layer, $event)" hideSingleSelectionIndicator aria-label="Align">
               @for (align of alignOptions; track align.value) {
                 <mat-button-toggle [value]="align.value" [attr.aria-label]="align.label">
@@ -584,7 +584,7 @@
                   </label>
                 </div>
                 <div class="cg-cue-nav">
-                  <mat-button-toggle-group class="cg-seg-toggle"
+                  <mat-button-toggle-group class="cg-seg-toggle cg-pill"
                     [value]="isCueCut(layer) ? 'cut' : 'fade'"
                     (change)="onCueAppearToggle(layer, $event)" hideSingleSelectionIndicator>
                     <mat-button-toggle value="fade">Fade</mat-button-toggle>
@@ -652,7 +652,7 @@
             <section class="cg-block">
               <h3 class="cg-block-title">Background place</h3>
               <div class="cg-anchor-grid">
-                <mat-button-toggle-group class="cg-anchor-toggle-group"
+                <mat-button-toggle-group class="cg-pill"
                   [value]="backgroundLayout(layer).anchor"
                   (change)="onBackgroundAnchor(layer, $event)" hideSingleSelectionIndicator>
                   @for (anchor of anchorGridOptions; track anchor.value) {
@@ -702,7 +702,7 @@
             <section class="cg-block">
               <h3 class="cg-block-title">Text place</h3>
               <div class="cg-anchor-grid">
-                <mat-button-toggle-group class="cg-anchor-toggle-group" [value]="layer.layout.anchor"
+                <mat-button-toggle-group class="cg-pill" [value]="layer.layout.anchor"
                   (change)="onAnchorToggle(layer, $event)" hideSingleSelectionIndicator>
                   @for (anchor of anchorGridOptions; track anchor.value) {
                     <mat-button-toggle [value]="anchor.value" [attr.aria-label]="anchor.label">
@@ -805,7 +805,7 @@
                   Blank
                 </button>
                 <mat-button-toggle-group
-                  class="cg-seg-toggle"
+                  class="cg-seg-toggle cg-pill"
                   [value]="isCueCut(layer) ? 'cut' : 'fade'"
                   (change)="onCueAppearToggle(layer, $event)"
                   hideSingleSelectionIndicator
@@ -899,7 +899,7 @@
                 <div class="cg-anchor-field">
                   <span class="cg-anchor-title">Anchor</span>
                   <mat-button-toggle-group
-                    class="cg-anchor-toggle-group"
+                    class="cg-pill"
                     [value]="layer.layout.anchor"
                     (change)="onAnchorToggle(layer, $event)"
                     hideSingleSelectionIndicator
@@ -917,7 +917,7 @@
                   </mat-button-toggle-group>
                   <span class="cg-anchor-title">Align</span>
                   <mat-button-toggle-group
-                    class="cg-seg-toggle cg-align-toggle-group"
+                    class="cg-seg-toggle cg-pill"
                     [value]="subtitleAlign(layer)"
                     (change)="onAlignToggle(layer, $event)"
                     hideSingleSelectionIndicator
@@ -1072,7 +1072,7 @@
                   </mat-button-toggle>
                 </mat-button-toggle-group>
                 <mat-button-toggle-group
-                  class="cg-seg-toggle"
+                  class="cg-seg-toggle cg-pill"
                   [value]="gradientOn(subStyle) ? 'gradient' : 'solid'"
                   (change)="onFillToggle(layer, $event)"
                   hideSingleSelectionIndicator

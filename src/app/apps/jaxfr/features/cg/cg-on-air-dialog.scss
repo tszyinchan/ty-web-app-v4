@@ -1,4 +1,5 @@
 @use "@angular/material" as mat;
+@use "./cg-pill" as cg-pill;
 
 .cg-on-air-dialog {
   display: flex;
@@ -102,3 +103,5 @@ mat-button-toggle-group.cg-seg-toggle {
   line-height: 16px;
   margin: 0;
 }
+
+@include cg-pill.cg-pill;

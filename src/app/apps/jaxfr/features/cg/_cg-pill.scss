@@ -1,0 +1,121 @@
+@use "@angular/material" as mat;
+
+// One recessed track. Only the selected option is a button.
+// Unselected options are text or icons in the track.
+@mixin cg-pill {
+  :host mat-button-toggle-group.cg-pill {
+    display: inline-flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    align-self: flex-start;
+    flex-shrink: 0;
+    width: max-content;
+    max-width: 100%;
+    height: 28px;
+    min-height: 28px;
+    max-height: 28px;
+    box-sizing: border-box;
+    padding: 1px;
+    border: 1px solid var(--app-button-border);
+    border-radius: 14px;
+    overflow: hidden;
+    background: var(--app-input-bg);
+    box-shadow: var(--app-input-shadow);
+    --mat-button-toggle-hover-state-layer-opacity: 0;
+    --mat-button-toggle-divider-color: transparent;
+
+    @include mat.button-toggle-overrides(
+      (
+        shape: 14px,
+        height: 24px,
+        background-color: transparent,
+        text-color: var(--app-text-muted),
+        divider-color: transparent,
+        selected-state-background-color: var(--app-button-primary-bg),
+        selected-state-text-color: var(--app-accent-contrast),
+      )
+    );
+
+    ::ng-deep .mat-button-toggle-button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      padding: 0;
+    }
+
+    ::ng-deep .mat-button-toggle-label-content {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 12px;
+      line-height: 24px;
+    }
+
+    ::ng-deep .mat-button-toggle-label-content:has(mat-icon) {
+      width: 24px;
+      height: 24px;
+      padding: 0;
+      line-height: 0;
+    }
+
+    mat-button-toggle {
+      flex: 0 0 auto;
+      height: 24px;
+      min-height: 24px;
+      max-height: 24px;
+      box-sizing: border-box;
+      border: 0;
+      border-radius: 12px;
+      background: transparent;
+      box-shadow: none;
+      color: var(--app-text-muted);
+      font-family: var(--app-font);
+      font-size: 12px;
+
+      mat-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 18px;
+        height: 18px;
+        font-size: 18px;
+        line-height: 1;
+        margin: 0;
+        overflow: hidden;
+        color: var(--app-text-muted);
+
+        &.cg-anchor-dot {
+          font-size: 9px;
+        }
+      }
+    }
+
+    mat-button-toggle:has(mat-icon) {
+      width: 24px;
+      min-width: 24px;
+      max-width: 24px;
+    }
+
+    mat-button-toggle:hover:not(.mat-button-toggle-checked) {
+      background: transparent;
+      box-shadow: none;
+      color: var(--app-text-primary);
+
+      mat-icon {
+        color: var(--app-text-primary);
+      }
+    }
+
+    mat-button-toggle.mat-button-toggle-checked {
+      background: var(--app-button-primary-bg);
+      box-shadow: var(--app-button-primary-shadow);
+      color: var(--app-accent-contrast);
+
+      mat-icon {
+        color: var(--app-accent-contrast);
+      }
+    }
+  }
+}
