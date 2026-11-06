@@ -1,4 +1,4 @@
-import { NgStyle } from '@angular/common';
+import { NgStyle, NgTemplateOutlet } from '@angular/common';
 import {
   Component,
   DestroyRef,
@@ -23,23 +23,41 @@ import {
   defaultTickerStyle,
   emptyTickerSettings,
   newsItemsKey,
-  nextNewsItem,
+  playableNewsItems,
   primaryFontFamily,
   subtitleTextParts,
+  tickerBeltPosition,
+  tickerBeltSlot,
   tickerWindowCss,
 } from './cg.util';
+
+/** Rounding slack when the next line should sit flush against the tail. */
+const TICKER_FLUSH_PX = 1;
+/** Upper bound on lines spawned in one frame (filling an empty window). */
+const TICKER_MAX_SPAWN_PER_FRAME = 64;
 
 interface TickerEntry {
   key: number;
   id: string;
   text: string;
+  /** Belt coordinate of the left edge: x = window width + anchor - belt. */
+  anchor: number;
+  /** Width including the gap, so the next line starts flush. */
+  width: number;
   x: number;
 }
 
+/**
+ * Endless right-to-left belt on the shared wall clock (`tickerBeltPosition`).
+ * New lines take the slot the virtual belt (playable lines in queue order)
+ * has at the window's right edge, so every viewer with the same queue shows
+ * the same frame. Lines already on screen keep moving until they leave, even
+ * after an edit; a viewer that just loaded joins the virtual belt directly.
+ */
 @Component({
   selector: 'app-cg-ticker',
   standalone: true,
-  imports: [NgStyle, CgLogo],
+  imports: [NgStyle, NgTemplateOutlet, CgLogo],
   templateUrl: './cg-ticker.html',
   styleUrl: './cg-ticker.scss',
 })
@@ -56,6 +74,7 @@ export class CgTicker {
     () => this.payload().ticker ?? emptyTickerSettings(),
   );
   readonly itemsKey = computed(() => newsItemsKey(this.payload().items));
+  readonly playable = computed(() => playableNewsItems(this.payload().items));
   readonly backgroundUrl = computed(
     () => this.payload().background?.imageUrl ?? '',
   );
@@ -63,19 +82,17 @@ export class CgTicker {
     () => this.payload().background?.layout ?? { ...DEFAULT_TICKER_BACKGROUND_LAYOUT },
   );
 
-  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly windowRef = viewChild<ElementRef<HTMLElement>>('window');
   private readonly itemEls = viewChildren<ElementRef<HTMLElement>>('item');
+  private readonly measureEls = viewChildren<ElementRef<HTMLElement>>('measure');
 
   private paused = false;
   private running = false;
   private raf = 0;
-  private lastFrame = 0;
   private spawnKey = 0;
-  private lastId: string | null = null;
-  private lastIndex = -1;
-  private previousIds: string[] = [];
   private fontsLoaded = false;
+  private lastSpeed = 0;
+  private lastWindowWidth = 0;
 
   constructor() {
     effect(() => {
@@ -122,10 +139,6 @@ export class CgTicker {
   private resume(): void {
     this.paused = false;
     this.entries.set([]);
-    this.lastId = null;
-    this.lastIndex = -1;
-    this.previousIds = [];
-    this.lastFrame = 0;
     this.ensureLoop();
   }
 
@@ -133,14 +146,11 @@ export class CgTicker {
     if (this.running || this.paused || !this.visible()) return;
     if (!this.fontsLoaded) void this.prepareFont();
     this.running = true;
-    this.lastFrame = 0;
     this.raf = requestAnimationFrame(this.frame);
   }
 
   private async prepareFont(): Promise<void> {
-    const sample =
-      (this.payload().items ?? []).find((item) => item.enabled && item.text)?.text ??
-      '新聞';
+    const sample = this.playable()[0]?.text ?? '新聞';
     const name = primaryFontFamily(this.textStyle().fontFamily);
     if (name && document.fonts?.load) {
       try {
@@ -162,77 +172,95 @@ export class CgTicker {
     cancelAnimationFrame(this.raf);
   }
 
-  private readonly frame = (now: number): void => {
+  private widthsBy(
+    els: readonly ElementRef<HTMLElement>[],
+    attr: 'id' | 'key',
+  ): Map<string, number> {
+    const widths = new Map<string, number>();
+    for (const el of els) {
+      const key = el.nativeElement.dataset[attr];
+      if (key) widths.set(key, el.nativeElement.offsetWidth);
+    }
+    return widths;
+  }
+
+  private readonly frame = (): void => {
     if (!this.running || this.paused || !this.visible()) {
       this.running = false;
       return;
     }
     const windowEl = this.windowRef()?.nativeElement;
-    const windowW = windowEl?.clientWidth ?? 0;
-    if (!windowEl || windowW <= 0) {
+    const windowWidth = windowEl?.clientWidth ?? 0;
+    if (!windowEl || windowWidth <= 0) {
       this.raf = requestAnimationFrame(this.frame);
       return;
     }
-    const dt = this.lastFrame
-      ? Math.min(0.05, (now - this.lastFrame) / 1000)
-      : 0;
-    this.lastFrame = now;
-    const stageW = this.host.nativeElement.clientWidth || windowW;
-    const speed = (this.payload().ticker ?? emptyTickerSettings()).speed;
-    const px = stageW * (speed / 100) * dt;
+
+    const speed = this.settings().speed;
+    const belt = tickerBeltPosition(Date.now(), speed);
+    // Speed or window width changed: lines on screen stay where they are and
+    // the next new line rejoins the shared belt.
+    const rebase =
+      speed !== this.lastSpeed || windowWidth !== this.lastWindowWidth;
+    this.lastSpeed = speed;
+    this.lastWindowWidth = windowWidth;
+
     const items = this.payload().items ?? [];
+    const playable = this.playable();
+    const measured = this.widthsBy(this.measureEls(), 'id');
+    const rendered = this.widthsBy(this.itemEls(), 'key');
 
-    const widths = new Map<number, number>();
-    for (const el of this.itemEls()) {
-      const key = Number(el.nativeElement.dataset['key']);
-      if (Number.isFinite(key)) widths.set(key, el.nativeElement.offsetWidth);
-    }
+    const entries = this.entries()
+      .map((entry) => {
+        const live = items.find((item) => item.id === entry.id);
+        const width =
+          (live ? measured.get(entry.id) : undefined) ||
+          rendered.get(String(entry.key)) ||
+          entry.width;
+        const anchor = rebase ? entry.x - windowWidth + belt : entry.anchor;
+        return {
+          ...entry,
+          text: live ? live.text : entry.text,
+          width,
+          anchor,
+          x: windowWidth + anchor - belt,
+        };
+      })
+      .filter((entry) => entry.x + entry.width > 0);
 
-    let entries = this.entries().map((entry) => {
-      const live = items.find((item) => item.id === entry.id);
-      return {
-        ...entry,
-        text: live ? live.text : entry.text,
-        x: entry.x - px,
-      };
-    });
-    entries = entries.filter((entry) => {
-      if (!widths.has(entry.key)) return true;
-      return entry.x + (widths.get(entry.key) ?? 0) > 0;
-    });
-
-    let tail = Number.NEGATIVE_INFINITY;
-    for (const entry of entries) {
-      tail = Math.max(tail, entry.x + (widths.get(entry.key) ?? 0));
-    }
-    if (this.fontsLoaded && tail < windowW) {
-      const next = nextNewsItem(items, this.lastId, this.lastIndex, this.previousIds);
-      if (next) {
-        this.lastId = next.item.id;
-        this.lastIndex = next.index;
-        this.previousIds = items.map((item) => item.id);
-        entries = [
-          ...entries,
-          {
-            key: (this.spawnKey += 1),
-            id: next.item.id,
-            text: next.item.text,
-            x: windowW,
-          },
-        ];
+    if (this.fontsLoaded && playable.length > 0) {
+      const widths = playable.map((item) => measured.get(item.id) ?? 0);
+      let tail = entries.length
+        ? Math.max(...entries.map((entry) => entry.x + entry.width))
+        : Number.NEGATIVE_INFINITY;
+      for (
+        let spawned = 0;
+        spawned < TICKER_MAX_SPAWN_PER_FRAME && tail < windowWidth;
+        spawned += 1
+      ) {
+        const slot = Number.isFinite(tail)
+          ? tickerBeltSlot(widths, belt, windowWidth, tail - TICKER_FLUSH_PX, 'left-from')
+          : tickerBeltSlot(widths, belt, windowWidth, 0, 'right-past');
+        if (!slot) break;
+        const line = playable[slot.index];
+        const width = widths[slot.index];
+        entries.push({
+          key: (this.spawnKey += 1),
+          id: line.id,
+          text: line.text,
+          anchor: slot.x - windowWidth + belt,
+          width,
+          x: slot.x,
+        });
+        tail = slot.x + width;
       }
     }
 
-    if (entries.length === 0) {
-      if (!this.fontsLoaded) {
-        this.raf = requestAnimationFrame(this.frame);
-        return;
-      }
-      this.entries.set([]);
+    this.entries.set(entries);
+    if (entries.length === 0 && this.fontsLoaded && playable.length === 0) {
       this.running = false;
       return;
     }
-    this.entries.set(entries);
     this.raf = requestAnimationFrame(this.frame);
   };
 }

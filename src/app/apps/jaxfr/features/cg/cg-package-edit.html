@@ -34,6 +34,17 @@
         >
           <mat-icon>content_copy</mat-icon>
         </button>
+        <button
+          mat-stroked-button
+          type="button"
+          class="cg-seg-btn cg-icon-btn"
+          [disabled]="!onAirToken()"
+          title="Enlarge On air"
+          aria-label="Enlarge On air"
+          (click)="openOnAirDialog()"
+        >
+          <mat-icon>open_in_full</mat-icon>
+        </button>
       </header>
 
       <section class="cg-monitors-pane">
@@ -96,16 +107,7 @@
           </div>
         </div>
         <div class="cg-monitors">
-          @if (isDirectMode()) {
-            <app-cg-program
-              label="On air"
-              [preview]="true"
-              [output]="cg.onAirOutput()"
-              [cue]="cg.onAirCue()"
-              [titleAir]="cg.onAirTitle()"
-              [backdrop]="packageBackdrop()"
-            />
-          } @else {
+          @if (!isDirectMode()) {
             <app-cg-mix-preview
               label="Pending"
               [layers]="layers()"
@@ -113,15 +115,12 @@
               [durationMs]="packageDurationMs()"
               [backdrop]="packageBackdrop()"
             />
-            <app-cg-program
-              label="On air"
-              [preview]="true"
-              [output]="cg.onAirOutput()"
-              [cue]="cg.onAirCue()"
-              [titleAir]="cg.onAirTitle()"
-              [backdrop]="packageBackdrop()"
-            />
           }
+          <app-cg-output-frame
+            label="On air"
+            [token]="onAirToken()"
+            [backdrop]="packageBackdrop()"
+          />
         </div>
       </section>
 

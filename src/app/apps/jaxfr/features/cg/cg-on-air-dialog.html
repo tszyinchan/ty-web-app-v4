@@ -1,0 +1,33 @@
+<div class="cg-on-air-dialog">
+  <header class="cg-on-air-head">
+    <h2 class="cg-on-air-title">On air</h2>
+    @if (data.packageName) {
+      <span class="cg-on-air-name">{{ data.packageName }}</span>
+    }
+    <mat-button-toggle-group
+      class="cg-seg-toggle"
+      [value]="cg.packageBackdrop()"
+      (change)="cg.packageBackdrop.set($event.value)"
+      hideSingleSelectionIndicator
+      aria-label="On air backdrop"
+    >
+      <mat-button-toggle [value]="backdrops.Checkerboard">Alpha</mat-button-toggle>
+      <mat-button-toggle [value]="backdrops.Dim">Dim</mat-button-toggle>
+    </mat-button-toggle-group>
+    <button
+      mat-stroked-button
+      type="button"
+      class="cg-seg-btn cg-icon-btn"
+      title="Close"
+      aria-label="Close"
+      mat-dialog-close
+    >
+      <mat-icon>close</mat-icon>
+    </button>
+  </header>
+  <app-cg-output-frame
+    [token]="data.token"
+    [backdrop]="cg.packageBackdrop()"
+    [wide]="true"
+  />
+</div>

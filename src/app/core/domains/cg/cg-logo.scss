@@ -22,11 +22,12 @@
     opacity: 0;
   }
 
-  /* Desk placement guide — yellow rim, red outer shadow, square. */
+  /* Desk placement guide — yellow rim, red outer shadow, square. Screen px,
+     not Stage px, so it stays visible on a scaled-down monitor. */
   &.outline {
-    outline: 3px solid #ffe600;
+    outline: calc(3px / var(--cg-stage-scale, 1)) solid #ffe600;
     outline-offset: 0;
     border-radius: 0;
-    box-shadow: 0 0 0 3px #ff1a1a;
+    box-shadow: 0 0 0 calc(3px / var(--cg-stage-scale, 1)) #ff1a1a;
   }
 }

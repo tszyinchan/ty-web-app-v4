@@ -8,6 +8,13 @@ html.cg-overlay-on body {
   overflow: hidden;
 }
 
+/* Must match the Panel iframe (`cg-output-frame.scss`) or Chromium paints an
+   opaque canvas behind the transparent overlay. */
+html.cg-overlay-on.mode-light,
+html.cg-overlay-on.mode-dark {
+  color-scheme: light;
+}
+
 html.cg-overlay-on app-root,
 html.cg-overlay-on app-cg-overlay,
 html.cg-overlay-on .overlay-root {
@@ -23,28 +30,10 @@ html.cg-overlay-on app-cg-program {
   height: 100%;
 }
 
+/* Fill the window; CgStage letterboxes its 1920×1080 canvas inside (scale 1
+   on a 1920×1080 OBS source). */
 html.cg-overlay-on app-cg-stage {
   width: 100%;
   height: 100%;
   aspect-ratio: auto;
-}
-
-html.cg-overlay-on .sub-text {
-  font-size: calc(var(--cg-sub-font, 5.6) * 1vh);
-}
-
-html.cg-overlay-on .wx-cluster {
-  font-size: calc(var(--cg-sub-font, 3.5) * 1vh);
-}
-
-html.cg-overlay-on .ticker-text {
-  font-size: calc(var(--cg-sub-font, 3.2) * 1vh);
-}
-
-html.cg-overlay-on .brk-text {
-  font-size: calc(var(--cg-brk-font, 3.2) * 1vh);
-}
-
-html.cg-overlay-on .title-run {
-  font-size: calc(var(--cg-sub-font, 4.6) * 1vh);
 }

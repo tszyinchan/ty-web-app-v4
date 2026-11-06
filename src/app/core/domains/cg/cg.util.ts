@@ -7,6 +7,7 @@ import {
   CG_BREAKING_SECONDS_DEFAULT,
   CG_BREAKING_SECONDS_MAX,
   CG_BREAKING_SECONDS_MIN,
+  CG_BREAKING_SLOT_MARGIN_MS,
   CG_BUG_FONT_VH,
   CG_CLOCK_FORMAT_OPTIONS,
   CG_CLOCK_TIMEZONE_LOCAL,
@@ -503,33 +504,71 @@ export function newsItemsKey(items: readonly CgNewsItem[] | undefined): string {
     .join('\n');
 }
 
+/** Enabled, non-blank lines in queue order — the Breaking / Ticker rotation. */
+export function playableNewsItems(
+  items: readonly CgNewsItem[] | undefined,
+): CgNewsItem[] {
+  return (items ?? []).filter((item) => item.enabled && item.text.trim());
+}
+
 /**
- * Next enabled line after `lastId`. If that id was deleted, a follower that
- * slid into its index plays next (delete). A brand-new id in that slot is a
- * "next pass" edit and is skipped until the rotation comes around.
+ * Breaking plays on the shared wall clock: slot `n` covers
+ * `[n × seconds, (n + 1) × seconds)` since the Unix epoch, and shows the
+ * `n mod count`-th playable line. Every viewer (OBS, browser, Panel) with the
+ * same queue shows the same line and swaps on the same boundary.
  */
-export function nextNewsItem(
-  items: readonly CgNewsItem[],
-  lastId: string | null,
-  lastIndex: number,
-  previousIds: readonly string[],
-): { item: CgNewsItem; index: number } | null {
-  if (items.length === 0) return null;
-  let start = -1;
-  if (lastId != null) {
-    const found = items.findIndex((item) => item.id === lastId);
-    if (found >= 0) {
-      start = found;
-    } else {
-      const follower = previousIds[lastIndex + 1];
-      const slid = items[lastIndex];
-      start = follower && slid && slid.id === follower ? lastIndex - 1 : lastIndex;
+export function breakingSlot(nowMs: number, secondsPerItem: number): number {
+  return Math.floor(nowMs / (secondsPerItem * 1000));
+}
+
+export function breakingItemAt(
+  items: readonly CgNewsItem[] | undefined,
+  slot: number,
+): CgNewsItem | null {
+  const playable = playableNewsItems(items);
+  if (playable.length === 0) return null;
+  return playable[modIndex(slot, playable.length)] ?? null;
+}
+
+/** Delay until just after the next slot boundary. */
+export function msToNextBreakingSlot(nowMs: number, secondsPerItem: number): number {
+  const slotMs = secondsPerItem * 1000;
+  return slotMs - (nowMs % slotMs) + CG_BREAKING_SLOT_MARGIN_MS;
+}
+
+/** Ticker belt travel in Stage px since the Unix epoch (shared by every viewer). */
+export function tickerBeltPosition(nowMs: number, speedPercent: number): number {
+  return (nowMs / 1000) * CG_STAGE_REFERENCE_WIDTH_PX * (speedPercent / 100);
+}
+
+export type TickerBeltEdge = 'left-from' | 'right-past';
+
+/**
+ * A slot on the virtual endless belt: the playable lines in queue order, each
+ * `widths[i]` px wide (gap included), entering at the window's right edge.
+ * `left-from`: first slot whose left edge is at or after `limitX`.
+ * `right-past`: first slot whose right edge is past `limitX` (fill a window).
+ * Returns the line index and its current left edge.
+ */
+export function tickerBeltSlot(
+  widths: readonly number[],
+  belt: number,
+  windowWidth: number,
+  limitX: number,
+  edge: TickerBeltEdge,
+): { index: number; x: number } | null {
+  const period = widths.reduce((sum, width) => sum + width, 0);
+  if (!(period > 0) || widths.some((width) => !(width > 0))) return null;
+  const offset = ((belt % period) + period) % period;
+  let cycle = Math.floor((limitX - windowWidth + offset) / period) - 1;
+  for (let guard = 0; guard < 4; guard += 1, cycle += 1) {
+    let x = windowWidth + cycle * period - offset;
+    for (let index = 0; index < widths.length; index += 1) {
+      const width = widths[index];
+      const hit = edge === 'left-from' ? x >= limitX : x + width > limitX;
+      if (hit) return { index, x };
+      x += width;
     }
-  }
-  for (let step = 1; step <= items.length; step += 1) {
-    const index = modIndex(start + step, items.length);
-    const item = items[index];
-    if (item && item.enabled && item.text.trim()) return { item, index };
   }
   return null;
 }
@@ -1661,14 +1700,11 @@ export function logoLayoutToCss(layout: CgLayout): Record<string, string> {
 }
 
 /**
- * Logo length. `px` is authored on a 1920 wide canvas and rendered as a share
- * of the Stage width (`--cg-u` = 1% of Stage width), so tile / desk / OBS stay
- * proportional. `percent` is used as is.
+ * Logo length. `px` is authored on the 1920×1080 Stage, which every monitor
+ * renders at that size and scales as a whole, so it is used as is.
  */
 export function logoLength(value: number, unit: CgLayoutUnit): string {
-  if (unit !== CgLayoutUnit.Pixel) return `${value}%`;
-  const share = Math.round((value / CG_STAGE_REFERENCE_WIDTH_PX) * 100 * 10000) / 10000;
-  return `calc(${share} * var(--cg-u, 1vw))`;
+  return unit === CgLayoutUnit.Pixel ? `${value}px` : `${value}%`;
 }
 
 /** Subtitle Scale is type size, not a CSS transform of the caption box. */

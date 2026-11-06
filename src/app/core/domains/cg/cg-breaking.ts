@@ -19,13 +19,15 @@ import {
 import { CgLayerPayload, CgLayout } from './cg.model';
 import {
   breakingFitScale,
+  breakingItemAt,
+  breakingSlot,
   breakingWindowCss,
   defaultBreakingStyle,
   emptyBreakingSettings,
   innerDurationMs,
+  msToNextBreakingSlot,
   newsCharCount,
   newsItemsKey,
-  nextNewsItem,
   primaryFontFamily,
 } from './cg.util';
 
@@ -71,9 +73,6 @@ export class CgBreaking {
   private fadeTimer = 0;
   private armedSeconds = 0;
   private pending = false;
-  private lastId: string | null = null;
-  private lastIndex = -1;
-  private previousIds: string[] = [];
 
   constructor() {
     effect(() => {
@@ -128,9 +127,6 @@ export class CgBreaking {
       this.shown.set(null);
       this.outgoing.set(null);
       this.fading.set(false);
-      this.lastId = null;
-      this.lastIndex = -1;
-      this.previousIds = [];
       this.armedSeconds = 0;
     }
     this.onContent(this.seconds());
@@ -157,42 +153,43 @@ export class CgBreaking {
     if (this.armedSeconds !== seconds) this.arm(seconds, false);
   }
 
+  /** Wall-clock slots: `immediate` shows the current slot's line now (join mid-slot). */
   private arm(seconds: number, immediate: boolean): void {
     window.clearTimeout(this.timer);
     this.armedSeconds = seconds;
     const gen = this.gen;
+    const delay = immediate ? 0 : msToNextBreakingSlot(Date.now(), seconds);
     this.timer = window.setTimeout(() => {
       if (this.pending || gen !== this.gen) return;
       void this.advance(gen);
-    }, immediate ? 0 : Math.max(0, seconds) * 1000);
+    }, delay);
   }
 
   private async advance(gen: number): Promise<void> {
     if (gen !== this.gen || !this.visible() || this.paused || this.pending) return;
     this.pending = true;
     try {
-      const items = this.payload().items ?? [];
-      const next = nextNewsItem(items, this.lastId, this.lastIndex, this.previousIds);
+      const seconds = this.seconds();
+      const next = breakingItemAt(
+        this.payload().items,
+        breakingSlot(Date.now(), seconds),
+      );
       if (!next) {
         if (this.shown()) await this.swapTo(gen, null);
         return;
       }
       const shown = this.shown();
-      if (shown && shown.id === next.item.id) {
-        if (shown.text !== next.item.text) {
-          this.shown.set({ id: next.item.id, text: next.item.text });
+      if (shown && shown.id === next.id) {
+        if (shown.text !== next.text) {
+          this.shown.set({ id: next.id, text: next.text });
         }
-        this.previousIds = items.map((item) => item.id);
         if (gen !== this.gen) return;
-        this.arm(this.seconds(), false);
+        this.arm(seconds, false);
         return;
       }
-      this.lastId = next.item.id;
-      this.lastIndex = next.index;
-      this.previousIds = items.map((item) => item.id);
-      await this.swapTo(gen, { id: next.item.id, text: next.item.text });
+      await this.swapTo(gen, { id: next.id, text: next.text });
       if (gen !== this.gen || !this.visible() || this.paused) return;
-      const live = (this.payload().items ?? []).find((item) => item.id === next.item.id);
+      const live = (this.payload().items ?? []).find((item) => item.id === next.id);
       if (live && this.shown()?.id === live.id && this.shown()?.text !== live.text) {
         this.shown.set({ id: live.id, text: live.text });
       }

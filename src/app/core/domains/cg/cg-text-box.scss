@@ -21,8 +21,7 @@
     --cg-sub-font-family,
     ('華康中黑體', '華康中黑體(P)', 'Microsoft JhengHei', 'Segoe UI', sans-serif)
   );
-  font-size: calc(var(--cg-sub-font, 3.5) * 1vh);
-  font-size: calc(var(--cg-sub-font, 3.5) * 1cqh);
+  font-size: calc(var(--cg-sub-font, 3.5) * var(--cg-uh, 10.8px));
   font-weight: var(--cg-sub-font-weight, 700);
   font-style: var(--cg-sub-font-style, normal);
   letter-spacing: var(--cg-sub-letter-spacing, 0.02em);

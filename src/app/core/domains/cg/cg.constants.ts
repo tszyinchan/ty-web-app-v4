@@ -109,6 +109,9 @@ export const CG_DEFAULT_PACKAGE_EDIT_MODE = CgPackageEditMode.Studio;
  */
 export const CG_STAGE_REFERENCE_WIDTH_PX = 1920;
 
+/** OBS canvas height (16:9 of the reference width). */
+export const CG_STAGE_REFERENCE_HEIGHT_PX = 1080;
+
 export interface CgElementDef {
   type: CgElementType;
   label: string;
@@ -485,6 +488,8 @@ export const CG_BUG_FONT_VH = 3.5;
 export const CG_BREAKING_MAX_CHARS = 24;
 export const CG_BREAKING_WARN_CHARS = 20;
 export const CG_BREAKING_SECONDS_DEFAULT = 8;
+/** Breaking swaps this long after the wall-clock slot boundary, so a timer that fires a hair early still reads the new slot. */
+export const CG_BREAKING_SLOT_MARGIN_MS = 5;
 export const CG_BREAKING_SECONDS_MIN = 2;
 export const CG_BREAKING_SECONDS_MAX = 60;
 /** Fixed text-box height, percent of Stage height. */

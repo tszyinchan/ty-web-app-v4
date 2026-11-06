@@ -1,0 +1,25 @@
+@if (label()) {
+  <div class="cg-monitor-head">
+    <span class="cg-kicker">{{ label() }}</span>
+  </div>
+}
+<div
+  #box
+  class="frame-box"
+  [class.backdrop-checkerboard]="backdrop() === backdrops.Checkerboard"
+  [class.backdrop-dim]="backdrop() === backdrops.Dim"
+>
+  @if (src(); as url) {
+    <iframe
+      class="frame"
+      [class.ready]="scale() > 0"
+      [src]="url"
+      [width]="frameWidth"
+      [height]="frameHeight"
+      [style.transform]="frameTransform()"
+      title="On air output"
+      tabindex="-1"
+      aria-hidden="true"
+    ></iframe>
+  }
+</div>

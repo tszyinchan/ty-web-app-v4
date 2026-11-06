@@ -36,8 +36,8 @@
 }
 
 .title-el.outline {
-  outline: 3px solid #ffe14a;
-  box-shadow: 0 0 0 2px #c40000;
+  outline: calc(3px / var(--cg-stage-scale, 1)) solid #ffe14a;
+  box-shadow: 0 0 0 calc(2px / var(--cg-stage-scale, 1)) #c40000;
 }
 
 .title-el .title-run {
@@ -69,8 +69,7 @@
     'Segoe UI',
     sans-serif
   );
-  font-size: calc(var(--cg-sub-font, 4.6) * 1vh);
-  font-size: calc(var(--cg-sub-font, 4.6) * 1cqh);
+  font-size: calc(var(--cg-sub-font, 4.6) * var(--cg-uh, 10.8px));
   font-weight: var(--cg-sub-font-weight, 700);
   font-style: var(--cg-sub-font-style, normal);
   letter-spacing: var(--cg-sub-letter-spacing, 0.04em);

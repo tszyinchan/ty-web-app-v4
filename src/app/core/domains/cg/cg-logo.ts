@@ -1,9 +1,6 @@
 import { NgStyle } from '@angular/common';
 import { Component, computed, input, signal } from '@angular/core';
-import {
-  CG_STAGE_REFERENCE_WIDTH_PX,
-  DEFAULT_LOGO_LAYOUT,
-} from './cg.constants';
+import { DEFAULT_LOGO_LAYOUT } from './cg.constants';
 import { CgLayout } from './cg.model';
 import { logoLayoutToCss } from './cg.util';
 
@@ -29,15 +26,10 @@ export class CgLogo {
   /** Image pixel width, known after load. */
   private readonly naturalWidth = signal(0);
 
-  /**
-   * Without a stored width the Logo shows at its natural pixel size on the
-   * 1920 reference canvas, scaled to this Stage (not raw px on a small tile).
-   */
+  /** Without a stored width the Logo shows at its natural size on the 1920 Stage. */
   readonly imgWidth = computed(() => {
     if (this.hasFixedWidth()) return null;
-    const share =
-      (this.naturalWidth() / CG_STAGE_REFERENCE_WIDTH_PX) * 100;
-    return `calc(${share} * var(--cg-u, 1vw))`;
+    return `${this.naturalWidth()}px`;
   });
 
   onImageLoad(event: Event): void {

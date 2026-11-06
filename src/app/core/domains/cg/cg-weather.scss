@@ -18,9 +18,8 @@
   gap: 0;
   width: max-content;
   white-space: nowrap;
-  /* Size lives here, not on the positioned row. OBS shrinks vh/cqh on that box. */
-  font-size: calc(var(--cg-sub-font, 3.5) * 1vh);
-  font-size: calc(var(--cg-sub-font, 3.5) * 1cqh);
+  /* Size lives here, not on the positioned row, so em gaps follow it. */
+  font-size: calc(var(--cg-sub-font, 3.5) * var(--cg-uh, 10.8px));
   transform: scale(var(--cg-sub-scale-x, 1), var(--cg-sub-scale-y, 1));
   transform-origin: var(--cg-sub-transform-origin, right top);
 }

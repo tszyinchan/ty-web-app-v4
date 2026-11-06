@@ -54,8 +54,7 @@
     'Segoe UI',
     sans-serif
   );
-  font-size: calc(var(--cg-brk-font, 3.2) * 1vh);
-  font-size: calc(var(--cg-brk-font, 3.2) * 1cqh);
+  font-size: calc(var(--cg-brk-font, 3.2) * var(--cg-uh, 10.8px));
   font-weight: var(--cg-sub-font-weight, 700);
   font-style: var(--cg-sub-font-style, normal);
   filter: var(--cg-sub-filter, none);

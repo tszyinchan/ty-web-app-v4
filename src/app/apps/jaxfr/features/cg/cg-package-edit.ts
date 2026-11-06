@@ -27,10 +27,11 @@ import {
 } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleChange, MatButtonToggleModule } from '@angular/material/button-toggle';
+import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { filter, map, startWith } from 'rxjs/operators';
 import { CgMixPreview } from '../../../../core/domains/cg/cg-mix-preview';
-import { CgProgram } from '../../../../core/domains/cg/cg-program';
+import { CgOutputFrame } from '../../../../core/domains/cg/cg-output-frame';
 import { CgWheelStep } from '../../../../core/domains/cg/cg-wheel.directive';
 import {
   CG_CUT_DURATION_MS,
@@ -61,6 +62,7 @@ import {
 } from '../../../../core/domains/cg/cg.util';
 import { NotificationService } from '../../../../core/services/notification.service';
 import { copyTextToClipboard } from '../../../../core/utils/copy-text.util';
+import { CgOnAirDialog, CgOnAirDialogData } from './cg-on-air-dialog';
 
 /** Debounce Direct-mode auto-save so typing a name does not hammer the DB. */
 const DIRECT_AUTOSAVE_MS = 450;
@@ -79,7 +81,7 @@ const DIRECT_AUTOSAVE_MS = 450;
     CdkDrag,
     CdkDragHandle,
     CgMixPreview,
-    CgProgram,
+    CgOutputFrame,
     CgWheelStep,
   ],
   templateUrl: './cg-package-edit.html',
@@ -91,6 +93,7 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
   private zone = inject(NgZone);
   private document = inject(DOCUMENT);
   private notification = inject(NotificationService);
+  private dialog = inject(MatDialog);
   readonly cg = inject(CgService);
 
   readonly catalog = CG_ELEMENT_CATALOG;
@@ -120,6 +123,11 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
   isSaveDisabled = signal(true);
   readonly packageBackdrop = this.cg.packageBackdrop;
   readonly layersBackdrop = this.cg.layersBackdrop;
+  /** Package OBS token once the package exists; the On air monitor loads `/o/` with it. */
+  readonly onAirToken = computed(() => {
+    const token = this.item()?.public_token;
+    return token && this.packageId ? token : '';
+  });
   private lastFadeMs = CG_DEFAULT_DURATION_MS;
   private layerDragged = false;
   private autoSaveTimer = 0;
@@ -337,6 +345,19 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
     const token = this.item()?.public_token;
     if (!token || !this.packageId) return '';
     return buildCgOverlayUrl(token, window.location);
+  }
+
+  openOnAirDialog(): void {
+    const token = this.onAirToken();
+    if (!token) return;
+    this.dialog.open<CgOnAirDialog, CgOnAirDialogData>(CgOnAirDialog, {
+      data: { token, packageName: this.item()?.name ?? '' },
+      width: 'min(1600px, 92vw, calc((92vh - 76px) * 16 / 9))',
+      maxWidth: '92vw',
+      autoFocus: 'dialog',
+      enterAnimationDuration: 0,
+      exitAnimationDuration: 0,
+    });
   }
 
   async copyPackageOutput(): Promise<void> {

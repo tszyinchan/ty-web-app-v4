@@ -1,10 +1,18 @@
 <div
-  class="stage"
-  [class.preview]="preview()"
+  class="plate"
   [class.backdrop-checkerboard]="
     preview() && backdrop() === 'checkerboard'
   "
   [class.backdrop-dim]="preview() && backdrop() === 'dim'"
+></div>
+<div
+  class="stage"
+  [class.ready]="fit().scale > 0"
+  [style.transform]="stageTransform()"
+  [style.--cg-stage-scale]="fit().scale || 1"
 >
   <ng-content />
 </div>
+@if (preview()) {
+  <div class="edge" aria-hidden="true"></div>
+}

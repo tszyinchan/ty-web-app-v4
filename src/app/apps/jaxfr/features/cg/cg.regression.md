@@ -66,7 +66,7 @@
 | B0 | 打開 `PKG_A`（Studio mode 開）。關掉 **Studio mode** switch（在監看區上方） | 單監看 176px；**Take** 隱藏（留 spacer）。再開 → 兩監看與 **Take**（在 On air 狀態左邊）回來 |
 | B0a | Studio mode **關**（Direct）：撥 Logo On/Off，或改 Look | ~0.5s auto-save；無 Take 鈕 |
 | B0b | Package 含 Ticker（tile 在跑）。Studio mode **關**：撥 On/Off，或改 Look | ~0.5s 後狀態回到 **On air**；On air 監看與 overlay 跟上。Ticker 動畫不會把自動存一直清掉 |
-| B1 | Studio mode 開。監看區上方：Studio mode switch、緊挨右邊的 **Take**、右側 ☁ On air。頂列 Back + Package + Alpha/Dim + Copy OBS。左下深紅白字 Delete package。Layers 標題旁 Alpha/Dim。點 Logo tile | tile：**上** drag_indicator+序號+On-Off，**下** 名稱。desk **左** Stage + Name\|Look 並排（**沒有** Layer Studio mode；Layer 在 On air 時 Stage 上方出現「This layer is on air. Edits go to OBS now.」） + Source + Copy to package + 深紅白字 Delete layer + Copy layer OBS；**右** Place |
+| B1 | Studio mode 開。監看區上方：Studio mode switch、緊挨右邊的 **Take**、右側 ☁ On air。頂列 Back + Package + Alpha/Dim + Copy OBS + Enlarge On air。左下深紅白字 Delete package。Layers 標題旁 Alpha/Dim。點 Logo tile | tile：**上** drag_indicator+序號+On-Off，**下** 名稱。desk **左** Stage + Name\|Look 並排（**沒有** Layer Studio mode；Layer 在 On air 時 Stage 上方出現「This layer is on air. Edits go to OBS now.」） + Source + Copy to package + 深紅白字 Delete layer + Copy layer OBS；**右** Place |
 | B1b | 開任一 Layer desk → Delete layer → confirm | 留在同一 Package Panel（`/cg/edit/:id`），**不要**跳 `/login`。draft 少一 tile；Studio 下需 Take 才寫 DB |
 | B1c | List 點 package → Panel；點 tile 開 desk → 再點同 tile 關；Back → list；New package | URL 皆為絕對 `/cg/…`，不要進 `/login`。Overlay 複製鈕產生 `cg.*.tszyin.com/o/…`（或 localhost） |
 | B1a | `PKG_A`（Studio）加新 Logo（未 Take）。看 desk 小監看 | desk 可預覽草稿；**尚未有 DB id 前** Layer Live 不會寫上氣。Take 後才有 layer id，之後改內容才 live（Layer 內容一律 Live） |
@@ -84,10 +84,16 @@
 | B2o3 | Subtitle 一句兩行（含 `\n`）的 cue，各 Align 值 | 框寬跟最長那行；兩行文字靠左／置中／靠右與 Align 同方向；cue 換句淡出時舊句貼在同一邊緣，不跳位 |
 | B2p | 新加 Subtitle | 預設 Bottom center、Align center，約離底部 11%（外觀同舊預設）；Place 沒有 Width 欄（只有 X / Y / Scale）；Style 區沒有「文字對齊」下拉 |
 | B2b | Logo desk 沒有 Studio mode / Apply / Discard。離開 desk（關 tile、Back）不會出現 confirm | 一律 Live，沒有「Discard and leave」提示 |
-| B2e | On air 監看 = 實際播出：Studio 與 Direct 都做：改 Scale、撥 On/Off（Take）、改 Look、cue Down，同時開 overlay 分頁 | Panel **On air** 與 overlay 逐項一致（位置、大小、灰階、字幕句）；On air 比編輯晚約 0.5–1s（debounce + RPC）。Direct 模式 On air 也走這條，不是草稿 |
-| B2f | 斷網（或封鎖 Realtime）後改 Logo Scale | 出現錯誤提示；Panel **On air** 不更新（不顯示沒送到 OBS 的內容） |
+| B2e | On air 監看 = 實際播出：Studio 與 Direct 都做：改 Scale、撥 On/Off（Take）、改 Look、cue Down，同時開 overlay 分頁 | Panel **On air** 是 iframe 載入 `/o/<package token>`（DevTools 看得到 iframe 的 src）。與 overlay 逐項一致（位置、大小、灰階、字幕句）；On air 比編輯晚約 0.5–1s（debounce + RPC）。Direct 模式 On air 也走這條，不是草稿。切換 Studio / Direct 時 On air iframe 不重新載入 |
+| B2e2 | Package 含 Title（Story + locator On）、Clock、Weather、Logo。OBS Browser Source 1920×1080 開同一個 package URL | Panel On air（小監看與放大）與 OBS 的位置、字級、換行、Title 壓扁、描邊、陰影一致（只差縮放）；字型與 OBS 相同（同一台電腦） |
+| B2e3 | Panel 頂列 **Enlarge On air**（`open_in_full`，在 Copy OBS 右邊）。新 package 未 Create 時 | 未 Create：按鈕停用。已存在：開大監看（無開場動畫），Alpha / Dim 切換會同步小監看，Close 或 Esc 關閉 |
+| B2e4 | 使用者偏好 **dark** 與 **light** 各測一次，Alpha 與 Dim 各看一次 | On air 監看背景是 Alpha 格子或 Dim 深色，**不是**白色或黑色不透明底（iframe 透明） |
+| B2f | 斷網（或封鎖 Realtime）後改 Logo Scale | 出現錯誤提示；Panel **On air**（iframe 也收不到）與 OBS 都維持舊畫面（不顯示沒送到 OBS 的內容） |
 | B2g | Subtitle 設定 Font / Size / Color / Stroke 後看 Layer tile 與 desk 監看 | tile 與 desk 字幕樣式一致（tile 不再只套 preset） |
 | B2h | 同一個 Logo（預設 px 位置，圖片較大）在 tile、desk、overlay 比例 | 三處相對位置與大小一致（px 以 1920 為基準，不是在小監看上放大） |
+| B2h2 | 固定畫布：同一個 Title（長標題會被壓扁）、Subtitle（兩行）、Clock 在 tile、desk、Pending、On air、OBS 各看一次 | 只差縮放：換行點、壓扁比例、描邊粗細、陰影距離在每處相同。DevTools 裡 `app-cg-stage .stage` 是 1920×1080 加上 `scale(...)` |
+| B2h3 | 瀏覽器分頁開 `/o/<token>`，把視窗拉成很寬或很高（非 16:9） | 畫面維持 16:9，置中留邊，不被拉變形；字級不隨視窗高度單獨變化 |
+| B2h4 | Logo 與 Title 的 Outline 開，在 desk 看 | 黃框紅影在 desk 小監看上仍清楚可見（約 3px），OBS / On air 沒有框 |
 | B2i | Subtitle cue 後重新整理 Panel，再按 cue Down | overlay 立刻換句（不必等 30s poll） |
 | B2j | Studio：Logo Off → Take → 開 desk | desk 不顯示 on-air 警示；On → Take 後警示出現 |
 | B3 | 頂列 Package / Layers 標題旁 **Alpha / Dim** | 監看底換（棋盤 / 暗底） |
@@ -175,12 +181,15 @@
 | N4 | 拖曳、上下、Enabled 關掉一行、刪一行、Clear all（要 confirm） | 順序與開關即時反映。關掉的行不再輪到。Clear 之後畫面空白 |
 | N5 | 多行時看 desk 與 overlay | 每隔「Seconds each」換下一則，最後回到第一則。Fade 有交疊；Cut 直接切。單行則一直停著 |
 | N6 | 某一則正在播時刪掉它 | 畫面上那則播完才消失，不會突然抽走。下一則接已啟用的行 |
-| N7 | Layer 在 On air 時改一行，選 Next pass，再選另一行 Apply now | Next pass：畫面上的舊字播完，新字下一輪才出現。Apply now：若該則正在播，字立刻換 |
+| N7 | Layer 在 On air 時改一行，選 Next pass，再選另一行 Apply now | Next pass：畫面上的舊字播完（Breaking 到這個時段結束），新字輪到時才出現。Apply now：若該則正在播，字立刻換。所有畫面結果相同 |
 | N8 | 加 Ticker。開 Fade left / Fade right | 文字由右向左循環，項目之間有空隙。左右邊緣漸隱，底圖不被漸隱。Speed、Gap、Width、Height 會改視窗與速度 |
 | N9 | Ticker 正在捲的一行按刪除 | 那一行繼續捲出左緣，不會瞬間消失 |
-| N10 | Package 把 Breaking 或 Ticker 從 Off 再 On | overlay 與 On air 監看從第一則重來（Ticker 從右邊重新進入）。Desk 監看因為 force-show，不必與 OBS 同一格 |
+| N10 | Package 把 Breaking 或 Ticker 從 Off 再 On | **不**從第一則重來：Breaking 直接顯示這個時段該播的那則；Ticker 整個視窗立刻排滿、在跑。overlay、On air 監看、tile、desk 同一格（Desk 因 force-show 一直在播，也同一格） |
+| N13 | 同一個 Breaking（每則 4 秒）同時開 OBS、瀏覽器 `/o/`、Panel On air、tile | 四處同一則、同一刻換（差距不超過一次淡入淡出）。重新整理其中一個，載入後立刻是同一則 |
+| N14 | 同一個 Ticker 同時開 OBS、瀏覽器 `/o/`、Panel On air、tile；把 Panel 分頁切到背景 1 分鐘再切回 | 各處跑馬燈的位置相同（只差縮放）。切回後立刻對齊，不是從切走的地方接著跑 |
+| N15 | Ticker 在播時刪掉正在畫面上的那則，或改 Speed | 畫面上的字繼續跑完才消失（或維持位置）；之後進來的新字在所有畫面同一位置（可能出現一次空隙）。重新整理的畫面在舊字離開後與其他畫面一致 |
 | N11 | Breaking 有底圖時看 desk、瀏覽器 `/o/`、OBS | 直排文字出現在底圖上。字寬不隨字數變。不是只有底圖 |
-| N12 | Ticker 在 OBS 把 Style 的 Size 調大再調小 | OBS 字級跟著變，間距（Gap）也跟著字級。與瀏覽器 `/o/` 接近 |
+| N12 | Ticker 在 OBS 把 Style 的 Size 調大再調小 | OBS 字級跟著變，間距（Gap）也跟著字級。與瀏覽器 `/o/`、Panel On air 一致（只差縮放） |
 | N13 | Breaking 一則接近 24 字、下一則只有幾個字 | 兩則字寬相同。長的那則只在垂直方向變扁 |
 | N14 | Fade 從長那則切到短那則 | 短的那則淡入時已是自己的高度，淡出結束後不會再放大 |
 | N15 | 一行含 【】、。「」— … | 直排時這些符號用直排字形（字體有 vert）。英數仍一字一行、不躺平 |
