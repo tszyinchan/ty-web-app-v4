@@ -306,7 +306,14 @@ export function defaultTitleStyles(): Record<CgTitleStyleKey, CgSubtitleStyle> {
   };
 }
 
+export function cloneTitleVariantLayout(
+  layout: CgTitleVariantLayout,
+): CgTitleVariantLayout {
+  return structuredClone(layout);
+}
+
 export function emptyTitleSettings(): CgTitleSettings {
+  const variants = defaultTitleVariantLayouts();
   return {
     items: [
       {
@@ -321,12 +328,13 @@ export function emptyTitleSettings(): CgTitleSettings {
     ],
     onAir: [],
     live: emptyTitleLive(),
+    liveLayout: cloneTitleVariantLayout(variants[CgTitleVariant.StoryLocator]),
     styles: defaultTitleStyles(),
-    variants: defaultTitleVariantLayouts(),
+    variants,
   };
 }
 
-/** Drop Story + locator queue items while the Live bar is on. They share one place. */
+/** Drop Story + locator queue items while the Live bar is on. Places stay separate. */
 export function titleAirAfterLive(
   settings: CgTitleSettings,
   live: CgTitleLive,
@@ -426,8 +434,12 @@ function cardFor(
   variant: CgTitleVariant,
   settings: CgTitleSettings,
   item: Pick<CgTitleItem, 'variant' | 'index' | 'a' | 'b' | 'c' | 'source'>,
+  placeOverride?: CgTitleVariantLayout,
 ): CgTitleCardModel | null {
-  const place = settings.variants[variant] ?? defaultTitleVariantLayouts()[variant];
+  const place =
+    placeOverride ??
+    settings.variants[variant] ??
+    defaultTitleVariantLayouts()[variant];
   const elements = elementsFor(item, place.slots);
   if (elements.length === 0) return null;
   const background = place.background;
@@ -443,14 +455,20 @@ function cardFor(
 export function titleCards(settings: CgTitleSettings): CgTitleCardModel[] {
   const cards: CgTitleCardModel[] = [];
   if (settings.live.on) {
-    const live = cardFor('live', CgTitleVariant.StoryLocator, settings, {
-      variant: CgTitleVariant.StoryLocator,
-      index: '',
-      a: settings.live.a,
-      b: settings.live.b,
-      c: '',
-      source: settings.live.source,
-    });
+    const live = cardFor(
+      'live',
+      CgTitleVariant.StoryLocator,
+      settings,
+      {
+        variant: CgTitleVariant.StoryLocator,
+        index: '',
+        a: settings.live.a,
+        b: settings.live.b,
+        c: '',
+        source: settings.live.source,
+      },
+      settings.liveLayout,
+    );
     if (live) cards.push(live);
   }
   for (const id of settings.onAir) {

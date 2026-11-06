@@ -19,6 +19,7 @@ import {
   CG_TITLE_PX_X_MIN,
   CG_TITLE_PX_Y_MAX,
   CG_TITLE_PX_Y_MIN,
+  CG_TITLE_LIVE_PLACE,
   CG_TITLE_STYLE_OPTIONS,
   CG_TITLE_VARIANTS,
   CG_WHEEL_MIN_FADE_MS,
@@ -93,6 +94,11 @@ export class CgTitleDesk {
 
   readonly variants = CG_TITLE_VARIANTS;
   readonly variantValues = CG_TITLE_VARIANTS.map((row) => row.value);
+  readonly placeOptions = [
+    ...CG_TITLE_VARIANTS.map((row) => ({ value: row.value, label: row.label })),
+    { value: CG_TITLE_LIVE_PLACE, label: 'Live' },
+  ];
+  readonly placeValues = this.placeOptions.map((row) => row.value);
   readonly styleOptions = CG_TITLE_STYLE_OPTIONS;
   readonly anchors = CG_ANCHOR_GRID_OPTIONS;
   readonly logoAccept = CG_LOGO_ACCEPT;
@@ -113,7 +119,7 @@ export class CgTitleDesk {
   variant: CgTitleVariant = CgTitleVariant.Strap;
   fields: CgTitleFieldMap = emptyTitleFields();
   editingId: string | null = null;
-  placeVariant: CgTitleVariant = CgTitleVariant.Strap;
+  placeVariant: CgTitleVariant | typeof CG_TITLE_LIVE_PLACE = CgTitleVariant.Strap;
   liveA = '';
   liveB = '';
   liveSource = '';
@@ -154,6 +160,10 @@ export class CgTitleDesk {
   }
 
   onPlaceVariant(value: string): void {
+    if (value === CG_TITLE_LIVE_PLACE) {
+      this.placeVariant = CG_TITLE_LIVE_PLACE;
+      return;
+    }
     if (isTitleVariant(value)) this.placeVariant = value;
   }
 
@@ -162,14 +172,14 @@ export class CgTitleDesk {
   }
 
   placeFields() {
-    return titleVariantDef(this.placeVariant).fields;
+    return titleVariantDef(this.layoutVariant()).fields;
   }
 
   elementSlot(field: CgTitleField): CgTitleSlot {
     const slots = this.place().slots;
     const found = slots[field];
     if (found) return found;
-    const fallback = defaultTitleVariantLayouts()[this.placeVariant].slots[field] ?? {
+    const fallback = defaultTitleVariantLayouts()[this.layoutVariant()].slots[field] ?? {
       anchor: CgAnchor.BottomLeft,
       x: 64,
       y: 64,
@@ -306,13 +316,14 @@ export class CgTitleDesk {
   }
 
   place(): CgTitleVariantLayout {
+    if (this.placeVariant === CG_TITLE_LIVE_PLACE) return this.title().liveLayout;
     return this.title().variants[this.placeVariant];
   }
 
   bgLayout(): CgLayout {
     return (
       this.place().background?.layout ??
-      defaultTitleBackgroundLayout(this.placeVariant)
+      defaultTitleBackgroundLayout(this.layoutVariant())
     );
   }
 
@@ -422,10 +433,16 @@ export class CgTitleDesk {
     if (!place.background) {
       place.background = {
         imageUrl: '',
-        layout: defaultTitleBackgroundLayout(this.placeVariant),
+        layout: defaultTitleBackgroundLayout(this.layoutVariant()),
       };
     }
     return place.background.layout;
+  }
+
+  private layoutVariant(): CgTitleVariant {
+    return this.placeVariant === CG_TITLE_LIVE_PLACE
+      ? CgTitleVariant.StoryLocator
+      : this.placeVariant;
   }
 
   private resetComposer(): void {

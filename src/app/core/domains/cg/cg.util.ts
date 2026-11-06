@@ -99,6 +99,7 @@ import {
 } from './cg.model';
 import {
   clampTitleSlot,
+  cloneTitleVariantLayout,
   defaultTitleBackgroundLayout,
   defaultTitleStyles,
   defaultTitleVariantLayouts,
@@ -1365,6 +1366,19 @@ function normalizeTitleStyles(
   };
 }
 
+function normalizeTitleLiveLayout(
+  raw: unknown,
+  story: CgTitleVariantLayout,
+): CgTitleVariantLayout {
+  const value = asRecord(raw);
+  if (Object.keys(value).length === 0) return cloneTitleVariantLayout(story);
+  return normalizeTitleVariantLayout(
+    CgTitleVariant.StoryLocator,
+    value,
+    defaultTitleVariantLayouts()[CgTitleVariant.StoryLocator],
+  );
+}
+
 function normalizeTitleSettings(raw: unknown): CgTitleSettings {
   const value = asRecord(raw);
   const items = normalizeTitleItems(value['items']);
@@ -1375,12 +1389,17 @@ function normalizeTitleSettings(raw: unknown): CgTitleSettings {
         .map((id) => asString(id).trim())
         .filter((id) => known.has(id))
     : [];
+  const variants = normalizeTitleVariants(value['variants']);
   return {
     items,
     onAir,
     live: normalizeTitleLive(value['live']),
+    liveLayout: normalizeTitleLiveLayout(
+      value['liveLayout'],
+      variants[CgTitleVariant.StoryLocator],
+    ),
     styles: normalizeTitleStyles(value['styles']),
-    variants: normalizeTitleVariants(value['variants']),
+    variants,
   };
 }
 
@@ -1553,6 +1572,17 @@ function stripTitleSignature(payload: Record<string, unknown>): void {
       next[key] = row;
     }
     copy['variants'] = next;
+  }
+  const liveLayout = copy['liveLayout'];
+  if (liveLayout && typeof liveLayout === 'object') {
+    const row = { ...(liveLayout as Record<string, unknown>) };
+    const background = row['background'];
+    if (background && typeof background === 'object') {
+      const bg = { ...(background as Record<string, unknown>) };
+      delete bg['fileName'];
+      row['background'] = bg;
+    }
+    copy['liveLayout'] = row;
   }
   payload['title'] = copy;
 }

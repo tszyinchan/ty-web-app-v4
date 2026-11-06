@@ -185,6 +185,12 @@ export interface CgTitleSettings {
   /** Item ids on screen. Same template may overlap; the operator manages that. */
   onAir: string[];
   live: CgTitleLive;
+  /**
+   * Item style for the Live bar. Same boxes as Story + locator.
+   * Old rows omit this; readers copy that layer's Story + locator once.
+   * Not a queue template, and not `variants.live` (that legacy key is Locator).
+   */
+  liveLayout: CgTitleVariantLayout;
   styles: Record<CgTitleStyleKey, CgSubtitleStyle>;
   variants: Record<CgTitleVariant, CgTitleVariantLayout>;
 }

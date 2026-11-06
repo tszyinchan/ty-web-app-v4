@@ -670,6 +670,13 @@ export const CG_TITLE_VARIANTS: readonly CgTitleVariantDef[] = [
   },
 ];
 
+/**
+ * Item style dropdown value for the Live bar.
+ * Not a `CgTitleVariant`. Do not write it into `title.variants` —
+ * the legacy variants key `live` is Locator.
+ */
+export const CG_TITLE_LIVE_PLACE = 'live' as const;
+
 export const CG_TITLE_STYLE_OPTIONS: readonly {
   value: CgTitleStyleKey;
   label: string;

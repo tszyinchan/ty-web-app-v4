@@ -108,7 +108,7 @@
     <section class="cg-block">
       <h3 class="cg-block-title">Live bar</h3>
       <p class="cg-hint">
-        Story + locator place. Push sends that field. Nothing goes out before Push.
+        Own place, under Item style → Live. Push sends that field. Nothing goes out before Push.
         Turning this on takes Story + locator queue items off air.
       </p>
       <div class="cg-outline-row">
@@ -180,17 +180,17 @@
       <label class="cg-field">
         <span>Template</span>
         <select
-          [appCgWheelSelect]="variantValues"
+          [appCgWheelSelect]="placeValues"
           [ngModel]="placeVariant"
           (ngModelChange)="onPlaceVariant($event)"
           (appCgWheelChange)="onPlaceVariant($event)"
         >
-          @for (option of variants; track option.value) {
+          @for (option of placeOptions; track option.value) {
             <option [value]="option.value">{{ option.label }}</option>
           }
         </select>
       </label>
-      <p class="cg-hint">Background and each word are placed on their own. X and Y are design pixels from that word's anchor, on a 1920-wide stage. Width is the box. Align places the word inside it. A long word squashes only inside that box.</p>
+      <p class="cg-hint">Background and each word are placed on their own. X and Y are design pixels from that word's anchor, on a 1920-wide stage. Width is the box. Align places the word inside it. A long word squashes only inside that box. Live is its own copy of Story + locator. Changing one does not move the other.</p>
       <h3 class="cg-block-title">Background</h3>
       <div class="cg-inline">
         <button mat-stroked-button type="button" class="cg-seg-btn" (click)="bgFile.click()">
