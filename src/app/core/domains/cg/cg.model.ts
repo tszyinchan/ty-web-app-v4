@@ -120,11 +120,22 @@ export interface CgBreakingSettings {
   secondsPerItem: number;
 }
 
+/** `horizontal` scrolls right to left. `vertical` is one upright column scrolling up. */
+export type CgTickerDirection = 'horizontal' | 'vertical';
+
 export interface CgTickerSettings {
-  /** Percent of Stage width per second, right to left. */
+  direction: CgTickerDirection;
+  /**
+   * Percent of the stage span per second.
+   * Horizontal uses stage width. Vertical uses stage height.
+   */
   speed: number;
-  /** Space between items, in em. */
+  /** Space between items, in em, along the scroll. */
   gap: number;
+  /**
+   * Exit edge and entry edge. Horizontal: left / right.
+   * Vertical: top / bottom (same two fields, labels change on the desk).
+   */
   fadeLeft: boolean;
   fadeRight: boolean;
   /** Fade length as a percent of the text window. */

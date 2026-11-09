@@ -606,6 +606,14 @@
             } @else {
               <section class="cg-block">
                 <h3 class="cg-block-title">Crawl</h3>
+                <div class="cg-cue-nav">
+                  <mat-button-toggle-group class="cg-seg-toggle cg-pill"
+                    [value]="tickerOf(layer).direction"
+                    (change)="onTickerDirection(layer, $event)" hideSingleSelectionIndicator>
+                    <mat-button-toggle value="horizontal">Left</mat-button-toggle>
+                    <mat-button-toggle value="vertical">Up</mat-button-toggle>
+                  </mat-button-toggle-group>
+                </div>
                 <div class="cg-fields">
                   <label class="cg-field">
                     <span>Speed</span>
@@ -639,14 +647,18 @@
                     [attr.aria-checked]="tickerOf(layer).fadeLeft" (click)="toggleTickerFade(layer, 'left')">
                     <span class="cg-switch-thumb"></span>
                   </button>
-                  <span class="cg-outline-label">Fade left</span>
+                  <span class="cg-outline-label">{{ tickerOf(layer).direction === 'vertical' ? 'Fade top' : 'Fade left' }}</span>
                   <button type="button" class="cg-switch" [class.on]="tickerOf(layer).fadeRight" role="switch"
                     [attr.aria-checked]="tickerOf(layer).fadeRight" (click)="toggleTickerFade(layer, 'right')">
                     <span class="cg-switch-thumb"></span>
                   </button>
-                  <span class="cg-outline-label">Fade right</span>
+                  <span class="cg-outline-label">{{ tickerOf(layer).direction === 'vertical' ? 'Fade bottom' : 'Fade right' }}</span>
                 </div>
-                <p class="cg-hint">Speed is percent of the Stage width per second. The fade sits on the text window only.</p>
+                @if (tickerOf(layer).direction === 'vertical') {
+                  <p class="cg-hint">Speed is percent of the Stage height per second. Characters stand upright, one per cell, and move up. Letters and digits do the same. Line height is the gap between cells.</p>
+                } @else {
+                  <p class="cg-hint">Speed is percent of the Stage width per second. The fade sits on the text window only.</p>
+                }
               </section>
             }
             <section class="cg-block">
@@ -701,38 +713,75 @@
             </section>
             <section class="cg-block">
               <h3 class="cg-block-title">Text place</h3>
-              <div class="cg-anchor-grid">
-                <mat-button-toggle-group class="cg-pill" [value]="layer.layout.anchor"
-                  (change)="onAnchorToggle(layer, $event)" hideSingleSelectionIndicator>
-                  @for (anchor of anchorGridOptions; track anchor.value) {
-                    <mat-button-toggle [value]="anchor.value" [attr.aria-label]="anchor.label">
-                      <mat-icon>{{ anchor.icon }}</mat-icon>
-                    </mat-button-toggle>
-                  }
-                </mat-button-toggle-group>
-              </div>
+              @if (layer.element_type !== Ticker) {
+                <div class="cg-anchor-grid">
+                  <mat-button-toggle-group class="cg-pill" [value]="layer.layout.anchor"
+                    (change)="onAnchorToggle(layer, $event)" hideSingleSelectionIndicator>
+                    @for (anchor of anchorGridOptions; track anchor.value) {
+                      <mat-button-toggle [value]="anchor.value" [attr.aria-label]="anchor.label">
+                        <mat-icon>{{ anchor.icon }}</mat-icon>
+                      </mat-button-toggle>
+                    }
+                  </mat-button-toggle-group>
+                </div>
+              }
               <div class="cg-fields">
-                <label class="cg-field">
-                  <span>{{ placeAxisLabel(layer, 'x') }}</span>
-                  @if (ignoresAxis(layer, 'x')) {
-                    <input type="text" value="—" disabled />
-                  } @else {
-                    <input type="number" appCgWheel step="0.1" [ngModel]="layer.layout.x"
-                      (ngModelChange)="layer.layout.x = $event; touchPreview()"
-                      (appCgWheelChange)="layer.layout.x = $event; touchPreview()" />
+                @if (layer.element_type === Ticker) {
+                  <label class="cg-field">
+                    <span>X</span>
+                    <input type="number" appCgWheel step="1" [min]="tickerBoxXMin" [max]="tickerBoxXMax"
+                      [appCgWheelFine]="1" [appCgWheelCoarse]="10"
+                      [ngModel]="tickerPx(layer).x"
+                      (ngModelChange)="onTickerBox(layer, 'x', $event)"
+                      (appCgWheelChange)="onTickerBox(layer, 'x', $event)" />
+                  </label>
+                  <label class="cg-field">
+                    <span>Y</span>
+                    <input type="number" appCgWheel step="1" [min]="tickerBoxYMin" [max]="tickerBoxYMax"
+                      [appCgWheelFine]="1" [appCgWheelCoarse]="10"
+                      [ngModel]="tickerPx(layer).y"
+                      (ngModelChange)="onTickerBox(layer, 'y', $event)"
+                      (appCgWheelChange)="onTickerBox(layer, 'y', $event)" />
+                  </label>
+                  @if (tickerOf(layer).direction !== 'vertical') {
+                    <label class="cg-field">
+                      <span>Width</span>
+                      <input type="number" appCgWheel step="1" [min]="tickerBoxMin" [max]="tickerBoxXMax"
+                        [appCgWheelFine]="1" [appCgWheelCoarse]="10"
+                        [ngModel]="tickerPx(layer).width"
+                        (ngModelChange)="onTickerBox(layer, 'width', $event)"
+                        (appCgWheelChange)="onTickerBox(layer, 'width', $event)" />
+                    </label>
                   }
-                </label>
-                <label class="cg-field">
-                  <span>{{ placeAxisLabel(layer, 'y') }}</span>
-                  @if (ignoresAxis(layer, 'y')) {
-                    <input type="text" value="—" disabled />
-                  } @else {
-                    <input type="number" appCgWheel step="0.1" [ngModel]="layer.layout.y"
-                      (ngModelChange)="layer.layout.y = $event; touchPreview()"
-                      (appCgWheelChange)="layer.layout.y = $event; touchPreview()" />
-                  }
-                </label>
-                @if (layer.element_type === Breaking) {
+                  <label class="cg-field">
+                    <span>Height</span>
+                    <input type="number" appCgWheel step="1" [min]="tickerBoxMin" [max]="tickerBoxYMax"
+                      [appCgWheelFine]="1" [appCgWheelCoarse]="10"
+                      [ngModel]="tickerPx(layer).height"
+                      (ngModelChange)="onTickerBox(layer, 'height', $event)"
+                      (appCgWheelChange)="onTickerBox(layer, 'height', $event)" />
+                  </label>
+                } @else {
+                  <label class="cg-field">
+                    <span>{{ placeAxisLabel(layer, 'x') }}</span>
+                    @if (ignoresAxis(layer, 'x')) {
+                      <input type="text" value="—" disabled />
+                    } @else {
+                      <input type="number" appCgWheel step="0.1" [ngModel]="layer.layout.x"
+                        (ngModelChange)="layer.layout.x = $event; touchPreview()"
+                        (appCgWheelChange)="layer.layout.x = $event; touchPreview()" />
+                    }
+                  </label>
+                  <label class="cg-field">
+                    <span>{{ placeAxisLabel(layer, 'y') }}</span>
+                    @if (ignoresAxis(layer, 'y')) {
+                      <input type="text" value="—" disabled />
+                    } @else {
+                      <input type="number" appCgWheel step="0.1" [ngModel]="layer.layout.y"
+                        (ngModelChange)="layer.layout.y = $event; touchPreview()"
+                        (appCgWheelChange)="layer.layout.y = $event; touchPreview()" />
+                    }
+                  </label>
                   <label class="cg-field">
                     <span>Height</span>
                     <input type="number" appCgWheel step="1" min="8" max="90"
@@ -741,23 +790,11 @@
                       (ngModelChange)="layer.layout.height = $event; touchPreview()"
                       (appCgWheelChange)="layer.layout.height = $event; touchPreview()" />
                   </label>
-                } @else {
-                  <label class="cg-field">
-                    <span>Width</span>
-                    <input type="number" appCgWheel step="1" min="10" max="100"
-                      [ngModel]="layer.layout.width ?? tickerWidthDefault"
-                      (ngModelChange)="layer.layout.width = $event; touchPreview()"
-                      (appCgWheelChange)="layer.layout.width = $event; touchPreview()" />
-                  </label>
-                  <label class="cg-field">
-                    <span>Height</span>
-                    <input type="number" appCgWheel step="0.5" min="3" max="30"
-                      [ngModel]="layer.layout.height ?? tickerHeightDefault"
-                      (ngModelChange)="layer.layout.height = $event; touchPreview()"
-                      (appCgWheelChange)="layer.layout.height = $event; touchPreview()" />
-                  </label>
                 }
               </div>
+              @if (layer.element_type === Ticker) {
+                <p class="cg-hint">X and Y are pixels from the top left of the 1920×1080 stage. Negative moves past that edge. Up uses Height as the column. Left uses Width as the bar.</p>
+              }
             </section>
             <section class="cg-block">
               <h3 class="cg-block-title">Style</h3>

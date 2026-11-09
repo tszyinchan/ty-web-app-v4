@@ -498,7 +498,7 @@ export const CG_BREAKING_HEIGHT_DEFAULT = 54;
 /** Default type size for Breaking / Ticker (vh). Breaking may auto-fit smaller. */
 export const CG_NEWS_FONT_VH = 3.2;
 
-/** Ticker speed is a percent of Stage width per second. */
+/** Ticker speed is a percent of the scroll span per second (stage width, or height when moving up). */
 export const CG_TICKER_SPEED_DEFAULT = 6;
 export const CG_TICKER_SPEED_MIN = 1;
 export const CG_TICKER_SPEED_MAX = 40;
@@ -510,8 +510,16 @@ export const CG_TICKER_GAP_MAX = 12;
 export const CG_TICKER_FADE_WIDTH_DEFAULT = 8;
 export const CG_TICKER_FADE_WIDTH_MIN = 0;
 export const CG_TICKER_FADE_WIDTH_MAX = 40;
+/** Old ticker layouts stored width and height as a percent of the stage. */
 export const CG_TICKER_WIDTH_DEFAULT = 100;
 export const CG_TICKER_HEIGHT_DEFAULT = 8;
+/** Text window, pixels on the 1920×1080 stage. */
+export const CG_TICKER_BOX_MIN = 8;
+export const CG_TICKER_BOX_WIDTH_DEFAULT = CG_STAGE_REFERENCE_WIDTH_PX;
+/** 8% of stage height, the old percent default. */
+export const CG_TICKER_BOX_HEIGHT_DEFAULT = 86.4;
+export const CG_TICKER_BOX_Y_DEFAULT =
+  CG_STAGE_REFERENCE_HEIGHT_PX - CG_TICKER_BOX_HEIGHT_DEFAULT;
 
 export const CG_NEWS_INSERT_OPTIONS: ReadonlyArray<{
   value: 'top' | 'after' | 'bottom';
@@ -542,15 +550,15 @@ export const DEFAULT_BREAKING_LAYOUT = {
   height: CG_BREAKING_HEIGHT_DEFAULT,
 } as const;
 
-/** Full-width crawl along the bottom. Width is the visible window. */
+/** Full-width crawl along the bottom. X / Y / Width / Height are stage pixels from the top left. */
 export const DEFAULT_TICKER_LAYOUT = {
   x: 0,
-  y: 0,
-  unit: CgLayoutUnit.Percent,
-  anchor: CgAnchor.BottomCenter,
+  y: CG_TICKER_BOX_Y_DEFAULT,
+  unit: CgLayoutUnit.Pixel,
+  anchor: CgAnchor.TopLeft,
   scale: 1,
-  width: CG_TICKER_WIDTH_DEFAULT,
-  height: CG_TICKER_HEIGHT_DEFAULT,
+  width: CG_TICKER_BOX_WIDTH_DEFAULT,
+  height: CG_TICKER_BOX_HEIGHT_DEFAULT,
 } as const;
 
 export const DEFAULT_BREAKING_BACKGROUND_LAYOUT = {

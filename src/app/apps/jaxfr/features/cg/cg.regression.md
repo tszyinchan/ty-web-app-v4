@@ -182,7 +182,7 @@
 | N5 | 多行時看 desk 與 overlay | 每隔「Seconds each」換下一則，最後回到第一則。Fade 有交疊；Cut 直接切。單行則一直停著 |
 | N6 | 某一則正在播時刪掉它 | 畫面上那則播完才消失，不會突然抽走。下一則接已啟用的行 |
 | N7 | Layer 在 On air 時改一行，選 Next pass，再選另一行 Apply now | Next pass：畫面上的舊字播完（Breaking 到這個時段結束），新字輪到時才出現。Apply now：若該則正在播，字立刻換。所有畫面結果相同 |
-| N8 | 加 Ticker。開 Fade left / Fade right | 文字由右向左循環，項目之間有空隙。左右邊緣漸隱，底圖不被漸隱。Speed、Gap、Width、Height 會改視窗與速度 |
+| N8 | 加 Ticker。開 Fade left / Fade right | 文字由右向左循環，項目之間有空隙。左右邊緣漸隱，底圖不被漸隱。Speed、Gap、X、Y、Width、Height 會改視窗與速度。預設是貼底滿寬（X 0、Y 993.6、寬 1920、高 86.4） |
 | N9 | Ticker 正在捲的一行按刪除 | 那一行繼續捲出左緣，不會瞬間消失 |
 | N10 | Package 把 Breaking 或 Ticker 從 Off 再 On | **不**從第一則重來：Breaking 直接顯示這個時段該播的那則；Ticker 整個視窗立刻排滿、在跑。overlay、On air 監看、tile、desk 同一格（Desk 因 force-show 一直在播，也同一格） |
 | N13 | 同一個 Breaking（每則 4 秒）同時開 OBS、瀏覽器 `/o/`、Panel On air、tile | 四處同一則、同一刻換（差距不超過一次淡入淡出）。重新整理其中一個，載入後立刻是同一則 |
@@ -190,6 +190,11 @@
 | N15 | Ticker 在播時刪掉正在畫面上的那則，或改 Speed | 畫面上的字繼續跑完才消失（或維持位置）；之後進來的新字在所有畫面同一位置（可能出現一次空隙）。重新整理的畫面在舊字離開後與其他畫面一致 |
 | N11 | Breaking 有底圖時看 desk、瀏覽器 `/o/`、OBS | 直排文字出現在底圖上。字寬不隨字數變。不是只有底圖 |
 | N12 | Ticker 在 OBS 把 Style 的 Size 調大再調小 | OBS 字級跟著變，間距（Gap）也跟著字級。與瀏覽器 `/o/`、Panel On air 一致（只差縮放） |
+| N16 | 舊的 Ticker（以前是寬 100%、貼底置中）打開 Text place | 畫面仍貼底滿寬。數字是像素：X 0、Y 993.6、寬 1920、高 86.4。沒有 Anchor |
+| N17 | 把 Width 改成 800、X 改成 100、Y 改成 40 | 文字窗變成 800×86.4，左緣在 100、上緣在 40。底圖不跟著動 |
+| N18 | Crawl 改成 Up，X 設 0，再設負數。佇列有兩則（一則含 COVID-19 和 12） | 直欄左緣在 X，X 0 貼齊畫面左邊，不是置中。負 X 超出左緣。沒有 Width。每個字、字母、數字各一格、正放，由下往上捲。Height 是看得到的長度。兩則接成一條，中間有 Gap。Fade top / Fade bottom 淡的是上下緣。底圖不被淡 |
+| N19 | Package 是 Fade，把正在 Up 的 Ticker 關掉 | 字繼續往上捲，同時整層變透明，停住發生在已經看不見之後。Cut 則馬上消失 |
+| N20 | 同一個 Up 的 Ticker 開 OBS 和瀏覽器 `/o/` | 兩邊是同一格直排（只差縮放）。改 Speed 後新進來的字位置一致 |
 | N13 | Breaking 一則接近 24 字、下一則只有幾個字 | 兩則字寬相同。長的那則只在垂直方向變扁 |
 | N14 | Fade 從長那則切到短那則 | 短的那則淡入時已是自己的高度，淡出結束後不會再放大 |
 | N15 | 一行含 【】、。「」— … | 直排時這些符號用直排字形（字體有 vert）。英數仍一字一行、不躺平 |

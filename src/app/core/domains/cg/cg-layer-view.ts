@@ -54,6 +54,7 @@ import { subtitleLine, subtitlePresetOf, subtitleStyleOf, innerDurationMs } from
           [payload]="payload()"
           [layout]="layout()"
           [visible]="visible()"
+          [durationMs]="durationMs()"
           [outline]="outline()"
         />
       }

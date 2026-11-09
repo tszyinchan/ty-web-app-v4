@@ -46,14 +46,15 @@ import {
   CG_TEXT_GRADIENT_ANGLE,
   CG_TEXT_GRADIENT_TO,
   CG_TEXT_WEIGHT_BOLD,
+  CG_STAGE_REFERENCE_HEIGHT_PX,
+  CG_STAGE_REFERENCE_WIDTH_PX,
+  CG_TICKER_BOX_MIN,
   CG_TICKER_FADE_WIDTH_MAX,
   CG_TICKER_FADE_WIDTH_MIN,
   CG_TICKER_GAP_MAX,
   CG_TICKER_GAP_MIN,
-  CG_TICKER_HEIGHT_DEFAULT,
   CG_TICKER_SPEED_MAX,
   CG_TICKER_SPEED_MIN,
-  CG_TICKER_WIDTH_DEFAULT,
   CG_WHEEL_MIN_FADE_MS,
   DEFAULT_BREAKING_BACKGROUND_LAYOUT,
   DEFAULT_TICKER_BACKGROUND_LAYOUT,
@@ -78,9 +79,11 @@ import {
 import { CgService } from '../../../../core/domains/cg/cg.service';
 import {
   clampBreakingSeconds,
+  clampTickerBox,
   clampTickerFadeWidth,
   clampTickerGap,
   clampTickerSpeed,
+  tickerLayoutPixels,
   clockFormatIsKnown,
   defaultBreakingStyle,
   defaultBugStyle,
@@ -156,8 +159,11 @@ export class CgLayerEdit implements OnInit {
   readonly tickerGapMax = CG_TICKER_GAP_MAX;
   readonly tickerFadeMin = CG_TICKER_FADE_WIDTH_MIN;
   readonly tickerFadeMax = CG_TICKER_FADE_WIDTH_MAX;
-  readonly tickerWidthDefault = CG_TICKER_WIDTH_DEFAULT;
-  readonly tickerHeightDefault = CG_TICKER_HEIGHT_DEFAULT;
+  readonly tickerBoxMin = CG_TICKER_BOX_MIN;
+  readonly tickerBoxXMin = -CG_STAGE_REFERENCE_WIDTH_PX;
+  readonly tickerBoxYMin = -CG_STAGE_REFERENCE_HEIGHT_PX;
+  readonly tickerBoxXMax = CG_STAGE_REFERENCE_WIDTH_PX;
+  readonly tickerBoxYMax = CG_STAGE_REFERENCE_HEIGHT_PX;
   readonly clockFormats = CG_CLOCK_FORMAT_OPTIONS;
   readonly clockLocales = CG_CLOCK_LOCALE_OPTIONS;
   readonly clockZones = CG_CLOCK_TIMEZONE_OPTIONS;
@@ -857,7 +863,34 @@ export class CgLayerEdit implements OnInit {
 
   tickerOf(layer: CgLayerDraft): CgTickerSettings {
     layer.payload.ticker ??= emptyTickerSettings();
+    if (
+      layer.payload.ticker.direction !== 'horizontal' &&
+      layer.payload.ticker.direction !== 'vertical'
+    ) {
+      layer.payload.ticker.direction = 'horizontal';
+    }
     return layer.payload.ticker;
+  }
+
+  tickerPx(layer: CgLayerDraft): CgLayout {
+    return tickerLayoutPixels(layer.layout);
+  }
+
+  onTickerDirection(layer: CgLayerDraft, event: MatButtonToggleChange): void {
+    const value = event.value;
+    if (value !== 'horizontal' && value !== 'vertical') return;
+    this.tickerOf(layer).direction = value;
+    this.touchPreview();
+  }
+
+  onTickerBox(
+    layer: CgLayerDraft,
+    axis: 'x' | 'y' | 'width' | 'height',
+    value: number,
+  ): void {
+    const box = tickerLayoutPixels(layer.layout);
+    layer.layout = { ...box, [axis]: clampTickerBox(axis, value) };
+    this.touchPreview();
   }
 
   newsStyle(layer: CgLayerDraft): CgSubtitleStyle {

@@ -25,7 +25,12 @@ import {
   CG_SAMPLE_BREAKING_LINES,
   CG_SAMPLE_LOGO_URL,
   CG_SAMPLE_TICKER_LINES,
+  CG_STAGE_REFERENCE_HEIGHT_PX,
   CG_STAGE_REFERENCE_WIDTH_PX,
+  CG_TICKER_BOX_HEIGHT_DEFAULT,
+  CG_TICKER_BOX_MIN,
+  CG_TICKER_BOX_WIDTH_DEFAULT,
+  CG_TICKER_BOX_Y_DEFAULT,
   CG_SAMPLE_SUBTITLE_LINES,
   CG_LATIN_FONT_ALIASES,
   CG_SUBTITLE_FONT_OPTIONS,
@@ -370,6 +375,7 @@ export function emptyBreakingSettings(): CgBreakingSettings {
 
 export function emptyTickerSettings(): CgTickerSettings {
   return {
+    direction: 'horizontal',
     speed: CG_TICKER_SPEED_DEFAULT,
     gap: CG_TICKER_GAP_DEFAULT,
     fadeLeft: false,
@@ -536,9 +542,17 @@ export function msToNextBreakingSlot(nowMs: number, secondsPerItem: number): num
   return slotMs - (nowMs % slotMs) + CG_BREAKING_SLOT_MARGIN_MS;
 }
 
-/** Ticker belt travel in Stage px since the Unix epoch (shared by every viewer). */
-export function tickerBeltPosition(nowMs: number, speedPercent: number): number {
-  return (nowMs / 1000) * CG_STAGE_REFERENCE_WIDTH_PX * (speedPercent / 100);
+/**
+ * Ticker belt travel in Stage px since the Unix epoch (shared by every viewer).
+ * `spanPx` is stage width when the belt moves left, stage height when it moves up.
+ */
+export function tickerBeltPosition(
+  nowMs: number,
+  speedPercent: number,
+  spanPx: number = CG_STAGE_REFERENCE_WIDTH_PX,
+): number {
+  const span = spanPx > 0 ? spanPx : CG_STAGE_REFERENCE_WIDTH_PX;
+  return (nowMs / 1000) * span * (speedPercent / 100);
 }
 
 export type TickerBeltEdge = 'left-from' | 'right-past';
@@ -597,6 +611,37 @@ export function clampTickerFadeWidth(raw: unknown): number {
     CG_TICKER_FADE_WIDTH_DEFAULT,
     CG_TICKER_FADE_WIDTH_MIN,
     CG_TICKER_FADE_WIDTH_MAX,
+  );
+}
+
+export function clampTickerBox(
+  axis: 'x' | 'y' | 'width' | 'height',
+  raw: unknown,
+): number {
+  if (axis === 'x') {
+    return clampRange(raw, 0, -CG_STAGE_REFERENCE_WIDTH_PX, CG_STAGE_REFERENCE_WIDTH_PX);
+  }
+  if (axis === 'y') {
+    return clampRange(
+      raw,
+      CG_TICKER_BOX_Y_DEFAULT,
+      -CG_STAGE_REFERENCE_HEIGHT_PX,
+      CG_STAGE_REFERENCE_HEIGHT_PX,
+    );
+  }
+  if (axis === 'width') {
+    return clampRange(
+      raw,
+      CG_TICKER_BOX_WIDTH_DEFAULT,
+      CG_TICKER_BOX_MIN,
+      CG_STAGE_REFERENCE_WIDTH_PX,
+    );
+  }
+  return clampRange(
+    raw,
+    CG_TICKER_BOX_HEIGHT_DEFAULT,
+    CG_TICKER_BOX_MIN,
+    CG_STAGE_REFERENCE_HEIGHT_PX,
   );
 }
 
@@ -1249,6 +1294,7 @@ function normalizeBreakingSettings(raw: unknown): CgBreakingSettings {
 function normalizeTickerSettings(raw: unknown): CgTickerSettings {
   const value = asRecord(raw);
   return {
+    direction: value['direction'] === 'vertical' ? 'vertical' : 'horizontal',
     speed: clampTickerSpeed(value['speed']),
     gap: clampTickerGap(value['gap']),
     fadeLeft: value['fadeLeft'] === true,
@@ -1940,22 +1986,84 @@ export function breakingWindowCss(
   return css;
 }
 
+/**
+ * Ticker text window in stage pixels from the top left.
+ * An old percent + anchor layout is converted here so the picture stays put.
+ */
+export function tickerLayoutPixels(layout: CgLayout): CgLayout {
+  const scale = Number.isFinite(layout.scale) ? layout.scale : 1;
+  if (layout.unit === CgLayoutUnit.Pixel) {
+    return {
+      ...layout,
+      x: Number.isFinite(layout.x) ? layout.x : 0,
+      y: Number.isFinite(layout.y) ? layout.y : CG_TICKER_BOX_Y_DEFAULT,
+      unit: CgLayoutUnit.Pixel,
+      anchor: CgAnchor.TopLeft,
+      scale,
+      width: layout.width ?? CG_TICKER_BOX_WIDTH_DEFAULT,
+      height: layout.height ?? CG_TICKER_BOX_HEIGHT_DEFAULT,
+    };
+  }
+  const width = ((layout.width ?? CG_TICKER_WIDTH_DEFAULT) / 100) * CG_STAGE_REFERENCE_WIDTH_PX;
+  const height =
+    ((layout.height ?? CG_TICKER_HEIGHT_DEFAULT) / 100) * CG_STAGE_REFERENCE_HEIGHT_PX;
+  const xPct = Number.isFinite(layout.x) ? layout.x : 0;
+  const yPct = Number.isFinite(layout.y) ? layout.y : 0;
+  const xPx = (xPct / 100) * CG_STAGE_REFERENCE_WIDTH_PX;
+  const yPx = (yPct / 100) * CG_STAGE_REFERENCE_HEIGHT_PX;
+  const sideX = anchorSideX(layout.anchor);
+  const sideY = anchorSideY(layout.anchor);
+  const left =
+    sideX === 'right'
+      ? CG_STAGE_REFERENCE_WIDTH_PX - width - xPx
+      : sideX === 'center'
+        ? (CG_STAGE_REFERENCE_WIDTH_PX - width) / 2
+        : xPx;
+  const top =
+    sideY === 'bottom'
+      ? CG_STAGE_REFERENCE_HEIGHT_PX - height - yPx
+      : sideY === 'center'
+        ? (CG_STAGE_REFERENCE_HEIGHT_PX - height) / 2
+        : yPx;
+  return {
+    x: Math.round(left * 10) / 10,
+    y: Math.round(top * 10) / 10,
+    unit: CgLayoutUnit.Pixel,
+    anchor: CgAnchor.TopLeft,
+    scale,
+    width: Math.round(width * 10) / 10,
+    height: Math.round(height * 10) / 10,
+  };
+}
+
 /** Ticker text window. Fade and gap are CSS variables on the same box. */
 export function tickerWindowCss(
   layout: CgLayout,
   style: CgSubtitleStyle,
   ticker: CgTickerSettings,
 ): Record<string, string> {
-  const width = layout.width ?? CG_TICKER_WIDTH_DEFAULT;
-  const height = layout.height ?? CG_TICKER_HEIGHT_DEFAULT;
-  const css = anchoredBoxCss(
-    { ...layout, width, height },
-    { scaleAsTransform: false },
-  );
-  css['overflow'] = 'hidden';
-  const scale = Number.isFinite(layout.scale) ? layout.scale : 1;
+  const box = tickerLayoutPixels(layout);
+  const scale = box.scale;
   const base =
     style.fontSize != null && style.fontSize > 0 ? style.fontSize : CG_NEWS_FONT_VH;
+  const upright = ticker.direction === 'vertical';
+  // Up: the column is one cell wide. X is its left edge, not the centre of a full-width bar.
+  const scaleX = style.scaleX != null && style.scaleX > 0 ? style.scaleX : 1;
+  const columnPx =
+    ((base * scale * CG_STAGE_REFERENCE_HEIGHT_PX) / 100) * scaleX * 1.5;
+  const css: Record<string, string> = {
+    position: 'absolute',
+    left: `${box.x}px`,
+    top: `${box.y}px`,
+    right: 'auto',
+    bottom: 'auto',
+    width: upright
+      ? `${columnPx}px`
+      : `${box.width ?? CG_TICKER_BOX_WIDTH_DEFAULT}px`,
+    height: `${box.height ?? CG_TICKER_BOX_HEIGHT_DEFAULT}px`,
+    transform: 'none',
+    overflow: 'hidden',
+  };
   css['--cg-sub-font'] = String(base * scale);
   css['--cg-ticker-gap'] = String(ticker.gap);
   css['--cg-ticker-fade-left'] = ticker.fadeLeft ? `${ticker.fadeWidth}%` : '0%';

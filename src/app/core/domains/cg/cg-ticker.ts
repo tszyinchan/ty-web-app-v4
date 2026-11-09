@@ -14,6 +14,9 @@ import {
 } from '@angular/core';
 import { CgLogo } from './cg-logo';
 import {
+  CG_DEFAULT_DURATION_MS,
+  CG_STAGE_REFERENCE_HEIGHT_PX,
+  CG_STAGE_REFERENCE_WIDTH_PX,
   CG_SUBTITLE_FONT_LOAD_MS,
   DEFAULT_TICKER_BACKGROUND_LAYOUT,
   DEFAULT_TICKER_LAYOUT,
@@ -48,11 +51,11 @@ interface TickerEntry {
 }
 
 /**
- * Endless right-to-left belt on the shared wall clock (`tickerBeltPosition`).
- * New lines take the slot the virtual belt (playable lines in queue order)
- * has at the window's right edge, so every viewer with the same queue shows
- * the same frame. Lines already on screen keep moving until they leave, even
- * after an edit; a viewer that just loaded joins the virtual belt directly.
+ * Endless belt on the shared wall clock (`tickerBeltPosition`).
+ * Horizontal moves right to left. Vertical is one upright column moving up.
+ * New lines take the slot the virtual belt has at the entry edge, so every
+ * viewer with the same queue shows the same frame. Lines already on screen
+ * keep moving until they leave, even after an edit.
  */
 @Component({
   selector: 'app-cg-ticker',
@@ -66,6 +69,8 @@ export class CgTicker {
   readonly payload = input.required<CgLayerPayload>();
   readonly outline = input(false);
   readonly visible = input(true);
+  /** Package Appear. The belt keeps moving for this long after Off, then stops. */
+  readonly durationMs = input(CG_DEFAULT_DURATION_MS);
 
   readonly entries = signal<TickerEntry[]>([]);
 
@@ -81,6 +86,7 @@ export class CgTicker {
   readonly backgroundLayout = computed(
     () => this.payload().background?.layout ?? { ...DEFAULT_TICKER_BACKGROUND_LAYOUT },
   );
+  readonly upright = computed(() => this.settings().direction === 'vertical');
 
   private readonly windowRef = viewChild<ElementRef<HTMLElement>>('window');
   private readonly itemEls = viewChildren<ElementRef<HTMLElement>>('item');
@@ -89,15 +95,19 @@ export class CgTicker {
   private paused = false;
   private running = false;
   private raf = 0;
+  private hideTimer = 0;
   private spawnKey = 0;
+  private spawnHold = 0;
   private fontsLoaded = false;
   private lastSpeed = 0;
-  private lastWindowWidth = 0;
+  private lastWindowSpan = 0;
+  private lastVertical = false;
 
   constructor() {
     effect(() => {
       const visible = this.visible();
-      untracked(() => this.setVisible(visible));
+      const ms = this.durationMs();
+      untracked(() => this.setVisible(visible, ms));
     });
     effect(() => {
       const key = this.itemsKey();
@@ -106,7 +116,16 @@ export class CgTicker {
         if (this.visible() && !this.paused) this.ensureLoop();
       });
     });
-    inject(DestroyRef).onDestroy(() => this.stop());
+    inject(DestroyRef).onDestroy(() => {
+      window.clearTimeout(this.hideTimer);
+      this.stop();
+    });
+  }
+
+  itemTransform(entry: TickerEntry): string {
+    return this.upright()
+      ? `translate3d(0, ${entry.x}px, 0)`
+      : `translate3d(${entry.x}px, 0, 0)`;
   }
 
   parts(text: string): ReadonlyArray<{ text: string; latin: boolean }> {
@@ -121,13 +140,20 @@ export class CgTicker {
     return tickerWindowCss(this.layout(), this.textStyle(), this.settings());
   }
 
-  private setVisible(visible: boolean): void {
-    if (!visible) {
+  private setVisible(visible: boolean, durationMs: number): void {
+    window.clearTimeout(this.hideTimer);
+    if (visible) {
+      if (this.paused) this.resume();
+      else this.ensureLoop();
+      return;
+    }
+    if (!(durationMs > 0)) {
       this.pause();
       return;
     }
-    if (this.paused) this.resume();
-    else this.ensureLoop();
+    this.hideTimer = window.setTimeout(() => {
+      if (!this.visible()) this.pause();
+    }, durationMs);
   }
 
   private pause(): void {
@@ -143,7 +169,7 @@ export class CgTicker {
   }
 
   private ensureLoop(): void {
-    if (this.running || this.paused || !this.visible()) return;
+    if (this.running || this.paused) return;
     if (!this.fontsLoaded) void this.prepareFont();
     this.running = true;
     this.raf = requestAnimationFrame(this.frame);
@@ -172,75 +198,96 @@ export class CgTicker {
     cancelAnimationFrame(this.raf);
   }
 
-  private widthsBy(
+  private spansBy(
     els: readonly ElementRef<HTMLElement>[],
     attr: 'id' | 'key',
+    vertical: boolean,
   ): Map<string, number> {
-    const widths = new Map<string, number>();
+    const spans = new Map<string, number>();
     for (const el of els) {
       const key = el.nativeElement.dataset[attr];
-      if (key) widths.set(key, el.nativeElement.offsetWidth);
+      if (!key) continue;
+      spans.set(
+        key,
+        vertical ? el.nativeElement.offsetHeight : el.nativeElement.offsetWidth,
+      );
     }
-    return widths;
+    return spans;
   }
 
   private readonly frame = (): void => {
-    if (!this.running || this.paused || !this.visible()) {
+    if (!this.running || this.paused) {
       this.running = false;
       return;
     }
     const windowEl = this.windowRef()?.nativeElement;
-    const windowWidth = windowEl?.clientWidth ?? 0;
-    if (!windowEl || windowWidth <= 0) {
+    const vertical = this.upright();
+    const windowSpan = windowEl
+      ? vertical
+        ? windowEl.clientHeight
+        : windowEl.clientWidth
+      : 0;
+    if (!windowEl || windowSpan <= 0) {
       this.raf = requestAnimationFrame(this.frame);
       return;
     }
 
     const speed = this.settings().speed;
-    const belt = tickerBeltPosition(Date.now(), speed);
-    // Speed or window width changed: lines on screen stay where they are and
+    const belt = tickerBeltPosition(
+      Date.now(),
+      speed,
+      vertical ? CG_STAGE_REFERENCE_HEIGHT_PX : CG_STAGE_REFERENCE_WIDTH_PX,
+    );
+    const directionChanged = vertical !== this.lastVertical;
+    if (directionChanged) this.spawnHold = 2;
+    // Speed or window length changed: lines on screen stay where they are and
     // the next new line rejoins the shared belt.
     const rebase =
-      speed !== this.lastSpeed || windowWidth !== this.lastWindowWidth;
+      speed !== this.lastSpeed ||
+      windowSpan !== this.lastWindowSpan ||
+      directionChanged;
     this.lastSpeed = speed;
-    this.lastWindowWidth = windowWidth;
+    this.lastWindowSpan = windowSpan;
+    this.lastVertical = vertical;
 
     const items = this.payload().items ?? [];
     const playable = this.playable();
-    const measured = this.widthsBy(this.measureEls(), 'id');
-    const rendered = this.widthsBy(this.itemEls(), 'key');
+    const measured = this.spansBy(this.measureEls(), 'id', vertical);
+    const rendered = this.spansBy(this.itemEls(), 'key', vertical);
 
-    const entries = this.entries()
+    const entries = (directionChanged ? [] : this.entries())
       .map((entry) => {
         const live = items.find((item) => item.id === entry.id);
         const width =
           (live ? measured.get(entry.id) : undefined) ||
           rendered.get(String(entry.key)) ||
           entry.width;
-        const anchor = rebase ? entry.x - windowWidth + belt : entry.anchor;
+        const anchor = rebase ? entry.x - windowSpan + belt : entry.anchor;
         return {
           ...entry,
           text: live ? live.text : entry.text,
           width,
           anchor,
-          x: windowWidth + anchor - belt,
+          x: windowSpan + anchor - belt,
         };
       })
       .filter((entry) => entry.x + entry.width > 0);
 
-    if (this.fontsLoaded && playable.length > 0) {
+    if (this.spawnHold > 0) {
+      this.spawnHold -= 1;
+    } else if (this.fontsLoaded && playable.length > 0) {
       const widths = playable.map((item) => measured.get(item.id) ?? 0);
       let tail = entries.length
         ? Math.max(...entries.map((entry) => entry.x + entry.width))
         : Number.NEGATIVE_INFINITY;
       for (
         let spawned = 0;
-        spawned < TICKER_MAX_SPAWN_PER_FRAME && tail < windowWidth;
+        spawned < TICKER_MAX_SPAWN_PER_FRAME && tail < windowSpan;
         spawned += 1
       ) {
         const slot = Number.isFinite(tail)
-          ? tickerBeltSlot(widths, belt, windowWidth, tail - TICKER_FLUSH_PX, 'left-from')
-          : tickerBeltSlot(widths, belt, windowWidth, 0, 'right-past');
+          ? tickerBeltSlot(widths, belt, windowSpan, tail - TICKER_FLUSH_PX, 'left-from')
+          : tickerBeltSlot(widths, belt, windowSpan, 0, 'right-past');
         if (!slot) break;
         const line = playable[slot.index];
         const width = widths[slot.index];
@@ -248,7 +295,7 @@ export class CgTicker {
           key: (this.spawnKey += 1),
           id: line.id,
           text: line.text,
-          anchor: slot.x - windowWidth + belt,
+          anchor: slot.x - windowSpan + belt,
           width,
           x: slot.x,
         });

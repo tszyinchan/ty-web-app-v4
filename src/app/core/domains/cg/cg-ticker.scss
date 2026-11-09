@@ -25,6 +25,23 @@
   );
 }
 
+.ticker-window.up {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    #000 var(--cg-ticker-fade-left, 0%),
+    #000 calc(100% - var(--cg-ticker-fade-right, 0%)),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    #000 var(--cg-ticker-fade-left, 0%),
+    #000 calc(100% - var(--cg-ticker-fade-right, 0%)),
+    transparent 100%
+  );
+}
+
 .ticker-item {
   position: absolute;
   top: 0;
@@ -37,6 +54,13 @@
 }
 
 /* One hidden copy per playable line: widths for the shared belt layout. */
+.ticker-item.up {
+  height: auto;
+  width: 100%;
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+
 .ticker-item.ticker-measure {
   visibility: hidden;
   will-change: auto;
@@ -63,6 +87,24 @@
   transform: scale(var(--cg-sub-scale-x, 1), var(--cg-sub-scale-y, 1));
   transform-origin: left center;
   white-space: nowrap;
+}
+
+.ticker-text.upright {
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  font-feature-settings: 'vert' on;
+  width: 1em;
+  padding-right: 0;
+  padding-bottom: calc(var(--cg-ticker-gap, 4) * 1em);
+  line-height: 1;
+  letter-spacing: calc((var(--cg-sub-line-height, 1) - 1) * 1em);
+  margin-left: 0.15em;
+  transform-origin: left top;
+}
+
+.ticker-text.upright .ticker-paint {
+  display: block;
+  width: 1em;
 }
 
 .ticker-paint {
