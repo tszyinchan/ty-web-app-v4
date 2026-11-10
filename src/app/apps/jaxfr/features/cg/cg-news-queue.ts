@@ -2,8 +2,8 @@ import { CdkDrag, CdkDragDrop, CdkDragHandle, CdkDropList, moveItemInArray } fro
 import { Component, inject, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
+import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatIconModule } from '@angular/material/icon';
-import { CgWheelSelect } from '../../../../core/domains/cg/cg-wheel.directive';
 import {
   CG_BREAKING_WARN_CHARS,
   CG_NEWS_INSERT_OPTIONS,
@@ -26,11 +26,11 @@ import { NotificationService } from '../../../../core/services/notification.serv
   imports: [
     FormsModule,
     MatButtonModule,
+    MatButtonToggleModule,
     MatIconModule,
     CdkDropList,
     CdkDrag,
     CdkDragHandle,
-    CgWheelSelect,
   ],
   templateUrl: './cg-news-queue.html',
   styleUrl: './cg-news-queue.scss',
@@ -45,7 +45,6 @@ export class CgNewsQueue {
   readonly itemsChange = output<CgNewsItem[]>();
 
   readonly insertOptions = CG_NEWS_INSERT_OPTIONS;
-  readonly insertValues = CG_NEWS_INSERT_OPTIONS.map((option) => option.value);
   readonly selectedId = signal<string | null>(null);
   readonly editingId = signal<string | null>(null);
   readonly notice = signal('');

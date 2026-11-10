@@ -42,7 +42,7 @@
           step="0.1"
           min="1"
           max="20"
-          [ngModel]="paint().fontSize ?? 3.5"
+          [ngModel]="val('fontSize', 3.5)"
           (ngModelChange)="paint().fontSize = $event; touch()"
           (appCgWheelChange)="paint().fontSize = $event; touch()"
         />
@@ -69,10 +69,10 @@
       hideMultipleSelectionIndicator
       aria-label="Text style"
     >
-      <mat-button-toggle value="bold" aria-label="Bold"><mat-icon>format_bold</mat-icon></mat-button-toggle>
-      <mat-button-toggle value="italic" aria-label="Italic"><mat-icon>format_italic</mat-icon></mat-button-toggle>
-      <mat-button-toggle value="underline" aria-label="Underline"><mat-icon>format_underlined</mat-icon></mat-button-toggle>
-      <mat-button-toggle value="strike" aria-label="Strikethrough"><mat-icon>format_strikethrough</mat-icon></mat-button-toggle>
+      <mat-button-toggle value="bold" title="Bold" aria-label="Bold"><mat-icon>format_bold</mat-icon></mat-button-toggle>
+      <mat-button-toggle value="italic" title="Italic" aria-label="Italic"><mat-icon>format_italic</mat-icon></mat-button-toggle>
+      <mat-button-toggle value="underline" title="Underline" aria-label="Underline"><mat-icon>format_underlined</mat-icon></mat-button-toggle>
+      <mat-button-toggle value="strike" title="Strikethrough" aria-label="Strikethrough"><mat-icon>format_strikethrough</mat-icon></mat-button-toggle>
     </mat-button-toggle-group>
     <mat-button-toggle-group
       class="cg-seg-toggle cg-pill"
@@ -89,52 +89,50 @@
     <label class="cg-field">
       <span>字距 (em)</span>
       <input type="number" appCgWheel step="0.01" min="-0.2" max="1"
-        [ngModel]="paint().letterSpacing ?? 0.02"
+        [ngModel]="val('letterSpacing', 0.02)"
         (ngModelChange)="paint().letterSpacing = $event; touch()"
         (appCgWheelChange)="paint().letterSpacing = $event; touch()" />
     </label>
     <label class="cg-field">
       <span>行距 (倍數)</span>
       <input type="number" appCgWheel step="0.05" min="0.8" max="3"
-        [ngModel]="paint().lineHeight ?? 1.1"
+        [ngModel]="val('lineHeight', 1.1)"
         (ngModelChange)="paint().lineHeight = $event; touch()"
         (appCgWheelChange)="paint().lineHeight = $event; touch()" />
     </label>
-  </div>
-  <div class="cg-fields cg-scale-row">
     <label class="cg-field">
       <span>Scale X (寬比)</span>
       <input type="number" appCgWheel step="0.05" min="0.5" max="2.5"
-        [ngModel]="paint().scaleX ?? 1"
+        [ngModel]="val('scaleX', 1)"
         (ngModelChange)="paint().scaleX = $event; touch()"
         (appCgWheelChange)="paint().scaleX = $event; touch()" />
     </label>
     <label class="cg-field">
       <span>Scale Y (高比)</span>
       <input type="number" appCgWheel step="0.05" min="0.5" max="2.5"
-        [ngModel]="paint().scaleY ?? 1"
+        [ngModel]="val('scaleY', 1)"
         (ngModelChange)="paint().scaleY = $event; touch()"
         (appCgWheelChange)="paint().scaleY = $event; touch()" />
     </label>
+  </div>
+  <div class="cg-fields cg-color-row">
     <label class="cg-field">
       <span>{{ gradientOn() ? 'Start' : 'Text color' }}</span>
       <div class="cg-color-input-wrap">
-        <input type="color" class="cg-color-swatch" [ngModel]="paint().color ?? '#ffffff'"
+        <input type="color" class="cg-color-swatch" [ngModel]="val('color', '#ffffff')"
           (ngModelChange)="paint().color = $event; touch()" />
-        <input type="text" class="cg-color-hex" [ngModel]="paint().color ?? '#ffffff'"
+        <input type="text" class="cg-color-hex" [ngModel]="val('color', '#ffffff')"
           (ngModelChange)="paint().color = $event; touch()" />
       </div>
     </label>
-  </div>
-  @if (gradientOn()) {
-    <div class="cg-fields cg-gradient-row">
+    @if (gradientOn()) {
       <label class="cg-field">
         <span>End color</span>
         <div class="cg-color-input-wrap">
           <input type="color" class="cg-color-swatch" [ngModel]="paint().gradientTo || textGradientTo"
-            (ngModelChange)="paint().gradientTo = $event; touch()" />
+            (ngModelChange)="onGradientTo($event)" />
           <input type="text" class="cg-color-hex" [ngModel]="paint().gradientTo || textGradientTo"
-            (ngModelChange)="paint().gradientTo = $event; touch()" />
+            (ngModelChange)="onGradientTo($event)" />
         </div>
       </label>
       <label class="cg-field">
@@ -145,22 +143,20 @@
           (ngModelChange)="paint().gradientAngle = $event; touch()"
           (appCgWheelChange)="paint().gradientAngle = $event; touch()" />
       </label>
-    </div>
-  }
-  <div class="cg-fields cg-border-row">
+    }
     <label class="cg-field">
       <span>Stroke (em)</span>
       <input type="number" appCgWheel step="0.01" min="0" max="0.4"
-        [ngModel]="paint().borderWidth ?? 0.08"
+        [ngModel]="val('borderWidth', 0.08)"
         (ngModelChange)="paint().borderWidth = $event; touch()"
         (appCgWheelChange)="paint().borderWidth = $event; touch()" />
     </label>
     <label class="cg-field">
       <span>Stroke Color</span>
       <div class="cg-color-input-wrap">
-        <input type="color" class="cg-color-swatch" [ngModel]="paint().borderColor ?? '#000000'"
+        <input type="color" class="cg-color-swatch" [ngModel]="val('borderColor', '#000000')"
           (ngModelChange)="paint().borderColor = $event; touch()" />
-        <input type="text" class="cg-color-hex" [ngModel]="paint().borderColor ?? '#000000'"
+        <input type="text" class="cg-color-hex" [ngModel]="val('borderColor', '#000000')"
           (ngModelChange)="paint().borderColor = $event; touch()" />
       </div>
     </label>
@@ -169,30 +165,30 @@
     <label class="cg-field">
       <span>Shadow Angle</span>
       <input type="number" appCgWheel appCgWheelWrap [appCgWheelFine]="1" [appCgWheelCoarse]="45"
-        step="15" min="0" max="360" [ngModel]="paint().shadowAngle ?? 135"
+        step="15" min="0" max="360" [ngModel]="val('shadowAngle', 135)"
         (ngModelChange)="paint().shadowAngle = $event; touch()"
         (appCgWheelChange)="paint().shadowAngle = $event; touch()" />
     </label>
     <label class="cg-field">
       <span>Distance</span>
       <input type="number" appCgWheel step="0.5" min="0" max="15"
-        [ngModel]="paint().shadowDistance ?? 0"
+        [ngModel]="val('shadowDistance', 0)"
         (ngModelChange)="paint().shadowDistance = $event; touch()"
         (appCgWheelChange)="paint().shadowDistance = $event; touch()" />
     </label>
     <label class="cg-field">
       <span>Radius</span>
       <input type="number" appCgWheel step="0.5" min="0" max="15"
-        [ngModel]="paint().shadowRadius ?? 2"
+        [ngModel]="val('shadowRadius', 2)"
         (ngModelChange)="paint().shadowRadius = $event; touch()"
         (appCgWheelChange)="paint().shadowRadius = $event; touch()" />
     </label>
     <label class="cg-field">
       <span>Shadow Color</span>
       <div class="cg-color-input-wrap">
-        <input type="color" class="cg-color-swatch" [ngModel]="paint().shadowColor ?? '#000000'"
+        <input type="color" class="cg-color-swatch" [ngModel]="val('shadowColor', '#000000')"
           (ngModelChange)="paint().shadowColor = $event; touch()" />
-        <input type="text" class="cg-color-hex" [ngModel]="paint().shadowColor ?? '#000000'"
+        <input type="text" class="cg-color-hex" [ngModel]="val('shadowColor', '#000000')"
           (ngModelChange)="paint().shadowColor = $event; touch()" />
       </div>
     </label>

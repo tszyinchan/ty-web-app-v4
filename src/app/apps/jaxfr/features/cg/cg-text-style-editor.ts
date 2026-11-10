@@ -28,8 +28,10 @@ import {
 export class CgTextStyleEditor {
   readonly paint = input.required<CgSubtitleStyle>();
   readonly changed = output<void>();
-  /** `px` shows Size in Stage pixels (stored value stays vh). Other layers keep `vh`. */
-  readonly sizeUnit = input<'vh' | 'px'>('vh');
+  /** Size is shown in Stage pixels (stored value stays vh). `vh` is kept only as an opt-in. */
+  readonly sizeUnit = input<'vh' | 'px'>('px');
+  /** Effective values behind absent fields (Subtitle News / Show presets). */
+  readonly defaults = input<Partial<CgSubtitleStyle> | null>(null);
   readonly sizePxMin = fontVhToDisplayPx(1);
   readonly sizePxMax = fontVhToDisplayPx(20);
 
@@ -115,13 +117,28 @@ export class CgTextStyleEditor {
     this.changed.emit();
   }
 
+  /** Stored value, else the preset default, else the editor fallback. */
+  val<K extends keyof CgSubtitleStyle>(
+    key: K,
+    fallback: NonNullable<CgSubtitleStyle[K]>,
+  ): NonNullable<CgSubtitleStyle[K]> {
+    return (this.paint()[key] ??
+      this.defaults()?.[key] ??
+      fallback) as NonNullable<CgSubtitleStyle[K]>;
+  }
+
   sizePx(): number {
-    return fontVhToDisplayPx(this.paint().fontSize ?? 3.5);
+    return fontVhToDisplayPx(this.val('fontSize', 3.5));
   }
 
   setSizePx(value: number | null): void {
     if (value === null || !Number.isFinite(value)) return;
     this.paint().fontSize = fontPxToStoredVh(value);
+    this.changed.emit();
+  }
+
+  onGradientTo(value: string): void {
+    this.paint().gradientTo = value.trim() || CG_TEXT_GRADIENT_TO;
     this.changed.emit();
   }
 

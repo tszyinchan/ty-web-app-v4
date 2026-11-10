@@ -66,10 +66,10 @@
 
 | # | 操作 | 預期 |
 |---|---|---|
-| B0 | 打開 `PKG_A`（Studio mode 開）。關掉 **Studio mode** switch（在監看區上方） | 單監看 176px；**Take** 隱藏（留 spacer）。再開 → 兩監看與 **Take**（在 On air 狀態左邊）回來 |
+| B0 | 打開 `PKG_A`（Studio 開）。頂部 Studio / Direct pill 切到 **Direct** | 兩個 monitor 都仍在；**Take →** 變灰（Direct 自動存）。頂部其他掣位置完全不動。切回 Studio → Take 回復可用 |
 | B0a | Studio mode **關**（Direct）：撥 Logo On/Off，或改 Look | ~0.5s auto-save；無 Take 鈕 |
 | B0b | Package 含 Ticker（tile 在跑）。Studio mode **關**：撥 On/Off，或改 Look | ~0.5s 後狀態回到 **On air**；On air 監看與 overlay 跟上。Ticker 動畫不會把自動存一直清掉 |
-| B1 | Studio mode 開。監看區上方：Studio mode switch、緊挨右邊的 **Take**、右側 ☁ On air。頂列 Back + Package + Alpha/Dim + Copy OBS + Enlarge On air。左下深紅白字 Delete package。Layers 標題旁 Alpha/Dim。點 Logo tile | tile：**上** drag_indicator+序號+On-Off，**下** 名稱。desk **左** Stage + Name\|Look 並排（**沒有** Layer Studio mode；Layer 在 On air 時 Stage 上方出現「This layer is on air. Edits go to OBS now.」） + Source + Copy to package + 深紅白字 Delete layer + Copy layer OBS；**右** Place |
+| B1 | Studio 開。頂部 monitor bar：Preview、**Take**、Program；右邊一行 Package 設定（Name、Studio/Direct、☁ 狀態；Channel／Source、Appear、Look、Alpha/Dim、Enlarge Program、Copy OBS、深紅 Delete package）。**冇左欄**。下面 Layers strip（每層一張卡）。點 Logo 卡 | 卡：細 monitor（跟 Package Look）+ drag + 名 + `…` + On/Off。下面 Layer panel 係大 tab 內容\|樣式\|設定（見 P 節）；Layer 出街時內容頁頂部綠色狀態列 |
 | B1b | 開任一 Layer desk → Delete layer → confirm | 留在同一 Package Panel（`/cg/edit/:id`），**不要**跳 `/login`。draft 少一 tile；Studio 下需 Take 才寫 DB |
 | B1c | List 點 package → Panel；點 tile 開 desk → 再點同 tile 關；Back → list；New package | URL 皆為絕對 `/cg/…`，不要進 `/login`。Overlay 複製鈕產生 `cg.*.tszyin.com/o/…`（或 localhost） |
 | B1a | `PKG_A`（Studio）加新 Logo（未 Take）。看 desk 小監看 | desk 可預覽草稿；**尚未有 DB id 前** Layer Live 不會寫上氣。Take 後才有 layer id，之後改內容才 live（Layer 內容一律 Live） |
@@ -77,7 +77,7 @@
 | B1e | Studio：Off Logo → Take → 開 desk 改 Scale | Package Pending／On air **不**畫該層；desk 監看**仍**顯示。改完 On → Take 才回混音 |
 | B1b | 已 Take 過的 Logo：Choose local image | ~0.5s 後 Package **On air** 與 overlay 換圖（不必再 Take）。Storage URL |
 | B2 | 改 Logo Anchor／X／Y／Scale（Package Studio，已有 layer id） | Package Pending 與 **On air** 都動（內容 Live）；不必 Take；Package 不 Unsaved。Top right + 小 X/Y → 靠右上。Outline 開 → desk 黃框紅影；OBS 無框 |
-| B2a | Logo Place 右欄 | 只有 Anchor／X／Y／Scale／Outline；無 Unit／Width；輸入框非全寬；滑鼠停在 X／Y／Scale 上滾輪可加減 |
+| B2a | Logo 樣式頁 ① Place | 只有 3×3 Anchor／X／Y（px）／Scale／Outline；無 Unit／Width；輸入框非全寬；滑鼠停在 X／Y／Scale 上滾輪可加減 |
 | B2k | 九宮格定位（Logo 與 Subtitle 都測）：X=4、Y=4，逐一點 9 個 Anchor | 四個角落各自靠對應角落、離邊約 4；Top/Bottom center 只靠上/下邊；Center left/right 只靠左/右邊；永遠在畫面內 |
 | B2l | Logo／Subtitle 選 Top center | X 欄變灰顯示「—」且不能輸入、滾輪無效；Y 照用。改選 Center left → Y 灰、X 可用。選正中 Center → X、Y 都灰，內容在畫面正中 |
 | B2m | 先在 Top left 把 X 設 20，換成 Top center，再換回 Top left | 換成 Top center 時 X 被忽略；換回後 X 仍是 20（數值沒被改寫） |
@@ -219,6 +219,24 @@
 | T10 | Copy to package | 新 layer 的 queue 還在，但沒有任何一列 On，Live 也是 Off |
 | T11 | 項目樣式頁選 Name + source。Source 的 Y 改成與 Name 不同再改回。把 Source 的 Width 改小，Align 改成 Center 再改回 Right。Anchor 改到中間那一列 | 兩個字不會互相推動。Y 不同就分開。Width 只改 Source 那塊框。短字依 Align 待在框裡。中間列的 X 或 Y 顯示 —，數字還留著 |
 | T12 | 項目樣式頁選 Live（第 9 個細 tab）。把 Headline 的 Width 改掉，再選回 Story + locator | Live 的 Width 是新的，Story + locator 仍是原來的。Live On 時畫面用 Live 的框；Queue 的 Story + locator On 時用自己的框。字體仍跟著 Text style 的 Primary / Secondary。內容頁 Queue 表單的 8 個 template tab 沒有 Live。Live 同 Story + locator 頁都寫明「獨立複本」 |
+
+### P — Panel 佈局（monitor bar／Layers strip／大小 tab／px）
+
+改前後用同一個 package 對照，**OBS 出街畫面 pixel 必須一致**；內容改動即時出街（唔經 Take），Take 只用於結構改動（加／刪層、On/Off、排序、Package 欄位）。
+
+| # | 操作 | 預期 |
+|---|---|---|
+| P1 | 1920 寬打開含 Logo、Subtitle、Clock、Weather、Breaking、Ticker、Title 的 package | 由上至下：monitor bar（Studio 兩個 monitor + Take；Direct 一個 Program）→ Layers strip（每層一張卡，長期可見）→ Layer panel。**冇左欄**。Package 設定喺 monitor 右邊 |
+| P2 | Layers strip 拖卡改次序；撥卡上 On/Off；撳卡上 `…` | 次序同 On/Off 係結構改動（Studio 要 Take）；`…` 開該層 **設定** tab（Title 同其他層都係），唔係另一個畫面；撳完再揀其他 tab 後再撳 `…` 仍然會開設定 |
+| P3 | 每層大 tab：Logo／Subtitle／Clock／Weather／Breaking／Ticker 都係 內容\|樣式\|設定；Title 係 內容\|文字樣式\|項目樣式\|設定 | Active tab 白色同 panel 連埋一體冇底邊，inactive 灰色矮啲。換層後回到 內容 tab |
+| P4 | 內容頁（每層）| 次序：綠色狀態列（出街時「● On air — 呢層出緊街，內容改動即時去 OBS，唔經 Take」）→ monitor（16:9）→ 直播控制 → Queue／Cue list → 新增內容最底。Layer 出街時狀態列綠色；未出街灰色。1920 唔使 scroll |
+| P5 | 樣式頁（每層）| 次序：① Place（3×3 Anchor + X／Y／Width／Height，全部 px）→ ② Style（共用 editor，字體 px；Logo 註明冇文字樣式）→ ③ Layer 進出（Subtitle／Breaking：Fade／Cut + ms，註明唔係 Package Appear；其餘層係說明）。1920 唔使 scroll |
+| P6 | 設定頁 | 改名、Layer Look、Copy to package、Layer OBS、Danger zone 的 Delete layer（confirm）。Package 層頂部**只有** Copy OBS + Delete package，唔重複 |
+| P7 | 數值換算：Subtitle 字體 px = 儲存 vh × 10.8；位置 X／Width px = % × 19.2、Y／Height px = % × 10.8（px layout ×1）。打開、切 tab、不改任何值再回來 | 顯示值係該 package 儲存值；不改就唔寫入（package 不 Unsaved、OBS 無 publish）；輸入再讀回誤差 ≤0.1px |
+| P8 | Anchor 3×3 九宮格逐格點（所有有 Anchor 的層） | 格嘅位置 = 畫面位置；底層值 1–9 不變（同舊 Anchor 一一對應）；中間列／行嘅 X 或 Y 顯示 — |
+| P9 | 換頁用 tab：Queue template（Breaking／Ticker／Title）、Title 文字槽、Item style template | 全部細 tab（同款細一號 30px）；Timezone、Clock Format Pattern 仍係 dropdown；Fade／Cut、Align、B／I／U／S 仍係 pill |
+| P10 | 視窗縮到約 960 寬 | Package 設定同 Layers strip 上下疊；大／細 tab 摺兩行；Layer monitor 縮到 480×270；內容頁同 Package monitor bar 各有「收起 monitor／展開 monitor」掣；所有功能仍在 |
+| P11 | 改 Subtitle／Breaking／Ticker Style，與 Clock／Weather／Title 文字樣式同位置的 editor，Subtitle 的 News／Show 預設值 | 欄位顯示實際出街的有效值（News 5.6vh = 60.5px 之類，由儲存值換算），唔係空白；改任一欄 News／Show 轉 Custom |
 
 ### CLEANUP
 

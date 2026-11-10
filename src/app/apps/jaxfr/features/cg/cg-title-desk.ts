@@ -71,7 +71,7 @@ import {
 } from '../../../../core/domains/cg/cg.util';
 import { NotificationService } from '../../../../core/services/notification.service';
 
-type TitleDeskTab = 'content' | 'text' | 'item' | 'settings';
+export type TitleDeskTab = 'content' | 'text' | 'item' | 'settings';
 type TitlePlaceKey = CgTitleVariant | typeof CG_TITLE_LIVE_PLACE;
 
 const BIG_TABS: ReadonlyArray<{ value: TitleDeskTab; label: string }> = [
@@ -168,6 +168,9 @@ export class CgTitleDesk {
   /** True while the Panel really lists this layer on air (`CgService.onAirOutput`). */
   readonly onAir = input(false);
   readonly outlineChange = output<boolean>();
+  /** Big tab is owned by the Layer desk so the Layer card "…" can open Settings. */
+  readonly tab = input<TitleDeskTab>('content');
+  readonly tabChange = output<TitleDeskTab>();
 
   readonly bigTabs = BIG_TABS;
   readonly variants = CG_TITLE_VARIANTS;
@@ -194,7 +197,6 @@ export class CgTitleDesk {
   readonly storyKey = CgTitleVariant.StoryLocator;
   readonly monitorCollapsed = signal(false);
 
-  tab: TitleDeskTab = 'content';
   variant: CgTitleVariant = CgTitleVariant.Strap;
   fields: CgTitleFieldMap = emptyTitleFields();
   editingId: string | null = null;
@@ -230,7 +232,7 @@ export class CgTitleDesk {
   }
 
   setTab(value: TitleDeskTab): void {
-    this.tab = value;
+    this.tabChange.emit(value);
   }
 
   toggleMonitor(): void {

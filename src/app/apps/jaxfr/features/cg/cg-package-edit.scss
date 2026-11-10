@@ -1,58 +1,218 @@
 @use "@angular/material" as mat;
 @use "./cg-pill" as cg-pill;
 
+/// Width at which the monitor bar goes from stacked (960 screen) to side by side (1920).
+$cg-panel-wide: 1120px;
+
 :host {
   display: block;
   height: 100%;
-  /* CG_DESKTOP_MIN_WIDTH_PX — never stack on phone/tablet */
-  min-width: 1280px;
+  min-width: 0;
+  container-type: inline-size;
 }
 
 .cg-panel {
-  display: grid;
-  grid-template-columns: 420px minmax(0, 1fr);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
   height: 100%;
   min-height: 0;
-  padding: 0;
+  overflow: auto;
   box-sizing: border-box;
-  gap: 0;
   background: var(--app-page-bg);
   color: var(--app-text-primary);
   font-family: var(--app-font);
 }
 
-.cg-col-head {
+// ---- Monitor bar + Package settings ----
+
+// One row: [Package + mode] [Preview · Take · Program] [status] [settings groups].
+// Wide screens keep it on one row; narrow screens wrap the groups under the monitors.
+.cg-topbar {
+  position: relative;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 20px;
+  padding: 10px 16px;
+  background: var(--app-card-bg);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--app-text-primary) 6%, transparent);
+
+  --cg-mon-w: 144px;
+  --cg-take-w: 92px;
+}
+
+@container (min-width: #{$cg-panel-wide}) {
+  .cg-topbar {
+    gap: 8px 16px;
+
+    --cg-mon-w: 160px;
+  }
+
+  .cg-settings-btn,
+  .cg-pop-title,
+  .cg-settings-scrim {
+    display: none;
+  }
+}
+
+.cg-title-col {
+  display: flex;
+  flex: 0 0 260px;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.cg-title-row {
   display: flex;
   align-items: center;
-  gap: 10px;
-  min-height: 48px;
-  padding: 0 16px;
-  box-sizing: border-box;
+  gap: 8px;
+  min-width: 0;
 }
 
-/* Package header only — Take show/hide must not change row height. */
-.cg-left > .cg-col-head {
-  height: 48px;
-  max-height: 48px;
-  overflow: hidden;
-}
-
-.cg-col-head mat-button-toggle-group.cg-seg-toggle {
-  align-self: center;
-  margin: 0 0 0 2px;
-}
-
-.cg-right .cg-catalog {
-  margin-left: auto;
-}
-
-.cg-col-title {
-  margin: 0;
+.cg-title-label {
   flex-shrink: 0;
-  font: var(--app-weight-emphasis) 17px / 1.2 var(--app-font);
-  letter-spacing: 0.01em;
-  text-transform: none;
+  font: var(--app-weight-emphasis) 15px / 1.2 var(--app-font);
   color: var(--app-text-primary);
+}
+
+// Preview · Take · Program in both modes (Direct only disables Take), so the bar
+// never changes width when the mode switches and the monitors are always there.
+.cg-monitor-bar {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.cg-mon {
+  flex: 0 0 var(--cg-mon-w);
+  width: var(--cg-mon-w);
+  min-width: 0;
+}
+
+.cg-take {
+  display: flex;
+  flex: 0 0 var(--cg-take-w);
+  width: var(--cg-take-w);
+  align-items: center;
+  justify-content: center;
+}
+
+// Take is the one hero control on the bar: tall, same height as the monitors.
+:host button.mat-mdc-button-base.mat-mdc-unelevated-button.cg-seg-btn.cg-take-btn {
+  height: 48px;
+  min-height: 48px;
+  max-height: 48px;
+  line-height: 48px;
+  padding: 0 10px 0 14px;
+  font-size: 14px;
+  font-weight: var(--app-weight-emphasis);
+}
+
+:host button.mat-mdc-button-base.mat-mdc-unelevated-button.cg-seg-btn.cg-take-btn mat-icon {
+  width: 18px;
+  height: 18px;
+  margin: 0 0 0 4px;
+  font-size: 18px;
+  line-height: 18px;
+}
+
+:host button.mat-mdc-button-base.mat-mdc-unelevated-button.cg-seg-btn.cg-take-btn .mdc-button__label {
+  line-height: 48px;
+}
+
+// Fixed slot so Unsaved / Taking… / On air ×N never nudge what sits beside it.
+.cg-sync-slot {
+  display: inline-flex;
+  flex: 0 0 104px;
+  align-items: center;
+}
+
+// Settings: each control sits under its small label, all on one line.
+.cg-pkg-settings {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px 14px;
+  min-width: 0;
+}
+
+// Half window: the settings float in a glass card under the bar, opened by the button.
+.cg-pop-title {
+  margin: 0;
+  font: var(--app-weight-emphasis) 14px / 1.2 var(--app-font);
+  color: var(--app-text-primary);
+}
+
+.cg-settings-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+}
+
+@container (max-width: #{$cg-panel-wide - 1px}) {
+  .cg-settings-btn {
+    margin-left: auto;
+  }
+
+  .cg-pkg-settings {
+    display: none;
+    position: absolute;
+    top: calc(100% - 2px);
+    right: 16px;
+    z-index: 20;
+    flex: none;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: 12px;
+    width: min(340px, calc(100% - 32px));
+    padding: 14px 16px;
+    box-sizing: border-box;
+    border: 1px solid var(--app-card-border);
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--app-card-bg) 92%, transparent);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 10px 30px color-mix(in srgb, var(--app-text-primary) 22%, transparent);
+  }
+
+  .cg-pkg-settings.open {
+    display: flex;
+  }
+
+  .cg-group-appear {
+    min-width: 0;
+  }
+
+  .cg-kicker-gap {
+    display: none;
+  }
+}
+
+.cg-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.cg-group-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+// Appear reserves room for the ms box, so Fade / Cut does not move Look and the rest.
+.cg-group-appear {
+  min-width: 164px;
+}
+
+.cg-kicker-gap {
+  visibility: hidden;
 }
 
 .cg-back {
@@ -83,20 +243,22 @@
   background: color-mix(in srgb, var(--app-text-muted) 14%, transparent);
 }
 
-.cg-col-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-left: auto;
-  flex-shrink: 0;
-  height: 28px;
+.cg-name {
+  flex: 1 1 140px;
+  min-width: 100px;
+  height: 32px;
+  padding: 0 12px;
+  box-sizing: border-box;
+  border: 1px solid var(--app-input-border);
+  border-radius: 4px;
+  background: var(--app-input-bg);
+  color: var(--app-text-primary);
+  font: var(--app-weight-emphasis) 15px / 1.2 var(--app-font);
 }
 
-.cg-action-spacer {
-  display: inline-block;
-  width: 56px;
-  height: 28px;
-  flex-shrink: 0;
+.cg-name:focus,
+.cg-field input:focus {
+  outline: 1px solid var(--app-accent);
 }
 
 .cg-sync {
@@ -124,130 +286,12 @@
   color: var(--app-text-accent);
 }
 
-.cg-sync-placeholder {
-  width: 72px;
-  visibility: hidden;
-}
-
-.cg-left {
-  display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr) auto;
-  min-width: 0;
-  min-height: 0;
-  /* Package = master surface; no peer hairlines inside the column. */
-  background: var(--app-card-bg);
-  box-shadow: 4px 0 16px color-mix(in srgb, var(--app-text-primary) 6%, transparent);
-}
-
-.cg-right {
-  display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
-  min-width: 0;
-  min-height: 0;
-  /* Layers = nested workbench under Package. */
-  background: color-mix(in srgb, var(--app-page-bg) 88%, var(--app-card-bg));
-  padding: 0 0 12px;
-}
-
-.cg-right .cg-col-head {
-  padding-left: 24px;
-  padding-right: 20px;
-}
-
-.cg-right .cg-col-title {
-  color: var(--app-text-muted);
-  font-size: 13px;
+.cg-kicker {
+  font-size: 11px;
   font-weight: var(--app-weight-emphasis);
-}
-
-
-.cg-monitors-pane {
-  padding: 4px 16px 16px;
-}
-
-.cg-monitor-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  height: 28px;
-  margin-bottom: 10px;
-}
-
-.cg-mode {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
-.cg-mode .cg-seg-btn,
-.cg-mode .cg-action-spacer {
-  margin-left: 4px;
-}
-
-.cg-package-pane {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-width: 0;
-  min-height: 0;
-  padding: 12px 16px;
-  overflow: auto;
-}
-
-.cg-desk {
-  min-width: 0;
-  min-height: 0;
-  overflow: hidden;
-  margin: 0 16px 0 20px;
-  padding: 14px 16px;
-  display: flex;
-  flex-direction: column;
-  border-radius: 8px;
-  background: var(--app-card-bg);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--app-card-border) 70%, transparent);
-}
-
-.cg-desk > app-cg-layer-edit,
-.cg-desk router-outlet + * {
-  flex: 1;
-  min-height: 0;
-}
-
-.cg-identity {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-width: 0;
-}
-
-.cg-name {
-  width: 100%;
-  height: 40px;
-  padding: 0 12px;
-  border: 1px solid var(--app-input-border);
-  border-radius: 4px;
-  background: var(--app-input-bg);
-  color: var(--app-text-primary);
-  font: var(--app-weight-emphasis) 18px / 1.2 var(--app-font);
-}
-
-.cg-name:focus,
-.cg-field input:focus,
-.cg-field select:focus {
-  outline: 1px solid var(--app-accent);
-}
-
-.cg-appear {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 10px;
-}
-
-.cg-appear .cg-kicker {
-  flex: 0 0 100%;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: var(--app-text-muted);
 }
 
 .cg-duration {
@@ -265,7 +309,7 @@
 }
 
 .cg-duration input {
-  width: 88px;
+  width: 64px;
   height: 28px;
   box-sizing: border-box;
   padding: 0 8px;
@@ -275,6 +319,274 @@
   color: var(--app-text-primary);
   font: 13px var(--app-font);
 }
+
+// ---- Layers strip ----
+
+.cg-layers-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding: 10px 16px;
+  background: color-mix(in srgb, var(--app-page-bg) 88%, var(--app-card-bg));
+}
+
+.cg-strip-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+}
+
+.cg-col-title {
+  margin: 0;
+  flex-shrink: 0;
+  font: var(--app-weight-emphasis) 14px / 1.2 var(--app-font);
+  letter-spacing: 0.01em;
+  text-transform: none;
+  color: var(--app-text-muted);
+}
+
+.cg-catalog {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+  margin-left: auto;
+}
+
+.cg-chip {
+  padding: 0 8px;
+  gap: 6px;
+  font-size: 12px;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.cg-chip span {
+  font-size: 10px;
+  color: var(--app-text-muted);
+}
+
+.cg-chip.soon {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.cg-strip {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  gap: 10px;
+  min-height: 0;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+// Cards share the row equally (7 layers fill the width); they scroll once they would get narrower than 150px.
+.cg-card {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-width: 150px;
+  max-width: 280px;
+  border: 1px solid var(--app-card-border);
+  border-radius: 4px;
+  background: var(--app-card-bg);
+  cursor: pointer;
+}
+
+.cg-card.cdk-drag-placeholder {
+  opacity: 0.4;
+}
+
+.cg-card:hover {
+  border-color: var(--app-text-muted);
+}
+
+.cg-card.selected {
+  border-color: var(--app-accent);
+}
+
+.cg-card.off .cg-card-stage {
+  opacity: 0.38;
+}
+
+.cg-card-monitor {
+  position: relative;
+}
+
+.cg-card-stage {
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+
+.cg-card-drag,
+.cg-card-switch {
+  position: absolute;
+  top: 4px;
+}
+
+.cg-card-drag {
+  left: 4px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--app-card-bg) 70%, transparent);
+}
+
+.cg-card-switch {
+  right: 4px;
+}
+
+.cg-card-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.cg-card-dot.on {
+  background: var(--app-success, #2e9e5b);
+}
+
+.cg-more {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--app-text-muted);
+  cursor: pointer;
+
+  mat-icon {
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+    line-height: 18px;
+  }
+}
+
+.cg-more:hover {
+  color: var(--app-text-primary);
+}
+
+.cg-strip-title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.cg-strip-note {
+  margin: 0;
+  font-size: 11px;
+  color: var(--app-danger);
+}
+
+.cg-card-stage app-cg-mix-preview {
+  display: block;
+  width: 100%;
+}
+
+.cg-card-bar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 6px;
+  min-height: 32px;
+  border-top: 1px solid var(--app-card-border);
+}
+
+.cg-card-name {
+  min-width: 0;
+  flex: 1;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: var(--app-weight-emphasis) 12px var(--app-font);
+  color: var(--app-text-primary);
+}
+
+.cg-drag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--app-text-muted);
+  cursor: grab;
+  flex-shrink: 0;
+
+  mat-icon {
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+    line-height: 18px;
+  }
+}
+
+.cg-switch {
+  width: 36px;
+  height: 20px;
+  border: 0;
+  border-radius: 10px;
+  padding: 0;
+  background: var(--app-input-border);
+  position: relative;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.cg-switch.on {
+  background: var(--app-accent);
+}
+
+.cg-switch-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--app-accent-contrast);
+}
+
+.cg-switch.on .cg-switch-thumb {
+  transform: translateX(16px);
+}
+
+// ---- Layer panel (router outlet) ----
+
+.cg-desk {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+  min-width: 0;
+  padding: 12px 16px 16px;
+}
+
+.cg-desk > app-cg-layer-edit {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.cg-hint {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--app-text-muted);
+}
+
+// ---- Shared compact controls ----
 
 // Base chrome for multi-select rows. Single-select groups add `.cg-pill`.
 mat-button-toggle-group.cg-seg-toggle {
@@ -313,7 +625,7 @@ mat-button-toggle-group.cg-seg-toggle {
   }
 }
 
-// Compact action button (Create / Take / Delete / catalog / cue actions).
+// Compact action button (Create / Take / Delete / catalog).
 // Height must beat `_aero-controls.scss`
 // `html.theme-aero app-layout button.mat-mdc-*:not(.action-btn) { min-height: 32px }`.
 :host button.mat-mdc-button-base.mat-mdc-unelevated-button.cg-seg-btn,
@@ -362,236 +674,6 @@ mat-button-toggle-group.cg-seg-toggle {
   font-size: 16px;
   line-height: 16px;
   margin: 0;
-}
-
-.cg-left-foot {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: flex-start;
-  gap: 12px 16px;
-  padding: 4px 16px 14px;
-}
-
-.cg-foot-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-}
-
-.cg-kicker {
-  font-size: 11px;
-  font-weight: var(--app-weight-emphasis);
-  letter-spacing: 0.02em;
-  text-transform: none;
-  color: var(--app-text-muted);
-}
-
-.cg-program {
-  flex: 0 1 auto;
-}
-
-.cg-monitors {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 10px;
-}
-
-/* Direct and Studio mode keep the same per-monitor width (176px host). */
-
-.cg-stage-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 8px;
-}
-
-.cg-body {
-  display: grid;
-  grid-template-rows: minmax(0, 1fr);
-  gap: 12px;
-  min-height: 0;
-}
-
-.cg-board {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  min-width: 0;
-  padding: 4px 16px 14px 24px;
-}
-
-.cg-catalog {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  min-width: 0;
-}
-
-.cg-chip {
-  padding: 0 8px;
-  gap: 6px;
-  font-size: 12px;
-  text-transform: none;
-  letter-spacing: normal;
-}
-
-.cg-chip span {
-  font-size: 10px;
-  color: var(--app-text-muted);
-}
-
-.cg-chip.soon {
-  opacity: 0.55;
-  cursor: default;
-}
-
-.cg-drive {
-  min-height: 0;
-  max-height: 220px;
-  overflow: auto;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 10px;
-  align-content: start;
-}
-
-.cg-drive.desk-open {
-  max-height: 220px;
-}
-
-.cg-tile.cdk-drag-placeholder {
-  opacity: 0.4;
-}
-
-.cg-tile {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  border: 1px solid var(--app-card-border);
-  border-radius: 4px;
-  background: var(--app-card-bg);
-  cursor: pointer;
-}
-
-.cg-tile:hover {
-  border-color: var(--app-text-muted);
-}
-
-.cg-tile.selected {
-  border-color: var(--app-accent);
-}
-
-.cg-tile.off .cg-tile-stage {
-  opacity: 0.38;
-}
-
-.cg-tile-stage {
-  pointer-events: none;
-  transition: opacity 0.4s ease;
-}
-
-.cg-tile-stage app-cg-mix-preview {
-  display: block;
-  width: 100%;
-}
-
-.cg-tile-bar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
-  min-height: 36px;
-}
-
-.cg-tile-bar.top {
-  gap: 6px;
-  border-bottom: 1px solid var(--app-card-border);
-}
-
-.cg-tile-bar.top .cg-switch {
-  margin-left: auto;
-}
-
-.cg-tile-bar.bottom {
-  min-height: 40px;
-  border-top: 1px solid var(--app-card-border);
-}
-
-.cg-drag {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 24px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--app-text-muted);
-  cursor: grab;
-  flex-shrink: 0;
-
-  mat-icon {
-    width: 18px;
-    height: 18px;
-    font-size: 18px;
-    line-height: 18px;
-  }
-}
-
-.cg-tile-z {
-  flex-shrink: 0;
-  font-size: 11px;
-  letter-spacing: 0.04em;
-  color: var(--app-text-muted);
-}
-
-.cg-tile-name {
-  min-width: 0;
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font: var(--app-weight-emphasis) 13px var(--app-font);
-  color: var(--app-text-primary);
-}
-
-.cg-switch {
-  width: 44px;
-  height: 24px;
-  border: 0;
-  border-radius: 12px;
-  padding: 0;
-  background: var(--app-input-border);
-  position: relative;
-  flex-shrink: 0;
-  cursor: pointer;
-}
-
-.cg-switch.on {
-  background: var(--app-accent);
-}
-
-.cg-switch-thumb {
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: var(--app-accent-contrast);
-}
-
-.cg-switch.on .cg-switch-thumb {
-  transform: translateX(20px);
-}
-
-.cg-hint {
-  margin: 0;
-  font-size: 12px;
-  line-height: 1.45;
-  color: var(--app-text-muted);
 }
 
 @include cg-pill.cg-pill;

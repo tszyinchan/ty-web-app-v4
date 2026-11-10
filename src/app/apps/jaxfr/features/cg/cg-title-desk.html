@@ -4,8 +4,8 @@
       type="button"
       class="vb-tab"
       role="tab"
-      [class.active]="tab === option.value"
-      [attr.aria-selected]="tab === option.value"
+      [class.active]="tab() === option.value"
+      [attr.aria-selected]="tab() === option.value"
       (click)="setTab(option.value)"
     >
       {{ option.label }}
@@ -14,7 +14,7 @@
 </div>
 
 <div class="vb-panel vb-big-panel" role="tabpanel">
-  @switch (tab) {
+  @switch (tab()) {
     @case ('content') {
       <div class="cg-air-bar" [class.on]="onAir()" role="status">
         @if (onAir()) {
@@ -259,11 +259,13 @@
           <h3 class="cg-block-title">
             文字樣式 — 而家編輯緊 {{ styleMap(styleTab).label }}（{{ styleMap(styleTab).hint }}）
           </h3>
-          <app-cg-text-style-editor
-            sizeUnit="px"
-            [paint]="styleOf(styleTab)"
-            (changed)="saveContent()"
-          />
+          @for (slot of [styleTab]; track slot) {
+            <app-cg-text-style-editor
+              sizeUnit="px"
+              [paint]="styleOf(slot)"
+              (changed)="saveContent()"
+            />
+          }
         </section>
 
         <section class="cg-sec">

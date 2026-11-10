@@ -1,18 +1,45 @@
+@use "./cg-pill" as cg-pill;
+
 :host {
   display: flex;
   flex-direction: column;
   min-width: 0;
   min-height: 0;
-  height: 100%;
 }
 
+// Queue first, 新增內容 at the bottom; one panel, a divider line between them.
 .cg-news {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  min-height: 0;
+}
+
+.cg-news-sec {
   display: flex;
   flex-direction: column;
   gap: 8px;
   min-width: 0;
-  min-height: 0;
-  height: 100%;
+}
+
+.cg-news-compose {
+  padding-top: 12px;
+  border-top: 1px solid var(--app-input-border);
+}
+
+.cg-news-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.cg-news-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--app-text-primary);
 }
 
 .cg-news-add,
@@ -26,7 +53,6 @@
 
 .cg-news-add input,
 .cg-news-edit,
-.cg-news-add select,
 .cg-news textarea {
   box-sizing: border-box;
   border: 1px solid var(--app-input-border);
@@ -36,8 +62,11 @@
   font: 13px var(--app-font);
 }
 
+.cg-news-add {
+  flex-wrap: wrap;
+}
+
 .cg-news-add input,
-.cg-news-add select,
 .cg-news-edit {
   height: 28px;
   min-height: 28px;
@@ -50,14 +79,13 @@
   min-width: 0;
 }
 
-.cg-news-add select {
-  width: 132px;
-  flex-shrink: 0;
+.cg-news-add input {
+  min-width: 160px;
 }
 
 .cg-news textarea {
   width: 100%;
-  min-height: 72px;
+  min-height: 56px;
   padding: 6px 8px;
   resize: vertical;
 }
@@ -101,7 +129,7 @@
   flex-direction: column;
   gap: 4px;
   min-height: 80px;
-  flex: 1;
+  max-height: 200px;
   overflow: auto;
   padding-right: 2px;
 }
@@ -219,3 +247,5 @@
 .cdk-drag-placeholder {
   opacity: 0.35;
 }
+
+@include cg-pill.cg-pill;

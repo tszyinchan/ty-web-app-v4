@@ -1,10 +1,4 @@
-@use "@angular/material" as mat;
-@use "./cg-pill" as cg-pill;
-
-$cg-control-height: 28px;
-$vb-border: var(--app-input-border);
-$vb-active-bg: var(--app-card-bg);
-$vb-inactive-bg: color-mix(in srgb, var(--app-card-bg) 86%, var(--app-text-primary));
+@use "./cg-desk-ui" as desk;
 
 :host {
   display: flex;
@@ -13,181 +7,9 @@ $vb-inactive-bg: color-mix(in srgb, var(--app-card-bg) 86%, var(--app-text-prima
   min-height: 0;
   overflow: auto;
   container-type: inline-size;
-  container-name: titledesk;
 }
 
-// ---- VB.NET TabControl style (big 40px / small 30px) ----
-
-.vb-tabs {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: 2px;
-  padding: 0 6px;
-}
-
-.vb-tab {
-  box-sizing: border-box;
-  flex: none;
-  margin: 0;
-  padding: 0 16px;
-  border: 1px solid $vb-border;
-  border-bottom: 0;
-  border-radius: 4px 4px 0 0;
-  background: $vb-inactive-bg;
-  color: var(--app-text-muted);
-  font: 13px var(--app-font);
-  cursor: pointer;
-
-  &:hover:not(.active) {
-    color: var(--app-text-primary);
-  }
-
-  &.active {
-    position: relative;
-    z-index: 2;
-    margin-bottom: -1px;
-    padding-bottom: 1px;
-    background: $vb-active-bg;
-    color: var(--app-text-primary);
-    font-weight: 600;
-  }
-}
-
-.vb-big .vb-tab {
-  height: 32px;
-
-  &.active {
-    height: 40px;
-  }
-}
-
-.vb-small {
-  padding: 0;
-}
-
-.vb-small .vb-tab {
-  height: 24px;
-  padding: 0 12px;
-  font-size: 12px;
-
-  &.active {
-    height: 30px;
-  }
-}
-
-.vb-panel {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  min-width: 0;
-  box-sizing: border-box;
-  padding: 12px;
-  border: 1px solid $vb-border;
-  border-radius: 0 4px 4px 4px;
-  background: $vb-active-bg;
-}
-
-.vb-big-panel {
-  flex: 1;
-}
-
-// ---- Sections: one panel, divider lines between sections ----
-
-.cg-sec {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  min-width: 0;
-}
-
-.vb-small-panel > .cg-sec + .cg-sec,
-.cg-content-right > .cg-sec + .cg-sec,
-.cg-content-left > .cg-live {
-  padding-top: 12px;
-  border-top: 1px solid $vb-border;
-}
-
-.cg-sec-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 4px 12px;
-}
-
-.cg-block-title {
-  margin: 0;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--app-text-primary);
-}
-
-.cg-word-title {
-  margin: 0;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--app-text-primary);
-}
-
-.cg-hint {
-  margin: 0;
-  font-size: 12px;
-  line-height: 1.4;
-  color: var(--app-text-muted);
-}
-
-.cg-note {
-  margin: 0;
-  padding: 6px 10px;
-  border-radius: 4px;
-  font-size: 12px;
-  color: var(--app-text-primary);
-  background: color-mix(in srgb, var(--app-accent) 12%, transparent);
-}
-
-// ---- Content page ----
-
-.cg-air-bar {
-  padding: 6px 12px;
-  border-radius: 4px;
-  font-size: 12px;
-  color: var(--app-text-muted);
-  background: color-mix(in srgb, var(--app-input-border) 40%, transparent);
-
-  &.on {
-    color: var(--app-text-primary);
-    background: color-mix(in srgb, var(--app-success, #2e9e5b) 20%, transparent);
-    border: 1px solid color-mix(in srgb, var(--app-success, #2e9e5b) 60%, transparent);
-  }
-}
-
-.cg-content {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 16px;
-  min-width: 0;
-}
-
-.cg-content-left,
-.cg-content-right {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  min-width: 0;
-}
-
-.cg-monitor-slot {
-  width: 100%;
-  max-width: 480px;
-}
-
-.cg-monitor-toggle {
-  align-self: flex-start;
-}
+@include desk.desk-ui;
 
 .cg-onair-switch {
   display: inline-flex;
@@ -195,26 +17,7 @@ $vb-inactive-bg: color-mix(in srgb, var(--app-card-bg) 86%, var(--app-text-prima
   gap: 8px;
 }
 
-@container titledesk (min-width: 1120px) {
-  .cg-content {
-    grid-template-columns: 560px minmax(0, 1fr);
-    align-items: start;
-  }
-
-  .cg-monitor-slot {
-    max-width: 560px;
-  }
-
-  .cg-monitor-toggle {
-    display: none;
-  }
-}
-
-@container titledesk (max-width: 1119px) {
-  .cg-content.monitor-collapsed .cg-monitor-slot {
-    display: none;
-  }
-}
+// ---- Content page: Queue rows ----
 
 .cg-title-list {
   display: flex;
@@ -258,19 +61,6 @@ $vb-inactive-bg: color-mix(in srgb, var(--app-card-bg) 86%, var(--app-text-prima
   color: var(--app-text-primary);
 }
 
-.cg-drag {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--app-text-muted);
-  cursor: grab;
-}
-
 // ---- Text style page ----
 
 .cg-map {
@@ -306,7 +96,7 @@ $vb-inactive-bg: color-mix(in srgb, var(--app-card-bg) 86%, var(--app-text-prima
   th,
   td {
     padding: 4px 8px;
-    border-bottom: 1px solid $vb-border;
+    border-bottom: 1px solid var(--app-input-border);
     text-align: left;
     vertical-align: top;
     overflow-wrap: anywhere;
@@ -330,13 +120,6 @@ $vb-inactive-bg: color-mix(in srgb, var(--app-card-bg) 86%, var(--app-text-prima
 }
 
 // ---- Item style page ----
-
-.cg-place-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  gap: 12px 16px;
-}
 
 .cg-words {
   display: flex;
@@ -368,7 +151,7 @@ $vb-inactive-bg: color-mix(in srgb, var(--app-card-bg) 86%, var(--app-text-prima
   gap: 4px;
   min-width: 0;
   padding: 8px;
-  border: 1px solid $vb-border;
+  border: 1px solid var(--app-input-border);
   border-radius: 4px;
 
   &.current {
@@ -376,174 +159,8 @@ $vb-inactive-bg: color-mix(in srgb, var(--app-card-bg) 86%, var(--app-text-prima
   }
 }
 
-@container titledesk (min-width: 900px) {
+@container (min-width: 900px) {
   .cg-overview {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
-
-// ---- Settings page (projected from the layer desk) ----
-
-.cg-settings {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-// ---- Shared controls ----
-
-.cg-inline {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-}
-
-.cg-inline input[type='text'] {
-  flex: 1;
-  min-width: 0;
-}
-
-.cg-fields {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 12px;
-}
-
-.cg-field {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 11px;
-  color: var(--app-text-muted);
-  min-width: 0;
-
-  input,
-  select {
-    box-sizing: border-box;
-    height: $cg-control-height;
-    min-height: $cg-control-height;
-    padding: 0 8px;
-    border: 1px solid var(--app-input-border);
-    border-radius: 4px;
-    background: var(--app-input-bg);
-    color: var(--app-text-primary);
-    font: 13px var(--app-font);
-  }
-
-  input[type='number'] {
-    width: 96px;
-  }
-
-  input[type='text'],
-  select {
-    width: 100%;
-  }
-}
-
-.cg-source-url {
-  box-sizing: border-box;
-  width: 100%;
-  height: $cg-control-height;
-  padding: 0 8px;
-  border: 1px solid var(--app-input-border);
-  border-radius: 4px;
-  background: var(--app-input-bg);
-  color: var(--app-text-primary);
-  font: 13px var(--app-font);
-}
-
-.cg-file-input {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
-.cg-file-name {
-  font-size: 12px;
-  color: var(--app-text-muted);
-}
-
-.cg-switch {
-  width: 44px;
-  height: 24px;
-  border: 0;
-  border-radius: 12px;
-  padding: 0;
-  background: var(--app-input-border);
-  position: relative;
-  flex-shrink: 0;
-  cursor: pointer;
-}
-
-.cg-switch.on {
-  background: var(--app-accent);
-}
-
-.cg-switch-thumb {
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: var(--app-accent-contrast);
-}
-
-.cg-switch.on .cg-switch-thumb {
-  transform: translateX(20px);
-}
-
-.cg-outline-row {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.cg-outline-label {
-  font-size: 13px;
-  color: var(--app-text-primary);
-}
-
-:host button.mat-mdc-button-base.mat-mdc-outlined-button.cg-seg-btn {
-  height: $cg-control-height;
-  min-height: $cg-control-height;
-  max-height: $cg-control-height;
-  line-height: $cg-control-height;
-  padding: 0 12px;
-  text-transform: none;
-  font-size: 12px;
-  font-family: var(--app-font);
-  letter-spacing: 0.01em;
-}
-
-:host mat-button-toggle-group.cg-seg-toggle {
-  flex-shrink: 0;
-  align-self: flex-start;
-  height: $cg-control-height;
-  min-height: $cg-control-height;
-  max-height: $cg-control-height;
-  border: 1px solid var(--app-button-border);
-  border-radius: var(--app-radius);
-  overflow: hidden;
-
-  @include mat.button-toggle-overrides(
-    (
-      shape: 0,
-      height: 26px,
-      background-color: transparent,
-      text-color: var(--app-text-primary),
-      divider-color: var(--app-button-border),
-      selected-state-background-color: var(--app-accent),
-      selected-state-text-color: var(--app-accent-contrast),
-    )
-  );
-}
-
-@include cg-pill.cg-pill;

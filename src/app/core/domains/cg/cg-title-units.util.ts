@@ -33,21 +33,42 @@ export function fontPxToStoredVh(px: number): number {
   return roundDecimals(px / PX_PER_VH, STORE_DECIMALS);
 }
 
-function pxPerUnit(layout: CgLayout, axis: 'x' | 'y'): number {
+/** Layout lengths: X and width follow the Stage width, Y and height its height. */
+export type CgLayoutLengthKey = 'x' | 'y' | 'width' | 'height';
+
+function pxPerUnit(layout: CgLayout, key: CgLayoutLengthKey): number {
   if (layout.unit === CgLayoutUnit.Pixel) return 1;
-  return axis === 'x' ? PX_PER_PERCENT_X : PX_PER_PERCENT_Y;
+  return key === 'x' || key === 'width' ? PX_PER_PERCENT_X : PX_PER_PERCENT_Y;
 }
 
-/** Background place X / Y: stored (% of stage or px) -> display px (1 decimal). */
+/** Place X / Y: stored (% of stage or px) -> display px (1 decimal). */
 export function layoutAxisToDisplayPx(layout: CgLayout, axis: 'x' | 'y'): number {
-  return roundDecimals(layout[axis] * pxPerUnit(layout, axis), DISPLAY_DECIMALS);
+  return layoutLengthToDisplayPx(layout, axis, layout[axis]);
 }
 
-/** Background place X / Y: typed px -> stored value in the layout's own unit. */
+/** Place X / Y: typed px -> stored value in the layout's own unit. */
 export function layoutAxisFromDisplayPx(
   layout: CgLayout,
   axis: 'x' | 'y',
   px: number,
 ): number {
-  return roundDecimals(px / pxPerUnit(layout, axis), STORE_DECIMALS);
+  return layoutLengthFromDisplayPx(layout, axis, px);
+}
+
+/** Any layout length (x / y / width / height): stored -> display px (1 decimal). */
+export function layoutLengthToDisplayPx(
+  layout: CgLayout,
+  key: CgLayoutLengthKey,
+  stored: number,
+): number {
+  return roundDecimals(stored * pxPerUnit(layout, key), DISPLAY_DECIMALS);
+}
+
+/** Any layout length: typed px -> stored value in the layout's own unit. */
+export function layoutLengthFromDisplayPx(
+  layout: CgLayout,
+  key: CgLayoutLengthKey,
+  px: number,
+): number {
+  return roundDecimals(px / pxPerUnit(layout, key), STORE_DECIMALS);
 }

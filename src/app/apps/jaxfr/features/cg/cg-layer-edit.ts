@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import {
   Component,
   ElementRef,
@@ -19,10 +20,15 @@ import { MatIconModule } from '@angular/material/icon';
 import { CgWeatherPlace, CgWeatherService } from '../../../../core/domains/cg/cg-weather.service';
 import { CgMixPreview } from '../../../../core/domains/cg/cg-mix-preview';
 import { CgWheelSelect, CgWheelStep } from '../../../../core/domains/cg/cg-wheel.directive';
-import { CgNewsQueue } from './cg-news-queue';
-import { CgTitleDesk } from './cg-title-desk';
 import {
-  CG_ANCHOR_GRID_OPTIONS,
+  CgLayoutLengthKey,
+  layoutLengthFromDisplayPx,
+  layoutLengthToDisplayPx,
+} from '../../../../core/domains/cg/cg-title-units.util';
+import { CgAnchorGrid } from './cg-anchor-grid';
+import { CgNewsQueue } from './cg-news-queue';
+import { CgTitleDesk, TitleDeskTab } from './cg-title-desk';
+import {
   CG_BREAKING_HEIGHT_DEFAULT,
   CG_BREAKING_MAX_CHARS,
   CG_BREAKING_SECONDS_MAX,
@@ -33,7 +39,6 @@ import {
   CG_CLOCK_TIMEZONE_OPTIONS,
   CG_WEATHER_UNIT_OPTIONS,
   DEFAULT_BUG_BACKGROUND_LAYOUT,
-  CG_ANCHOR_OPTIONS,
   CG_CUT_DURATION_MS,
   CG_DEFAULT_DURATION_MS,
   CG_LAYER_LOOK_OPTIONS,
@@ -41,11 +46,6 @@ import {
   CG_LOGO_MAX_BYTES,
   CG_MAX_DURATION_MS,
   CG_SUBTITLE_ALIGN_OPTIONS,
-  CG_SUBTITLE_FONT_GROUPS,
-  CG_SUBTITLE_FONT_OPTIONS,
-  CG_TEXT_GRADIENT_ANGLE,
-  CG_TEXT_GRADIENT_TO,
-  CG_TEXT_WEIGHT_BOLD,
   CG_STAGE_REFERENCE_HEIGHT_PX,
   CG_STAGE_REFERENCE_WIDTH_PX,
   CG_TICKER_BOX_MIN,
@@ -61,8 +61,6 @@ import {
   CgAnchor,
   CgElementType,
   CgLayerLook,
-  CgLayoutUnit,
-  CgSubtitleFontGroup,
   CgSubtitlePreset,
 } from '../../../../core/domains/cg/cg.constants';
 import {
@@ -117,6 +115,44 @@ interface CgCopyTargetOption {
   label: string;
 }
 
+/** Big tabs for every Layer except Title (Title owns its four in `cg-title-desk`). */
+const LAYER_DESK_TABS: ReadonlyArray<{ value: string; label: string }> = [
+  { value: 'content', label: '內容' },
+  { value: 'style', label: '樣式' },
+  { value: 'settings', label: '設定' },
+];
+
+const TITLE_DESK_TABS: ReadonlyArray<TitleDeskTab> = ['content', 'text', 'item', 'settings'];
+
+/**
+ * What a Subtitle shows when a style field is absent (News / Show). Same numbers
+ * the overlay falls back to, so the shared Style editor shows the effective value.
+ */
+const SUBTITLE_NEWS_DEFAULTS: Partial<CgSubtitleStyle> = {
+  fontSize: 5.6,
+  letterSpacing: 0.104,
+  lineHeight: 1.15,
+  scaleX: 1,
+  scaleY: 1.11,
+  color: '#ffffff',
+  borderWidth: 0.12,
+  borderColor: '#000000',
+  shadowAngle: 135,
+  shadowDistance: 0,
+  shadowRadius: 2,
+  shadowColor: '#000000',
+};
+
+const SUBTITLE_SHOW_DEFAULTS: Partial<CgSubtitleStyle> = {
+  ...SUBTITLE_NEWS_DEFAULTS,
+  fontSize: 7.2,
+  letterSpacing: 0.06,
+  scaleY: 1,
+  color: '#fff6d8',
+  borderWidth: 0.16,
+  shadowDistance: 2,
+};
+
 @Component({
   selector: 'app-cg-layer-edit',
   standalone: true,
@@ -128,9 +164,11 @@ interface CgCopyTargetOption {
     CgMixPreview,
     CgWheelSelect,
     CgWheelStep,
+    CgAnchorGrid,
     CgTextStyleEditor,
     CgNewsQueue,
     CgTitleDesk,
+    NgTemplateOutlet,
   ],
   templateUrl: './cg-layer-edit.html',
   styleUrl: './cg-layer-edit.scss',
@@ -173,32 +211,20 @@ export class CgLayerEdit implements OnInit {
   readonly placeQuery = signal('');
   readonly placeResults = signal<CgWeatherPlace[]>([]);
   readonly lookOptions = CG_LAYER_LOOK_OPTIONS;
-  readonly fontOptions = CG_SUBTITLE_FONT_OPTIONS;
-  readonly fontGroups = CG_SUBTITLE_FONT_GROUPS;
-  readonly customFontOpen = signal(false);
-  readonly PresetNews = CgSubtitlePreset.News;
-  readonly PresetShow = CgSubtitlePreset.Show;
-  readonly PresetCustom = CgSubtitlePreset.Custom;
-  readonly anchorOptions = CG_ANCHOR_OPTIONS;
-  readonly anchorGridOptions = CG_ANCHOR_GRID_OPTIONS;
   readonly alignOptions = CG_SUBTITLE_ALIGN_OPTIONS;
   readonly logoAccept = CG_LOGO_ACCEPT;
   readonly scriptAccept = '.txt,.srt,text/plain,application/x-subrip';
   readonly cutMs = CG_CUT_DURATION_MS;
   readonly maxDurationMs = CG_MAX_DURATION_MS;
   readonly wheelMinMs = CG_WHEEL_MIN_FADE_MS;
-  readonly textGradientAngle = CG_TEXT_GRADIENT_ANGLE;
-  readonly textGradientTo = CG_TEXT_GRADIENT_TO;
-  /** Font wheel order = dropdown order; "Other…" is left out on purpose. */
-  readonly fontWheelValues: readonly string[] = [
-    '',
-    ...CG_SUBTITLE_FONT_GROUPS.flatMap((group) =>
-      CG_SUBTITLE_FONT_OPTIONS.filter((font) => font.group === group.id).map(
-        (font) => font.value,
-      ),
-    ),
-  ];
+  /** Cue crossfade presets (Subtitle). */
+  readonly cuePresets: readonly number[] = [200, 400, 800];
+  readonly deskTabs = LAYER_DESK_TABS;
   readonly layersBackdrop = this.cg.layersBackdrop;
+  /** Big tab (内容 / 樣式 / 設定). Title uses its own four; the Layer card "…" opens 設定. */
+  readonly deskTab = signal<string>('content');
+  /** 960 screens: hide the big monitor to save height. */
+  readonly monitorCollapsed = signal(false);
   readonly copyTargetId = signal('');
   /** Unsaved package has no id yet; the dropdown still offers it. */
   private readonly copySelfId = 'self';
@@ -227,7 +253,36 @@ export class CgLayerEdit implements OnInit {
     return !!output?.layers.some((row) => row.tb_tyapp_cgly_id === id);
   });
 
-  /** Re-sync the custom font field when the route layer changes. */
+  private readonly queryParams = toSignal(this.route.queryParamMap, {
+    requireSync: true,
+  });
+  private tabLayerId = '';
+
+  /**
+   * New layer → 內容 page. `?tab=settings` (the Layer card "…") opens 設定 once and
+   * is then cleared, so the same card can ask again after the operator moves on.
+   * One effect so the reset and the request cannot race.
+   */
+  private readonly _syncTab = effect(() => {
+    const clientId = this.params().get('layerId') ?? '';
+    const wantsSettings = this.queryParams().get('tab') === 'settings';
+    untracked(() => {
+      if (clientId !== this.tabLayerId) {
+        this.tabLayerId = clientId;
+        this.deskTab.set('content');
+      }
+      if (!wantsSettings) return;
+      this.deskTab.set('settings');
+      void this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: { tab: null },
+        queryParamsHandling: 'merge',
+        replaceUrl: true,
+      });
+    });
+  });
+
+  /** Re-sync the Clock draft / place search when the route layer changes. */
   private readonly _bindDesk = effect(() => {
     const clientId = this.params().get('layerId') ?? '';
     const layer =
@@ -238,7 +293,6 @@ export class CgLayerEdit implements OnInit {
     untracked(() => {
       if (bindKey === this.boundLayerKey) return;
       this.boundLayerKey = bindKey;
-      this.syncCustomFontOpen(layer);
       this.syncClockDraft(layer);
       this.placeQuery.set('');
       this.placeResults.set([]);
@@ -597,14 +651,8 @@ export class CgLayerEdit implements OnInit {
     this.touchPreview();
   }
 
-  onAnchorToggle(layer: CgLayerDraft, event: MatButtonToggleChange): void {
-    const value = event.value as CgAnchor;
-    if (!value) {
-      if (event.source?.buttonToggleGroup) {
-        event.source.buttonToggleGroup.value = layer.layout.anchor;
-      }
-      return;
-    }
+  /** Anchor 3×3 grid (the cell position is the Stage position). */
+  setAnchor(layer: CgLayerDraft, value: CgAnchor): void {
     layer.layout.anchor = value;
     // X / Y keep their meaning (inset from the Anchor edge), so nothing is
     // rewritten here. Subtitle Alignment follows the Anchor's side once; the
@@ -620,17 +668,73 @@ export class CgLayerEdit implements OnInit {
     return anchorIgnoresAxis(layer.layout.anchor)[axis];
   }
 
-  /** Label that says which edge X / Y is measured from. */
+  /** Label that says which edge X / Y is measured from (always px). */
   placeAxisLabel(layer: CgLayerDraft, axis: 'x' | 'y'): string {
-    const unit = layer.layout.unit === CgLayoutUnit.Pixel ? '' : ' (%)';
+    return this.axisLabel(layer.layout, axis);
+  }
+
+  private axisLabel(layout: CgLayout, axis: 'x' | 'y'): string {
     if (axis === 'x') {
-      const side = anchorSideX(layer.layout.anchor);
-      if (side === 'center') return 'X · centered';
-      return `From ${side}${unit}`;
+      const side = anchorSideX(layout.anchor);
+      if (side === 'center') return 'X · centered (px)';
+      return `From ${side} (px)`;
     }
-    const side = anchorSideY(layer.layout.anchor);
-    if (side === 'center') return 'Y · centered';
-    return `From ${side}${unit}`;
+    const side = anchorSideY(layout.anchor);
+    if (side === 'center') return 'Y · centered (px)';
+    return `From ${side} (px)`;
+  }
+
+  // ---- Place in px: stored % / px stays as is; the display converts, writes happen on edit only ----
+
+  /** Layout length shown in px (X and width use the Stage width, Y and height its height). */
+  placePx(layout: CgLayout, key: CgLayoutLengthKey, fallback = 0): number {
+    return layoutLengthToDisplayPx(layout, key, layout[key] ?? fallback);
+  }
+
+  setPlacePx(layout: CgLayout, key: CgLayoutLengthKey, px: number | null): void {
+    if (px === null || !Number.isFinite(px)) return;
+    layout[key] = layoutLengthFromDisplayPx(layout, key, px);
+    this.touchPreview();
+  }
+
+  /** Breaking text-box height: stored default is 54 (% of Stage height). */
+  breakingHeightPx(layer: CgLayerDraft): number {
+    return this.placePx(layer.layout, 'height', this.breakingHeightDefault);
+  }
+
+  /** Stored clamp 8–90 expressed in px for this layout's unit. */
+  breakingHeightLimitPx(layer: CgLayerDraft, edge: 'min' | 'max'): number {
+    return layoutLengthToDisplayPx(
+      layer.layout,
+      'height',
+      edge === 'min' ? 8 : 90,
+    );
+  }
+
+  /** Background layout without creating one while rendering. */
+  backgroundView(layer: CgLayerDraft): CgLayout {
+    return layer.payload.background?.layout ?? this.backgroundDefault(layer);
+  }
+
+  backgroundPx(layer: CgLayerDraft, key: 'x' | 'y'): number {
+    return this.placePx(this.backgroundView(layer), key);
+  }
+
+  setBackgroundPx(layer: CgLayerDraft, key: 'x' | 'y', px: number | null): void {
+    if (px === null || !Number.isFinite(px)) return;
+    this.setPlacePx(this.backgroundLayout(layer), key, px);
+  }
+
+  setBackgroundScale(layer: CgLayerDraft, value: number | null): void {
+    if (value === null || !Number.isFinite(value)) return;
+    this.backgroundLayout(layer).scale = value;
+    this.touchPreview();
+  }
+
+  setLayoutScale(layer: CgLayerDraft, value: number | null): void {
+    if (value === null || !Number.isFinite(value)) return;
+    layer.layout.scale = value;
+    this.touchPreview();
   }
 
   subtitleAlign(layer: CgLayerDraft): CgSubtitleAlign {
@@ -651,46 +755,6 @@ export class CgLayerEdit implements OnInit {
     // Placement, not style: do not flip News / Show to Custom.
     this.getSubtitleStyle(layer).textAlign = value;
     this.touchPreview();
-  }
-
-  fontsInGroup(group: CgSubtitleFontGroup) {
-    return this.fontOptions.filter((font) => font.group === group);
-  }
-
-  selectedFontValue(layer: CgLayerDraft): string {
-    if (this.customFontOpen()) return '__custom__';
-    const family = layer.payload.style?.fontFamily?.trim();
-    if (!family) return '';
-    const match = this.fontOptions.find((opt) => opt.value === family);
-    return match ? match.value : '__custom__';
-  }
-
-  isCustomFont(layer: CgLayerDraft): boolean {
-    return this.selectedFontValue(layer) === '__custom__';
-  }
-
-  onFontSelectChange(layer: CgLayerDraft, value: string): void {
-    if (value === '__custom__') {
-      this.customFontOpen.set(true);
-      this.ensureCustomPreset(layer);
-      this.touchPreview();
-      return;
-    }
-    this.customFontOpen.set(false);
-    const style = this.getSubtitleStyle(layer);
-    style.fontFamily = value || undefined;
-    this.onStyleFieldChange(layer);
-  }
-
-  private syncCustomFontOpen(layer: CgLayerDraft | null): void {
-    if (!layer || layer.element_type !== this.Subtitle) {
-      this.customFontOpen.set(false);
-      return;
-    }
-    const family = layer.payload.style?.fontFamily?.trim() ?? '';
-    this.customFontOpen.set(
-      !!family && !this.fontOptions.some((opt) => opt.value === family),
-    );
   }
 
   onLayerLookToggle(event: MatButtonToggleChange): void {
@@ -720,73 +784,6 @@ export class CgLayerEdit implements OnInit {
     this.touchPreview();
   }
 
-  textPaintToggles(style: CgSubtitleStyle): string[] {
-    const values: string[] = [];
-    if (style.fontWeight === CG_TEXT_WEIGHT_BOLD) values.push('bold');
-    if (style.italic) values.push('italic');
-    if (style.underline) values.push('underline');
-    if (style.strike) values.push('strike');
-    return values;
-  }
-
-  onTextPaintToggle(layer: CgLayerDraft, event: MatButtonToggleChange): void {
-    const raw = Array.isArray(event.value)
-      ? event.value
-      : event.source.buttonToggleGroup?.value;
-    const selected = new Set(
-      Array.isArray(raw)
-        ? raw.filter((item): item is string => typeof item === 'string')
-        : [],
-    );
-    const style = this.getSubtitleStyle(layer);
-    if (selected.has('bold')) style.fontWeight = CG_TEXT_WEIGHT_BOLD;
-    else if (style.fontWeight === CG_TEXT_WEIGHT_BOLD) delete style.fontWeight;
-    this.setPaintFlag(style, 'italic', selected.has('italic'));
-    this.setPaintFlag(style, 'underline', selected.has('underline'));
-    this.setPaintFlag(style, 'strike', selected.has('strike'));
-    this.onStyleFieldChange(layer);
-  }
-
-  gradientOn(style: CgSubtitleStyle): boolean {
-    return style.gradientTo !== undefined;
-  }
-
-  onFillToggle(layer: CgLayerDraft, event: MatButtonToggleChange): void {
-    const style = this.getSubtitleStyle(layer);
-    const value = event.value;
-    if (value !== 'solid' && value !== 'gradient') {
-      if (event.source?.buttonToggleGroup) {
-        event.source.buttonToggleGroup.value =
-          style.gradientTo !== undefined ? 'gradient' : 'solid';
-      }
-      return;
-    }
-    if (value === 'gradient') {
-      if (!style.gradientTo) style.gradientTo = CG_TEXT_GRADIENT_TO;
-      if (style.gradientAngle == null) style.gradientAngle = CG_TEXT_GRADIENT_ANGLE;
-    } else {
-      delete style.gradientTo;
-      delete style.gradientAngle;
-    }
-    this.onStyleFieldChange(layer);
-  }
-
-  onGradientToChange(layer: CgLayerDraft, value: string): void {
-    const style = this.getSubtitleStyle(layer);
-    const next = value.trim();
-    style.gradientTo = next || CG_TEXT_GRADIENT_TO;
-    this.onStyleFieldChange(layer);
-  }
-
-  private setPaintFlag(
-    style: CgSubtitleStyle,
-    key: 'italic' | 'underline' | 'strike',
-    on: boolean,
-  ): void {
-    if (on) style[key] = true;
-    else delete style[key];
-  }
-
   getSubtitleStyle(layer: CgLayerDraft): CgSubtitleStyle {
     if (!layer.payload.style) {
       layer.payload.style = { preset: CgSubtitlePreset.News };
@@ -797,6 +794,63 @@ export class CgLayerEdit implements OnInit {
   isPreset(preset: CgSubtitlePreset | 'news' | 'show' | 'custom'): boolean {
     const layer = this.layer();
     return !!layer && subtitlePresetOf(layer.payload) === preset;
+  }
+
+  /** Effective Subtitle values behind absent fields, so the shared editor shows what airs. */
+  subtitleDefaults(): Partial<CgSubtitleStyle> {
+    return this.isPreset(CgSubtitlePreset.Show)
+      ? SUBTITLE_SHOW_DEFAULTS
+      : SUBTITLE_NEWS_DEFAULTS;
+  }
+
+  /** The shared Style editor changed a Subtitle field (flips News / Show to Custom). */
+  onSubtitleStyleChanged(layer: CgLayerDraft): void {
+    this.onStyleFieldChange(layer);
+  }
+
+  // ---- Big tabs ----
+
+  /** 內容 / 樣式 / 設定 for every Layer except Title. */
+  genericTab = computed(() => {
+    const tab = this.deskTab();
+    return tab === 'style' || tab === 'settings' ? tab : 'content';
+  });
+
+  /** Title's own four tabs. */
+  titleTab = computed((): TitleDeskTab => {
+    const tab = this.deskTab();
+    return TITLE_DESK_TABS.find((value) => value === tab) ?? 'content';
+  });
+
+  setDeskTab(value: string): void {
+    this.deskTab.set(value);
+  }
+
+  toggleMonitor(): void {
+    this.monitorCollapsed.update((value) => !value);
+  }
+
+  /** Subtitle (Cue list), Breaking and Ticker (Queue). Logo / Clock / Weather have none. */
+  hasQueue(layer: CgLayerDraft): boolean {
+    return layer.element_type === this.Subtitle || this.isNews(layer);
+  }
+
+  onClockLocale(layer: CgLayerDraft, event: MatButtonToggleChange): void {
+    if (event.value !== 'zh-Hant' && event.value !== 'en') return;
+    this.clockOf(layer).locale = event.value;
+    this.touchPreview();
+  }
+
+  onWeatherUnit(layer: CgLayerDraft, event: MatButtonToggleChange): void {
+    if (
+      event.value !== 'alternate' &&
+      event.value !== 'c' &&
+      event.value !== 'f'
+    ) {
+      return;
+    }
+    this.weatherOf(layer).unitMode = event.value;
+    this.touchPreview();
   }
 
   async copyToPackage(): Promise<void> {
@@ -1012,28 +1066,17 @@ export class CgLayerEdit implements OnInit {
     this.touchPreview();
   }
 
-  onBackgroundAnchor(layer: CgLayerDraft, event: MatButtonToggleChange): void {
-    const value = event.value as CgAnchor;
-    const layout = this.backgroundLayout(layer);
-    if (!value) return;
-    layout.anchor = value;
+  onBackgroundAnchor(layer: CgLayerDraft, value: CgAnchor): void {
+    this.backgroundLayout(layer).anchor = value;
     this.touchPreview();
   }
 
   backgroundIgnores(layer: CgLayerDraft, axis: 'x' | 'y'): boolean {
-    const layout = layer.payload.background?.layout;
-    if (!layout) return false;
-    return anchorIgnoresAxis(layout.anchor)[axis];
+    return anchorIgnoresAxis(this.backgroundView(layer).anchor)[axis];
   }
 
   backgroundAxisLabel(layer: CgLayerDraft, axis: 'x' | 'y'): string {
-    const layout = this.backgroundLayout(layer);
-    if (axis === 'x') {
-      const side = anchorSideX(layout.anchor);
-      return side === 'center' ? 'X · centered' : `From ${side}`;
-    }
-    const side = anchorSideY(layout.anchor);
-    return side === 'center' ? 'Y · centered' : `From ${side}`;
+    return this.axisLabel(this.backgroundView(layer), axis);
   }
 
   clockFormatValue(layer: CgLayerDraft): string {

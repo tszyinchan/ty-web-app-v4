@@ -1,92 +1,37 @@
 <div class="cg-panel">
   @if (item(); as pkg) {
-    <div class="cg-left">
-      <header class="cg-col-head">
-        <a
-          class="cg-back"
-          [routerLink]="returnUrl"
-          title="Back to CG list"
-          aria-label="Back to CG list"
-        >
-          <mat-icon>west</mat-icon>
-        </a>
-        <h2 class="cg-col-title">Package</h2>
-        <mat-button-toggle-group
-          class="cg-seg-toggle cg-pill"
-          [value]="packageBackdrop()"
-          (change)="packageBackdrop.set($event.value)"
-          hideSingleSelectionIndicator
-          aria-label="Package stage backdrop"
-        >
-          <mat-button-toggle [value]="backdrops.Checkerboard">
-            Alpha
-          </mat-button-toggle>
-          <mat-button-toggle [value]="backdrops.Dim">Dim</mat-button-toggle>
-        </mat-button-toggle-group>
-        <button
-          mat-stroked-button
-          type="button"
-          class="cg-seg-btn cg-icon-btn"
-          [disabled]="!packageOutputUrl()"
-          title="Copy OBS URL"
-          aria-label="Copy OBS URL"
-          (click)="copyPackageOutput()"
-        >
-          <mat-icon>content_copy</mat-icon>
-        </button>
-        <button
-          mat-stroked-button
-          type="button"
-          class="cg-seg-btn cg-icon-btn"
-          [disabled]="!onAirToken()"
-          title="Enlarge On air"
-          aria-label="Enlarge On air"
-          (click)="openOnAirDialog()"
-        >
-          <mat-icon>open_in_full</mat-icon>
-        </button>
-      </header>
-
-      <section class="cg-monitors-pane">
-        <div class="cg-monitor-toolbar">
-          <div class="cg-mode">
-            <mat-button-toggle-group
-              class="cg-seg-toggle cg-pill"
-              [value]="editMode()"
-              (change)="onEditMode($event)"
-              hideSingleSelectionIndicator
-              aria-label="Edit mode"
-            >
-              <mat-button-toggle [value]="editModes.Studio">Studio</mat-button-toggle>
-              <mat-button-toggle [value]="editModes.Direct">Direct</mat-button-toggle>
-            </mat-button-toggle-group>
-            @if (!packageId) {
-              <button
-                mat-flat-button
-                color="primary"
-                type="button"
-                class="cg-seg-btn"
-                [disabled]="isSaveDisabled()"
-                (click)="onSave()"
-              >
-                Create
-              </button>
-            } @else if (isStudioMode()) {
-              <button
-                mat-flat-button
-                color="primary"
-                type="button"
-                class="cg-seg-btn"
-                [disabled]="isSaveDisabled()"
-                (click)="onSave()"
-              >
-                Take
-              </button>
-            } @else {
-              <span class="cg-action-spacer" aria-hidden="true"></span>
-            }
-          </div>
-          <div class="cg-col-actions">
+    <!-- One monitor bar row: Package + mode | Preview, Take, Program | settings. -->
+    <header class="cg-topbar">
+      <div class="cg-title-col">
+        <div class="cg-title-row">
+          <a
+            class="cg-back"
+            [routerLink]="returnUrl"
+            title="Back to CG list"
+            aria-label="Back to CG list"
+          >
+            <mat-icon>west</mat-icon>
+          </a>
+          <span class="cg-title-label">Package:</span>
+          <input
+            class="cg-name"
+            [(ngModel)]="pkg.name"
+            placeholder="CH36, News SNG, Live show…"
+            aria-label="Package name"
+          />
+        </div>
+        <div class="cg-title-row">
+          <mat-button-toggle-group
+            class="cg-seg-toggle cg-pill"
+            [value]="editMode()"
+            (change)="onEditMode($event)"
+            hideSingleSelectionIndicator
+            aria-label="Edit mode"
+          >
+            <mat-button-toggle [value]="editModes.Studio">Studio</mat-button-toggle>
+            <mat-button-toggle [value]="editModes.Direct">Direct</mat-button-toggle>
+          </mat-button-toggle-group>
+          <span class="cg-sync-slot">
             @if (syncStatus() === 'unsaved') {
               <span class="cg-sync unsaved">
                 <mat-icon>error_outline</mat-icon>
@@ -98,111 +43,195 @@
               <span class="cg-sync ok">
                 <mat-icon>cloud_done</mat-icon>
                 On air
+                @if (onAirLayerCount() > 0) {
+                  ×{{ onAirLayerCount() }}
+                }
               </span>
-            } @else {
-              <span class="cg-sync cg-sync-placeholder" aria-hidden="true"></span>
             }
-          </div>
+          </span>
         </div>
-        <div class="cg-monitors">
-          @if (!isDirectMode()) {
-            <app-cg-mix-preview
-              label="Pending"
-              [layers]="layers()"
-              [packageLook]="pendingLook()"
-              [durationMs]="packageDurationMs()"
-              [backdrop]="packageBackdrop()"
-            />
-          }
+      </div>
+
+      <!-- Both monitors in both modes. Direct auto-saves, so Take stays but is disabled. -->
+      <div class="cg-monitor-bar">
+        <div class="cg-mon" title="Preview">
+          <app-cg-mix-preview
+            [wide]="true"
+            [layers]="layers()"
+            [packageLook]="pendingLook()"
+            [durationMs]="packageDurationMs()"
+            [backdrop]="packageBackdrop()"
+          />
+        </div>
+        <div class="cg-take">
+          <button
+            mat-flat-button
+            color="primary"
+            type="button"
+            class="cg-seg-btn cg-take-btn"
+            [disabled]="isTakeDisabled()"
+            [attr.title]="isDirectMode() && packageId ? 'Direct mode saves by itself' : null"
+            (click)="onSave()"
+          >
+            {{ packageId ? 'Take' : 'Create' }}
+            @if (packageId) {
+              <mat-icon iconPositionEnd>arrow_forward</mat-icon>
+            }
+          </button>
+        </div>
+        <div class="cg-mon" title="Program">
           <app-cg-output-frame
-            label="On air"
+            [wide]="true"
             [token]="onAirToken()"
             [backdrop]="packageBackdrop()"
           />
         </div>
-      </section>
+      </div>
 
-      <section class="cg-package-pane">
-        <input
-          class="cg-name"
-          [(ngModel)]="pkg.name"
-          placeholder="CH36, News SNG, Live show…"
-        />
-        <mat-button-toggle-group
-          class="cg-seg-toggle cg-pill"
-          [value]="pkg.role"
-          (change)="onRoleToggle($event)"
-          hideSingleSelectionIndicator
-        >
-          @for (option of roleOptions; track option.value) {
-            <mat-button-toggle [value]="option.value">
-              {{ option.label }}
-            </mat-button-toggle>
-          }
-        </mat-button-toggle-group>
-        <div class="cg-appear">
-          <span class="cg-kicker">Appear</span>
+      <!-- Half window: settings collapse into a floating panel behind this button. -->
+      <button
+        type="button"
+        class="cg-seg-btn cg-settings-btn"
+        mat-stroked-button
+        aria-haspopup="dialog"
+        [attr.aria-expanded]="settingsOpen()"
+        (click)="toggleSettings()"
+      >
+        <mat-icon>tune</mat-icon>
+        Package 設定
+      </button>
+      @if (settingsOpen()) {
+        <div class="cg-settings-scrim" (click)="closeSettings()" aria-hidden="true"></div>
+      }
+
+      <div class="cg-pkg-settings" [class.open]="settingsOpen()">
+        <h3 class="cg-pop-title">Package 設定</h3>
+        <div class="cg-group">
+          <span class="cg-kicker">Channel／Source</span>
           <mat-button-toggle-group
             class="cg-seg-toggle cg-pill"
-            [value]="isCut() ? 'cut' : 'fade'"
-            (change)="onAppearToggle($event)"
+            [value]="pkg.role"
+            (change)="onRoleToggle($event)"
             hideSingleSelectionIndicator
+            aria-label="Package role"
           >
-            <mat-button-toggle value="fade">Fade</mat-button-toggle>
-            <mat-button-toggle value="cut">Cut</mat-button-toggle>
+            @for (option of roleOptions; track option.value) {
+              <mat-button-toggle [value]="option.value">
+                {{ option.label }}
+              </mat-button-toggle>
+            }
           </mat-button-toggle-group>
-          @if (!isCut()) {
-            <label class="cg-field cg-duration">
-              <span>ms</span>
-              <input
-                type="number"
-                appCgWheel
-                [min]="cutMs"
-                [max]="maxDurationMs"
-                [appCgWheelMin]="wheelMinMs"
-                [appCgWheelFine]="10"
-                [appCgWheelCoarse]="500"
-                step="50"
-                [(ngModel)]="pkg.duration_ms"
-                (ngModelChange)="onDurationMsChange($event)"
-                (appCgWheelChange)="onDurationMsChange($event)"
-              />
-            </label>
-          }
         </div>
-        <div class="cg-appear">
+        <div class="cg-group cg-group-appear">
+          <span class="cg-kicker">Appear</span>
+          <div class="cg-group-row">
+            <mat-button-toggle-group
+              class="cg-seg-toggle cg-pill"
+              [value]="isCut() ? 'cut' : 'fade'"
+              (change)="onAppearToggle($event)"
+              hideSingleSelectionIndicator
+              aria-label="Package appear"
+            >
+              <mat-button-toggle value="fade">Fade</mat-button-toggle>
+              <mat-button-toggle value="cut">Cut</mat-button-toggle>
+            </mat-button-toggle-group>
+            @if (!isCut()) {
+              <label class="cg-field cg-duration">
+                <input
+                  type="number"
+                  appCgWheel
+                  [min]="cutMs"
+                  [max]="maxDurationMs"
+                  [appCgWheelMin]="wheelMinMs"
+                  [appCgWheelFine]="10"
+                  [appCgWheelCoarse]="500"
+                  step="50"
+                  [(ngModel)]="pkg.duration_ms"
+                  (ngModelChange)="onDurationMsChange($event)"
+                  (appCgWheelChange)="onDurationMsChange($event)"
+                  aria-label="Appear fade ms"
+                />
+                <span>ms</span>
+              </label>
+            }
+          </div>
+        </div>
+        <div class="cg-group">
           <span class="cg-kicker">Look</span>
           <mat-button-toggle-group
             class="cg-seg-toggle cg-pill"
             [value]="pkg.look"
             (change)="onLookToggle($event)"
             hideSingleSelectionIndicator
+            aria-label="Package look"
           >
             <mat-button-toggle [value]="looks.Color">Color</mat-button-toggle>
             <mat-button-toggle [value]="looks.Mono">B&amp;W</mat-button-toggle>
           </mat-button-toggle-group>
         </div>
-      </section>
-
-      <footer class="cg-left-foot">
-        <div class="cg-foot-actions">
-          @if (packageId) {
-            <button
-              mat-flat-button
-              type="button"
-              class="cg-seg-btn danger-btn"
-              (click)="onDelete()"
+        <div class="cg-group">
+          <span class="cg-kicker">Monitor</span>
+          <div class="cg-group-row">
+            <mat-button-toggle-group
+              class="cg-seg-toggle cg-pill"
+              [value]="packageBackdrop()"
+              (change)="packageBackdrop.set($event.value)"
+              hideSingleSelectionIndicator
+              aria-label="Package stage backdrop"
             >
-              Delete package
+              <mat-button-toggle [value]="backdrops.Checkerboard">Alpha</mat-button-toggle>
+              <mat-button-toggle [value]="backdrops.Dim">Dim</mat-button-toggle>
+            </mat-button-toggle-group>
+            <button
+              mat-stroked-button
+              type="button"
+              class="cg-seg-btn cg-icon-btn"
+              [disabled]="!onAirToken()"
+              title="Enlarge Program"
+              aria-label="Enlarge Program"
+              (click)="openOnAirDialog()"
+            >
+              <mat-icon>open_in_full</mat-icon>
             </button>
-          }
+          </div>
         </div>
-      </footer>
-    </div>
+        <div class="cg-group">
+          <span class="cg-kicker cg-kicker-gap" aria-hidden="true">&nbsp;</span>
+          <div class="cg-group-row">
+            <button
+              mat-stroked-button
+              type="button"
+              class="cg-seg-btn"
+              [disabled]="!packageOutputUrl()"
+              title="Copy OBS URL"
+              (click)="copyPackageOutput()"
+            >
+              Copy OBS
+            </button>
+            @if (packageId) {
+              <button
+                mat-flat-button
+                type="button"
+                class="cg-seg-btn danger-btn"
+                (click)="onDelete()"
+              >
+                Delete package
+              </button>
+            }
+          </div>
+        </div>
+      </div>
+    </header>
 
-    <div class="cg-right">
-      <header class="cg-col-head">
-        <h2 class="cg-col-title">Layers</h2>
+    <!-- Layers strip: always visible between the monitor bar and the layer panel. -->
+    <section class="cg-layers-strip">
+      <div class="cg-strip-head">
+        <div class="cg-strip-title">
+          <h2 class="cg-col-title">Layers — 順序 + 開關（長期可見）</h2>
+          <p class="cg-strip-note">
+            改順序、On／Off、加／刪層係結構改動，Studio 要 Take 先上 Program；層嘅內容改動即時出街，唔經 Take。
+          </p>
+        </div>
         <mat-button-toggle-group
           class="cg-seg-toggle cg-pill"
           [value]="layersBackdrop()"
@@ -210,9 +239,7 @@
           hideSingleSelectionIndicator
           aria-label="Layers stage backdrop"
         >
-          <mat-button-toggle [value]="backdrops.Checkerboard">
-            Alpha
-          </mat-button-toggle>
+          <mat-button-toggle [value]="backdrops.Checkerboard">Alpha</mat-button-toggle>
           <mat-button-toggle [value]="backdrops.Dim">Dim</mat-button-toggle>
         </mat-button-toggle-group>
         <div class="cg-catalog">
@@ -234,49 +261,25 @@
             </button>
           }
         </div>
-      </header>
-      <section class="cg-board">
-
-        <div
-          class="cg-drive"
-          [class.desk-open]="!!selectedLayerId()"
-          cdkDropList
-          cdkDropListOrientation="mixed"
-          [cdkDropListData]="layers()"
-          (cdkDropListDropped)="onLayerDrop($event)"
-        >
-          @for (layer of layers(); track layer.clientId) {
-            <article
-              class="cg-tile"
-              cdkDrag
-              [class.off]="!layer.visible"
-              [class.selected]="layer.clientId === selectedLayerId()"
-              (cdkDragStarted)="onLayerDragStarted()"
-              (click)="openLayer(layer)"
-            >
-              <div class="cg-tile-bar top">
-                <button
-                  type="button"
-                  class="cg-drag"
-                  cdkDragHandle
-                  (click)="$event.stopPropagation()"
-                  aria-label="Reorder layer"
-                >
-                  <mat-icon>drag_indicator</mat-icon>
-                </button>
-                <span class="cg-tile-z">{{ layer.sort_order + 1 }}</span>
-                <button
-                  type="button"
-                  class="cg-switch"
-                  [class.on]="layer.visible"
-                  role="switch"
-                  [attr.aria-checked]="layer.visible"
-                  (click)="toggleVisible(layer, $event)"
-                >
-                  <span class="cg-switch-thumb"></span>
-                </button>
-              </div>
-              <div class="cg-tile-stage">
+      </div>
+      <div
+        class="cg-strip"
+        cdkDropList
+        cdkDropListOrientation="horizontal"
+        [cdkDropListData]="layers()"
+        (cdkDropListDropped)="onLayerDrop($event)"
+      >
+        @for (layer of layers(); track layer.clientId) {
+          <article
+            class="cg-card"
+            cdkDrag
+            [class.off]="!layer.visible"
+            [class.selected]="layer.clientId === selectedLayerId()"
+            (cdkDragStarted)="onLayerDragStarted()"
+            (click)="openLayer(layer)"
+          >
+            <div class="cg-card-monitor">
+              <div class="cg-card-stage">
                 <app-cg-mix-preview
                   [wide]="true"
                   [forceVisible]="true"
@@ -285,22 +288,54 @@
                   [backdrop]="layersBackdrop()"
                 />
               </div>
-              <div class="cg-tile-bar bottom">
-                <span class="cg-tile-name">{{ layerDisplayName(layer) }}</span>
-              </div>
-            </article>
-          } @empty {
-            <p class="cg-hint">Pick Logo from the catalog. Drag tiles — first is behind, last is in front.</p>
-          }
-        </div>
-      </section>
-
-      <section class="cg-desk">
-        <router-outlet />
-        @if (!selectedLayerId()) {
-          <p class="cg-hint">Select a layer to edit it here.</p>
+              <button
+                type="button"
+                class="cg-drag cg-card-drag"
+                cdkDragHandle
+                (click)="$event.stopPropagation()"
+                aria-label="Reorder layer"
+              >
+                <mat-icon>drag_indicator</mat-icon>
+              </button>
+              <button
+                type="button"
+                class="cg-switch cg-card-switch"
+                [class.on]="layer.visible"
+                role="switch"
+                [attr.aria-checked]="layer.visible"
+                [attr.aria-label]="'Show ' + layerDisplayName(layer)"
+                (click)="toggleVisible(layer, $event)"
+              >
+                <span class="cg-switch-thumb"></span>
+              </button>
+            </div>
+            <div class="cg-card-bar">
+              <span class="cg-card-dot" [class.on]="layer.visible" aria-hidden="true"></span>
+              <span class="cg-card-name" [title]="layerDisplayName(layer)">
+                {{ layerDisplayName(layer) }}
+              </span>
+              <button
+                type="button"
+                class="cg-more"
+                title="Layer settings"
+                aria-label="Layer settings"
+                (click)="openLayerSettings(layer, $event)"
+              >
+                <mat-icon>more_horiz</mat-icon>
+              </button>
+            </div>
+          </article>
+        } @empty {
+          <p class="cg-hint">Pick Logo from the catalog. Drag cards — first is behind, last is in front.</p>
         }
-      </section>
-    </div>
+      </div>
+    </section>
+
+    <section class="cg-desk">
+      <router-outlet />
+      @if (!selectedLayerId()) {
+        <p class="cg-hint">Select a layer to edit it here.</p>
+      }
+    </section>
   }
 </div>

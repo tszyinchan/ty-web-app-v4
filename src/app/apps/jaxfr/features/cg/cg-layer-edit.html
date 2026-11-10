@@ -1,10 +1,325 @@
 @if (layer(); as layer) {
+  <!-- 設定 page: shared by Title and every other Layer. Layer-level Copy / Delete live only here. -->
+  <ng-template #settingsTpl>
+    <div class="cg-settings-body">
+      <section class="cg-sec cg-layer-name">
+        <h3 class="cg-block-title">Layer name</h3>
+        <input
+          type="text"
+          [(ngModel)]="layer.name"
+          (ngModelChange)="touchPreview()"
+          [placeholder]="elementLabel(layer.element_type)"
+          aria-label="Layer name"
+        />
+      </section>
+      <section class="cg-sec">
+        <h3 class="cg-block-title">Layer Look</h3>
+        <mat-button-toggle-group
+          class="cg-seg-toggle cg-pill"
+          [value]="layer.look"
+          (change)="onLayerLookToggle($event)"
+          hideSingleSelectionIndicator
+          aria-label="Layer Look"
+        >
+          @for (option of lookOptions; track option.value) {
+            <mat-button-toggle [value]="option.value">
+              {{ option.label }}
+            </mat-button-toggle>
+          }
+        </mat-button-toggle-group>
+        <p class="cg-hint">
+          呢層自己嘅顏色（彩色／黑白）。Package Look 係 master bus，兩樣嘢：Package 設做黑白會灰晒所有層。
+        </p>
+      </section>
+      <section class="cg-sec">
+        <h3 class="cg-block-title">Copy to package</h3>
+        <div class="cg-inline">
+          <select
+            class="cg-copy-select"
+            [appCgWheelSelect]="copyWheelValues()"
+            [ngModel]="copyTargetId()"
+            (ngModelChange)="copyTargetId.set($event)"
+            (appCgWheelChange)="copyTargetId.set($event)"
+            aria-label="Copy to package"
+          >
+            <option value="">Choose…</option>
+            @for (pkg of copyTargets(); track pkg.id) {
+              <option [value]="pkg.id">{{ pkg.label }}</option>
+            }
+          </select>
+          <button
+            mat-stroked-button
+            type="button"
+            class="cg-seg-btn"
+            [disabled]="!copyTargetId() || cg.loading()"
+            (click)="copyToPackage()"
+          >
+            Copy
+          </button>
+        </div>
+      </section>
+      <section class="cg-sec">
+        <h3 class="cg-block-title">Layer OBS</h3>
+        <div class="cg-inline">
+          <button
+            mat-stroked-button
+            type="button"
+            class="cg-seg-btn"
+            [disabled]="!layerOutputUrl(layer)"
+            (click)="copyLayerOutput(layer)"
+          >
+            <mat-icon>content_copy</mat-icon>
+            Copy layer OBS
+          </button>
+        </div>
+      </section>
+      <section class="cg-sec cg-danger-zone">
+        <h3 class="cg-block-title">Danger zone</h3>
+        <div class="cg-inline">
+          <button
+            mat-flat-button
+            type="button"
+            class="cg-seg-btn danger-btn"
+            (click)="removeLayer(layer)"
+          >
+            Delete layer
+          </button>
+        </div>
+      </section>
+    </div>
+  </ng-template>
+
+  <!-- ① Place: a Background image block (Clock / Weather / Breaking / Ticker). -->
+  <ng-template #backgroundTpl>
+    <div class="cg-place-block">
+      <h4 class="cg-word-title">Background — 底圖</h4>
+      <div class="cg-inline cg-source-pick">
+        <button
+          mat-stroked-button
+          type="button"
+          class="cg-seg-btn"
+          (click)="bgFile.click()"
+        >
+          Choose local image
+        </button>
+        <input
+          #bgFile
+          class="cg-file-input"
+          type="file"
+          [accept]="logoAccept"
+          (change)="onBackgroundFile(layer, $event)"
+        />
+        @if (layer.payload.background?.fileName) {
+          <span class="cg-file-name">{{ layer.payload.background?.fileName }}</span>
+        }
+        @if (hasBackground(layer)) {
+          <button
+            mat-stroked-button
+            type="button"
+            class="cg-seg-btn"
+            (click)="clearBackground(layer)"
+          >
+            Clear
+          </button>
+        }
+      </div>
+      <input
+        class="cg-source-url"
+        type="text"
+        [ngModel]="layer.payload.background?.imageUrl ?? ''"
+        (ngModelChange)="onBackgroundUrl(layer, $event)"
+        placeholder="Optional image URL"
+        aria-label="Background image URL"
+      />
+      <h4 class="cg-word-title">Background place — 底圖位置</h4>
+      <div class="cg-place-row">
+        <app-cg-anchor-grid
+          label="Background anchor"
+          [value]="backgroundView(layer).anchor"
+          (picked)="onBackgroundAnchor(layer, $event)"
+        />
+        <div class="cg-fields cg-place-fields">
+          <label class="cg-field">
+            <span>{{ backgroundAxisLabel(layer, 'x') }}</span>
+            @if (backgroundIgnores(layer, 'x')) {
+              <input type="text" value="—" disabled aria-label="Background X is ignored when centered" />
+            } @else {
+              <input
+                type="number"
+                appCgWheel
+                step="1"
+                [appCgWheelFine]="0.1"
+                [appCgWheelCoarse]="10"
+                [ngModel]="backgroundPx(layer, 'x')"
+                (ngModelChange)="setBackgroundPx(layer, 'x', $event)"
+                (appCgWheelChange)="setBackgroundPx(layer, 'x', $event)"
+              />
+            }
+          </label>
+          <label class="cg-field">
+            <span>{{ backgroundAxisLabel(layer, 'y') }}</span>
+            @if (backgroundIgnores(layer, 'y')) {
+              <input type="text" value="—" disabled aria-label="Background Y is ignored when centered" />
+            } @else {
+              <input
+                type="number"
+                appCgWheel
+                step="1"
+                [appCgWheelFine]="0.1"
+                [appCgWheelCoarse]="10"
+                [ngModel]="backgroundPx(layer, 'y')"
+                (ngModelChange)="setBackgroundPx(layer, 'y', $event)"
+                (appCgWheelChange)="setBackgroundPx(layer, 'y', $event)"
+              />
+            }
+          </label>
+          <label class="cg-field">
+            <span>Scale</span>
+            <input
+              type="number"
+              appCgWheel
+              step="0.05"
+              min="0.05"
+              max="8"
+              [ngModel]="backgroundView(layer).scale"
+              (ngModelChange)="setBackgroundScale(layer, $event)"
+              (appCgWheelChange)="setBackgroundScale(layer, $event)"
+            />
+          </label>
+        </div>
+      </div>
+      <div class="cg-outline-row">
+        <button
+          type="button"
+          class="cg-switch"
+          [class.on]="logoOutline()"
+          role="switch"
+          [attr.aria-checked]="logoOutline()"
+          (click)="logoOutline.set(!logoOutline())"
+        >
+          <span class="cg-switch-thumb"></span>
+        </button>
+        <span class="cg-outline-label">Outline</span>
+      </div>
+    </div>
+  </ng-template>
+
+  <!-- ① Place: X / Y of the main layout in px, from the Anchor edge. -->
+  <ng-template #xyTpl>
+    <label class="cg-field">
+      <span>{{ placeAxisLabel(layer, 'x') }}</span>
+      @if (ignoresAxis(layer, 'x')) {
+        <input type="text" value="—" disabled aria-label="X is ignored when centered" />
+      } @else {
+        <input
+          type="number"
+          appCgWheel
+          step="1"
+          [appCgWheelFine]="0.1"
+          [appCgWheelCoarse]="10"
+          [ngModel]="placePx(layer.layout, 'x')"
+          (ngModelChange)="setPlacePx(layer.layout, 'x', $event)"
+          (appCgWheelChange)="setPlacePx(layer.layout, 'x', $event)"
+        />
+      }
+    </label>
+    <label class="cg-field">
+      <span>{{ placeAxisLabel(layer, 'y') }}</span>
+      @if (ignoresAxis(layer, 'y')) {
+        <input type="text" value="—" disabled aria-label="Y is ignored when centered" />
+      } @else {
+        <input
+          type="number"
+          appCgWheel
+          step="1"
+          [appCgWheelFine]="0.1"
+          [appCgWheelCoarse]="10"
+          [ngModel]="placePx(layer.layout, 'y')"
+          (ngModelChange)="setPlacePx(layer.layout, 'y', $event)"
+          (appCgWheelChange)="setPlacePx(layer.layout, 'y', $event)"
+        />
+      }
+    </label>
+  </ng-template>
+
+  <!-- ① Place: Align (Subtitle / Clock / Weather). -->
+  <ng-template #alignTpl>
+    <mat-button-toggle-group
+      class="cg-seg-toggle cg-pill"
+      [value]="subtitleAlign(layer)"
+      (change)="onAlignToggle(layer, $event)"
+      hideSingleSelectionIndicator
+      aria-label="Text alignment"
+    >
+      @for (option of alignOptions; track option.value) {
+        <mat-button-toggle
+          [value]="option.value"
+          [attr.title]="option.label"
+          [attr.aria-label]="option.label"
+        >
+          <mat-icon>{{ option.icon }}</mat-icon>
+        </mat-button-toggle>
+      }
+    </mat-button-toggle-group>
+  </ng-template>
+
+  <!-- ③ Layer 進出: Fade / Cut + ms for the Layer's own transition (not Package Appear). -->
+  <ng-template #transitionTpl>
+    <div class="cg-inline cg-fade-row">
+      <mat-button-toggle-group
+        class="cg-seg-toggle cg-pill"
+        [value]="isCueCut(layer) ? 'cut' : 'fade'"
+        (change)="onCueAppearToggle(layer, $event)"
+        hideSingleSelectionIndicator
+        aria-label="Fade or cut"
+      >
+        <mat-button-toggle value="fade">Fade</mat-button-toggle>
+        <mat-button-toggle value="cut">Cut</mat-button-toggle>
+      </mat-button-toggle-group>
+      @if (!isCueCut(layer)) {
+        <label class="cg-field cg-ms-field">
+          <span>ms</span>
+          <input
+            type="number"
+            appCgWheel
+            [min]="cutMs"
+            [max]="maxDurationMs"
+            [appCgWheelMin]="wheelMinMs"
+            [appCgWheelFine]="10"
+            [appCgWheelCoarse]="500"
+            step="50"
+            [ngModel]="cueDurationMs(layer)"
+            (ngModelChange)="onCueDurationMsChange(layer, $event)"
+            (appCgWheelChange)="onCueDurationMsChange(layer, $event)"
+          />
+        </label>
+        @if (layer.element_type === Subtitle) {
+          <div class="cg-cue-presets">
+            @for (ms of cuePresets; track ms) {
+              <button
+                mat-stroked-button
+                type="button"
+                class="cg-seg-btn cg-mini-btn"
+                [class.selected]="cueDurationMs(layer) === ms"
+                (click)="onCueDurationMsChange(layer, ms)"
+              >
+                {{ ms }}ms
+              </button>
+            }
+          </div>
+        }
+      }
+    </div>
+  </ng-template>
+
   @if (layer.element_type === Title) {
   <section class="cg-layer-form title-desk">
     <app-cg-title-desk
       [layer]="layer"
       [outline]="logoOutline()"
       [onAir]="isLiveOnAir()"
+      [tab]="titleTab()"
+      (tabChange)="setDeskTab($event)"
       (outlineChange)="logoOutline.set($event)"
     >
       <app-cg-mix-preview
@@ -17,1420 +332,872 @@
         [layers]="[layer]"
         [backdrop]="layersBackdrop()"
       />
-      <div titleSettings class="cg-title-settings">
-        <section class="cg-block cg-layer-name">
-          <h3 class="cg-block-title">Layer name</h3>
-          <input
-            type="text"
-            [(ngModel)]="layer.name"
-            (ngModelChange)="touchPreview()"
-            [placeholder]="elementLabel(layer.element_type)"
-            aria-label="Layer name"
-          />
-        </section>
-        <section class="cg-block look">
-          <h3 class="cg-block-title">Layer Look</h3>
-          <mat-button-toggle-group
-            class="cg-seg-toggle cg-pill"
-            [value]="layer.look"
-            (change)="onLayerLookToggle($event)"
-            hideSingleSelectionIndicator
-            aria-label="Layer Look"
-          >
-            @for (option of lookOptions; track option.value) {
-              <mat-button-toggle [value]="option.value">
-                {{ option.label }}
-              </mat-button-toggle>
-            }
-          </mat-button-toggle-group>
-          <p class="cg-hint">
-            呢層自己嘅顏色（彩色／黑白）。Package Look 係 master bus，兩樣嘢：Package 設做黑白會灰晒所有層。
-          </p>
-        </section>
-        <section class="cg-block cg-foot-copy">
-          <h3 class="cg-block-title">Copy to package</h3>
-          <div class="cg-inline">
-            <select
-              class="cg-copy-select"
-              [appCgWheelSelect]="copyWheelValues()"
-              [ngModel]="copyTargetId()"
-              (ngModelChange)="copyTargetId.set($event)"
-              (appCgWheelChange)="copyTargetId.set($event)"
-              aria-label="Copy to package"
-            >
-              <option value="">Choose…</option>
-              @for (pkg of copyTargets(); track pkg.id) {
-                <option [value]="pkg.id">{{ pkg.label }}</option>
-              }
-            </select>
-            <button
-              mat-stroked-button
-              type="button"
-              class="cg-seg-btn"
-              [disabled]="!copyTargetId() || cg.loading()"
-              (click)="copyToPackage()"
-            >
-              Copy
-            </button>
-          </div>
-        </section>
-        <section class="cg-block">
-          <h3 class="cg-block-title">Layer OBS</h3>
-          <div class="cg-inline">
-            <button
-              mat-stroked-button
-              type="button"
-              class="cg-seg-btn"
-              [disabled]="!layerOutputUrl(layer)"
-              (click)="copyLayerOutput(layer)"
-            >
-              <mat-icon>content_copy</mat-icon>
-              Copy layer OBS
-            </button>
-          </div>
-        </section>
-        <section class="cg-block cg-danger-zone">
-          <h3 class="cg-block-title">Danger zone</h3>
-          <div class="cg-inline">
-            <button
-              mat-flat-button
-              type="button"
-              class="cg-seg-btn danger-btn"
-              (click)="removeLayer(layer)"
-            >
-              Delete layer
-            </button>
-          </div>
-        </section>
-      </div>
+      <ng-container titleSettings>
+        <ng-container *ngTemplateOutlet="settingsTpl" />
+      </ng-container>
     </app-cg-title-desk>
   </section>
   } @else {
-  <section
-    class="cg-layer-form"
-    [class.logo-desk]="layer.element_type === Logo"
-    [class.sub-desk]="layer.element_type === Subtitle"
-    [class.bug-desk]="layer.element_type === Clock || layer.element_type === Weather"
-    [class.news-desk]="layer.element_type === Breaking || layer.element_type === Ticker"
-  >
-    <div class="cg-desk-split">
-      <aside class="cg-desk-preview">
-        <div class="cg-live-warn-slot">
-          @if (isLiveOnAir()) {
-            <p class="cg-live-warn">
-              This layer is on air. Edits go to OBS now.
-            </p>
-          }
-        </div>
-        <div class="cg-monitors">
-          <app-cg-mix-preview
-            label=""
-            [wide]="true"
-            [forceVisible]="true"
-            [layerLookOnly]="true"
-            [outline]="logoOutline()"
-            [layers]="[layer]"
-            [backdrop]="layersBackdrop()"
-          />
-        </div>
-        <div class="cg-name-look">
-          <section class="cg-block cg-layer-name">
-            <h3 class="cg-block-title">Name</h3>
-            <input
-              type="text"
-              [(ngModel)]="layer.name"
-              (ngModelChange)="touchPreview()"
-              [placeholder]="elementLabel(layer.element_type)"
-            />
-          </section>
-          <section class="cg-block look">
-            <h3 class="cg-block-title">Look</h3>
-            <mat-button-toggle-group
-              class="cg-seg-toggle cg-pill"
-              [value]="layer.look"
-              (change)="onLayerLookToggle($event)"
-              hideSingleSelectionIndicator
-            >
-              @for (option of lookOptions; track option.value) {
-                <mat-button-toggle [value]="option.value">
-                  {{ option.label }}
-                </mat-button-toggle>
-              }
-            </mat-button-toggle-group>
-          </section>
-        </div>
-        @if (layer.element_type === Logo) {
-          <section class="cg-block">
-            <h3 class="cg-block-title">Source</h3>
-            @if (isEmbeddedLogo(layer)) {
-              <p class="cg-hint">
-                This leftover embedded image will not save. Use Choose local
-                image.
-              </p>
-            }
-            <div class="cg-inline cg-source-pick">
-              <button
-                mat-stroked-button
-                type="button"
-                class="cg-seg-btn"
-                (click)="logoFileInput.click()"
-              >
-                Choose local image
-              </button>
-              <input
-                #logoFileInput
-                class="cg-file-input"
-                type="file"
-                [accept]="logoAccept"
-                (change)="onLogoFile(layer, $event)"
-              />
-              @if (layer.payload.fileName) {
-                <span class="cg-file-name">{{ layer.payload.fileName }}</span>
-              }
-            </div>
-            @if (!isEmbeddedLogo(layer)) {
-              <input
-                class="cg-source-url"
-                type="text"
-                [(ngModel)]="layer.payload.imageUrl"
-                (ngModelChange)="onImageUrlChange(layer)"
-                placeholder="/icons/3d/apps.png or https://…"
-                aria-label="Image URL"
-              />
-            }
-          </section>
-        }
-        @if (layer.element_type === Subtitle) {
-          <section class="cg-block cg-sub-source">
-            <h3 class="cg-block-title">Source</h3>
-            <div class="cg-inline cg-source-actions">
-              <button
-                mat-stroked-button
-                type="button"
-                class="cg-seg-btn cg-icon-btn"
-                title="Paste script from clipboard"
-                aria-label="Paste script"
-                (click)="pasteScript()"
-              >
-                <mat-icon>content_paste</mat-icon>
-              </button>
-              <button
-                mat-stroked-button
-                type="button"
-                class="cg-seg-btn"
-                (click)="scriptFileInput.click()"
-              >
-                Load .txt / .srt
-              </button>
-              <input
-                #scriptFileInput
-                class="cg-file-input"
-                type="file"
-                [accept]="scriptAccept"
-                (change)="onScriptFile(layer, $event)"
-              />
-              <button
-                mat-stroked-button
-                type="button"
-                class="cg-seg-btn danger-sub-btn"
-                [disabled]="layer.payload.lines.length === 0"
-                title="Clear caption queue"
-                (click)="clearQueue(layer)"
-              >
-                Clear
-              </button>
-            </div>
+  <section class="cg-layer-form">
+    <div class="vb-tabs vb-big" role="tablist" aria-label="Layer desk">
+      @for (tab of deskTabs; track tab.value) {
+        <button
+          type="button"
+          class="vb-tab"
+          role="tab"
+          [class.active]="genericTab() === tab.value"
+          [attr.aria-selected]="genericTab() === tab.value"
+          (click)="setDeskTab(tab.value)"
+        >
+          {{ tab.label }}
+        </button>
+      }
+    </div>
 
-            <div class="cg-quick-input-box">
-              <input
-                type="text"
-                class="cg-sub-text-input"
-                placeholder="Type caption (Enter = Append, Ctrl+Enter = Air)..."
-                [(ngModel)]="quickInputText"
-                (keydown.enter)="onQuickInputEnter($event, layer)"
-              />
-              <div class="cg-inline cg-input-modes">
-                <button
-                  mat-stroked-button
-                  type="button"
-                  class="cg-seg-btn"
-                  [disabled]="!quickInputText.trim()"
-                  (click)="appendQuickText(layer)"
-                  title="Append to bottom of queue"
-                >
-                  Append
-                </button>
-                <button
-                  mat-stroked-button
-                  type="button"
-                  class="cg-seg-btn"
-                  [disabled]="!quickInputText.trim()"
-                  (click)="insertQuickText(layer)"
-                  title="Insert after current cursor"
-                >
-                  Insert
-                </button>
-                <button
-                  mat-flat-button
-                  color="primary"
-                  type="button"
-                  class="cg-seg-btn"
-                  [disabled]="!quickInputText.trim()"
-                  (click)="airNowQuickText(layer)"
-                  title="Insert and air immediately"
-                >
-                  Air Now
-                </button>
-              </div>
-            </div>
-          </section>
-        }
-        @if (layer.element_type === Clock || layer.element_type === Weather) {
-          <section class="cg-block">
-            <h3 class="cg-block-title">Background</h3>
-            <div class="cg-inline cg-source-pick">
-              <button mat-stroked-button type="button" class="cg-seg-btn" (click)="bgFile.click()">
-                Choose local image
-              </button>
-              <input #bgFile class="cg-file-input" type="file" [accept]="logoAccept" (change)="onBackgroundFile(layer, $event)" />
-              @if (layer.payload.background?.fileName) {
-                <span class="cg-file-name">{{ layer.payload.background?.fileName }}</span>
-              }
-              @if (hasBackground(layer)) {
-                <button mat-stroked-button type="button" class="cg-seg-btn" (click)="clearBackground(layer)">Clear</button>
-              }
-            </div>
-            <input class="cg-source-url" type="text"
-              [ngModel]="layer.payload.background?.imageUrl ?? ''"
-              (ngModelChange)="onBackgroundUrl(layer, $event)"
-              placeholder="Optional image URL" aria-label="Background image URL" />
-          </section>
-          @if (layer.element_type === Clock) {
-            <section class="cg-block">
-              <h3 class="cg-block-title">Clock</h3>
-              <div class="cg-clock-meta">
-                <label class="cg-field">
-                  <span>Language</span>
-                  <select [ngModel]="clockOf(layer).locale" (ngModelChange)="clockOf(layer).locale = $event; touchPreview()">
-                    @for (option of clockLocales; track option.value) {
-                      <option [value]="option.value">{{ option.label }}</option>
-                    }
-                  </select>
-                </label>
-                @if (clockOf(layer).mode === 'live') {
-                  <label class="cg-field">
-                    <span>Timezone</span>
-                    <select [ngModel]="clockOf(layer).timeZone" (ngModelChange)="clockOf(layer).timeZone = $event; touchPreview()">
-                      @for (option of clockZones; track option.value) {
-                        <option [value]="option.value">{{ option.label }}</option>
-                      }
-                    </select>
-                  </label>
-                }
-              </div>
-              <mat-button-toggle-group class="cg-seg-toggle cg-pill" [value]="clockOf(layer).mode"
-                (change)="onClockMode(layer, $event)" hideSingleSelectionIndicator aria-label="Clock mode">
-                <mat-button-toggle value="live">Live</mat-button-toggle>
-                <mat-button-toggle value="custom">Custom</mat-button-toggle>
-              </mat-button-toggle-group>
-              @if (clockOf(layer).mode === 'custom') {
-                <div class="cg-clock-push">
-                  <input type="datetime-local" step="1" [ngModel]="clockDraft()" (ngModelChange)="clockDraft.set($event)" aria-label="Custom time" />
-                  <button mat-stroked-button type="button" class="cg-seg-btn" (click)="useClockNow(layer)">Use now</button>
-                  <button mat-flat-button type="button" color="primary" class="cg-seg-btn" (click)="pushClock(layer)">Push</button>
-                </div>
-                <p class="cg-hint">Push sends this time, then it counts up each second.</p>
-              }
-            </section>
-          } @else {
-            <section class="cg-block">
-              <h3 class="cg-block-title">Weather</h3>
-              <p class="cg-hint">{{ weatherOf(layer).location?.name || 'No place' }}</p>
-              <div class="cg-inline cg-place-search">
-                <input type="text" [ngModel]="placeQuery()" (ngModelChange)="placeQuery.set($event)"
-                  (keydown.enter)="searchPlaces()" placeholder="City, anywhere" aria-label="Place" />
-                <button mat-stroked-button type="button" class="cg-seg-btn" (click)="searchPlaces()">Search</button>
-              </div>
-              @if (placeResults().length) {
-                <div class="cg-place-list">
-                  @for (place of placeResults(); track place.lat + place.lon) {
-                    <button type="button" class="cg-place" (click)="pickPlace(layer, place)">{{ place.label }}</button>
-                  }
-                </div>
-              }
-              <label class="cg-field">
-                <span>Temperature</span>
-                <select [ngModel]="weatherOf(layer).unitMode" (ngModelChange)="weatherOf(layer).unitMode = $event; touchPreview()">
-                  @for (option of weatherUnits; track option.value) {
-                    <option [value]="option.value">{{ option.label }}</option>
-                  }
-                </select>
-              </label>
-            </section>
-          }
-        }
-        @if (isNews(layer)) {
-          <section class="cg-block">
-            <h3 class="cg-block-title">Background</h3>
-            <div class="cg-inline cg-source-pick">
-              <button mat-stroked-button type="button" class="cg-seg-btn" (click)="newsBgFile.click()">
-                Choose local image
-              </button>
-              <input #newsBgFile class="cg-file-input" type="file" [accept]="logoAccept" (change)="onBackgroundFile(layer, $event)" />
-              @if (layer.payload.background?.fileName) {
-                <span class="cg-file-name">{{ layer.payload.background?.fileName }}</span>
-              }
-              @if (hasBackground(layer)) {
-                <button mat-stroked-button type="button" class="cg-seg-btn" (click)="clearBackground(layer)">Clear</button>
-              }
-            </div>
-            <input class="cg-source-url" type="text"
-              [ngModel]="layer.payload.background?.imageUrl ?? ''"
-              (ngModelChange)="onBackgroundUrl(layer, $event)"
-              placeholder="Optional image URL" aria-label="Background image URL" />
-          </section>
-        }
-        <footer class="cg-desk-foot">
-          <div class="cg-foot-copy">
-            <span class="cg-block-title">Copy to package</span>
-            <select
-              class="cg-copy-select"
-              [appCgWheelSelect]="copyWheelValues()"
-              [ngModel]="copyTargetId()"
-              (ngModelChange)="copyTargetId.set($event)"
-              (appCgWheelChange)="copyTargetId.set($event)"
-            >
-              <option value="">Choose…</option>
-              @for (pkg of copyTargets(); track pkg.id) {
-                <option [value]="pkg.id">{{ pkg.label }}</option>
-              }
-            </select>
-            <button
-              mat-stroked-button
-              type="button"
-              class="cg-seg-btn"
-              [disabled]="!copyTargetId() || cg.loading()"
-              (click)="copyToPackage()"
-            >
-              Copy
-            </button>
-          </div>
-          <div class="cg-foot-actions">
-            <button
-              mat-flat-button
-              type="button"
-              class="cg-seg-btn danger-btn"
-              (click)="removeLayer(layer)"
-            >
-              Delete layer
-            </button>
-            <button
-              mat-stroked-button
-              type="button"
-              class="cg-seg-btn cg-icon-btn"
-              [disabled]="!layerOutputUrl(layer)"
-              title="Copy layer OBS URL"
-              aria-label="Copy layer OBS URL"
-              (click)="copyLayerOutput(layer)"
-            >
-              <mat-icon>content_copy</mat-icon>
-            </button>
-          </div>
-        </footer>
-      </aside>
-
-      <div class="cg-desk-config">
-        @if (layer.element_type === Logo) {
-          <section class="cg-block">
-            <h3 class="cg-block-title">Place</h3>
-            <p class="cg-hint">
-              X and Y are inset from the Anchor edge (e.g. Top right + 5, 5 =
-              5 from the right and top). A centered axis ignores its value.
-            </p>
-            <div class="cg-anchor-field">
-              <span class="cg-anchor-title">Anchor</span>
-              <mat-button-toggle-group
-                class="cg-pill"
-                [value]="layer.layout.anchor"
-                (change)="onAnchorToggle(layer, $event)"
-                hideSingleSelectionIndicator
-                aria-label="Anchor position"
-              >
-                @for (option of anchorGridOptions; track option.value) {
-                  <mat-button-toggle
-                    [value]="option.value"
-                    [attr.title]="option.label"
-                    [attr.aria-label]="option.label"
-                  >
-                    <mat-icon [class.cg-anchor-dot]="option.value === 'center'">{{ option.icon }}</mat-icon>
-                  </mat-button-toggle>
-                }
-              </mat-button-toggle-group>
-            </div>
-            <div class="cg-place-row">
-              <label class="cg-field cg-control-field">
-                <span>{{ placeAxisLabel(layer, 'x') }}</span>
-                @if (ignoresAxis(layer, 'x')) {
-                  <input type="text" value="—" disabled aria-label="X is ignored when centered" />
-                } @else {
-                  <input
-                    type="number"
-                    appCgWheel
-                    step="0.1"
-                    [(ngModel)]="layer.layout.x"
-                    (ngModelChange)="touchPreview()"
-                    (appCgWheelChange)="layer.layout.x = $event; touchPreview()"
-                  />
-                }
-              </label>
-              <label class="cg-field cg-control-field">
-                <span>{{ placeAxisLabel(layer, 'y') }}</span>
-                @if (ignoresAxis(layer, 'y')) {
-                  <input type="text" value="—" disabled aria-label="Y is ignored when centered" />
-                } @else {
-                  <input
-                    type="number"
-                    appCgWheel
-                    step="0.1"
-                    [(ngModel)]="layer.layout.y"
-                    (ngModelChange)="touchPreview()"
-                    (appCgWheelChange)="layer.layout.y = $event; touchPreview()"
-                  />
-                }
-              </label>
-              <label class="cg-field cg-control-field">
-                <span>Scale</span>
-                <input
-                  type="number"
-                  appCgWheel
-                  step="0.05"
-                  min="0.05"
-                  [(ngModel)]="layer.layout.scale"
-                  (ngModelChange)="touchPreview()"
-                  (appCgWheelChange)="layer.layout.scale = $event; touchPreview()"
-                />
-              </label>
-            </div>
-            <div class="cg-outline-row">
-              <button
-                type="button"
-                class="cg-switch"
-                [class.on]="logoOutline()"
-                role="switch"
-                [attr.aria-checked]="logoOutline()"
-                (click)="logoOutline.set(!logoOutline())"
-              >
-                <span class="cg-switch-thumb"></span>
-              </button>
-              <span class="cg-outline-label">Outline</span>
-            </div>
-          </section>
-        } @else if (layer.element_type === Clock || layer.element_type === Weather) {
-          <div class="cg-bug-places">
-          <section class="cg-block">
-            <h3 class="cg-block-title">Background place</h3>
-            <div class="cg-anchor-grid">
-              <mat-button-toggle-group class="cg-pill"
-                [value]="backgroundLayout(layer).anchor"
-                (change)="onBackgroundAnchor(layer, $event)" hideSingleSelectionIndicator>
-                @for (anchor of anchorGridOptions; track anchor.value) {
-                  <mat-button-toggle [value]="anchor.value" [attr.aria-label]="anchor.label">
-                    <mat-icon>{{ anchor.icon }}</mat-icon>
-                  </mat-button-toggle>
-                }
-              </mat-button-toggle-group>
-            </div>
-            <div class="cg-fields">
-              <label class="cg-field">
-                <span>{{ backgroundAxisLabel(layer, 'x') }}</span>
-                @if (backgroundIgnores(layer, 'x')) {
-                  <input type="text" value="—" disabled />
-                } @else {
-                  <input type="number" appCgWheel step="0.1" [ngModel]="backgroundLayout(layer).x"
-                    (ngModelChange)="backgroundLayout(layer).x = $event; touchPreview()"
-                    (appCgWheelChange)="backgroundLayout(layer).x = $event; touchPreview()" />
-                }
-              </label>
-              <label class="cg-field">
-                <span>{{ backgroundAxisLabel(layer, 'y') }}</span>
-                @if (backgroundIgnores(layer, 'y')) {
-                  <input type="text" value="—" disabled />
-                } @else {
-                  <input type="number" appCgWheel step="0.1" [ngModel]="backgroundLayout(layer).y"
-                    (ngModelChange)="backgroundLayout(layer).y = $event; touchPreview()"
-                    (appCgWheelChange)="backgroundLayout(layer).y = $event; touchPreview()" />
-                }
-              </label>
-              <label class="cg-field">
-                <span>Scale</span>
-                <input type="number" appCgWheel step="0.05" min="0.05" max="8"
-                  [ngModel]="backgroundLayout(layer).scale"
-                  (ngModelChange)="backgroundLayout(layer).scale = $event; touchPreview()"
-                  (appCgWheelChange)="backgroundLayout(layer).scale = $event; touchPreview()" />
-              </label>
-            </div>
-            <div class="cg-outline-row">
-              <button type="button" class="cg-switch" [class.on]="logoOutline()" role="switch"
-                [attr.aria-checked]="logoOutline()" (click)="logoOutline.set(!logoOutline())">
-                <span class="cg-switch-thumb"></span>
-              </button>
-              <span class="cg-outline-label">Outline</span>
-            </div>
-          </section>
-          <section class="cg-block">
-            <h3 class="cg-block-title">Text place</h3>
-            <div class="cg-anchor-grid">
-              <mat-button-toggle-group class="cg-pill" [value]="layer.layout.anchor"
-                (change)="onAnchorToggle(layer, $event)" hideSingleSelectionIndicator>
-                @for (anchor of anchorGridOptions; track anchor.value) {
-                  <mat-button-toggle [value]="anchor.value" [attr.aria-label]="anchor.label">
-                    <mat-icon>{{ anchor.icon }}</mat-icon>
-                  </mat-button-toggle>
-                }
-              </mat-button-toggle-group>
-            </div>
-            <mat-button-toggle-group class="cg-seg-toggle cg-pill" [value]="subtitleAlign(layer)"
-              (change)="onAlignToggle(layer, $event)" hideSingleSelectionIndicator aria-label="Align">
-              @for (align of alignOptions; track align.value) {
-                <mat-button-toggle [value]="align.value" [attr.aria-label]="align.label">
-                  <mat-icon>{{ align.icon }}</mat-icon>
-                </mat-button-toggle>
-              }
-            </mat-button-toggle-group>
-            <div class="cg-fields">
-              <label class="cg-field">
-                <span>{{ placeAxisLabel(layer, 'x') }}</span>
-                @if (ignoresAxis(layer, 'x')) {
-                  <input type="text" value="—" disabled />
-                } @else {
-                  <input type="number" appCgWheel step="0.1" [ngModel]="layer.layout.x"
-                    (ngModelChange)="layer.layout.x = $event; touchPreview()"
-                    (appCgWheelChange)="layer.layout.x = $event; touchPreview()" />
-                }
-              </label>
-              <label class="cg-field">
-                <span>{{ placeAxisLabel(layer, 'y') }}</span>
-                @if (ignoresAxis(layer, 'y')) {
-                  <input type="text" value="—" disabled />
-                } @else {
-                  <input type="number" appCgWheel step="0.1" [ngModel]="layer.layout.y"
-                    (ngModelChange)="layer.layout.y = $event; touchPreview()"
-                    (appCgWheelChange)="layer.layout.y = $event; touchPreview()" />
-                }
-              </label>
-            </div>
-          </section>
-          @if (layer.element_type === Clock) {
-            <section class="cg-block">
-              <h3 class="cg-block-title">Format</h3>
-              <label class="cg-field">
-                <span>Pattern</span>
-                <select [ngModel]="clockFormatValue(layer)" (ngModelChange)="onClockFormat(layer, $event)">
-                  @for (option of clockFormats; track option.value) {
-                    <option [value]="option.value">{{ option.label }}</option>
-                  }
-                  <option [value]="clockFormatCustom">Custom pattern…</option>
-                </select>
-              </label>
-              @if (clockFormatValue(layer) === clockFormatCustom) {
-                <input class="cg-source-url" type="text" [ngModel]="clockOf(layer).format"
-                  (ngModelChange)="clockOf(layer).format = $event; touchPreview()"
-                  placeholder="yyyy-MM-dd HH:mm:ss" aria-label="Custom pattern" />
-              }
-            </section>
-          }
-          </div>
-          @if (layer.element_type === Weather) {
-            <section class="cg-block">
-              <h3 class="cg-block-title">Spacing</h3>
-              <div class="cg-fields">
-                <label class="cg-field">
-                  <span>Temp to humidity (em)</span>
-                  <input type="number" appCgWheel step="0.05" min="0" max="4"
-                    [ngModel]="weatherOf(layer).gapHum"
-                    (ngModelChange)="weatherOf(layer).gapHum = $event; touchPreview()"
-                    (appCgWheelChange)="weatherOf(layer).gapHum = $event; touchPreview()" />
-                </label>
-                <label class="cg-field">
-                  <span>Humidity to icon (em)</span>
-                  <input type="number" appCgWheel step="0.05" min="0" max="4"
-                    [ngModel]="weatherOf(layer).gapIcon"
-                    (ngModelChange)="weatherOf(layer).gapIcon = $event; touchPreview()"
-                    (appCgWheelChange)="weatherOf(layer).gapIcon = $event; touchPreview()" />
-                </label>
-              </div>
-            </section>
-          }
-          <section class="cg-block">
-            <h3 class="cg-block-title">Style</h3>
-            <app-cg-text-style-editor [paint]="bugStyle(layer)" (changed)="touchPreview()" />
-          </section>
-        } @else if (isNews(layer)) {
-          <div class="cg-news-col">
-            <app-cg-news-queue
-              [items]="newsItems(layer)"
-              [maxChars]="layer.element_type === Breaking ? breakingMaxChars : null"
-              [onAir]="isLiveOnAir()"
-              (itemsChange)="onNewsItems(layer, $event)"
-            />
-          </div>
-          <div class="cg-news-side">
-            @if (layer.element_type === Breaking) {
-              <section class="cg-block">
-                <h3 class="cg-block-title">Timing</h3>
-                <div class="cg-fields">
-                  <label class="cg-field">
-                    <span>Seconds each</span>
-                    <input type="number" appCgWheel step="1"
-                      [min]="breakingSecondsMin" [max]="breakingSecondsMax"
-                      [appCgWheelFine]="1" [appCgWheelCoarse]="5"
-                      [ngModel]="breakingOf(layer).secondsPerItem"
-                      (ngModelChange)="onBreakingSeconds(layer, $event)"
-                      (appCgWheelChange)="onBreakingSeconds(layer, $event)" />
-                  </label>
-                </div>
-                <div class="cg-cue-nav">
-                  <mat-button-toggle-group class="cg-seg-toggle cg-pill"
-                    [value]="isCueCut(layer) ? 'cut' : 'fade'"
-                    (change)="onCueAppearToggle(layer, $event)" hideSingleSelectionIndicator>
-                    <mat-button-toggle value="fade">Fade</mat-button-toggle>
-                    <mat-button-toggle value="cut">Cut</mat-button-toggle>
-                  </mat-button-toggle-group>
-                  @if (!isCueCut(layer)) {
-                    <label class="cg-field cg-duration">
-                      <span>ms</span>
-                      <input type="number" appCgWheel [min]="cutMs" [max]="maxDurationMs"
-                        [appCgWheelMin]="wheelMinMs" [appCgWheelFine]="10" [appCgWheelCoarse]="500"
-                        step="50" [ngModel]="cueDurationMs(layer)"
-                        (ngModelChange)="onCueDurationMsChange(layer, $event)"
-                        (appCgWheelChange)="onCueDurationMsChange(layer, $event)" />
-                    </label>
-                  }
-                </div>
-                <p class="cg-hint">One line stays up. Several lines loop. Height is fixed, so a longer line uses smaller type.</p>
-              </section>
+    <div class="vb-panel vb-big-panel" role="tabpanel">
+      @switch (genericTab()) {
+        @case ('content') {
+          <div class="cg-air-bar" [class.on]="isLiveOnAir()" role="status">
+            @if (isLiveOnAir()) {
+              ● On air — 呢層出緊街，內容改動即時去 OBS，唔經 Take
             } @else {
-              <section class="cg-block">
-                <h3 class="cg-block-title">Crawl</h3>
-                <div class="cg-cue-nav">
-                  <mat-button-toggle-group class="cg-seg-toggle cg-pill"
+              ○ 呢層未出街 — 內容改動仍然即時寫入，唔經 Take
+            }
+          </div>
+
+          <div class="cg-content" [class.monitor-collapsed]="monitorCollapsed()">
+            <div class="cg-content-left">
+              <div class="cg-monitor-slot">
+                <app-cg-mix-preview
+                  label=""
+                  [wide]="true"
+                  [forceVisible]="true"
+                  [layerLookOnly]="true"
+                  [outline]="logoOutline()"
+                  [layers]="[layer]"
+                  [backdrop]="layersBackdrop()"
+                />
+              </div>
+              <button
+                type="button"
+                class="cg-seg-btn cg-monitor-toggle"
+                mat-stroked-button
+                (click)="toggleMonitor()"
+              >
+                {{ monitorCollapsed() ? '展開 monitor' : '收起 monitor' }}
+              </button>
+
+              <!-- 直播控制 -->
+              @if (layer.element_type === Subtitle) {
+                <section class="cg-sec cg-live">
+                  <h3 class="cg-block-title">直播控制 — Cue</h3>
+                  <div class="cg-inline">
+                    <button
+                      mat-stroked-button
+                      type="button"
+                      class="cg-seg-btn cg-icon-btn"
+                      title="Cue up"
+                      aria-label="Cue up"
+                      (click)="cue(-1)"
+                    >
+                      <mat-icon>keyboard_arrow_up</mat-icon>
+                    </button>
+                    <button
+                      mat-stroked-button
+                      type="button"
+                      class="cg-seg-btn cg-icon-btn"
+                      title="Cue down"
+                      aria-label="Cue down"
+                      (click)="cue(1)"
+                    >
+                      <mat-icon>keyboard_arrow_down</mat-icon>
+                    </button>
+                    <button
+                      mat-stroked-button
+                      type="button"
+                      class="cg-seg-btn"
+                      [class.selected]="layer.payload.index === null"
+                      (click)="blankAir()"
+                    >
+                      Blank
+                    </button>
+                  </div>
+                  @if (!packageId) {
+                    <p class="cg-hint">Save the package once so cue goes to OBS.</p>
+                  }
+                </section>
+              } @else if (layer.element_type === Clock) {
+                <section class="cg-sec cg-live">
+                  <h3 class="cg-block-title">直播控制 — Clock</h3>
+                  <mat-button-toggle-group
+                    class="cg-seg-toggle cg-pill"
+                    [value]="clockOf(layer).mode"
+                    (change)="onClockMode(layer, $event)"
+                    hideSingleSelectionIndicator
+                    aria-label="Clock mode"
+                  >
+                    <mat-button-toggle value="live">Live</mat-button-toggle>
+                    <mat-button-toggle value="custom">Custom</mat-button-toggle>
+                  </mat-button-toggle-group>
+                  @if (clockOf(layer).mode === 'custom') {
+                    <div class="cg-clock-push">
+                      <input
+                        type="datetime-local"
+                        step="1"
+                        [ngModel]="clockDraft()"
+                        (ngModelChange)="clockDraft.set($event)"
+                        aria-label="Custom time"
+                      />
+                      <button
+                        mat-stroked-button
+                        type="button"
+                        class="cg-seg-btn"
+                        (click)="useClockNow(layer)"
+                      >
+                        Use now
+                      </button>
+                      <button
+                        mat-flat-button
+                        type="button"
+                        color="primary"
+                        class="cg-seg-btn"
+                        (click)="pushClock(layer)"
+                      >
+                        Push
+                      </button>
+                    </div>
+                    <p class="cg-hint">Push sends this time, then it counts up each second.</p>
+                  }
+                </section>
+              } @else if (layer.element_type === Weather) {
+                <section class="cg-sec cg-live">
+                  <h3 class="cg-block-title">直播控制 — Weather</h3>
+                  <p class="cg-hint">{{ weatherOf(layer).location?.name || 'No place' }}</p>
+                  <div class="cg-inline cg-place-search">
+                    <input
+                      type="text"
+                      [ngModel]="placeQuery()"
+                      (ngModelChange)="placeQuery.set($event)"
+                      (keydown.enter)="searchPlaces()"
+                      placeholder="City, anywhere"
+                      aria-label="Place"
+                    />
+                    <button
+                      mat-stroked-button
+                      type="button"
+                      class="cg-seg-btn"
+                      (click)="searchPlaces()"
+                    >
+                      Search
+                    </button>
+                  </div>
+                  @if (placeResults().length) {
+                    <div class="cg-place-list">
+                      @for (place of placeResults(); track place.lat + place.lon) {
+                        <button type="button" class="cg-place" (click)="pickPlace(layer, place)">
+                          {{ place.label }}
+                        </button>
+                      }
+                    </div>
+                  }
+                  <div class="cg-field">
+                    <span>Temperature</span>
+                    <mat-button-toggle-group
+                      class="cg-seg-toggle cg-pill"
+                      [value]="weatherOf(layer).unitMode"
+                      (change)="onWeatherUnit(layer, $event)"
+                      hideSingleSelectionIndicator
+                      aria-label="Temperature unit"
+                    >
+                      @for (option of weatherUnits; track option.value) {
+                        <mat-button-toggle [value]="option.value">{{ option.label }}</mat-button-toggle>
+                      }
+                    </mat-button-toggle-group>
+                  </div>
+                </section>
+              } @else if (layer.element_type === Breaking) {
+                <section class="cg-sec cg-live">
+                  <h3 class="cg-block-title">直播控制 — Timing</h3>
+                  <div class="cg-fields">
+                    <label class="cg-field">
+                      <span>Seconds each</span>
+                      <input
+                        type="number"
+                        appCgWheel
+                        step="1"
+                        [min]="breakingSecondsMin"
+                        [max]="breakingSecondsMax"
+                        [appCgWheelFine]="1"
+                        [appCgWheelCoarse]="5"
+                        [ngModel]="breakingOf(layer).secondsPerItem"
+                        (ngModelChange)="onBreakingSeconds(layer, $event)"
+                        (appCgWheelChange)="onBreakingSeconds(layer, $event)"
+                      />
+                    </label>
+                  </div>
+                  <p class="cg-hint">One line stays up. Several lines loop. Height is fixed, so a longer line uses smaller type.</p>
+                </section>
+              } @else if (layer.element_type === Ticker) {
+                <section class="cg-sec cg-live">
+                  <h3 class="cg-block-title">直播控制 — Crawl</h3>
+                  <mat-button-toggle-group
+                    class="cg-seg-toggle cg-pill"
                     [value]="tickerOf(layer).direction"
-                    (change)="onTickerDirection(layer, $event)" hideSingleSelectionIndicator>
+                    (change)="onTickerDirection(layer, $event)"
+                    hideSingleSelectionIndicator
+                    aria-label="Crawl direction"
+                  >
                     <mat-button-toggle value="horizontal">Left</mat-button-toggle>
                     <mat-button-toggle value="vertical">Up</mat-button-toggle>
                   </mat-button-toggle-group>
-                </div>
-                <div class="cg-fields">
-                  <label class="cg-field">
-                    <span>Speed</span>
-                    <input type="number" appCgWheel step="0.5"
-                      [min]="tickerSpeedMin" [max]="tickerSpeedMax"
-                      [appCgWheelFine]="0.1" [appCgWheelCoarse]="5"
-                      [ngModel]="tickerOf(layer).speed"
-                      (ngModelChange)="onTickerSpeed(layer, $event)"
-                      (appCgWheelChange)="onTickerSpeed(layer, $event)" />
-                  </label>
-                  <label class="cg-field">
-                    <span>Gap (em)</span>
-                    <input type="number" appCgWheel step="0.5"
-                      [min]="tickerGapMin" [max]="tickerGapMax"
-                      [appCgWheelFine]="0.1" [appCgWheelCoarse]="2"
-                      [ngModel]="tickerOf(layer).gap"
-                      (ngModelChange)="onTickerGap(layer, $event)"
-                      (appCgWheelChange)="onTickerGap(layer, $event)" />
-                  </label>
-                  <label class="cg-field">
-                    <span>Fade width (%)</span>
-                    <input type="number" appCgWheel step="1"
-                      [min]="tickerFadeMin" [max]="tickerFadeMax"
-                      [ngModel]="tickerOf(layer).fadeWidth"
-                      (ngModelChange)="onTickerFadeWidth(layer, $event)"
-                      (appCgWheelChange)="onTickerFadeWidth(layer, $event)" />
-                  </label>
-                </div>
-                <div class="cg-outline-row">
-                  <button type="button" class="cg-switch" [class.on]="tickerOf(layer).fadeLeft" role="switch"
-                    [attr.aria-checked]="tickerOf(layer).fadeLeft" (click)="toggleTickerFade(layer, 'left')">
-                    <span class="cg-switch-thumb"></span>
-                  </button>
-                  <span class="cg-outline-label">{{ tickerOf(layer).direction === 'vertical' ? 'Fade top' : 'Fade left' }}</span>
-                  <button type="button" class="cg-switch" [class.on]="tickerOf(layer).fadeRight" role="switch"
-                    [attr.aria-checked]="tickerOf(layer).fadeRight" (click)="toggleTickerFade(layer, 'right')">
-                    <span class="cg-switch-thumb"></span>
-                  </button>
-                  <span class="cg-outline-label">{{ tickerOf(layer).direction === 'vertical' ? 'Fade bottom' : 'Fade right' }}</span>
-                </div>
-                @if (tickerOf(layer).direction === 'vertical') {
-                  <p class="cg-hint">Speed is percent of the Stage height per second. Characters stand upright, one per cell, and move up. Letters and digits do the same. Line height is the gap between cells.</p>
-                } @else {
-                  <p class="cg-hint">Speed is percent of the Stage width per second. The fade sits on the text window only.</p>
-                }
-              </section>
-            }
-            <section class="cg-block">
-              <h3 class="cg-block-title">Background place</h3>
-              <div class="cg-anchor-grid">
-                <mat-button-toggle-group class="cg-pill"
-                  [value]="backgroundLayout(layer).anchor"
-                  (change)="onBackgroundAnchor(layer, $event)" hideSingleSelectionIndicator>
-                  @for (anchor of anchorGridOptions; track anchor.value) {
-                    <mat-button-toggle [value]="anchor.value" [attr.aria-label]="anchor.label">
-                      <mat-icon>{{ anchor.icon }}</mat-icon>
-                    </mat-button-toggle>
-                  }
-                </mat-button-toggle-group>
-              </div>
-              <div class="cg-fields">
-                <label class="cg-field">
-                  <span>{{ backgroundAxisLabel(layer, 'x') }}</span>
-                  @if (backgroundIgnores(layer, 'x')) {
-                    <input type="text" value="—" disabled />
-                  } @else {
-                    <input type="number" appCgWheel step="0.1" [ngModel]="backgroundLayout(layer).x"
-                      (ngModelChange)="backgroundLayout(layer).x = $event; touchPreview()"
-                      (appCgWheelChange)="backgroundLayout(layer).x = $event; touchPreview()" />
-                  }
-                </label>
-                <label class="cg-field">
-                  <span>{{ backgroundAxisLabel(layer, 'y') }}</span>
-                  @if (backgroundIgnores(layer, 'y')) {
-                    <input type="text" value="—" disabled />
-                  } @else {
-                    <input type="number" appCgWheel step="0.1" [ngModel]="backgroundLayout(layer).y"
-                      (ngModelChange)="backgroundLayout(layer).y = $event; touchPreview()"
-                      (appCgWheelChange)="backgroundLayout(layer).y = $event; touchPreview()" />
-                  }
-                </label>
-                <label class="cg-field">
-                  <span>Scale</span>
-                  <input type="number" appCgWheel step="0.05" min="0.05" max="8"
-                    [ngModel]="backgroundLayout(layer).scale"
-                    (ngModelChange)="backgroundLayout(layer).scale = $event; touchPreview()"
-                    (appCgWheelChange)="backgroundLayout(layer).scale = $event; touchPreview()" />
-                </label>
-              </div>
-              <div class="cg-outline-row">
-                <button type="button" class="cg-switch" [class.on]="logoOutline()" role="switch"
-                  [attr.aria-checked]="logoOutline()" (click)="logoOutline.set(!logoOutline())">
-                  <span class="cg-switch-thumb"></span>
-                </button>
-                <span class="cg-outline-label">Outline</span>
-              </div>
-            </section>
-            <section class="cg-block">
-              <h3 class="cg-block-title">Text place</h3>
-              @if (layer.element_type !== Ticker) {
-                <div class="cg-anchor-grid">
-                  <mat-button-toggle-group class="cg-pill" [value]="layer.layout.anchor"
-                    (change)="onAnchorToggle(layer, $event)" hideSingleSelectionIndicator>
-                    @for (anchor of anchorGridOptions; track anchor.value) {
-                      <mat-button-toggle [value]="anchor.value" [attr.aria-label]="anchor.label">
-                        <mat-icon>{{ anchor.icon }}</mat-icon>
-                      </mat-button-toggle>
-                    }
-                  </mat-button-toggle-group>
-                </div>
-              }
-              <div class="cg-fields">
-                @if (layer.element_type === Ticker) {
-                  <label class="cg-field">
-                    <span>X</span>
-                    <input type="number" appCgWheel step="1" [min]="tickerBoxXMin" [max]="tickerBoxXMax"
-                      [appCgWheelFine]="1" [appCgWheelCoarse]="10"
-                      [ngModel]="tickerPx(layer).x"
-                      (ngModelChange)="onTickerBox(layer, 'x', $event)"
-                      (appCgWheelChange)="onTickerBox(layer, 'x', $event)" />
-                  </label>
-                  <label class="cg-field">
-                    <span>Y</span>
-                    <input type="number" appCgWheel step="1" [min]="tickerBoxYMin" [max]="tickerBoxYMax"
-                      [appCgWheelFine]="1" [appCgWheelCoarse]="10"
-                      [ngModel]="tickerPx(layer).y"
-                      (ngModelChange)="onTickerBox(layer, 'y', $event)"
-                      (appCgWheelChange)="onTickerBox(layer, 'y', $event)" />
-                  </label>
-                  @if (tickerOf(layer).direction !== 'vertical') {
+                  <div class="cg-fields">
                     <label class="cg-field">
-                      <span>Width</span>
-                      <input type="number" appCgWheel step="1" [min]="tickerBoxMin" [max]="tickerBoxXMax"
-                        [appCgWheelFine]="1" [appCgWheelCoarse]="10"
-                        [ngModel]="tickerPx(layer).width"
-                        (ngModelChange)="onTickerBox(layer, 'width', $event)"
-                        (appCgWheelChange)="onTickerBox(layer, 'width', $event)" />
+                      <span>Speed</span>
+                      <input
+                        type="number"
+                        appCgWheel
+                        step="0.5"
+                        [min]="tickerSpeedMin"
+                        [max]="tickerSpeedMax"
+                        [appCgWheelFine]="0.1"
+                        [appCgWheelCoarse]="5"
+                        [ngModel]="tickerOf(layer).speed"
+                        (ngModelChange)="onTickerSpeed(layer, $event)"
+                        (appCgWheelChange)="onTickerSpeed(layer, $event)"
+                      />
                     </label>
+                    <label class="cg-field">
+                      <span>Gap (em)</span>
+                      <input
+                        type="number"
+                        appCgWheel
+                        step="0.5"
+                        [min]="tickerGapMin"
+                        [max]="tickerGapMax"
+                        [appCgWheelFine]="0.1"
+                        [appCgWheelCoarse]="2"
+                        [ngModel]="tickerOf(layer).gap"
+                        (ngModelChange)="onTickerGap(layer, $event)"
+                        (appCgWheelChange)="onTickerGap(layer, $event)"
+                      />
+                    </label>
+                    <label class="cg-field">
+                      <span>Fade width (%)</span>
+                      <input
+                        type="number"
+                        appCgWheel
+                        step="1"
+                        [min]="tickerFadeMin"
+                        [max]="tickerFadeMax"
+                        [ngModel]="tickerOf(layer).fadeWidth"
+                        (ngModelChange)="onTickerFadeWidth(layer, $event)"
+                        (appCgWheelChange)="onTickerFadeWidth(layer, $event)"
+                      />
+                    </label>
+                  </div>
+                  <div class="cg-inline">
+                    <span class="cg-outline-row">
+                      <button
+                        type="button"
+                        class="cg-switch"
+                        [class.on]="tickerOf(layer).fadeLeft"
+                        role="switch"
+                        [attr.aria-checked]="tickerOf(layer).fadeLeft"
+                        (click)="toggleTickerFade(layer, 'left')"
+                      >
+                        <span class="cg-switch-thumb"></span>
+                      </button>
+                      <span class="cg-outline-label">{{ tickerOf(layer).direction === 'vertical' ? 'Fade top' : 'Fade left' }}</span>
+                    </span>
+                    <span class="cg-outline-row">
+                      <button
+                        type="button"
+                        class="cg-switch"
+                        [class.on]="tickerOf(layer).fadeRight"
+                        role="switch"
+                        [attr.aria-checked]="tickerOf(layer).fadeRight"
+                        (click)="toggleTickerFade(layer, 'right')"
+                      >
+                        <span class="cg-switch-thumb"></span>
+                      </button>
+                      <span class="cg-outline-label">{{ tickerOf(layer).direction === 'vertical' ? 'Fade bottom' : 'Fade right' }}</span>
+                    </span>
+                  </div>
+                  @if (tickerOf(layer).direction === 'vertical') {
+                    <p class="cg-hint">Speed is percent of the Stage height per second. Characters stand upright, one per cell, and move up. Letters and digits do the same. Line height is the gap between cells.</p>
+                  } @else {
+                    <p class="cg-hint">Speed is percent of the Stage width per second. The fade sits on the text window only.</p>
                   }
-                  <label class="cg-field">
-                    <span>Height</span>
-                    <input type="number" appCgWheel step="1" [min]="tickerBoxMin" [max]="tickerBoxYMax"
-                      [appCgWheelFine]="1" [appCgWheelCoarse]="10"
-                      [ngModel]="tickerPx(layer).height"
-                      (ngModelChange)="onTickerBox(layer, 'height', $event)"
-                      (appCgWheelChange)="onTickerBox(layer, 'height', $event)" />
-                  </label>
-                } @else {
-                  <label class="cg-field">
-                    <span>{{ placeAxisLabel(layer, 'x') }}</span>
-                    @if (ignoresAxis(layer, 'x')) {
-                      <input type="text" value="—" disabled />
-                    } @else {
-                      <input type="number" appCgWheel step="0.1" [ngModel]="layer.layout.x"
-                        (ngModelChange)="layer.layout.x = $event; touchPreview()"
-                        (appCgWheelChange)="layer.layout.x = $event; touchPreview()" />
-                    }
-                  </label>
-                  <label class="cg-field">
-                    <span>{{ placeAxisLabel(layer, 'y') }}</span>
-                    @if (ignoresAxis(layer, 'y')) {
-                      <input type="text" value="—" disabled />
-                    } @else {
-                      <input type="number" appCgWheel step="0.1" [ngModel]="layer.layout.y"
-                        (ngModelChange)="layer.layout.y = $event; touchPreview()"
-                        (appCgWheelChange)="layer.layout.y = $event; touchPreview()" />
-                    }
-                  </label>
-                  <label class="cg-field">
-                    <span>Height</span>
-                    <input type="number" appCgWheel step="1" min="8" max="90"
-                      [appCgWheelFine]="0.5" [appCgWheelCoarse]="5"
-                      [ngModel]="layer.layout.height ?? breakingHeightDefault"
-                      (ngModelChange)="layer.layout.height = $event; touchPreview()"
-                      (appCgWheelChange)="layer.layout.height = $event; touchPreview()" />
-                  </label>
-                }
-              </div>
-              @if (layer.element_type === Ticker) {
-                <p class="cg-hint">X and Y are pixels from the top left of the 1920×1080 stage. Negative moves past that edge. Up uses Height as the column. Left uses Width as the bar.</p>
-              }
-            </section>
-            <section class="cg-block">
-              <h3 class="cg-block-title">Style</h3>
-              <app-cg-text-style-editor [paint]="newsStyle(layer)" (changed)="touchPreview()" />
-            </section>
-          </div>
-        } @else if (layer.element_type === Subtitle) {
-          <div class="cg-sub-cue-col">
-            <div class="cg-cue-bar">
-              <div class="cg-cue-nav">
-                <span class="cg-kicker">Cue</span>
-                <button
-                  mat-stroked-button
-                  type="button"
-                  class="cg-seg-btn cg-icon-btn"
-                  title="Cue up"
-                  aria-label="Cue up"
-                  (click)="cue(-1)"
-                >
-                  <mat-icon>keyboard_arrow_up</mat-icon>
-                </button>
-                <button
-                  mat-stroked-button
-                  type="button"
-                  class="cg-seg-btn cg-icon-btn"
-                  title="Cue down"
-                  aria-label="Cue down"
-                  (click)="cue(1)"
-                >
-                  <mat-icon>keyboard_arrow_down</mat-icon>
-                </button>
-                <button
-                  mat-stroked-button
-                  type="button"
-                  class="cg-seg-btn"
-                  [class.selected]="layer.payload.index === null"
-                  (click)="blankAir()"
-                >
-                  Blank
-                </button>
-                <mat-button-toggle-group
-                  class="cg-seg-toggle cg-pill"
-                  [value]="isCueCut(layer) ? 'cut' : 'fade'"
-                  (change)="onCueAppearToggle(layer, $event)"
-                  hideSingleSelectionIndicator
-                >
-                  <mat-button-toggle value="fade">Fade</mat-button-toggle>
-                  <mat-button-toggle value="cut">Cut</mat-button-toggle>
-                </mat-button-toggle-group>
-              </div>
-              @if (!isCueCut(layer)) {
-                <div class="cg-duration-wrap">
-                  <label class="cg-field cg-duration">
-                    <span>ms</span>
-                    <input
-                      type="number"
-                      appCgWheel
-                      [min]="cutMs"
-                      [max]="maxDurationMs"
-                      [appCgWheelMin]="wheelMinMs"
-                      [appCgWheelFine]="10"
-                      [appCgWheelCoarse]="500"
-                      step="50"
-                      [ngModel]="cueDurationMs(layer)"
-                      (ngModelChange)="onCueDurationMsChange(layer, $event)"
-                      (appCgWheelChange)="onCueDurationMsChange(layer, $event)"
-                    />
-                  </label>
-                  <div class="cg-cue-presets">
-                    <button
-                      mat-stroked-button
-                      type="button"
-                      class="cg-seg-btn cg-mini-btn"
-                      [class.selected]="cueDurationMs(layer) === 200"
-                      (click)="onCueDurationMsChange(layer, 200)"
-                    >
-                      200ms
-                    </button>
-                    <button
-                      mat-stroked-button
-                      type="button"
-                      class="cg-seg-btn cg-mini-btn"
-                      [class.selected]="cueDurationMs(layer) === 400"
-                      (click)="onCueDurationMsChange(layer, 400)"
-                    >
-                      400ms
-                    </button>
-                    <button
-                      mat-stroked-button
-                      type="button"
-                      class="cg-seg-btn cg-mini-btn"
-                      [class.selected]="cueDurationMs(layer) === 800"
-                      (click)="onCueDurationMsChange(layer, 800)"
-                    >
-                      800ms
-                    </button>
-                  </div>
-                </div>
+                </section>
               }
             </div>
-            @if (!packageId) {
-              <p class="cg-hint">Save the package once so cue goes to OBS.</p>
-            }
-            <div class="cg-queue" role="listbox" aria-label="Caption queue">
-              @for (line of layer.payload.lines; track $index) {
-                <button
-                  type="button"
-                  #queueRow
-                  class="cg-queue-row"
-                  role="option"
-                  [class.on]="$index === layer.payload.index"
-                  [class.held]="
-                    layer.payload.index === null && $index === layer.payload.cursor
-                  "
-                  [attr.aria-selected]="
-                    $index === layer.payload.index ||
-                    (layer.payload.index === null && $index === layer.payload.cursor)
-                  "
-                  (click)="cueAt($index)"
-                >
-                  <span class="cg-queue-n">{{ $index + 1 }}</span>
-                  <span class="cg-queue-line">{{ line }}</span>
-                </button>
-              }
-            </div>
-          </div>
 
-          @let subStyle = getSubtitleStyle(layer);
-          <div class="cg-sub-style-col">
-            <section class="cg-block cg-sub-place">
-              <h3 class="cg-block-title">Place</h3>
-              <div class="cg-place-compact">
-                <div class="cg-anchor-field">
-                  <span class="cg-anchor-title">Anchor</span>
-                  <mat-button-toggle-group
-                    class="cg-pill"
-                    [value]="layer.layout.anchor"
-                    (change)="onAnchorToggle(layer, $event)"
-                    hideSingleSelectionIndicator
-                    aria-label="Anchor position"
-                  >
-                    @for (option of anchorGridOptions; track option.value) {
-                      <mat-button-toggle
-                        [value]="option.value"
-                        [attr.title]="option.label"
-                        [attr.aria-label]="option.label"
-                      >
-                        <mat-icon [class.cg-anchor-dot]="option.value === 'center'">{{ option.icon }}</mat-icon>
-                      </mat-button-toggle>
+            <div class="cg-content-right">
+              @switch (layer.element_type) {
+                @case (Logo) {
+                  <section class="cg-sec">
+                    <h3 class="cg-block-title">Source — 圖片</h3>
+                    @if (isEmbeddedLogo(layer)) {
+                      <p class="cg-hint">
+                        This leftover embedded image will not save. Use Choose local
+                        image.
+                      </p>
                     }
-                  </mat-button-toggle-group>
-                  <span class="cg-anchor-title">Align</span>
-                  <mat-button-toggle-group
-                    class="cg-seg-toggle cg-pill"
-                    [value]="subtitleAlign(layer)"
-                    (change)="onAlignToggle(layer, $event)"
-                    hideSingleSelectionIndicator
-                    aria-label="Text alignment"
-                  >
-                    @for (option of alignOptions; track option.value) {
-                      <mat-button-toggle
-                        [value]="option.value"
-                        [attr.title]="option.label"
-                        [attr.aria-label]="option.label"
+                    <div class="cg-inline cg-source-pick">
+                      <button
+                        mat-stroked-button
+                        type="button"
+                        class="cg-seg-btn"
+                        (click)="logoFileInput.click()"
                       >
-                        <mat-icon>{{ option.icon }}</mat-icon>
-                      </mat-button-toggle>
-                    }
-                  </mat-button-toggle-group>
-                </div>
-                <div class="cg-place-grid">
-                  <label class="cg-field cg-control-field">
-                    <span>{{ placeAxisLabel(layer, 'x') }}</span>
-                    @if (ignoresAxis(layer, 'x')) {
-                      <input type="text" value="—" disabled aria-label="X is ignored when centered" />
-                    } @else {
+                        Choose local image
+                      </button>
                       <input
-                        type="number"
-                        appCgWheel
-                        step="0.1"
-                        [(ngModel)]="layer.layout.x"
-                        (ngModelChange)="touchPreview()"
-                        (appCgWheelChange)="layer.layout.x = $event; touchPreview()"
+                        #logoFileInput
+                        class="cg-file-input"
+                        type="file"
+                        [accept]="logoAccept"
+                        (change)="onLogoFile(layer, $event)"
+                      />
+                      @if (layer.payload.fileName) {
+                        <span class="cg-file-name">{{ layer.payload.fileName }}</span>
+                      }
+                    </div>
+                    @if (!isEmbeddedLogo(layer)) {
+                      <input
+                        class="cg-source-url"
+                        type="text"
+                        [(ngModel)]="layer.payload.imageUrl"
+                        (ngModelChange)="onImageUrlChange(layer)"
+                        placeholder="/icons/3d/apps.png or https://…"
+                        aria-label="Image URL"
                       />
                     }
-                  </label>
-                  <label class="cg-field cg-control-field">
-                    <span>{{ placeAxisLabel(layer, 'y') }}</span>
-                    @if (ignoresAxis(layer, 'y')) {
-                      <input type="text" value="—" disabled aria-label="Y is ignored when centered" />
-                    } @else {
-                      <input
-                        type="number"
-                        appCgWheel
-                        step="0.1"
-                        [(ngModel)]="layer.layout.y"
-                        (ngModelChange)="touchPreview()"
-                        (appCgWheelChange)="layer.layout.y = $event; touchPreview()"
-                      />
-                    }
-                  </label>
-                  <label class="cg-field cg-control-field">
-                    <span>Scale</span>
-                    <input
-                      type="number"
-                      appCgWheel
-                      step="0.05"
-                      min="0.05"
-                      [(ngModel)]="layer.layout.scale"
-                      (ngModelChange)="touchPreview()"
-                      (appCgWheelChange)="layer.layout.scale = $event; touchPreview()"
-                    />
-                  </label>
-                </div>
-              </div>
-              <p class="cg-hint">
-                Align puts the box's left / middle / right on the Anchor point.
-                A centered axis ignores its value · Scale is type size.
-              </p>
-            </section>
-            <section class="cg-sub-styling">
-              <div class="cg-style-row">
-                <label class="cg-field cg-font-field">
-                  <span>Font</span>
-                  <select
-                    [appCgWheelSelect]="fontWheelValues"
-                    [ngModel]="selectedFontValue(layer)"
-                    (ngModelChange)="onFontSelectChange(layer, $event)"
-                    (appCgWheelChange)="onFontSelectChange(layer, $event)"
-                  >
-                    <option value="">Default (DFHei / JhengHei)</option>
-                    @for (group of fontGroups; track group.id) {
-                      <optgroup [label]="group.label">
-                        @for (font of fontsInGroup(group.id); track font.value) {
-                          <option [value]="font.value">{{ font.label }}</option>
-                        }
-                      </optgroup>
-                    }
-                    <option value="__custom__">Other… (installed on OBS PC)</option>
-                  </select>
-                </label>
-                @if (isCustomFont(layer)) {
-                  <label class="cg-field cg-custom-font-field">
-                    <span>Other font name</span>
-                    <input
-                      type="text"
-                      [ngModel]="subStyle.fontFamily ?? ''"
-                      (ngModelChange)="subStyle.fontFamily = $event; onStyleFieldChange(layer)"
-                      placeholder="e.g. GenYoGothic, sans-serif"
-                    />
-                  </label>
-                } @else {
-                  <label class="cg-field">
-                    <span>Size (vh)</span>
-                    <input
-                      type="number"
-                      appCgWheel
-                      step="0.1"
-                      min="1"
-                      max="20"
-                      [ngModel]="subStyle.fontSize ?? (isPreset(PresetShow) ? 7.2 : 5.6)"
-                      (ngModelChange)="subStyle.fontSize = $event; onStyleFieldChange(layer)"
-                      (appCgWheelChange)="subStyle.fontSize = $event; onStyleFieldChange(layer)"
-                    />
-                  </label>
+                  </section>
                 }
-              </div>
-              @if (isCustomFont(layer)) {
-                <div class="cg-style-row">
-                  <label class="cg-field">
-                    <span>Size (vh)</span>
-                    <input
-                      type="number"
-                      appCgWheel
-                      step="0.1"
-                      min="1"
-                      max="20"
-                      [ngModel]="subStyle.fontSize ?? (isPreset(PresetShow) ? 7.2 : 5.6)"
-                      (ngModelChange)="subStyle.fontSize = $event; onStyleFieldChange(layer)"
-                      (appCgWheelChange)="subStyle.fontSize = $event; onStyleFieldChange(layer)"
-                    />
-                  </label>
-                </div>
-              }
-
-              <div class="cg-text-paint-row">
-                <mat-button-toggle-group
-                  class="cg-seg-toggle cg-text-paint-toggle"
-                  multiple
-                  [value]="textPaintToggles(subStyle)"
-                  (change)="onTextPaintToggle(layer, $event)"
-                  hideMultipleSelectionIndicator
-                  aria-label="Text style"
-                >
-                  <mat-button-toggle value="bold" title="Bold" aria-label="Bold">
-                    <mat-icon>format_bold</mat-icon>
-                  </mat-button-toggle>
-                  <mat-button-toggle value="italic" title="Italic" aria-label="Italic">
-                    <mat-icon>format_italic</mat-icon>
-                  </mat-button-toggle>
-                  <mat-button-toggle value="underline" title="Underline" aria-label="Underline">
-                    <mat-icon>format_underlined</mat-icon>
-                  </mat-button-toggle>
-                  <mat-button-toggle value="strike" title="Strikethrough" aria-label="Strikethrough">
-                    <mat-icon>format_strikethrough</mat-icon>
-                  </mat-button-toggle>
-                </mat-button-toggle-group>
-                <mat-button-toggle-group
-                  class="cg-seg-toggle cg-pill"
-                  [value]="gradientOn(subStyle) ? 'gradient' : 'solid'"
-                  (change)="onFillToggle(layer, $event)"
-                  hideSingleSelectionIndicator
-                  aria-label="Fill"
-                >
-                  <mat-button-toggle value="solid">Solid</mat-button-toggle>
-                  <mat-button-toggle value="gradient">Gradient</mat-button-toggle>
-                </mat-button-toggle-group>
-              </div>
-
-              <div class="cg-fields cg-spacing-row">
-                <label class="cg-field">
-                  <span>字距 (em)</span>
-                  <input
-                    type="number"
-                    appCgWheel
-                    step="0.01"
-                    min="-0.2"
-                    max="1.0"
-                    [ngModel]="subStyle.letterSpacing ?? (isPreset(PresetShow) ? 0.06 : 0.104)"
-                    (ngModelChange)="subStyle.letterSpacing = $event; onStyleFieldChange(layer)"
-                    (appCgWheelChange)="subStyle.letterSpacing = $event; onStyleFieldChange(layer)"
-                  />
-                </label>
-                <label class="cg-field">
-                  <span>行距 (倍數)</span>
-                  <input
-                    type="number"
-                    appCgWheel
-                    step="0.05"
-                    min="0.8"
-                    max="3.0"
-                    [ngModel]="subStyle.lineHeight ?? 1.15"
-                    (ngModelChange)="subStyle.lineHeight = $event; onStyleFieldChange(layer)"
-                    (appCgWheelChange)="subStyle.lineHeight = $event; onStyleFieldChange(layer)"
-                  />
-                </label>
-              </div>
-
-              <div class="cg-fields cg-scale-row">
-                <label class="cg-field">
-                  <span>Scale X (寬比)</span>
-                  <input
-                    type="number"
-                    appCgWheel
-                    step="0.05"
-                    min="0.5"
-                    max="2.5"
-                    [ngModel]="subStyle.scaleX ?? 1.0"
-                    (ngModelChange)="subStyle.scaleX = $event; onStyleFieldChange(layer)"
-                    (appCgWheelChange)="subStyle.scaleX = $event; onStyleFieldChange(layer)"
-                  />
-                </label>
-                <label class="cg-field">
-                  <span>Scale Y (高比)</span>
-                  <input
-                    type="number"
-                    appCgWheel
-                    step="0.05"
-                    min="0.5"
-                    max="2.5"
-                    [ngModel]="subStyle.scaleY ?? (isPreset(PresetShow) ? 1.0 : 1.11)"
-                    (ngModelChange)="subStyle.scaleY = $event; onStyleFieldChange(layer)"
-                    (appCgWheelChange)="subStyle.scaleY = $event; onStyleFieldChange(layer)"
-                  />
-                </label>
-                <label class="cg-field">
-                  <span>{{ gradientOn(subStyle) ? 'Start' : 'Text Color' }}</span>
-                  <div class="cg-color-input-wrap">
-                    <input
-                      type="color"
-                      class="cg-color-swatch"
-                      [ngModel]="subStyle.color ?? (isPreset(PresetShow) ? '#fff6d8' : '#ffffff')"
-                      (ngModelChange)="subStyle.color = $event; onStyleFieldChange(layer)"
-                    />
-                    <input
-                      type="text"
-                      class="cg-color-hex"
-                      [ngModel]="subStyle.color ?? (isPreset(PresetShow) ? '#fff6d8' : '#ffffff')"
-                      (ngModelChange)="subStyle.color = $event; onStyleFieldChange(layer)"
-                    />
-                  </div>
-                </label>
-              </div>
-
-              @if (gradientOn(subStyle)) {
-                <div class="cg-fields cg-gradient-row">
-                  <label class="cg-field">
-                    <span>End color</span>
-                    <div class="cg-color-input-wrap">
-                      <input
-                        type="color"
-                        class="cg-color-swatch"
-                        [ngModel]="subStyle.gradientTo || textGradientTo"
-                        (ngModelChange)="onGradientToChange(layer, $event)"
-                      />
+                @case (Subtitle) {
+                  <section class="cg-sec">
+                    <h3 class="cg-block-title">Cue list — 字幕 queue</h3>
+                    <div class="cg-queue" role="listbox" aria-label="Caption queue">
+                      @for (line of layer.payload.lines; track $index) {
+                        <button
+                          type="button"
+                          #queueRow
+                          class="cg-queue-row"
+                          role="option"
+                          [class.on]="$index === layer.payload.index"
+                          [class.held]="
+                            layer.payload.index === null && $index === layer.payload.cursor
+                          "
+                          [attr.aria-selected]="
+                            $index === layer.payload.index ||
+                            (layer.payload.index === null && $index === layer.payload.cursor)
+                          "
+                          (click)="cueAt($index)"
+                        >
+                          <span class="cg-queue-n">{{ $index + 1 }}</span>
+                          <span class="cg-queue-line">{{ line }}</span>
+                        </button>
+                      }
+                    </div>
+                  </section>
+                  <section class="cg-sec cg-sub-source">
+                    <h3 class="cg-block-title">新增內容</h3>
+                    <div class="cg-quick-input-box">
                       <input
                         type="text"
-                        class="cg-color-hex"
-                        [ngModel]="subStyle.gradientTo || textGradientTo"
-                        (ngModelChange)="onGradientToChange(layer, $event)"
+                        class="cg-sub-text-input"
+                        placeholder="Type caption (Enter = Append, Ctrl+Enter = Air)..."
+                        [(ngModel)]="quickInputText"
+                        (keydown.enter)="onQuickInputEnter($event, layer)"
                       />
+                      <div class="cg-inline cg-input-modes">
+                        <button
+                          mat-stroked-button
+                          type="button"
+                          class="cg-seg-btn"
+                          [disabled]="!quickInputText.trim()"
+                          (click)="appendQuickText(layer)"
+                          title="Append to bottom of queue"
+                        >
+                          Append
+                        </button>
+                        <button
+                          mat-stroked-button
+                          type="button"
+                          class="cg-seg-btn"
+                          [disabled]="!quickInputText.trim()"
+                          (click)="insertQuickText(layer)"
+                          title="Insert after current cursor"
+                        >
+                          Insert
+                        </button>
+                        <button
+                          mat-flat-button
+                          color="primary"
+                          type="button"
+                          class="cg-seg-btn"
+                          [disabled]="!quickInputText.trim()"
+                          (click)="airNowQuickText(layer)"
+                          title="Insert and air immediately"
+                        >
+                          Air Now
+                        </button>
+                      </div>
                     </div>
-                  </label>
-                  <label class="cg-field">
-                    <span>Angle</span>
-                    <input
-                      type="number"
-                      appCgWheel
-                      appCgWheelWrap
-                      [appCgWheelFine]="1"
-                      [appCgWheelCoarse]="45"
-                      step="15"
-                      min="0"
-                      max="360"
-                      [ngModel]="subStyle.gradientAngle ?? textGradientAngle"
-                      (ngModelChange)="subStyle.gradientAngle = $event; onStyleFieldChange(layer)"
-                      (appCgWheelChange)="subStyle.gradientAngle = $event; onStyleFieldChange(layer)"
-                    />
-                  </label>
-                </div>
+                    <div class="cg-inline cg-source-actions">
+                      <span class="cg-kicker">Source</span>
+                      <button
+                        mat-stroked-button
+                        type="button"
+                        class="cg-seg-btn cg-icon-btn"
+                        title="Paste script from clipboard"
+                        aria-label="Paste script"
+                        (click)="pasteScript()"
+                      >
+                        <mat-icon>content_paste</mat-icon>
+                      </button>
+                      <button
+                        mat-stroked-button
+                        type="button"
+                        class="cg-seg-btn"
+                        (click)="scriptFileInput.click()"
+                      >
+                        Load .txt / .srt
+                      </button>
+                      <input
+                        #scriptFileInput
+                        class="cg-file-input"
+                        type="file"
+                        [accept]="scriptAccept"
+                        (change)="onScriptFile(layer, $event)"
+                      />
+                      <button
+                        mat-stroked-button
+                        type="button"
+                        class="cg-seg-btn danger-sub-btn"
+                        [disabled]="layer.payload.lines.length === 0"
+                        title="Clear caption queue"
+                        (click)="clearQueue(layer)"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  </section>
+                }
+                @case (Clock) {
+                  <section class="cg-sec">
+                    <h3 class="cg-block-title">Format — 顯示格式</h3>
+                    <div class="cg-fields">
+                      <label class="cg-field cg-wide-field">
+                        <span>Pattern</span>
+                        <select
+                          [ngModel]="clockFormatValue(layer)"
+                          (ngModelChange)="onClockFormat(layer, $event)"
+                        >
+                          @for (option of clockFormats; track option.value) {
+                            <option [value]="option.value">{{ option.label }}</option>
+                          }
+                          <option [value]="clockFormatCustom">Custom pattern…</option>
+                        </select>
+                      </label>
+                      @if (clockOf(layer).mode === 'live') {
+                        <label class="cg-field cg-wide-field">
+                          <span>Timezone</span>
+                          <select
+                            [ngModel]="clockOf(layer).timeZone"
+                            (ngModelChange)="clockOf(layer).timeZone = $event; touchPreview()"
+                          >
+                            @for (option of clockZones; track option.value) {
+                              <option [value]="option.value">{{ option.label }}</option>
+                            }
+                          </select>
+                        </label>
+                      }
+                    </div>
+                    @if (clockFormatValue(layer) === clockFormatCustom) {
+                      <input
+                        class="cg-source-url"
+                        type="text"
+                        [ngModel]="clockOf(layer).format"
+                        (ngModelChange)="clockOf(layer).format = $event; touchPreview()"
+                        placeholder="yyyy-MM-dd HH:mm:ss"
+                        aria-label="Custom pattern"
+                      />
+                    }
+                    <div class="cg-field">
+                      <span>Language</span>
+                      <mat-button-toggle-group
+                        class="cg-seg-toggle cg-pill"
+                        [value]="clockOf(layer).locale"
+                        (change)="onClockLocale(layer, $event)"
+                        hideSingleSelectionIndicator
+                        aria-label="Clock language"
+                      >
+                        @for (option of clockLocales; track option.value) {
+                          <mat-button-toggle [value]="option.value">{{ option.label }}</mat-button-toggle>
+                        }
+                      </mat-button-toggle-group>
+                    </div>
+                  </section>
+                }
+                @case (Breaking) {
+                  <app-cg-news-queue
+                    [items]="newsItems(layer)"
+                    [maxChars]="breakingMaxChars"
+                    [onAir]="isLiveOnAir()"
+                    (itemsChange)="onNewsItems(layer, $event)"
+                  />
+                }
+                @case (Ticker) {
+                  <app-cg-news-queue
+                    [items]="newsItems(layer)"
+                    [maxChars]="null"
+                    [onAir]="isLiveOnAir()"
+                    (itemsChange)="onNewsItems(layer, $event)"
+                  />
+                }
               }
+            </div>
+          </div>
+        }
 
-              <div class="cg-fields cg-border-row">
-                <label class="cg-field">
-                  <span>Stroke (em)</span>
-                  <input
-                    type="number"
-                    appCgWheel
-                    step="0.01"
-                    min="0"
-                    max="0.4"
-                    [ngModel]="subStyle.borderWidth ?? (isPreset(PresetShow) ? 0.16 : 0.12)"
-                    (ngModelChange)="subStyle.borderWidth = $event; onStyleFieldChange(layer)"
-                    (appCgWheelChange)="subStyle.borderWidth = $event; onStyleFieldChange(layer)"
-                  />
-                </label>
-                <label class="cg-field">
-                  <span>Stroke Color</span>
-                  <div class="cg-color-input-wrap">
-                    <input
-                      type="color"
-                      class="cg-color-swatch"
-                      [ngModel]="subStyle.borderColor ?? '#000000'"
-                      (ngModelChange)="subStyle.borderColor = $event; onStyleFieldChange(layer)"
+        @case ('style') {
+          <div class="cg-style-page">
+            <!-- ① Place -->
+            <section class="cg-sec">
+              <h3 class="cg-block-title">① Place — 位置（px）</h3>
+              @switch (layer.element_type) {
+                @case (Logo) {
+                  <p class="cg-hint">
+                    X and Y are inset from the Anchor edge (e.g. Top right + 5, 5 =
+                    5 from the right and top). A centered axis ignores its value.
+                  </p>
+                  <div class="cg-place-row">
+                    <app-cg-anchor-grid
+                      label="Anchor position"
+                      [value]="layer.layout.anchor"
+                      (picked)="setAnchor(layer, $event)"
                     />
-                    <input
-                      type="text"
-                      class="cg-color-hex"
-                      [ngModel]="subStyle.borderColor ?? '#000000'"
-                      (ngModelChange)="subStyle.borderColor = $event; onStyleFieldChange(layer)"
-                    />
+                    <div class="cg-fields cg-place-fields">
+                      <ng-container *ngTemplateOutlet="xyTpl" />
+                      <label class="cg-field">
+                        <span>Scale</span>
+                        <input
+                          type="number"
+                          appCgWheel
+                          step="0.05"
+                          min="0.05"
+                          [ngModel]="layer.layout.scale"
+                          (ngModelChange)="setLayoutScale(layer, $event)"
+                          (appCgWheelChange)="setLayoutScale(layer, $event)"
+                        />
+                      </label>
+                    </div>
                   </div>
-                </label>
-              </div>
+                  <div class="cg-outline-row">
+                    <button
+                      type="button"
+                      class="cg-switch"
+                      [class.on]="logoOutline()"
+                      role="switch"
+                      [attr.aria-checked]="logoOutline()"
+                      (click)="logoOutline.set(!logoOutline())"
+                    >
+                      <span class="cg-switch-thumb"></span>
+                    </button>
+                    <span class="cg-outline-label">Outline</span>
+                  </div>
+                }
+                @case (Subtitle) {
+                  <div class="cg-place-row">
+                    <app-cg-anchor-grid
+                      label="Anchor position"
+                      [value]="layer.layout.anchor"
+                      (picked)="setAnchor(layer, $event)"
+                    />
+                    <div class="cg-fields cg-place-fields">
+                      <ng-container *ngTemplateOutlet="xyTpl" />
+                      <label class="cg-field">
+                        <span>Scale</span>
+                        <input
+                          type="number"
+                          appCgWheel
+                          step="0.05"
+                          min="0.05"
+                          [ngModel]="layer.layout.scale"
+                          (ngModelChange)="setLayoutScale(layer, $event)"
+                          (appCgWheelChange)="setLayoutScale(layer, $event)"
+                        />
+                      </label>
+                    </div>
+                  </div>
+                  <div class="cg-field">
+                    <span>Align</span>
+                    <ng-container *ngTemplateOutlet="alignTpl" />
+                  </div>
+                  <p class="cg-hint">
+                    Align puts the box's left / middle / right on the Anchor point.
+                    A centered axis ignores its value · Scale is type size.
+                  </p>
+                }
+                @case (Clock) {
+                  <div class="cg-place-blocks">
+                    <div class="cg-place-block">
+                      <h4 class="cg-word-title">Text place — 文字位置</h4>
+                      <div class="cg-place-row">
+                        <app-cg-anchor-grid
+                          label="Text anchor"
+                          [value]="layer.layout.anchor"
+                          (picked)="setAnchor(layer, $event)"
+                        />
+                        <div class="cg-fields cg-place-fields">
+                          <ng-container *ngTemplateOutlet="xyTpl" />
+                        </div>
+                      </div>
+                      <div class="cg-field">
+                        <span>Align</span>
+                        <ng-container *ngTemplateOutlet="alignTpl" />
+                      </div>
+                    </div>
+                    <ng-container *ngTemplateOutlet="backgroundTpl" />
+                  </div>
+                }
+                @case (Weather) {
+                  <div class="cg-place-blocks">
+                    <div class="cg-place-block">
+                      <h4 class="cg-word-title">Text place — 文字位置</h4>
+                      <div class="cg-place-row">
+                        <app-cg-anchor-grid
+                          label="Text anchor"
+                          [value]="layer.layout.anchor"
+                          (picked)="setAnchor(layer, $event)"
+                        />
+                        <div class="cg-fields cg-place-fields">
+                          <ng-container *ngTemplateOutlet="xyTpl" />
+                        </div>
+                      </div>
+                      <div class="cg-field">
+                        <span>Align</span>
+                        <ng-container *ngTemplateOutlet="alignTpl" />
+                      </div>
+                    </div>
+                    <ng-container *ngTemplateOutlet="backgroundTpl" />
+                  </div>
+                }
+                @case (Breaking) {
+                  <div class="cg-place-blocks">
+                    <div class="cg-place-block">
+                      <h4 class="cg-word-title">Text place — 文字位置</h4>
+                      <div class="cg-place-row">
+                        <app-cg-anchor-grid
+                          label="Text anchor"
+                          [value]="layer.layout.anchor"
+                          (picked)="setAnchor(layer, $event)"
+                        />
+                        <div class="cg-fields cg-place-fields">
+                          <ng-container *ngTemplateOutlet="xyTpl" />
+                          <label class="cg-field">
+                            <span>Height (px)</span>
+                            <input
+                              type="number"
+                              appCgWheel
+                              step="1"
+                              [min]="breakingHeightLimitPx(layer, 'min')"
+                              [max]="breakingHeightLimitPx(layer, 'max')"
+                              [appCgWheelFine]="0.5"
+                              [appCgWheelCoarse]="10"
+                              [ngModel]="breakingHeightPx(layer)"
+                              (ngModelChange)="setPlacePx(layer.layout, 'height', $event)"
+                              (appCgWheelChange)="setPlacePx(layer.layout, 'height', $event)"
+                            />
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                    <ng-container *ngTemplateOutlet="backgroundTpl" />
+                  </div>
+                }
+                @case (Ticker) {
+                  <div class="cg-place-blocks">
+                    <div class="cg-place-block">
+                      <h4 class="cg-word-title">Text window — 文字窗（從左上角起）</h4>
+                      <div class="cg-fields cg-place-fields">
+                        <label class="cg-field">
+                          <span>X (px)</span>
+                          <input
+                            type="number"
+                            appCgWheel
+                            step="1"
+                            [min]="tickerBoxXMin"
+                            [max]="tickerBoxXMax"
+                            [appCgWheelFine]="1"
+                            [appCgWheelCoarse]="10"
+                            [ngModel]="tickerPx(layer).x"
+                            (ngModelChange)="onTickerBox(layer, 'x', $event)"
+                            (appCgWheelChange)="onTickerBox(layer, 'x', $event)"
+                          />
+                        </label>
+                        <label class="cg-field">
+                          <span>Y (px)</span>
+                          <input
+                            type="number"
+                            appCgWheel
+                            step="1"
+                            [min]="tickerBoxYMin"
+                            [max]="tickerBoxYMax"
+                            [appCgWheelFine]="1"
+                            [appCgWheelCoarse]="10"
+                            [ngModel]="tickerPx(layer).y"
+                            (ngModelChange)="onTickerBox(layer, 'y', $event)"
+                            (appCgWheelChange)="onTickerBox(layer, 'y', $event)"
+                          />
+                        </label>
+                        @if (tickerOf(layer).direction !== 'vertical') {
+                          <label class="cg-field">
+                            <span>Width (px)</span>
+                            <input
+                              type="number"
+                              appCgWheel
+                              step="1"
+                              [min]="tickerBoxMin"
+                              [max]="tickerBoxXMax"
+                              [appCgWheelFine]="1"
+                              [appCgWheelCoarse]="10"
+                              [ngModel]="tickerPx(layer).width"
+                              (ngModelChange)="onTickerBox(layer, 'width', $event)"
+                              (appCgWheelChange)="onTickerBox(layer, 'width', $event)"
+                            />
+                          </label>
+                        }
+                        <label class="cg-field">
+                          <span>Height (px)</span>
+                          <input
+                            type="number"
+                            appCgWheel
+                            step="1"
+                            [min]="tickerBoxMin"
+                            [max]="tickerBoxYMax"
+                            [appCgWheelFine]="1"
+                            [appCgWheelCoarse]="10"
+                            [ngModel]="tickerPx(layer).height"
+                            (ngModelChange)="onTickerBox(layer, 'height', $event)"
+                            (appCgWheelChange)="onTickerBox(layer, 'height', $event)"
+                          />
+                        </label>
+                      </div>
+                      <p class="cg-hint">X and Y are pixels from the top left of the 1920×1080 stage. Negative moves past that edge. Up uses Height as the column. Left uses Width as the bar.</p>
+                    </div>
+                    <ng-container *ngTemplateOutlet="backgroundTpl" />
+                  </div>
+                }
+              }
+            </section>
 
-              <div class="cg-fields cg-shadow-row">
-                <label class="cg-field">
-                  <span>Shadow Angle</span>
-                  <input
-                    type="number"
-                    appCgWheel
-                    appCgWheelWrap
-                    [appCgWheelFine]="1"
-                    [appCgWheelCoarse]="45"
-                    step="15"
-                    min="0"
-                    max="360"
-                    [ngModel]="subStyle.shadowAngle ?? 135"
-                    (ngModelChange)="subStyle.shadowAngle = $event; onStyleFieldChange(layer)"
-                    (appCgWheelChange)="subStyle.shadowAngle = $event; onStyleFieldChange(layer)"
-                  />
-                </label>
-                <label class="cg-field">
-                  <span>Distance</span>
-                  <input
-                    type="number"
-                    appCgWheel
-                    step="0.5"
-                    min="0"
-                    max="15"
-                    [ngModel]="subStyle.shadowDistance ?? (isPreset(PresetShow) ? 2 : 0)"
-                    (ngModelChange)="subStyle.shadowDistance = $event; onStyleFieldChange(layer)"
-                    (appCgWheelChange)="subStyle.shadowDistance = $event; onStyleFieldChange(layer)"
-                  />
-                </label>
-                <label class="cg-field">
-                  <span>Radius</span>
-                  <input
-                    type="number"
-                    appCgWheel
-                    step="0.5"
-                    min="0"
-                    max="15"
-                    [ngModel]="subStyle.shadowRadius ?? 2"
-                    (ngModelChange)="subStyle.shadowRadius = $event; onStyleFieldChange(layer)"
-                    (appCgWheelChange)="subStyle.shadowRadius = $event; onStyleFieldChange(layer)"
-                  />
-                </label>
-                <label class="cg-field">
-                  <span>Shadow Color</span>
-                  <div class="cg-color-input-wrap">
-                    <input
-                      type="color"
-                      class="cg-color-swatch"
-                      [ngModel]="subStyle.shadowColor ?? '#000000'"
-                      (ngModelChange)="subStyle.shadowColor = $event; onStyleFieldChange(layer)"
+            <!-- ② Style -->
+            <section class="cg-sec">
+              <h3 class="cg-block-title">② Style — 文字樣式（字體 px）</h3>
+              @switch (layer.element_type) {
+                @case (Logo) {
+                  <p class="cg-hint">Logo 冇文字樣式；位置同大小喺 Place（Scale）。</p>
+                }
+                @case (Subtitle) {
+                  @let subStyle = getSubtitleStyle(layer);
+                  @for (key of [layer.clientId]; track key) {
+                    <app-cg-text-style-editor
+                      sizeUnit="px"
+                      [paint]="subStyle"
+                      [defaults]="subtitleDefaults()"
+                      (changed)="onSubtitleStyleChanged(layer)"
                     />
-                    <input
-                      type="text"
-                      class="cg-color-hex"
-                      [ngModel]="subStyle.shadowColor ?? '#000000'"
-                      (ngModelChange)="subStyle.shadowColor = $event; onStyleFieldChange(layer)"
+                  }
+                }
+                @case (Clock) {
+                  @for (key of [layer.clientId]; track key) {
+                    <app-cg-text-style-editor
+                      sizeUnit="px"
+                      [paint]="bugStyle(layer)"
+                      (changed)="touchPreview()"
                     />
+                  }
+                }
+                @case (Weather) {
+                  <div class="cg-fields">
+                    <label class="cg-field">
+                      <span>Temp to humidity (em)</span>
+                      <input
+                        type="number"
+                        appCgWheel
+                        step="0.05"
+                        min="0"
+                        max="4"
+                        [ngModel]="weatherOf(layer).gapHum"
+                        (ngModelChange)="weatherOf(layer).gapHum = $event; touchPreview()"
+                        (appCgWheelChange)="weatherOf(layer).gapHum = $event; touchPreview()"
+                      />
+                    </label>
+                    <label class="cg-field">
+                      <span>Humidity to icon (em)</span>
+                      <input
+                        type="number"
+                        appCgWheel
+                        step="0.05"
+                        min="0"
+                        max="4"
+                        [ngModel]="weatherOf(layer).gapIcon"
+                        (ngModelChange)="weatherOf(layer).gapIcon = $event; touchPreview()"
+                        (appCgWheelChange)="weatherOf(layer).gapIcon = $event; touchPreview()"
+                      />
+                    </label>
                   </div>
-                </label>
-              </div>
+                  @for (key of [layer.clientId]; track key) {
+                    <app-cg-text-style-editor
+                      sizeUnit="px"
+                      [paint]="bugStyle(layer)"
+                      (changed)="touchPreview()"
+                    />
+                  }
+                }
+                @default {
+                  @for (key of [layer.clientId]; track key) {
+                    <app-cg-text-style-editor
+                      sizeUnit="px"
+                      [paint]="newsStyle(layer)"
+                      (changed)="touchPreview()"
+                    />
+                  }
+                }
+              }
+            </section>
+
+            <!-- ③ Layer 進出 -->
+            <section class="cg-sec">
+              <h3 class="cg-block-title">③ Layer 進出</h3>
+              @switch (layer.element_type) {
+                @case (Subtitle) {
+                  <ng-container *ngTemplateOutlet="transitionTpl" />
+                  <p class="cg-hint">字幕切換（cue）嘅淡入淡出，係呢層自己嘅；唔係 Package Appear。</p>
+                }
+                @case (Breaking) {
+                  <ng-container *ngTemplateOutlet="transitionTpl" />
+                  <p class="cg-hint">每則之間嘅淡入淡出，係呢層自己嘅；唔係 Package Appear。</p>
+                }
+                @default {
+                  <p class="cg-hint">
+                    呢層冇獨立進出；上／落場跟 Package Appear（喺頂部 Package 設定），唔係呢度。
+                  </p>
+                }
+              }
             </section>
           </div>
         }
-      </div>
+
+        @case ('settings') {
+          <div class="cg-settings">
+            <ng-container *ngTemplateOutlet="settingsTpl" />
+          </div>
+        }
+      }
     </div>
   </section>
   }

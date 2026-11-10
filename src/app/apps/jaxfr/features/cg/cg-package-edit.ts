@@ -120,6 +120,12 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
         this.route.snapshot.firstChild?.paramMap.get('layerId') ?? '',
     },
   );
+  /** Half window: Package settings live in a floating panel opened from the bar. */
+  readonly settingsOpen = signal(false);
+  /** Layers OBS really has on air (the "On air ×N" count). */
+  readonly onAirLayerCount = computed(
+    () => this.cg.onAirOutput()?.layers.length ?? 0,
+  );
   isDirty = signal(false);
   isSaveDisabled = signal(true);
   readonly packageBackdrop = this.cg.packageBackdrop;
@@ -258,6 +264,29 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
       return;
     }
     void this.router.navigate(this.layerCommands(layer.clientId));
+  }
+
+  /** Card "…" is only a shortcut: open the same 設定 tab the Layer panel has. */
+  openLayerSettings(layer: CgLayerDraft, event: Event): void {
+    event.stopPropagation();
+    void this.router.navigate(this.layerCommands(layer.clientId), {
+      queryParams: { tab: 'settings' },
+    });
+  }
+
+  toggleSettings(): void {
+    this.settingsOpen.update((value) => !value);
+  }
+
+  @HostListener('document:keydown.escape')
+  closeSettings(): void {
+    if (this.settingsOpen()) this.settingsOpen.set(false);
+  }
+
+  /** Direct auto-saves an existing package, so Take stays visible but off. */
+  isTakeDisabled(): boolean {
+    if (this.isDirectMode() && this.packageId) return true;
+    return this.isSaveDisabled();
   }
 
   toggleVisible(layer: CgLayerDraft, event: Event): void {
