@@ -16,14 +16,6 @@
 <div class="vb-panel vb-big-panel" role="tabpanel">
   @switch (tab()) {
     @case ('content') {
-      <div class="cg-air-bar" [class.on]="onAir()" role="status">
-        @if (onAir()) {
-          ● On air — 呢層出緊街，內容改動即時去 OBS，唔經 Take
-        } @else {
-          ○ 呢層未出街 — 內容改動仍然即時寫入，唔經 Take
-        }
-      </div>
-
       <div class="cg-content" [class.monitor-collapsed]="monitorCollapsed()">
         <div class="cg-content-left">
           <div class="cg-monitor-slot">

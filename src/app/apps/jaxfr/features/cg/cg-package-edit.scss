@@ -17,7 +17,7 @@ $cg-panel-wide: 1120px;
   gap: 0;
   height: 100%;
   min-height: 0;
-  overflow: auto;
+  overflow: hidden;
   box-sizing: border-box;
   background: var(--app-page-bg);
   color: var(--app-text-primary);
@@ -34,6 +34,7 @@ $cg-panel-wide: 1120px;
   position: relative;
   z-index: 5;
   display: flex;
+  flex-shrink: 0;
   flex-wrap: wrap;
   align-items: center;
   gap: 10px 20px;
@@ -320,6 +321,7 @@ $cg-panel-wide: 1120px;
 
 .cg-layers-strip {
   display: flex;
+  flex-shrink: 0;
   flex-direction: column;
   gap: 8px;
   min-width: 0;
@@ -546,17 +548,23 @@ $cg-panel-wide: 1120px;
 
 // ---- Layer panel (router outlet) ----
 
+// Leftover viewport after the monitor bar and the layers strip. The desk fills
+// that box; its tab panel scrolls when the controls do not fit.
 .cg-desk {
   display: flex;
-  flex: 1 0 auto;
+  flex: 1 1 0;
   flex-direction: column;
   min-width: 0;
+  min-height: 0;
+  overflow: hidden;
   padding: 12px 16px 16px;
 }
 
 .cg-desk > app-cg-layer-edit {
-  flex: 1 1 auto;
+  flex: 1 1 0;
+  min-width: 0;
   min-height: 0;
+  overflow: hidden;
 }
 
 .cg-hint {

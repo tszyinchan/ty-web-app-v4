@@ -39,8 +39,6 @@
     }
   }
 
-  &:has(app-cg-package-edit),
-  &:has(app-cg-layer-edit),
   &:has(app-cg-package-list) {
     overflow-x: auto;
   }

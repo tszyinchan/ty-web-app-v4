@@ -317,7 +317,6 @@
     <app-cg-title-desk
       [layer]="layer"
       [outline]="logoOutline()"
-      [onAir]="isLiveOnAir()"
       [tab]="titleTab()"
       (tabChange)="setDeskTab($event)"
       (outlineChange)="logoOutline.set($event)"
@@ -357,14 +356,6 @@
     <div class="vb-panel vb-big-panel" role="tabpanel">
       @switch (genericTab()) {
         @case ('content') {
-          <div class="cg-air-bar" [class.on]="isLiveOnAir()" role="status">
-            @if (isLiveOnAir()) {
-              ● On air — 呢層出緊街，內容改動即時去 OBS，唔經 Take
-            } @else {
-              ○ 呢層未出街 — 內容改動仍然即時寫入，唔經 Take
-            }
-          </div>
-
           <div class="cg-content" [class.monitor-collapsed]="monitorCollapsed()">
             <div class="cg-content-left">
               <div class="cg-monitor-slot">

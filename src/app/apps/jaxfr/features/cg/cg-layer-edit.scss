@@ -9,6 +9,7 @@ $cg-control-height: 28px;
   min-width: 0;
   min-height: 0;
   height: 100%;
+  overflow: hidden;
   container-type: inline-size;
 }
 
@@ -20,16 +21,14 @@ $cg-control-height: 28px;
   min-width: 0;
   min-height: 0;
   height: 100%;
-}
-
-.cg-layer-form .vb-big-panel {
-  overflow: auto;
+  overflow: hidden;
 }
 
 .title-desk app-cg-title-desk {
-  flex: 1;
+  flex: 1 1 0;
   min-height: 0;
   min-width: 0;
+  overflow: hidden;
 }
 
 // ---- Settings page (also projected into the Title desk) ----

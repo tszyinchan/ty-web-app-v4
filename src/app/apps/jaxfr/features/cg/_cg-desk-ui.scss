@@ -96,7 +96,10 @@ $cg-desk-monitor-narrow: 480px;
   }
 
   .vb-big-panel {
-    flex: 1;
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 0;
+    overflow: auto;
   }
 
   // ---- Sections: one panel, divider lines between sections (no boxes) ----
@@ -143,22 +146,6 @@ $cg-desk-monitor-narrow: 480px;
     font-size: 12px;
     color: var(--app-text-primary);
     background: color-mix(in srgb, var(--app-accent) 12%, transparent);
-  }
-
-  // ---- Status bar (content page) ----
-
-  .cg-air-bar {
-    padding: 6px 12px;
-    border-radius: 4px;
-    font-size: 12px;
-    color: var(--app-text-muted);
-    background: color-mix(in srgb, var(--app-input-border) 40%, transparent);
-
-    &.on {
-      color: var(--app-text-primary);
-      background: color-mix(in srgb, var(--app-success, #2e9e5b) 20%, transparent);
-      border: 1px solid color-mix(in srgb, var(--app-success, #2e9e5b) 60%, transparent);
-    }
   }
 
   // ---- Content page: monitor → live control (left) | Queue → add (right) ----

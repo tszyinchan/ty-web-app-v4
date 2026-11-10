@@ -165,8 +165,6 @@ export class CgTitleDesk {
 
   readonly layer = input.required<CgLayerDraft>();
   readonly outline = input(false);
-  /** True while the Panel really lists this layer on air (`CgService.onAirOutput`). */
-  readonly onAir = input(false);
   readonly outlineChange = output<boolean>();
   /** Big tab is owned by the Layer desk so the Layer card "…" can open Settings. */
   readonly tab = input<TitleDeskTab>('content');
