@@ -220,7 +220,7 @@ export class CgLayerEdit implements OnInit {
   /** Cue crossfade presets (Subtitle). */
   readonly cuePresets: readonly number[] = [200, 400, 800];
   readonly deskTabs = LAYER_DESK_TABS;
-  readonly layersBackdrop = this.cg.layersBackdrop;
+  readonly packageBackdrop = this.cg.packageBackdrop;
   /** Big tab (内容 / 樣式 / 設定). Title uses its own four; the Layer card "…" opens 設定. */
   readonly deskTab = signal<string>('content');
   /** 960 screens: hide the big monitor to save height. */
@@ -259,8 +259,7 @@ export class CgLayerEdit implements OnInit {
   private tabLayerId = '';
 
   /**
-   * New layer → 內容 page. `?tab=settings` (the Layer card "…") opens 設定 once and
-   * is then cleared, so the same card can ask again after the operator moves on.
+   * New layer → 內容 page. `?tab=settings` opens 設定 once and is then cleared.
    * One effect so the reset and the request cannot race.
    */
   private readonly _syncTab = effect(() => {

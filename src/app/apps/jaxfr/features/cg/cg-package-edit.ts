@@ -32,7 +32,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { filter, map, startWith } from 'rxjs/operators';
 import { CgMixPreview } from '../../../../core/domains/cg/cg-mix-preview';
 import { CgOutputFrame } from '../../../../core/domains/cg/cg-output-frame';
-import { CgWheelStep } from '../../../../core/domains/cg/cg-wheel.directive';
+import { CgWheelSelect, CgWheelStep } from '../../../../core/domains/cg/cg-wheel.directive';
 import {
   CG_CUT_DURATION_MS,
   CG_DEFAULT_DURATION_MS,
@@ -83,6 +83,7 @@ const DIRECT_AUTOSAVE_MS = 450;
     CgMixPreview,
     CgOutputFrame,
     CgWheelStep,
+    CgWheelSelect,
   ],
   templateUrl: './cg-package-edit.html',
   styleUrl: './cg-package-edit.scss',
@@ -129,7 +130,11 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
   isDirty = signal(false);
   isSaveDisabled = signal(true);
   readonly packageBackdrop = this.cg.packageBackdrop;
-  readonly layersBackdrop = this.cg.layersBackdrop;
+  /** Layer type chosen in the dashed add card. */
+  readonly addType = signal<CgElementType>(CgElementType.Logo);
+  readonly addTypeValues = this.catalog
+    .filter((item) => item.shipped)
+    .map((item) => item.type);
   /** Package OBS token once the package exists; the On air monitor loads `/o/` with it. */
   readonly onAirToken = computed(() => {
     const token = this.item()?.public_token;
@@ -239,6 +244,11 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
     }
   }
 
+  setAddType(value: string): void {
+    const match = this.catalog.find((item) => item.type === value);
+    if (match) this.addType.set(match.type);
+  }
+
   addElement(type: CgElementType): void {
     const def = this.catalog.find((item) => item.type === type);
     if (!def?.shipped) {
@@ -264,14 +274,6 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
       return;
     }
     void this.router.navigate(this.layerCommands(layer.clientId));
-  }
-
-  /** Card "…" is only a shortcut: open the same 設定 tab the Layer panel has. */
-  openLayerSettings(layer: CgLayerDraft, event: Event): void {
-    event.stopPropagation();
-    void this.router.navigate(this.layerCommands(layer.clientId), {
-      queryParams: { tab: 'settings' },
-    });
   }
 
   toggleSettings(): void {

@@ -88,24 +88,24 @@
         </div>
       </div>
 
-      <!-- Half window: settings collapse into a floating panel behind this button. -->
+      <!-- Half window: settings collapse into a floating panel behind this icon. -->
       <button
         type="button"
-        class="cg-seg-btn cg-settings-btn"
+        class="cg-seg-btn cg-icon-btn cg-settings-btn"
         mat-stroked-button
         aria-haspopup="dialog"
+        aria-label="Package settings"
+        title="Package settings"
         [attr.aria-expanded]="settingsOpen()"
         (click)="toggleSettings()"
       >
         <mat-icon>tune</mat-icon>
-        Package 設定
       </button>
       @if (settingsOpen()) {
         <div class="cg-settings-scrim" (click)="closeSettings()" aria-hidden="true"></div>
       }
 
       <div class="cg-pkg-settings" [class.open]="settingsOpen()">
-        <h3 class="cg-pop-title">Package 設定</h3>
         <div class="cg-group">
           <span class="cg-kicker">Channel／Source</span>
           <mat-button-toggle-group
@@ -177,7 +177,7 @@
               [value]="packageBackdrop()"
               (change)="packageBackdrop.set($event.value)"
               hideSingleSelectionIndicator
-              aria-label="Package stage backdrop"
+              aria-label="Stage backdrop"
             >
               <mat-button-toggle [value]="backdrops.Checkerboard">Alpha</mat-button-toggle>
               <mat-button-toggle [value]="backdrops.Dim">Dim</mat-button-toggle>
@@ -225,109 +225,93 @@
 
     <!-- Layers strip: always visible between the monitor bar and the layer panel. -->
     <section class="cg-layers-strip">
-      <div class="cg-strip-head">
-        <div class="cg-strip-title">
-          <h2 class="cg-col-title">Layers — 順序 + 開關（長期可見）</h2>
-          <p class="cg-strip-note">
-            改順序、On／Off、加／刪層係結構改動，Studio 要 Take 先上 Program；層嘅內容改動即時出街，唔經 Take。
-          </p>
-        </div>
-        <mat-button-toggle-group
-          class="cg-seg-toggle cg-pill"
-          [value]="layersBackdrop()"
-          (change)="layersBackdrop.set($event.value)"
-          hideSingleSelectionIndicator
-          aria-label="Layers stage backdrop"
+      <div class="cg-strip-row">
+        <div
+          class="cg-strip"
+          cdkDropList
+          cdkDropListOrientation="horizontal"
+          [cdkDropListData]="layers()"
+          (cdkDropListDropped)="onLayerDrop($event)"
         >
-          <mat-button-toggle [value]="backdrops.Checkerboard">Alpha</mat-button-toggle>
-          <mat-button-toggle [value]="backdrops.Dim">Dim</mat-button-toggle>
-        </mat-button-toggle-group>
-        <div class="cg-catalog">
-          @for (el of catalog; track el.type) {
+          @for (layer of layers(); track layer.clientId) {
+            <article
+              class="cg-card"
+              cdkDrag
+              [class.off]="!layer.visible"
+              [class.selected]="layer.clientId === selectedLayerId()"
+              (cdkDragStarted)="onLayerDragStarted()"
+              (click)="openLayer(layer)"
+            >
+              <div class="cg-card-monitor">
+                <div class="cg-card-stage">
+                  <app-cg-mix-preview
+                    [wide]="true"
+                    [forceVisible]="true"
+                    [layers]="[layer]"
+                    [packageLook]="pendingLook()"
+                    [backdrop]="packageBackdrop()"
+                  />
+                </div>
+              </div>
+              <div class="cg-card-bar">
+                <button
+                  type="button"
+                  class="cg-drag"
+                  cdkDragHandle
+                  (click)="$event.stopPropagation()"
+                  aria-label="Reorder layer"
+                >
+                  <mat-icon>drag_indicator</mat-icon>
+                </button>
+                <button
+                  type="button"
+                  class="cg-switch"
+                  [class.on]="layer.visible"
+                  role="switch"
+                  [attr.aria-checked]="layer.visible"
+                  [attr.aria-label]="'Show ' + layerDisplayName(layer)"
+                  (click)="toggleVisible(layer, $event)"
+                >
+                  <span class="cg-switch-thumb"></span>
+                </button>
+                <span class="cg-card-name" [title]="layerDisplayName(layer)">
+                  {{ layerDisplayName(layer) }}
+                </span>
+              </div>
+            </article>
+          }
+        </div>
+        <div class="cg-add-slot">
+          <div class="cg-add-sizer" aria-hidden="true">
+            <div class="cg-add-sizer-stage"></div>
+            <div class="cg-add-sizer-bar"></div>
+          </div>
+          <div class="cg-add-card">
+            <select
+              class="cg-add-select"
+              [appCgWheelSelect]="addTypeValues"
+              [ngModel]="addType()"
+              (ngModelChange)="setAddType($event)"
+              (appCgWheelChange)="setAddType($event)"
+              aria-label="Layer type"
+            >
+              @for (el of catalog; track el.type) {
+                <option [value]="el.type" [disabled]="!el.shipped">
+                  {{ el.label }}
+                </option>
+              }
+            </select>
             <button
               mat-stroked-button
               type="button"
-              class="cg-seg-btn cg-chip"
-              [class.soon]="!el.shipped"
-              [disabled]="!el.shipped"
-              (click)="addElement(el.type)"
+              class="cg-seg-btn cg-add-btn"
+              aria-label="Add layer"
+              (click)="addElement(addType())"
             >
-              {{ el.label }}
-              @if (!el.shipped) {
-                <span>soon</span>
-              } @else {
-                <span>+</span>
-              }
+              <mat-icon>add</mat-icon>
             </button>
-          }
+          </div>
         </div>
-      </div>
-      <div
-        class="cg-strip"
-        cdkDropList
-        cdkDropListOrientation="horizontal"
-        [cdkDropListData]="layers()"
-        (cdkDropListDropped)="onLayerDrop($event)"
-      >
-        @for (layer of layers(); track layer.clientId) {
-          <article
-            class="cg-card"
-            cdkDrag
-            [class.off]="!layer.visible"
-            [class.selected]="layer.clientId === selectedLayerId()"
-            (cdkDragStarted)="onLayerDragStarted()"
-            (click)="openLayer(layer)"
-          >
-            <div class="cg-card-monitor">
-              <div class="cg-card-stage">
-                <app-cg-mix-preview
-                  [wide]="true"
-                  [forceVisible]="true"
-                  [layers]="[layer]"
-                  [packageLook]="pendingLook()"
-                  [backdrop]="layersBackdrop()"
-                />
-              </div>
-              <button
-                type="button"
-                class="cg-drag cg-card-drag"
-                cdkDragHandle
-                (click)="$event.stopPropagation()"
-                aria-label="Reorder layer"
-              >
-                <mat-icon>drag_indicator</mat-icon>
-              </button>
-              <button
-                type="button"
-                class="cg-switch cg-card-switch"
-                [class.on]="layer.visible"
-                role="switch"
-                [attr.aria-checked]="layer.visible"
-                [attr.aria-label]="'Show ' + layerDisplayName(layer)"
-                (click)="toggleVisible(layer, $event)"
-              >
-                <span class="cg-switch-thumb"></span>
-              </button>
-            </div>
-            <div class="cg-card-bar">
-              <span class="cg-card-dot" [class.on]="layer.visible" aria-hidden="true"></span>
-              <span class="cg-card-name" [title]="layerDisplayName(layer)">
-                {{ layerDisplayName(layer) }}
-              </span>
-              <button
-                type="button"
-                class="cg-more"
-                title="Layer settings"
-                aria-label="Layer settings"
-                (click)="openLayerSettings(layer, $event)"
-              >
-                <mat-icon>more_horiz</mat-icon>
-              </button>
-            </div>
-          </article>
-        } @empty {
-          <p class="cg-hint">Pick Logo from the catalog. Drag cards — first is behind, last is in front.</p>
-        }
       </div>
     </section>
 

@@ -123,10 +123,8 @@ export class CgService {
   onAirTitle = signal<CgOverlayTitleMessage | null>(null);
   /** Direct = live to air; Studio = Pending then Save. Per package in localStorage. */
   editMode = signal(CgPackageEditMode.Studio);
-  /** Panel Stage checkerboard / dim — Package column monitors. */
+  /** Panel Stage checkerboard / dim — bar monitors, layer tiles, desk, enlarge. */
   packageBackdrop = signal(CgPreviewBackdrop.Dim);
-  /** Panel Stage checkerboard / dim — Layers tiles + Layer desk. */
-  layersBackdrop = signal(CgPreviewBackdrop.Dim);
 
   loadEditModeForPackage(packageId: string | null): void {
     this.editMode.set(readPackageEditMode(packageId));

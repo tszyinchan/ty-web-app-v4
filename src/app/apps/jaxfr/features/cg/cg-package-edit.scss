@@ -22,6 +22,8 @@ $cg-panel-wide: 1120px;
   background: var(--app-page-bg);
   color: var(--app-text-primary);
   font-family: var(--app-font);
+
+  --cg-mon-w: 144px;
 }
 
 // ---- Monitor bar + Package settings ----
@@ -39,19 +41,19 @@ $cg-panel-wide: 1120px;
   background: var(--app-card-bg);
   box-shadow: 0 4px 16px color-mix(in srgb, var(--app-text-primary) 6%, transparent);
 
-  --cg-mon-w: 144px;
   --cg-take-w: 92px;
 }
 
 @container (min-width: #{$cg-panel-wide}) {
-  .cg-topbar {
-    gap: 8px 16px;
-
+  .cg-panel {
     --cg-mon-w: 160px;
   }
 
+  .cg-topbar {
+    gap: 8px 16px;
+  }
+
   .cg-settings-btn,
-  .cg-pop-title,
   .cg-settings-scrim {
     display: none;
   }
@@ -141,13 +143,7 @@ $cg-panel-wide: 1120px;
   min-width: 0;
 }
 
-// Half window: the settings float in a glass card under the bar, opened by the button.
-.cg-pop-title {
-  margin: 0;
-  font: var(--app-weight-emphasis) 14px / 1.2 var(--app-font);
-  color: var(--app-text-primary);
-}
-
+// Half window: the settings float in a glass card under the bar, opened by the icon.
 .cg-settings-scrim {
   position: fixed;
   inset: 0;
@@ -331,65 +327,32 @@ $cg-panel-wide: 1120px;
   background: color-mix(in srgb, var(--app-page-bg) 88%, var(--app-card-bg));
 }
 
-.cg-strip-head {
+.cg-strip-row {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 10px;
-}
-
-.cg-col-title {
-  margin: 0;
-  flex-shrink: 0;
-  font: var(--app-weight-emphasis) 14px / 1.2 var(--app-font);
-  letter-spacing: 0.01em;
-  text-transform: none;
-  color: var(--app-text-muted);
-}
-
-.cg-catalog {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  min-width: 0;
-  margin-left: auto;
-}
-
-.cg-chip {
-  padding: 0 8px;
-  gap: 6px;
-  font-size: 12px;
-  text-transform: none;
-  letter-spacing: normal;
-}
-
-.cg-chip span {
-  font-size: 10px;
-  color: var(--app-text-muted);
-}
-
-.cg-chip.soon {
-  opacity: 0.55;
-  cursor: default;
-}
-
-.cg-strip {
-  display: flex;
-  flex-wrap: nowrap;
-  align-items: flex-start;
+  align-items: stretch;
   gap: 10px;
-  min-height: 0;
+  min-width: 0;
   overflow-x: auto;
   padding-bottom: 4px;
 }
 
-// Cards share the row equally (7 layers fill the width); they scroll once they would get narrower than 150px.
+.cg-strip {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  gap: 10px;
+  min-height: 0;
+}
+
+// Each card's monitor matches the bar monitors (--cg-mon-w).
 .cg-card {
   display: flex;
-  flex: 1 1 0;
+  flex: 0 0 var(--cg-mon-w);
   flex-direction: column;
-  min-width: 150px;
-  max-width: 280px;
+  width: var(--cg-mon-w);
+  min-width: var(--cg-mon-w);
+  max-width: var(--cg-mon-w);
   border: 1px solid var(--app-card-border);
   border-radius: 4px;
   background: var(--app-card-bg);
@@ -421,73 +384,6 @@ $cg-panel-wide: 1120px;
   transition: opacity 0.4s ease;
 }
 
-.cg-card-drag,
-.cg-card-switch {
-  position: absolute;
-  top: 4px;
-}
-
-.cg-card-drag {
-  left: 4px;
-  border-radius: 4px;
-  background: color-mix(in srgb, var(--app-card-bg) 70%, transparent);
-}
-
-.cg-card-switch {
-  right: 4px;
-}
-
-.cg-card-dot {
-  flex-shrink: 0;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: transparent;
-}
-
-.cg-card-dot.on {
-  background: var(--app-success, #2e9e5b);
-}
-
-.cg-more {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 24px;
-  height: 24px;
-  padding: 0;
-  border: 0;
-  border-radius: 4px;
-  background: transparent;
-  color: var(--app-text-muted);
-  cursor: pointer;
-
-  mat-icon {
-    width: 18px;
-    height: 18px;
-    font-size: 18px;
-    line-height: 18px;
-  }
-}
-
-.cg-more:hover {
-  color: var(--app-text-primary);
-}
-
-.cg-strip-title {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
-.cg-strip-note {
-  margin: 0;
-  font-size: 11px;
-  color: var(--app-danger);
-}
-
 .cg-card-stage app-cg-mix-preview {
   display: block;
   width: 100%;
@@ -497,7 +393,7 @@ $cg-panel-wide: 1120px;
   display: flex;
   align-items: center;
   gap: 2px;
-  padding: 4px 6px;
+  padding: 4px;
   min-height: 32px;
   border-top: 1px solid var(--app-card-border);
 }
@@ -505,12 +401,96 @@ $cg-panel-wide: 1120px;
 .cg-card-name {
   min-width: 0;
   flex: 1;
-  text-align: center;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   font: var(--app-weight-emphasis) 12px var(--app-font);
   color: var(--app-text-primary);
+}
+
+// In-flow sizer copies a layer card (1px border, 16:9 monitor, 24px bar
+// control) so the dotted control sits on the same outer box.
+.cg-add-slot {
+  position: relative;
+  flex: 0 0 var(--cg-mon-w);
+  width: var(--cg-mon-w);
+  border: 1px solid transparent;
+  border-radius: 4px;
+}
+
+.cg-add-sizer-stage {
+  aspect-ratio: 16 / 9;
+}
+
+.cg-add-sizer-bar {
+  min-height: 32px;
+  padding: 4px;
+  border-top: 1px solid transparent;
+}
+
+.cg-add-sizer-bar::before {
+  content: "";
+  display: block;
+  height: 24px;
+}
+
+.cg-add-card {
+  position: absolute;
+  inset: -1px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: 8px;
+  box-sizing: border-box;
+  padding: 8px;
+  border: 2px dotted var(--app-button-border);
+  border-radius: 4px;
+}
+
+.cg-add-select {
+  width: 100%;
+  height: 28px;
+  min-height: 28px;
+  max-height: 28px;
+  box-sizing: border-box;
+  padding: 0 6px;
+  border: 1px solid var(--app-input-border);
+  border-radius: 4px;
+  background: var(--app-input-bg);
+  color: var(--app-text-primary);
+  font: 12px var(--app-font);
+}
+
+.cg-add-select:focus {
+  outline: 1px solid var(--app-accent);
+}
+
+:host button.mat-mdc-button-base.mat-mdc-outlined-button.cg-seg-btn.cg-add-btn,
+:host-context(html.theme-aero) button.mat-mdc-button-base.mat-mdc-outlined-button.cg-seg-btn.cg-add-btn {
+  align-self: center;
+  width: 44px;
+  min-width: 44px;
+  max-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  max-height: 44px;
+  line-height: 44px;
+  padding: 0;
+  color: var(--app-button-border);
+}
+
+:host button.mat-mdc-button-base.mat-mdc-outlined-button.cg-seg-btn.cg-add-btn .mdc-button__label {
+  line-height: 44px;
+}
+
+:host button.mat-mdc-button-base.mat-mdc-outlined-button.cg-seg-btn.cg-add-btn mat-icon {
+  width: 32px;
+  height: 32px;
+  margin: 0;
+  font-size: 32px;
+  line-height: 32px;
+  color: var(--app-button-border);
 }
 
 .cg-drag {
