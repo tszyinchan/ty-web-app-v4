@@ -46,11 +46,13 @@ This is the locked vocabulary for code, UI copy, DB, routes, and the subdomain. 
 
 `tyapp_cg_package` PK `tb_tyapp_cgpk_id` (seq `tb_tyapp_cgpk_seq_no`):
 
-`name`, `role` (`channel` \| `source`), `public_token`, `duration_ms` (`0` = cut, default `400` = fade), `look` (`color` \| `mono`), `status`, `created_at`, `updated_at`, `deleted_at`
+`name`, `role` (`channel` \| `source`), `public_token`, `duration_ms` (`0` = cut, default `400` = fade), `look` (`color` \| `mono`), `user_id` → `tyapp_user.user_id`, `status`, `created_at`, `updated_at`, `deleted_at`
 
 `tyapp_cg_layer` PK `tb_tyapp_cgly_id` (seq `tb_tyapp_cgly_seq_no`):
 
 `package_id` → package PK, `element_type`, `public_token`, `layout` jsonb, `payload` jsonb, `visible` (On/Off), `look` (`inherit` \| `color` \| `mono`; default `inherit` = Package Look), `sort_order`, `status`, `created_at`, `updated_at`, `deleted_at`
+
+Package `user_id` is the signed-in owner (`auth.uid()`). A user lists, opens, inserts, and updates only their own packages. Layers have no owner column; RLS and the write RPCs follow the parent package. Those write RPCs are `tyapp_cg_package_soft_delete_single_record`, `tyapp_cg_layer_soft_delete_single_record`, `tyapp_cg_layer_set_cue`, and `tyapp_cg_layer_set_title_air`. Overlay reads stay anonymous and do not check `user_id`: `tyapp_cg_get_output_by_token`, `tyapp_cg_get_output_state_by_token`, `tyapp_cg_get_output_version_by_token`. Additive SQL: `supabase/sql/cg-package-owner.sql`.
 
 **Layout jsonb:** `x`, `y`, `unit` (`percent` \| `px`), `anchor`, `scale`, `width`, `height`.
 - **9-grid placement (every Element, now and future)** is inset-from-anchor, one shared function `anchoredBoxCss` in `cg.util.ts`: Anchor picks a cell of the Stage; X/Y are offsets from that cell's edges (Top right + 5,5 = 5 from right and top). On a centre axis the item is centered and that axis' X/Y is **ignored** (`anchorIgnoresAxis`): Top/Bottom center ignore X, Center left/right ignore Y, Center ignores both. Stored X/Y are kept so switching Anchor back restores them. Do not add a second positioning model for a new Element. **Ticker text window is the exception:** X / Y / Width / Height are stage pixels from the top left (`tickerLayoutPixels`). Anchor is stored `top-left` and not shown. An old percent layout is converted at read time so a full-width bottom crawl stays full-width at the bottom. The ticker background still uses the 9-grid.

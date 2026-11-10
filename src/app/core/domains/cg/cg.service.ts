@@ -1,6 +1,7 @@
 import { Injectable, NgZone, inject, signal } from '@angular/core';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { RecordStatus } from '../../models/status.enum';
+import { AuthService } from '../../services/auth.service';
 import { NotificationService } from '../../services/notification.service';
 import { SupabaseService } from '../../services/supabase.service';
 import {
@@ -62,6 +63,7 @@ const CG_LAYER_LIST_COLUMNS =
 @Injectable({ providedIn: 'root' })
 export class CgService {
   private supabase = inject(SupabaseService).client;
+  private auth = inject(AuthService);
   private notification = inject(NotificationService);
   private zone = inject(NgZone);
   private overlayListenChannel: RealtimeChannel | null = null;
@@ -140,6 +142,15 @@ export class CgService {
   }
 
   async fetchAllPackages(force = false): Promise<void> {
+    const userId = this.auth.userProfile()?.user_id;
+    if (!userId) {
+      this.zone.run(() => {
+        this.packages.set([]);
+        this.layers.set([]);
+        this.loading.set(false);
+      });
+      return;
+    }
     if (this.packages().length > 0 && !force) return;
 
     this.loading.set(true);
@@ -148,6 +159,7 @@ export class CgService {
         this.supabase
           .from('tyapp_cg_package')
           .select('*')
+          .eq('user_id', userId)
           .is('deleted_at', null)
           .order('name', { ascending: true }),
         // List summary only (never `payload`, which holds the subtitle
@@ -162,16 +174,22 @@ export class CgService {
       if (packageResult.error) throw packageResult.error;
       if (layerResult.error) throw layerResult.error;
 
+      const packages = (packageResult.data ?? [])
+        .map((row) => normalizePackage(row))
+        .filter((pkg): pkg is CgPackage => pkg !== null);
+      const packageIds = new Set(
+        packages.map((pkg) => pkg.tb_tyapp_cgpk_id),
+      );
+
       this.zone.run(() => {
-        this.packages.set(
-          (packageResult.data ?? [])
-            .map((row) => normalizePackage(row))
-            .filter((pkg): pkg is CgPackage => pkg !== null),
-        );
+        this.packages.set(packages);
         this.layers.set(
           (layerResult.data ?? [])
             .map((row) => normalizeLayer(row))
-            .filter((layer): layer is CgLayer => layer !== null),
+            .filter(
+              (layer): layer is CgLayer =>
+                layer !== null && packageIds.has(layer.package_id),
+            ),
         );
         this.loading.set(false);
       });
@@ -184,6 +202,12 @@ export class CgService {
   async fetchPackageById(
     id: string,
   ): Promise<{ package: CgPackage; layers: CgLayer[] } | null> {
+    const userId = this.auth.userProfile()?.user_id;
+    if (!userId) {
+      this.zone.run(() => this.loading.set(false));
+      return null;
+    }
+
     this.loading.set(true);
     try {
       const [packageResult, layerResult] = await Promise.all([
@@ -191,6 +215,7 @@ export class CgService {
           .from('tyapp_cg_package')
           .select('*')
           .eq('tb_tyapp_cgpk_id', id)
+          .eq('user_id', userId)
           .is('deleted_at', null)
           .single(),
         this.supabase
@@ -206,7 +231,9 @@ export class CgService {
 
       const layers = (layerResult.data ?? [])
         .map((row) => normalizeLayer(row))
-        .filter((layer): layer is CgLayer => layer !== null);
+        .filter(
+          (layer): layer is CgLayer => layer !== null && layer.package_id === id,
+        );
 
       const pkg = normalizePackage(packageResult.data);
       if (!pkg) throw new Error('CG package row was incomplete');
@@ -250,6 +277,15 @@ export class CgService {
     const publicToken =
       packagePayload.public_token?.trim() || createCgPublicToken();
 
+    const userId = this.auth.userProfile()?.user_id;
+    if (!userId) {
+      this.notification.handleError(
+        'Save CG package failed',
+        new Error('Not signed in'),
+      );
+      return null;
+    }
+
     this.loading.set(true);
     try {
       const packageQuery = isNew
@@ -259,6 +295,7 @@ export class CgService {
               name: packagePayload.name?.trim(),
               role: packagePayload.role,
               public_token: publicToken,
+              user_id: userId,
               duration_ms: normalizeDurationMs(packagePayload.duration_ms),
               look: normalizeLook(packagePayload.look),
               status: packagePayload.status,
@@ -276,6 +313,7 @@ export class CgService {
               updated_at: new Date().toISOString(),
             })
             .eq('tb_tyapp_cgpk_id', pkg.tb_tyapp_cgpk_id)
+            .eq('user_id', userId)
             .select()
             .single();
 

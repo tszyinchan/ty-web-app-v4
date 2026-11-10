@@ -237,6 +237,8 @@ export type CgLayerPayload = CgLogoPayload &
 export interface CgPackage {
   tb_tyapp_cgpk_id: string;
   tb_tyapp_cgpk_seq_no?: number;
+  /** Signed-in owner. Layers follow this package; they have no owner of their own. */
+  user_id: string;
   name: string;
   role: CgPackageRole;
   public_token: string;

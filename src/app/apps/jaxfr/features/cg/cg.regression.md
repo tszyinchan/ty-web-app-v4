@@ -43,6 +43,7 @@
 - [ ] 已在 Supabase 跑過 `supabase/sql/cg-logo-storage.sql`（public bucket `cg-logo` + 清掉 `payload.imageUrl` 的 `data:image`；**不要**再跑一次 v2、**不要** drop `tyapp_cg_*`）
 - [ ] 已在 Supabase 跑過 `supabase/sql/cg-traffic-v1.sql`（流量最佳化：`rev`、`tyapp_cg_get_output_state_by_token`；**一定要在前端部署前跑**，可重跑）
 - [ ] 已在 Supabase 跑過 `supabase/sql/cg-title.sql`（Title On/Off RPC、`rev` 不含 `title.onAir` / `live.on`、state 多 `titles`；**一定要在前端部署前跑**，可重跑）
+- [ ] 已在 Supabase 跑過 `supabase/sql/cg-package-owner.sql`（package `user_id`、擁有者 RLS、刪除 / cue / Title RPC 檢查父套件擁有者；**一定要在前端部署前跑**，可重跑。活躍 Super Admin 必須剛好一位，否則既有套件不會被指定擁有者）
 - [ ] `.cursor/test-credentials.local.json` 存在；用 **user-a** 登入成功
 - [ ] user-a 已有 CG feature grant（沒有則 Welcome 看不到，`/cg/list` 會被送回 Welcome）
 - [ ] `/cg/list` 沒有名稱以 `[TEST] CG` 開頭的 package；有的話先當 leftover 刪掉
@@ -58,6 +59,8 @@
 | A1 | Welcome 點 **CG**，或開 `/cg/list` | 進入 package 清單。**有**全域 AppToolbar（跟 Attendance / Article 一樣：標題 CG、回 Welcome、Refresh、New package）。內容是 `standard-list-view` 列 + Article 同款 `mat-form-field` 搜尋（不是自製卡片格子）。**沒有**頁面切換動畫。Panel（`/cg/edit`）仍**沒有**全域 toolbar。清單不再鎖 `width=1280`；進 Panel 才鎖桌面寬 |
 | A2 | 點 **New package**。預設 **Studio mode**。Name = `PKG_A`。頂列順序：**Take/Create** 在雲端狀態**左邊**。點 **Create** | 建立成功；狀態變 **On air**；Copy OBS（content_copy）可用 |
 | A3 | 再 New，Name = `PKG_B`，Role = Source，Create | 兩個 package 並存 |
+| A3b | 看清單 | 只有 user-a 建立的 package（這輪是 `PKG_A`、`PKG_B`）。Super Admin 名下的正式 package 不出現 |
+| A3c | 位址列改成別人的 `/cg/edit/<正式 package id>`。沒有正式 id 就略過 | 讀取失敗 toast。不顯示該 package 的名稱或 layer |
 
 ### B — Panel On/Off，定位在 Stage 上
 
@@ -124,6 +127,7 @@
 | # | 操作 | 預期 |
 |---|---|---|
 | C1 | 點 Copy OBS（content_copy），另開分頁 | `cg.localhost:4200/o/…`（或正式 `cg.tszyin.com`）。真透明。壞 token 空白 |
+| C1b | 把 C1 的 overlay URL 貼到無痕視窗（沒有 Jaxfr 登入） | 仍看得到播出畫面，不會被送到 `/login` |
 | C2 | Studio：改 Scale（已有 id），不要 Take，看 overlay | overlay / Package On air **立刻**變（Layer Direct） |
 | C3 | Layer desk 點 Copy OBS（Layer output） | 只畫那層 |
 | C4 | Overlay 已開。Panel cue Down | overlay **立刻**換句（小 cue broadcast，不必等 30s poll） |

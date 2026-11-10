@@ -982,12 +982,14 @@ export function normalizePackage(raw: unknown): CgPackage | null {
   const value = asRecord(raw);
   const id = asString(value['tb_tyapp_cgpk_id']);
   const token = asString(value['public_token']);
-  if (!id || !token) return null;
+  const userId = asString(value['user_id']);
+  if (!id || !token || !userId) return null;
 
   return {
     tb_tyapp_cgpk_id: id,
     tb_tyapp_cgpk_seq_no:
       toOptionalNumber(value['tb_tyapp_cgpk_seq_no']) ?? undefined,
+    user_id: userId,
     name: asString(value['name']),
     role:
       value['role'] === CgPackageRole.Source
