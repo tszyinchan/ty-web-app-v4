@@ -281,10 +281,15 @@
             </article>
           }
         </div>
-        <div class="cg-add-slot">
-          <div class="cg-add-sizer" aria-hidden="true">
-            <div class="cg-add-sizer-stage"></div>
-            <div class="cg-add-sizer-bar"></div>
+        <!-- Same .cg-card shell as tiles so outer height matches; controls overlay it. -->
+        <article class="cg-card cg-add-slot">
+          <div class="cg-card-monitor" aria-hidden="true">
+            <div class="cg-card-stage">
+              <div class="cg-add-stage-spacer"></div>
+            </div>
+          </div>
+          <div class="cg-card-bar" aria-hidden="true">
+            <span class="cg-drag"></span>
           </div>
           <div class="cg-add-card">
             <select
@@ -311,7 +316,7 @@
               <mat-icon>add</mat-icon>
             </button>
           </div>
-        </div>
+        </article>
       </div>
     </section>
 

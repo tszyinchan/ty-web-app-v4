@@ -408,32 +408,31 @@ $cg-panel-wide: 1120px;
   color: var(--app-text-primary);
 }
 
-// In-flow sizer copies a layer card (1px border, 16:9 monitor, 24px bar
-// control) so the dotted control sits on the same outer box.
-.cg-add-slot {
+// Reuses .cg-card + monitor + bar for the exact same outer box as tiles.
+.cg-card.cg-add-slot {
   position: relative;
-  flex: 0 0 var(--cg-mon-w);
-  width: var(--cg-mon-w);
-  border: 1px solid transparent;
-  border-radius: 4px;
+  cursor: default;
+  border-color: transparent;
+  background: transparent;
 }
 
-.cg-add-sizer-stage {
+.cg-card.cg-add-slot:hover {
+  border-color: transparent;
+}
+
+.cg-add-slot .cg-card-monitor,
+.cg-add-slot .cg-card-bar {
+  visibility: hidden;
+}
+
+// Same 16:9 host as app-cg-stage inside a tile.
+.cg-add-stage-spacer {
+  display: block;
+  width: 100%;
   aspect-ratio: 16 / 9;
 }
 
-.cg-add-sizer-bar {
-  min-height: 32px;
-  padding: 4px;
-  border-top: 1px solid transparent;
-}
-
-.cg-add-sizer-bar::before {
-  content: "";
-  display: block;
-  height: 24px;
-}
-
+// Cover the shell's 1px border so the dotted outer edge matches sibling cards.
 .cg-add-card {
   position: absolute;
   inset: -1px;
@@ -446,6 +445,7 @@ $cg-panel-wide: 1120px;
   padding: 8px;
   border: 2px dotted var(--app-button-border);
   border-radius: 4px;
+  background: color-mix(in srgb, var(--app-page-bg) 88%, var(--app-card-bg));
 }
 
 .cg-add-select {
