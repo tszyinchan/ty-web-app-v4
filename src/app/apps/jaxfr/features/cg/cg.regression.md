@@ -207,18 +207,18 @@
 
 | # | 操作 | 預期 |
 |---|---|---|
-| T1 | Catalog 加 Title | Desk 有 Queue / Live / Text style / Item style。Queue 有一則「標題範例」，畫面上還沒有字 |
+| T1 | Catalog 加 Title | Desk 有四個大 tab：內容 / 文字樣式 / 項目樣式 / 設定。內容頁 Queue 有一則「標題範例」，畫面上還沒有字 |
 | T2 | 選 Strap，輸入一句 Headline，Push，把該列 On | 畫面底部出現白字。再 On 關掉，字淡出（Cut 則立刻消失） |
 | T3 | 依序建 Name super（Name + Title）、Credit（Role + Name）、Name + source（Name、Title、Source）、Name stack（Name + Title）、Banner（紅字）、Locator（一個詞）、Story + locator（Headline、Subhead、Locator） | 每一種只顯示自己的欄位。Name super 與 Credit 各是左右兩個獨立框。Name + source 的 Name 在左上、Title 在下一行且較寬、Source 在右上。Name stack 的 Name 短、Title 長，沒有右側字。Story + locator 的 Locator 在右上，Subhead 在下一行且比 Headline 寬。Banner 用 Accent |
 | T4 | 同一 template 開兩列 | 兩列疊在同一個位置。不同 template 可以同時 On，各用自己的 Place |
-| T5 | Text style 把 Primary 加大、Accent 改色 | 三個編輯器同時在，中間有框線。字變大，框的寬度不變。Strap 的 Headline、Name super 的 Name、Locator、Story + locator 的 Headline、Live 的 Headline 一起變大。Banner 用 Accent。輸入框裡還沒 Push 的字不會上畫面 |
-| T6 | Item style 選一個 template，上傳底圖，把某個字的 Anchor 改到別的角落，再 Clear | 底圖與每個字各自定位。Clear 後只剩文字。Outline 畫出每個字的框，只在 desk，OBS 沒有框 |
+| T5 | 文字樣式頁切 Primary / Secondary / Accent 細 tab，Primary 加大（px）、Accent 改色 | 同一個編輯器換槽，下面三槽對照表即時更新；Size 顯示 px（= vh × 10.8），再顯示出嚟同輸入值差 ≤0.1px。字變大，框的寬度不變。Strap 的 Headline、Name super 的 Name、Locator、Story + locator 的 Headline、Live 的 Headline 一起變大。Banner 用 Accent。輸入框裡還沒 Push 的字不會上畫面 |
+| T6 | 項目樣式頁選一個 template 細 tab，上傳底圖，把某個字的 Anchor 改到別的角落，再 Clear | 底圖與每個字各自定位。Clear 後只剩文字。Outline 畫出每個字的框，只在 desk，OBS 沒有框。Anchor 係 3×3 九宮格；Background X / Y 顯示 px（% × 19.2 / 10.8），OBS 畫面同改之前 pixel 一致 |
 | T7 | 把 Name + source 的 Name 打很長，Source 也打很長 | Name 只在自己的框裡變扁。Source 的框與位置不變，字太長只壓自己的框，仍靠右 |
 | T8 | Live：只改 Headline、不按 Push | OBS 與 On air 監看不變。按該欄 Push（或 Enter）後只有那一欄更新。On 打開後用 Item style 裡 Live 的位置（舊資料第一次跟當時的 Story + locator 一樣），並且 queue 裡正在 On 的 Story + locator 會關掉。Name + source 不受影響 |
 | T9 | Layer 在 On air 時撥 queue On/Off | 約一次往返就上畫面，不是等整包 snapshot。改 Style 或改已在播的列文字仍會整包更新 |
 | T10 | Copy to package | 新 layer 的 queue 還在，但沒有任何一列 On，Live 也是 Off |
-| T11 | Item style 選 Name + source。Source 的 Y 改成與 Name 不同再改回。把 Source 的 Width 改小，Align 改成 Center 再改回 Right。Anchor 改到中間那一列 | 兩個字不會互相推動。Y 不同就分開。Width 只改 Source 那塊框。短字依 Align 待在框裡。中間列的 X 或 Y 顯示 —，數字還留著 |
-| T12 | Item style 選 Live（在 Story + locator 下面）。把 Headline 的 Width 改掉，再選回 Story + locator | Live 的 Width 是新的，Story + locator 仍是原來的。Live On 時畫面用 Live 的框；Queue 的 Story + locator On 時用自己的框。字體仍跟著 Text style 的 Primary / Secondary。Queue 的 Template 下拉沒有 Live |
+| T11 | 項目樣式頁選 Name + source。Source 的 Y 改成與 Name 不同再改回。把 Source 的 Width 改小，Align 改成 Center 再改回 Right。Anchor 改到中間那一列 | 兩個字不會互相推動。Y 不同就分開。Width 只改 Source 那塊框。短字依 Align 待在框裡。中間列的 X 或 Y 顯示 —，數字還留著 |
+| T12 | 項目樣式頁選 Live（第 9 個細 tab）。把 Headline 的 Width 改掉，再選回 Story + locator | Live 的 Width 是新的，Story + locator 仍是原來的。Live On 時畫面用 Live 的框；Queue 的 Story + locator On 時用自己的框。字體仍跟著 Text style 的 Primary / Secondary。內容頁 Queue 表單的 8 個 template tab 沒有 Live。Live 同 Story + locator 頁都寫明「獨立複本」 |
 
 ### CLEANUP
 

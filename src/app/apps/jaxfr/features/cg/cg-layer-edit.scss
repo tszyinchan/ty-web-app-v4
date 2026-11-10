@@ -105,12 +105,33 @@ $cg-control-height: 28px;
   align-content: start;
 }
 
-.title-desk .cg-desk-config {
-  overflow: hidden;
+.title-desk app-cg-title-desk {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
 }
 
-.title-desk app-cg-title-desk {
-  min-height: 0;
+// Title Settings tab (projected into app-cg-title-desk): sections split by divider lines.
+.cg-title-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 560px;
+}
+
+.cg-title-settings > .cg-block + .cg-block {
+  padding-top: 12px;
+  border-top: 1px solid var(--app-input-border);
+}
+
+.cg-title-settings .cg-foot-copy {
+  flex: none;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.cg-title-settings .cg-copy-select {
+  flex: 1;
   min-width: 0;
 }
 

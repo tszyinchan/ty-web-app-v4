@@ -1,0 +1,47 @@
+:host {
+  display: inline-block;
+}
+
+.cg-anchor-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 28px);
+  grid-auto-rows: 28px;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--app-button-border);
+  border-radius: 6px;
+  background: var(--app-input-bg);
+  box-shadow: var(--app-input-shadow);
+}
+
+.cg-anchor-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--app-text-muted);
+  cursor: pointer;
+
+  mat-icon {
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+    line-height: 18px;
+  }
+
+  &:hover:not(.on) {
+    color: var(--app-text-primary);
+  }
+
+  &.on {
+    background: var(--app-button-primary-bg);
+    box-shadow: var(--app-button-primary-shadow);
+    color: var(--app-accent-contrast);
+  }
+}

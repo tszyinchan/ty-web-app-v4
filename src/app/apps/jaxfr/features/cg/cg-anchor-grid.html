@@ -1,0 +1,16 @@
+<div class="cg-anchor-grid" role="radiogroup" [attr.aria-label]="label()">
+  @for (anchor of anchors; track anchor.value) {
+    <button
+      type="button"
+      class="cg-anchor-cell"
+      role="radio"
+      [class.on]="anchor.value === value()"
+      [attr.aria-checked]="anchor.value === value()"
+      [attr.aria-label]="anchor.label"
+      [attr.title]="anchor.label"
+      (click)="pick(anchor.value)"
+    >
+      <mat-icon>{{ anchor.icon }}</mat-icon>
+    </button>
+  }
+</div>

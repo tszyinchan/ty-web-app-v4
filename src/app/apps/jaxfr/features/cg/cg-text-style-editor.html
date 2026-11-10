@@ -19,19 +19,35 @@
         <option value="__custom__">Other… (installed on OBS PC)</option>
       </select>
     </label>
-    <label class="cg-field">
-      <span>Size (vh)</span>
-      <input
-        type="number"
-        appCgWheel
-        step="0.1"
-        min="1"
-        max="20"
-        [ngModel]="paint().fontSize ?? 3.5"
-        (ngModelChange)="paint().fontSize = $event; touch()"
-        (appCgWheelChange)="paint().fontSize = $event; touch()"
-      />
-    </label>
+    @if (sizeUnit() === 'px') {
+      <label class="cg-field">
+        <span>Size (px)</span>
+        <input
+          type="number"
+          appCgWheel
+          step="1"
+          [min]="sizePxMin"
+          [max]="sizePxMax"
+          [ngModel]="sizePx()"
+          (ngModelChange)="setSizePx($event)"
+          (appCgWheelChange)="setSizePx($event)"
+        />
+      </label>
+    } @else {
+      <label class="cg-field">
+        <span>Size (vh)</span>
+        <input
+          type="number"
+          appCgWheel
+          step="0.1"
+          min="1"
+          max="20"
+          [ngModel]="paint().fontSize ?? 3.5"
+          (ngModelChange)="paint().fontSize = $event; touch()"
+          (appCgWheelChange)="paint().fontSize = $event; touch()"
+        />
+      </label>
+    }
   </div>
   @if (isCustomFont()) {
     <label class="cg-field">

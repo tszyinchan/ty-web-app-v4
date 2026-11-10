@@ -13,6 +13,10 @@ import {
   CgSubtitleFontGroup,
 } from '../../../../core/domains/cg/cg.constants';
 import { CgSubtitleStyle } from '../../../../core/domains/cg/cg.model';
+import {
+  fontPxToStoredVh,
+  fontVhToDisplayPx,
+} from '../../../../core/domains/cg/cg-title-units.util';
 
 @Component({
   selector: 'app-cg-text-style-editor',
@@ -24,6 +28,10 @@ import { CgSubtitleStyle } from '../../../../core/domains/cg/cg.model';
 export class CgTextStyleEditor {
   readonly paint = input.required<CgSubtitleStyle>();
   readonly changed = output<void>();
+  /** `px` shows Size in Stage pixels (stored value stays vh). Other layers keep `vh`. */
+  readonly sizeUnit = input<'vh' | 'px'>('vh');
+  readonly sizePxMin = fontVhToDisplayPx(1);
+  readonly sizePxMax = fontVhToDisplayPx(20);
 
   readonly fontGroups = CG_SUBTITLE_FONT_GROUPS;
   readonly fontOptions = CG_SUBTITLE_FONT_OPTIONS;
@@ -104,6 +112,16 @@ export class CgTextStyleEditor {
       style.gradientTo = undefined;
       style.gradientAngle = undefined;
     }
+    this.changed.emit();
+  }
+
+  sizePx(): number {
+    return fontVhToDisplayPx(this.paint().fontSize ?? 3.5);
+  }
+
+  setSizePx(value: number | null): void {
+    if (value === null || !Number.isFinite(value)) return;
+    this.paint().fontSize = fontPxToStoredVh(value);
     this.changed.emit();
   }
 

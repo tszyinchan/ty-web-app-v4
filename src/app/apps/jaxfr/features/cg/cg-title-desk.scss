@@ -2,6 +2,9 @@
 @use "./cg-pill" as cg-pill;
 
 $cg-control-height: 28px;
+$vb-border: var(--app-input-border);
+$vb-active-bg: var(--app-card-bg);
+$vb-inactive-bg: color-mix(in srgb, var(--app-card-bg) 86%, var(--app-text-primary));
 
 :host {
   display: flex;
@@ -9,26 +12,121 @@ $cg-control-height: 28px;
   min-width: 0;
   min-height: 0;
   overflow: auto;
+  container-type: inline-size;
+  container-name: titledesk;
 }
 
-.cg-title {
+// ---- VB.NET TabControl style (big 40px / small 30px) ----
+
+.vb-tabs {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 2px;
+  padding: 0 6px;
+}
+
+.vb-tab {
+  box-sizing: border-box;
+  flex: none;
+  margin: 0;
+  padding: 0 16px;
+  border: 1px solid $vb-border;
+  border-bottom: 0;
+  border-radius: 4px 4px 0 0;
+  background: $vb-inactive-bg;
+  color: var(--app-text-muted);
+  font: 13px var(--app-font);
+  cursor: pointer;
+
+  &:hover:not(.active) {
+    color: var(--app-text-primary);
+  }
+
+  &.active {
+    position: relative;
+    z-index: 2;
+    margin-bottom: -1px;
+    padding-bottom: 1px;
+    background: $vb-active-bg;
+    color: var(--app-text-primary);
+    font-weight: 600;
+  }
+}
+
+.vb-big .vb-tab {
+  height: 32px;
+
+  &.active {
+    height: 40px;
+  }
+}
+
+.vb-small {
+  padding: 0;
+}
+
+.vb-small .vb-tab {
+  height: 24px;
+  padding: 0 12px;
+  font-size: 12px;
+
+  &.active {
+    height: 30px;
+  }
+}
+
+.vb-panel {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 12px;
   min-width: 0;
+  box-sizing: border-box;
+  padding: 12px;
+  border: 1px solid $vb-border;
+  border-radius: 0 4px 4px 4px;
+  background: $vb-active-bg;
 }
 
-.cg-style-pane,
-.cg-item-pane {
+.vb-big-panel {
+  flex: 1;
+}
+
+// ---- Sections: one panel, divider lines between sections ----
+
+.cg-sec {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 12px;
-  border: 1px solid var(--app-input-border);
-  border-radius: 6px;
+  min-width: 0;
+}
+
+.vb-small-panel > .cg-sec + .cg-sec,
+.cg-content-right > .cg-sec + .cg-sec,
+.cg-content-left > .cg-live {
+  padding-top: 12px;
+  border-top: 1px solid $vb-border;
+}
+
+.cg-sec-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 12px;
 }
 
 .cg-block-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--app-text-primary);
+}
+
+.cg-word-title {
   margin: 0;
   font-size: 12px;
   font-weight: 600;
@@ -42,6 +140,258 @@ $cg-control-height: 28px;
   color: var(--app-text-muted);
 }
 
+.cg-note {
+  margin: 0;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--app-text-primary);
+  background: color-mix(in srgb, var(--app-accent) 12%, transparent);
+}
+
+// ---- Content page ----
+
+.cg-air-bar {
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--app-text-muted);
+  background: color-mix(in srgb, var(--app-input-border) 40%, transparent);
+
+  &.on {
+    color: var(--app-text-primary);
+    background: color-mix(in srgb, var(--app-success, #2e9e5b) 20%, transparent);
+    border: 1px solid color-mix(in srgb, var(--app-success, #2e9e5b) 60%, transparent);
+  }
+}
+
+.cg-content {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  min-width: 0;
+}
+
+.cg-content-left,
+.cg-content-right {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.cg-monitor-slot {
+  width: 100%;
+  max-width: 480px;
+}
+
+.cg-monitor-toggle {
+  align-self: flex-start;
+}
+
+.cg-onair-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+@container titledesk (min-width: 1120px) {
+  .cg-content {
+    grid-template-columns: 560px minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .cg-monitor-slot {
+    max-width: 560px;
+  }
+
+  .cg-monitor-toggle {
+    display: none;
+  }
+}
+
+@container titledesk (max-width: 1119px) {
+  .cg-content.monitor-collapsed .cg-monitor-slot {
+    display: none;
+  }
+}
+
+.cg-title-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.cg-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 4px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--app-card-bg) 70%, var(--app-input-border));
+
+  &.editing {
+    border-color: var(--app-accent);
+    background: color-mix(in srgb, var(--app-accent) 14%, var(--app-card-bg));
+  }
+}
+
+.cg-editing-tag {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  color: var(--app-accent-contrast);
+  background: var(--app-accent);
+}
+
+.cg-title-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  color: var(--app-text-primary);
+}
+
+.cg-drag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--app-text-muted);
+  cursor: grab;
+}
+
+// ---- Text style page ----
+
+.cg-map {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding-left: 18px;
+  font-size: 12px;
+  color: var(--app-text-muted);
+
+  li.current {
+    color: var(--app-text-primary);
+  }
+}
+
+.cg-brief {
+  margin: 0;
+  font-size: 12px;
+  color: var(--app-text-muted);
+}
+
+.cg-compare-wrap {
+  overflow-x: auto;
+}
+
+.cg-compare {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  color: var(--app-text-primary);
+
+  th,
+  td {
+    padding: 4px 8px;
+    border-bottom: 1px solid $vb-border;
+    text-align: left;
+    vertical-align: top;
+    overflow-wrap: anywhere;
+  }
+
+  thead th {
+    font-weight: 600;
+    color: var(--app-text-muted);
+  }
+
+  tbody th {
+    font-weight: 500;
+    color: var(--app-text-muted);
+    white-space: nowrap;
+  }
+
+  th.current,
+  td.current {
+    background: color-mix(in srgb, var(--app-accent) 10%, transparent);
+  }
+}
+
+// ---- Item style page ----
+
+.cg-place-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 12px 16px;
+}
+
+.cg-words {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.cg-word {
+  display: flex;
+  flex: 1 1 340px;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.cg-fade-row {
+  gap: 12px 20px;
+}
+
+.cg-overview {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+
+.cg-overview-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid $vb-border;
+  border-radius: 4px;
+
+  &.current {
+    border-color: var(--app-accent);
+  }
+}
+
+@container titledesk (min-width: 900px) {
+  .cg-overview {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+// ---- Settings page (projected from the layer desk) ----
+
+.cg-settings {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+// ---- Shared controls ----
+
 .cg-inline {
   display: flex;
   flex-wrap: wrap;
@@ -52,10 +402,6 @@ $cg-control-height: 28px;
 .cg-inline input[type='text'] {
   flex: 1;
   min-width: 0;
-}
-
-.cg-slot-align select {
-  width: 96px;
 }
 
 .cg-fields {
@@ -86,7 +432,7 @@ $cg-control-height: 28px;
   }
 
   input[type='number'] {
-    width: 84px;
+    width: 96px;
   }
 
   input[type='text'],
@@ -124,46 +470,6 @@ $cg-control-height: 28px;
   color: var(--app-text-muted);
 }
 
-.cg-title-list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 0;
-}
-
-.cg-title-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-  padding: 4px;
-  border-radius: 4px;
-  background: color-mix(in srgb, var(--app-card-bg) 70%, transparent);
-}
-
-.cg-title-text {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 13px;
-  color: var(--app-text-primary);
-}
-
-.cg-drag {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--app-text-muted);
-  cursor: grab;
-}
-
 .cg-switch {
   width: 44px;
   height: 24px;
@@ -195,7 +501,7 @@ $cg-control-height: 28px;
 }
 
 .cg-outline-row {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 8px;
 }

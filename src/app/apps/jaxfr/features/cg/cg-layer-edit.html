@@ -1,11 +1,117 @@
 @if (layer(); as layer) {
+  @if (layer.element_type === Title) {
+  <section class="cg-layer-form title-desk">
+    <app-cg-title-desk
+      [layer]="layer"
+      [outline]="logoOutline()"
+      [onAir]="isLiveOnAir()"
+      (outlineChange)="logoOutline.set($event)"
+    >
+      <app-cg-mix-preview
+        titleMonitor
+        label=""
+        [wide]="true"
+        [forceVisible]="true"
+        [layerLookOnly]="true"
+        [outline]="logoOutline()"
+        [layers]="[layer]"
+        [backdrop]="layersBackdrop()"
+      />
+      <div titleSettings class="cg-title-settings">
+        <section class="cg-block cg-layer-name">
+          <h3 class="cg-block-title">Layer name</h3>
+          <input
+            type="text"
+            [(ngModel)]="layer.name"
+            (ngModelChange)="touchPreview()"
+            [placeholder]="elementLabel(layer.element_type)"
+            aria-label="Layer name"
+          />
+        </section>
+        <section class="cg-block look">
+          <h3 class="cg-block-title">Layer Look</h3>
+          <mat-button-toggle-group
+            class="cg-seg-toggle cg-pill"
+            [value]="layer.look"
+            (change)="onLayerLookToggle($event)"
+            hideSingleSelectionIndicator
+            aria-label="Layer Look"
+          >
+            @for (option of lookOptions; track option.value) {
+              <mat-button-toggle [value]="option.value">
+                {{ option.label }}
+              </mat-button-toggle>
+            }
+          </mat-button-toggle-group>
+          <p class="cg-hint">
+            呢層自己嘅顏色（彩色／黑白）。Package Look 係 master bus，兩樣嘢：Package 設做黑白會灰晒所有層。
+          </p>
+        </section>
+        <section class="cg-block cg-foot-copy">
+          <h3 class="cg-block-title">Copy to package</h3>
+          <div class="cg-inline">
+            <select
+              class="cg-copy-select"
+              [appCgWheelSelect]="copyWheelValues()"
+              [ngModel]="copyTargetId()"
+              (ngModelChange)="copyTargetId.set($event)"
+              (appCgWheelChange)="copyTargetId.set($event)"
+              aria-label="Copy to package"
+            >
+              <option value="">Choose…</option>
+              @for (pkg of copyTargets(); track pkg.id) {
+                <option [value]="pkg.id">{{ pkg.label }}</option>
+              }
+            </select>
+            <button
+              mat-stroked-button
+              type="button"
+              class="cg-seg-btn"
+              [disabled]="!copyTargetId() || cg.loading()"
+              (click)="copyToPackage()"
+            >
+              Copy
+            </button>
+          </div>
+        </section>
+        <section class="cg-block">
+          <h3 class="cg-block-title">Layer OBS</h3>
+          <div class="cg-inline">
+            <button
+              mat-stroked-button
+              type="button"
+              class="cg-seg-btn"
+              [disabled]="!layerOutputUrl(layer)"
+              (click)="copyLayerOutput(layer)"
+            >
+              <mat-icon>content_copy</mat-icon>
+              Copy layer OBS
+            </button>
+          </div>
+        </section>
+        <section class="cg-block cg-danger-zone">
+          <h3 class="cg-block-title">Danger zone</h3>
+          <div class="cg-inline">
+            <button
+              mat-flat-button
+              type="button"
+              class="cg-seg-btn danger-btn"
+              (click)="removeLayer(layer)"
+            >
+              Delete layer
+            </button>
+          </div>
+        </section>
+      </div>
+    </app-cg-title-desk>
+  </section>
+  } @else {
   <section
     class="cg-layer-form"
     [class.logo-desk]="layer.element_type === Logo"
     [class.sub-desk]="layer.element_type === Subtitle"
     [class.bug-desk]="layer.element_type === Clock || layer.element_type === Weather"
     [class.news-desk]="layer.element_type === Breaking || layer.element_type === Ticker"
-    [class.title-desk]="layer.element_type === Title"
   >
     <div class="cg-desk-split">
       <aside class="cg-desk-preview">
@@ -801,12 +907,6 @@
               <app-cg-text-style-editor [paint]="newsStyle(layer)" (changed)="touchPreview()" />
             </section>
           </div>
-        } @else if (layer.element_type === Title) {
-          <app-cg-title-desk
-            [layer]="layer"
-            [outline]="logoOutline()"
-            (outlineChange)="logoOutline.set($event)"
-          />
         } @else if (layer.element_type === Subtitle) {
           <div class="cg-sub-cue-col">
             <div class="cg-cue-bar">
@@ -1333,4 +1433,5 @@
       </div>
     </div>
   </section>
+  }
 }
