@@ -90,14 +90,11 @@
 }
 
 .ticker-text.upright {
-  writing-mode: vertical-rl;
-  text-orientation: upright;
-  font-feature-settings: 'vert' on;
   width: 1em;
   padding-right: 0;
   padding-bottom: calc(var(--cg-ticker-gap, 4) * 1em);
   line-height: 1;
-  letter-spacing: calc((var(--cg-sub-line-height, 1) - 1) * 1em);
+  letter-spacing: 0;
   margin-left: 0.15em;
   transform-origin: left top;
 }

@@ -36,16 +36,11 @@
 
 .brk-text {
   position: relative;
-  writing-mode: vertical-rl;
-  text-orientation: upright;
-  /* vert swaps 【】。、「」— … into upright forms when the face has them. */
-  font-feature-settings: 'vert' on;
   width: 1em;
   margin-left: 0.15em;
   margin-right: 0.15em;
-  white-space: pre;
   line-height: 1;
-  letter-spacing: calc((var(--cg-sub-line-height, 1.05) - 1) * 1em);
+  letter-spacing: 0;
   color: var(--cg-sub-color, #fff);
   font-family: var(
     --cg-sub-font-family,

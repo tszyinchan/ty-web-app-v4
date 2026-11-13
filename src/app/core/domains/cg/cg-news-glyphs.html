@@ -1,0 +1,9 @@
+<span class="cg-vrun">
+  @for (glyph of glyphs(); track $index) {
+    <span
+      class="cg-vcell"
+      [class.cg-vcell-rotate]="glyph.mode === 'rotate'"
+      [class.cg-vcell-corner]="glyph.mode === 'corner'"
+    >{{ glyph.text }}</span>
+  }
+</span>

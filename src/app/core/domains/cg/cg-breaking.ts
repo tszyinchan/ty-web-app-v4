@@ -10,6 +10,8 @@ import {
   untracked,
 } from '@angular/core';
 import { CgLogo } from './cg-logo';
+import { CgNewsGlyphs } from './cg-news-glyphs';
+import { cgNewsVerticalGlyphs } from './cg-news-layout';
 import {
   CG_CUT_DURATION_MS,
   CG_SUBTITLE_FONT_LOAD_MS,
@@ -26,7 +28,6 @@ import {
   emptyBreakingSettings,
   innerDurationMs,
   msToNextBreakingSlot,
-  newsCharCount,
   newsItemsKey,
   primaryFontFamily,
 } from './cg.util';
@@ -39,7 +40,7 @@ interface NewsHold {
 @Component({
   selector: 'app-cg-breaking',
   standalone: true,
-  imports: [NgStyle, NgTemplateOutlet, CgLogo],
+  imports: [NgStyle, NgTemplateOutlet, CgLogo, CgNewsGlyphs],
   templateUrl: './cg-breaking.html',
   styleUrl: './cg-breaking.scss',
 })
@@ -106,7 +107,7 @@ export class CgBreaking {
     const fit = breakingFitScale(
       this.layout(),
       this.textStyle(),
-      newsCharCount(text),
+      cgNewsVerticalGlyphs(text).length,
     );
     return { '--cg-brk-fit': String(fit) };
   }

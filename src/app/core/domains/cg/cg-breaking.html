@@ -20,7 +20,11 @@
 
 <ng-template #column let-text>
   <span class="brk-text">
-    <span class="brk-paint brk-stroke" aria-hidden="true">{{ text }}</span>
-    <span class="brk-paint brk-fill" [class.is-gradient]="gradientOn()">{{ text }}</span>
+    <span class="brk-paint brk-stroke" aria-hidden="true">
+      <app-cg-news-glyphs [text]="text" />
+    </span>
+    <span class="brk-paint brk-fill" [class.is-gradient]="gradientOn()">
+      <app-cg-news-glyphs [text]="text" />
+    </span>
   </span>
 </ng-template>

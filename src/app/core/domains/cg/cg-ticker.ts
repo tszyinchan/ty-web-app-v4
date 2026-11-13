@@ -13,6 +13,8 @@ import {
   viewChildren,
 } from '@angular/core';
 import { CgLogo } from './cg-logo';
+import { CgNewsGlyphs } from './cg-news-glyphs';
+import { cgNewsHorizontalText } from './cg-news-layout';
 import {
   CG_DEFAULT_DURATION_MS,
   CG_STAGE_REFERENCE_HEIGHT_PX,
@@ -60,7 +62,7 @@ interface TickerEntry {
 @Component({
   selector: 'app-cg-ticker',
   standalone: true,
-  imports: [NgStyle, NgTemplateOutlet, CgLogo],
+  imports: [NgStyle, NgTemplateOutlet, CgLogo, CgNewsGlyphs],
   templateUrl: './cg-ticker.html',
   styleUrl: './cg-ticker.scss',
 })
@@ -129,7 +131,7 @@ export class CgTicker {
   }
 
   parts(text: string): ReadonlyArray<{ text: string; latin: boolean }> {
-    return subtitleTextParts(text);
+    return subtitleTextParts(cgNewsHorizontalText(text));
   }
 
   gradientOn(): boolean {

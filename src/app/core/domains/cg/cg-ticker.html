@@ -33,8 +33,12 @@
 <ng-template #tickerText let-text>
   <span class="ticker-text" [class.upright]="upright()">
     @if (upright()) {
-      <span class="ticker-paint ticker-stroke" aria-hidden="true">{{ text }}</span>
-      <span class="ticker-paint ticker-fill" [class.is-gradient]="gradientOn()">{{ text }}</span>
+      <span class="ticker-paint ticker-stroke" aria-hidden="true">
+        <app-cg-news-glyphs [text]="text" />
+      </span>
+      <span class="ticker-paint ticker-fill" [class.is-gradient]="gradientOn()">
+        <app-cg-news-glyphs [text]="text" />
+      </span>
     } @else {
       <span class="ticker-paint ticker-stroke" aria-hidden="true">
         @for (part of parts(text); track $index) {
