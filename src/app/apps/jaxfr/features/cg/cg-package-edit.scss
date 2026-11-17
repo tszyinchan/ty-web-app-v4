@@ -450,6 +450,12 @@ $cg-panel-wide: 1120px;
   background: color-mix(in srgb, var(--app-page-bg) 88%, var(--app-card-bg));
 }
 
+:host-context(html.theme-aero) .cg-add-card {
+  background: var(--app-card-bg);
+  box-shadow: var(--app-card-shadow);
+  backdrop-filter: var(--app-chrome-blur);
+}
+
 .cg-add-select {
   width: 100%;
   height: 28px;

@@ -211,6 +211,21 @@ html.theme-aero .standard-list-view {
   }
 }
 
+// Doc Sign only: a page with a folded corner, not the shared pale circle.
+html.theme-aero app-docsign-list .standard-list-view .empty-placeholder:not(:has(mat-spinner))::before,
+html.theme-aero app-docsign-prints .standard-list-view .empty-placeholder:not(:has(mat-spinner))::before {
+  width: 28px;
+  height: 36px;
+  border-radius: 2px;
+  clip-path: polygon(0 0, calc(100% - 11px) 0, 100% 11px, 100% 100%, 0 100%);
+  background:
+    linear-gradient(135deg, transparent 50%, var(--app-card-border) 50%) 100% 0 / 11px 11px no-repeat,
+    linear-gradient(var(--app-text-muted), var(--app-text-muted)) 6px 14px / 14px 2px no-repeat,
+    linear-gradient(var(--app-text-muted), var(--app-text-muted)) 6px 20px / 10px 2px no-repeat,
+    linear-gradient(var(--app-text-muted), var(--app-text-muted)) 6px 26px / 12px 2px no-repeat,
+    var(--app-surface-raised);
+}
+
 .list-loading {
   display: flex;
   flex-direction: column;

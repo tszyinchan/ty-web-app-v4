@@ -212,6 +212,17 @@
   }
 }
 
+:host-context(html.theme-aero) .empty-thread {
+  max-width: 360px;
+  padding: 28px 32px;
+  color: var(--app-text-secondary);
+  background: var(--app-surface);
+  border: 1px solid var(--app-card-border);
+  border-radius: var(--app-radius);
+  box-shadow: var(--app-card-shadow);
+  backdrop-filter: var(--app-chrome-blur);
+}
+
 .message-list {
   flex: 1;
   overflow-y: auto;
