@@ -68,6 +68,14 @@ html.theme-aero {
   --app-chrome-title-shadow: 0 0 8px #fff, 0 1px 0 #fff;
   --app-tile-hover-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.9), #d6ebfa);
   --app-tile-hover-border: #9cc4e4;
+  // List rows only. Brighter than --app-surface so hover reads as a lit sheet.
+  --app-list-row-hover-bg:
+    linear-gradient(
+      180deg,
+      #ffffff 0%,
+      rgba(255, 255, 255, 0.78) 16%,
+      rgba(255, 255, 255, 0.96) 100%
+    );
   --app-input-bg: #ffffff;
   --app-input-border: #8fb0cc;
   --app-input-shadow: inset 1px 2px 3px rgba(0, 40, 80, 0.18);
@@ -225,6 +233,13 @@ html.theme-aero.mode-dark {
     rgba(30, 55, 80, 0.5)
   );
   --app-tile-hover-border: rgba(160, 196, 224, 0.4);
+  --app-list-row-hover-bg:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.42) 0%,
+      rgba(170, 206, 232, 0.24) 16%,
+      rgba(32, 58, 82, 0.84) 100%
+    );
   --app-input-bg: rgba(8, 16, 26, 0.78);
   --app-input-border: rgba(160, 196, 224, 0.35);
   --app-input-shadow: inset 1px 2px 4px rgba(0, 0, 0, 0.5);

@@ -101,13 +101,45 @@ html.theme-aero {
     }
 
     .mat-mdc-paginator {
-      background: transparent;
+      background-color: transparent;
+      background-image: var(--app-surface);
+      box-shadow: var(--app-card-shadow);
+      backdrop-filter: var(--app-chrome-blur);
       font-family: var(--app-font);
       --mat-paginator-container-background-color: transparent;
       --mat-paginator-container-text-color: var(--app-text-secondary);
       --mat-paginator-enabled-icon-color: var(--app-accent);
       --mat-paginator-disabled-icon-color: var(--app-text-muted);
       border-top: 1px solid var(--app-border-subtle);
+
+      button.mat-mdc-icon-button.mat-mdc-paginator-navigation-first,
+      button.mat-mdc-icon-button.mat-mdc-paginator-navigation-previous,
+      button.mat-mdc-icon-button.mat-mdc-paginator-navigation-next,
+      button.mat-mdc-icon-button.mat-mdc-paginator-navigation-last {
+        @include aero.gloss-surface;
+        --mat-icon-button-state-layer-size: 32px;
+        --mat-icon-button-icon-size: 22px;
+        --mat-icon-button-state-layer-color: transparent;
+
+        &:hover:not(.mat-mdc-button-disabled) {
+          @include aero.gloss-surface-hover;
+        }
+
+        &:active:not(.mat-mdc-button-disabled) {
+          @include aero.gloss-pressed-surface;
+          opacity: 1;
+          transform: none;
+        }
+
+        &:focus-visible {
+          box-shadow: var(--app-button-shadow), var(--app-focus-ring);
+        }
+
+        &.mat-mdc-button-disabled,
+        &[disabled] {
+          @include aero.gloss-disabled-surface;
+        }
+      }
     }
   }
 
@@ -148,21 +180,32 @@ html.theme-aero {
   }
 
   .mat-mdc-snack-bar-container .mat-mdc-snackbar-surface {
-    background: var(--app-toast-bg);
+    background-color: transparent;
+    background-image: var(--app-toast-bg);
     color: var(--app-text-primary);
     border: 1px solid var(--app-toast-border);
     border-radius: var(--app-radius);
     box-shadow: var(--app-overlay-shadow);
     backdrop-filter: var(--app-chrome-blur);
+    --mat-snack-bar-container-color: transparent;
     --mat-snack-bar-supporting-text-color: var(--app-text-primary);
     --mat-snack-bar-button-color: var(--app-accent);
   }
 
+  .mat-mdc-snack-bar-container .mat-mdc-snack-bar-label {
+    color: var(--app-text-primary);
+  }
+
   .mat-mdc-snack-bar-container.error-snackbar .mat-mdc-snackbar-surface {
-    background: var(--app-toast-error-bg);
+    background-color: transparent;
+    background-image: var(--app-toast-error-bg);
     color: var(--app-danger);
     border-color: var(--app-toast-error-border);
     --mat-snack-bar-supporting-text-color: var(--app-danger);
+  }
+
+  .mat-mdc-snack-bar-container.error-snackbar .mat-mdc-snack-bar-label {
+    color: var(--app-danger);
   }
 
   mat-form-field.mat-form-field-appearance-outline {
@@ -228,8 +271,8 @@ html.theme-aero {
   }
 
   ::-webkit-scrollbar {
-    width: 12px;
-    height: 12px;
+    width: 8px;
+    height: 8px;
   }
 
   ::-webkit-scrollbar-track {
@@ -237,14 +280,47 @@ html.theme-aero {
   }
 
   ::-webkit-scrollbar-thumb {
-    background-color: var(--app-scrollbar-thumb);
-    border: 3px solid transparent;
+    border: 1px solid transparent;
     border-radius: 8px;
     background-clip: padding-box;
+    background-color: transparent;
+    background-image:
+      linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0.55) 0%,
+        rgba(255, 255, 255, 0.08) 46%,
+        rgba(0, 0, 0, 0.14) 100%
+      ),
+      linear-gradient(var(--app-scrollbar-thumb), var(--app-scrollbar-thumb));
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background-color: var(--app-scrollbar-thumb-hover);
+    background-image:
+      linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0.75) 0%,
+        rgba(255, 255, 255, 0.12) 46%,
+        rgba(0, 0, 0, 0.08) 100%
+      ),
+      linear-gradient(var(--app-scrollbar-thumb-hover), var(--app-scrollbar-thumb-hover));
+  }
+
+  mat-icon.chevron,
+  mat-icon.icon-16,
+  mat-icon.icon-20,
+  .icon-16,
+  .icon-20,
+  .week-header mat-icon,
+  button.feed-card-action mat-icon,
+  .mat-mdc-form-field-icon-prefix mat-icon,
+  .mat-mdc-form-field-icon-suffix mat-icon {
+    filter: var(--app-icon-filter);
+  }
+
+  .item-link:active mat-icon.chevron,
+  button.feed-card-action:active mat-icon,
+  .mat-mdc-form-field-icon-suffix button:active mat-icon {
+    transform: translateY(1px);
   }
 
   button.mat-mdc-menu-item {

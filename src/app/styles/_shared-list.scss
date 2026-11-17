@@ -172,8 +172,11 @@ html.theme-aero .standard-list-view {
     color: var(--app-text-primary);
 
     &:hover {
-      background: var(--app-tile-hover-bg);
+      background: var(--app-list-row-hover-bg);
       border-bottom-color: var(--app-tile-hover-border);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.9),
+        var(--app-card-shadow);
     }
 
     &:active {
