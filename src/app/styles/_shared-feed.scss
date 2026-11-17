@@ -77,6 +77,53 @@ button.feed-card-action {
   color: var(--app-text-muted);
 }
 
+html.theme-aero mat-card.feed-card {
+  background: var(--app-surface);
+  backdrop-filter: var(--app-chrome-blur);
+  color: var(--app-text-primary);
+
+  &:hover {
+    background: var(--app-tile-hover-bg);
+    border-color: var(--app-tile-hover-border);
+  }
+
+  &:active:not(:has(button:active)) {
+    background: var(--app-tile-pressed-bg);
+  }
+}
+
+html.theme-aero mat-card.feed-card:not(.highlight-card) {
+  box-shadow: var(--app-card-shadow);
+}
+
+html.theme-aero mat-card.feed-card:not(.highlight-card):active:not(:has(button:active)) {
+  box-shadow: var(--app-button-pressed-shadow);
+}
+
+html.theme-aero .feed-empty-placeholder {
+  padding: 32px 24px;
+  color: var(--app-text-secondary);
+  background: var(--app-surface);
+  border: 1px solid var(--app-card-border);
+  border-radius: var(--app-radius);
+  box-shadow: var(--app-card-shadow);
+  backdrop-filter: var(--app-chrome-blur);
+
+  &::before {
+    content: "";
+    display: block;
+    width: 40px;
+    height: 40px;
+    margin: 0 auto 12px;
+    border: 1px solid var(--app-card-border);
+    border-radius: 50%;
+    background:
+      radial-gradient(circle at 50% 50%, var(--app-text-muted) 0 3px, transparent 3.5px),
+      var(--app-surface-raised);
+    box-shadow: var(--app-card-shadow);
+  }
+}
+
 .feed-loading {
   text-align: center;
   padding: 40px;
