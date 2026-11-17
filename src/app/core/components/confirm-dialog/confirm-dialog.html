@@ -1,0 +1,22 @@
+<div class="confirm-dialog">
+  <p class="confirm-message">{{ data.message }}</p>
+  <div class="confirm-actions">
+    <button
+      mat-stroked-button
+      type="button"
+      class="confirm-cancel"
+      (click)="cancel()"
+    >
+      {{ cancelLabel }}
+    </button>
+    <button
+      mat-flat-button
+      type="button"
+      class="confirm-ok"
+      [class.danger-btn]="isDelete"
+      (click)="confirm()"
+    >
+      {{ confirmLabel }}
+    </button>
+  </div>
+</div>

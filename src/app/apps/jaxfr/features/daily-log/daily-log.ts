@@ -1,4 +1,9 @@
 import { CommonModule } from '@angular/common';
+import { MatDialog } from '@angular/material/dialog';
+import {
+  ConfirmDialogTone,
+  openConfirmDialog,
+} from '../../../../core/components/confirm-dialog/confirm-dialog';
 import {
   AfterViewInit,
   Component,
@@ -84,6 +89,7 @@ export class DailyLog implements OnInit, AfterViewInit, OnDestroy {
   private headerService = inject(HeaderService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private dialog = inject(MatDialog);
 
   private querySub?: Subscription;
   private readonly weekScroller =
@@ -478,9 +484,14 @@ export class DailyLog implements OnInit, AfterViewInit, OnDestroy {
     await this.service.toggleDayItemCompletion(item);
   }
 
-  startEdit(item: DailyLogDayRow) {
+  async startEdit(item: DailyLogDayRow): Promise<void> {
     if (this.editingDayId() === item.tb_tyapp_dl_day_id) return;
-    if (this.editingDayId() && !confirmDiscardEdits(this.isEditDirty())) return;
+    if (
+      this.editingDayId() &&
+      !(await confirmDiscardEdits(this.dialog, this.isEditDirty()))
+    ) {
+      return;
+    }
     this.editingDayId.set(item.tb_tyapp_dl_day_id);
     this.editText = item.library.item_text;
     this.editEmoji = item.library.emoji;
@@ -495,8 +506,8 @@ export class DailyLog implements OnInit, AfterViewInit, OnDestroy {
     this.emojiPickerTarget.set(null);
   }
 
-  cancelEdit() {
-    if (!confirmDiscardEdits(this.isEditDirty())) return;
+  async cancelEdit(): Promise<void> {
+    if (!(await confirmDiscardEdits(this.dialog, this.isEditDirty()))) return;
     this.abandonEdit();
   }
 
@@ -538,7 +549,11 @@ export class DailyLog implements OnInit, AfterViewInit, OnDestroy {
   }
 
   async onDelete(item: DailyLogDayRow) {
-    if (!confirm(`Remove "${item.library.item_text}" from this date?`)) return;
+    const confirmed = await openConfirmDialog(this.dialog, {
+      message: `Remove "${item.library.item_text}" from this date?`,
+      tone: ConfirmDialogTone.Delete,
+    });
+    if (!confirmed) return;
     if (this.editingDayId() === item.tb_tyapp_dl_day_id) this.abandonEdit();
     await this.service.deleteDayItem(item.tb_tyapp_dl_day_id);
   }

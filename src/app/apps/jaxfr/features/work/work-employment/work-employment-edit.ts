@@ -32,6 +32,12 @@ import { DisplayNamePipe } from '../../../../../core/pipes/display-name.pipe';
 import { exportToCsv } from '../../../../../core/utils/csv-export.util';
 import { RecordStatus } from '../../../../../core/models/status.enum';
 
+import { MatDialog } from '@angular/material/dialog';
+import {
+  ConfirmDialogTone,
+  openConfirmDialog,
+} from '../../../../../core/components/confirm-dialog/confirm-dialog';
+
 @Component({
   selector: 'app-work-employment-edit',
   standalone: true,
@@ -52,6 +58,7 @@ import { RecordStatus } from '../../../../../core/models/status.enum';
 export class WorkEmploymentEdit implements OnInit, OnDestroy, DoCheck {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private dialog = inject(MatDialog);
   private zone = inject(NgZone);
   private headerService = inject(HeaderService);
   private displayNamePipe = inject(DisplayNamePipe);
@@ -222,7 +229,12 @@ export class WorkEmploymentEdit implements OnInit, OnDestroy, DoCheck {
 
   async onDelete() {
     if (!this.currentId) return;
-    if (confirm('Are you sure you want to delete this employment record?')) {
+    if (
+      await openConfirmDialog(this.dialog, {
+        message: 'Are you sure you want to delete this employment record?',
+        tone: ConfirmDialogTone.Delete,
+      })
+    ) {
       const success = await this.workEmploymentService.deleteWorkEmployment(
         this.currentId,
       );

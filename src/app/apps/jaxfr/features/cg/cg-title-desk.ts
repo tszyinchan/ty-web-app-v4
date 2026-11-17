@@ -1,4 +1,9 @@
 import { CdkDrag, CdkDragDrop, CdkDragHandle, CdkDropList, moveItemInArray } from '@angular/cdk/drag-drop';
+import { MatDialog } from '@angular/material/dialog';
+import {
+  ConfirmDialogTone,
+  openConfirmDialog,
+} from '../../../../core/components/confirm-dialog/confirm-dialog';
 import { Component, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -161,6 +166,7 @@ export interface TitleOverviewCard {
 export class CgTitleDesk {
   private readonly cg = inject(CgService);
   private readonly notification = inject(NotificationService);
+  private dialog = inject(MatDialog);
   private readonly layoutDefaults = defaultTitleVariantLayouts();
 
   readonly layer = input.required<CgLayerDraft>();
@@ -296,10 +302,14 @@ export class CgTitleDesk {
     this.saveContent();
   }
 
-  clearAll(): void {
+  async clearAll(): Promise<void> {
     const title = this.title();
     if (title.items.length === 0) return;
-    if (!confirm('Clear all title items?')) return;
+    const confirmed = await openConfirmDialog(this.dialog, {
+      message: 'Clear all title items?',
+      tone: ConfirmDialogTone.Delete,
+    });
+    if (!confirmed) return;
     title.items = [];
     this.resetComposer();
     void this.cg.setTitleAir(this.layer().clientId, [], title.live);

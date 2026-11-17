@@ -1,4 +1,9 @@
 import { CommonModule } from '@angular/common';
+import { MatDialog } from '@angular/material/dialog';
+import {
+  ConfirmDialogTone,
+  openConfirmDialog,
+} from '../../../../core/components/confirm-dialog/confirm-dialog';
 import {
   Component,
   DoCheck,
@@ -51,6 +56,7 @@ interface AccountForm {
 export class YyemsFinancialAccountEdit implements OnInit, OnDestroy, DoCheck {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private dialog = inject(MatDialog);
   private header = inject(HeaderService);
   readonly yyems = inject(YyemsService);
   readonly users = inject(UserService);
@@ -167,9 +173,11 @@ export class YyemsFinancialAccountEdit implements OnInit, OnDestroy, DoCheck {
 
   async onDelete() {
     if (!this.currentId) return;
-    if (!confirm('Soft-delete this account? Wallets pointing at it stay until you change them.')) {
-      return;
-    }
+    const confirmed = await openConfirmDialog(this.dialog, {
+      message: 'Soft-delete this account? Wallets pointing at it stay until you change them.',
+      tone: ConfirmDialogTone.Delete,
+    });
+    if (!confirmed) return;
     const ok = await this.yyems.deleteFinancialAccount(this.currentId);
     if (ok) {
       await this.yyems.fetchDicts(true);

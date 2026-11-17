@@ -1,4 +1,9 @@
 import { CommonModule } from '@angular/common';
+import { MatDialog } from '@angular/material/dialog';
+import {
+  ConfirmDialogTone,
+  openConfirmDialog,
+} from '../../../../core/components/confirm-dialog/confirm-dialog';
 import {
   Component,
   DoCheck,
@@ -70,6 +75,7 @@ interface EatForm {
 export class YyemsEatEdit implements OnInit, OnDestroy, DoCheck {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private dialog = inject(MatDialog);
   private header = inject(HeaderService);
   private auth = inject(AuthService);
   readonly yyems = inject(YyemsService);
@@ -231,7 +237,11 @@ export class YyemsEatEdit implements OnInit, OnDestroy, DoCheck {
 
   async onDelete() {
     if (!this.currentId) return;
-    if (!confirm('Soft-delete this eat record?')) return;
+    const confirmed = await openConfirmDialog(this.dialog, {
+      message: 'Soft-delete this eat record?',
+      tone: ConfirmDialogTone.Delete,
+    });
+    if (!confirmed) return;
     const ok = await this.yyems.deleteEat(this.currentId);
     if (ok) void this.router.navigateByUrl(this.returnUrl);
   }

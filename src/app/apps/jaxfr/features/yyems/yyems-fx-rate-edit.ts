@@ -23,6 +23,12 @@ import {
 import { YyemsFxRate } from './yyems.model';
 import { YyemsService } from './yyems.service';
 
+import { MatDialog } from '@angular/material/dialog';
+import {
+  ConfirmDialogTone,
+  openConfirmDialog,
+} from '../../../../core/components/confirm-dialog/confirm-dialog';
+
 @Component({
   selector: 'app-yyems-fx-rate-edit',
   standalone: true,
@@ -39,6 +45,7 @@ import { YyemsService } from './yyems.service';
 export class YyemsFxRateEdit implements OnInit, OnDestroy, DoCheck {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private dialog = inject(MatDialog);
   private header = inject(HeaderService);
   readonly yyems = inject(YyemsService);
 
@@ -149,7 +156,11 @@ export class YyemsFxRateEdit implements OnInit, OnDestroy, DoCheck {
 
   async onDelete() {
     if (!this.currentId) return;
-    if (!confirm('Soft-delete this FX rate?')) return;
+    const confirmed = await openConfirmDialog(this.dialog, {
+      message: 'Soft-delete this FX rate?',
+      tone: ConfirmDialogTone.Delete,
+    });
+    if (!confirmed) return;
     const ok = await this.yyems.deleteFxRate(this.currentId);
     if (ok) {
       await this.yyems.fetchDicts(true);

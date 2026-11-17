@@ -1,4 +1,9 @@
 import { CommonModule } from '@angular/common';
+import { MatDialog } from '@angular/material/dialog';
+import {
+  ConfirmDialogTone,
+  openConfirmDialog,
+} from '../../../../core/components/confirm-dialog/confirm-dialog';
 import {
   Component,
   DoCheck,
@@ -71,6 +76,7 @@ interface BuyForm {
 export class YyemsBuyEdit implements OnInit, OnDestroy, DoCheck {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private dialog = inject(MatDialog);
   private header = inject(HeaderService);
   private auth = inject(AuthService);
   readonly yyems = inject(YyemsService);
@@ -276,9 +282,11 @@ export class YyemsBuyEdit implements OnInit, OnDestroy, DoCheck {
 
   async onDelete() {
     if (!this.currentId) return;
-    if (!confirm('Soft-delete this buy? Eat records that point at it will stay.')) {
-      return;
-    }
+    const confirmed = await openConfirmDialog(this.dialog, {
+      message: 'Soft-delete this buy? Eat records that point at it will stay.',
+      tone: ConfirmDialogTone.Delete,
+    });
+    if (!confirmed) return;
     const ok = await this.yyems.deleteBuy(this.currentId);
     if (ok) void this.router.navigateByUrl(this.returnUrl);
   }

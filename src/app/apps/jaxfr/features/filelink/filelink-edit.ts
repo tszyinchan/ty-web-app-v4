@@ -37,6 +37,12 @@ import { DisplayNamePipe } from '../../../../core/pipes/display-name.pipe';
 import { RecordStatus } from '../../../../core/models/status.enum';
 import { FilelinkItem } from '../../../../core/domains/filelink/filelink.model';
 
+import { MatDialog } from '@angular/material/dialog';
+import {
+  ConfirmDialogTone,
+  openConfirmDialog,
+} from '../../../../core/components/confirm-dialog/confirm-dialog';
+
 @Component({
   selector: 'app-filelink-edit',
   standalone: true,
@@ -59,6 +65,7 @@ import { FilelinkItem } from '../../../../core/domains/filelink/filelink.model';
 export class FilelinkEdit implements OnInit, OnDestroy, DoCheck {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private dialog = inject(MatDialog);
   private zone = inject(NgZone);
   private headerService = inject(HeaderService);
   private displayNamePipe = inject(DisplayNamePipe);
@@ -353,7 +360,12 @@ export class FilelinkEdit implements OnInit, OnDestroy, DoCheck {
 
   async onDelete() {
     if (!this.currentId) return;
-    if (confirm('Are you sure you want to delete this file link?')) {
+    if (
+      await openConfirmDialog(this.dialog, {
+        message: 'Are you sure you want to delete this file link?',
+        tone: ConfirmDialogTone.Delete,
+      })
+    ) {
       const success = await this.filelinkService.deleteItem(this.currentId);
 
       if (success) {

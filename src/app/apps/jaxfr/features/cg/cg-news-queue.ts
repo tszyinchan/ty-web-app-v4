@@ -20,6 +20,12 @@ import {
 } from '../../../../core/domains/cg/cg.util';
 import { NotificationService } from '../../../../core/services/notification.service';
 
+import { MatDialog } from '@angular/material/dialog';
+import {
+  ConfirmDialogTone,
+  openConfirmDialog,
+} from '../../../../core/components/confirm-dialog/confirm-dialog';
+
 @Component({
   selector: 'app-cg-news-queue',
   standalone: true,
@@ -37,6 +43,7 @@ import { NotificationService } from '../../../../core/services/notification.serv
 })
 export class CgNewsQueue {
   private readonly notification = inject(NotificationService);
+  private dialog = inject(MatDialog);
 
   readonly items = input.required<CgNewsItem[]>();
   /** Breaking passes the hard limit. Ticker passes null (no limit). */
@@ -94,9 +101,13 @@ export class CgNewsQueue {
     reader.readAsText(file);
   }
 
-  clearAll(): void {
+  async clearAll(): Promise<void> {
     if (this.items().length === 0) return;
-    if (!confirm('Clear all news lines?')) return;
+    const confirmed = await openConfirmDialog(this.dialog, {
+      message: 'Clear all news lines?',
+      tone: ConfirmDialogTone.Delete,
+    });
+    if (!confirmed) return;
     this.selectedId.set(null);
     this.editingId.set(null);
     this.notice.set('');

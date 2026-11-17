@@ -25,6 +25,12 @@ import {
 import { YyemsVendor } from './yyems.model';
 import { YyemsService } from './yyems.service';
 
+import { MatDialog } from '@angular/material/dialog';
+import {
+  ConfirmDialogTone,
+  openConfirmDialog,
+} from '../../../../core/components/confirm-dialog/confirm-dialog';
+
 @Component({
   selector: 'app-yyems-vendor-edit',
   standalone: true,
@@ -42,6 +48,7 @@ import { YyemsService } from './yyems.service';
 export class YyemsVendorEdit implements OnInit, OnDestroy, DoCheck {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private dialog = inject(MatDialog);
   private header = inject(HeaderService);
   readonly yyems = inject(YyemsService);
   readonly embedded = input(false);
@@ -164,7 +171,11 @@ export class YyemsVendorEdit implements OnInit, OnDestroy, DoCheck {
 
   async onDelete() {
     if (!this.currentId) return;
-    if (!confirm('Soft-delete this vendor?')) return;
+    const confirmed = await openConfirmDialog(this.dialog, {
+      message: 'Soft-delete this vendor?',
+      tone: ConfirmDialogTone.Delete,
+    });
+    if (!confirmed) return;
     const ok = await this.yyems.deleteVendor(this.currentId);
     if (ok) {
       await this.yyems.fetchDicts(true);

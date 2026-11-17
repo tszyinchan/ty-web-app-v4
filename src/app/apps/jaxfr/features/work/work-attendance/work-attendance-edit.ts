@@ -45,6 +45,12 @@ import { WorkScheduleService } from '../work-schedule/work-schedule.service';
 import { WORK_SCHEDULE_NEW_RECORD_SHORTCUT } from '../../../../../app.constants';
 import { exportToCsv } from '../../../../../core/utils/csv-export.util';
 import { RecordStatus } from '../../../../../core/models/status.enum';
+import { MatDialog } from '@angular/material/dialog';
+import {
+  ConfirmDialogTone,
+  openConfirmDialog,
+} from '../../../../../core/components/confirm-dialog/confirm-dialog';
+
 @Component({
   selector: 'app-work-attendance-edit',
   standalone: true,
@@ -69,6 +75,7 @@ import { RecordStatus } from '../../../../../core/models/status.enum';
 export class WorkAttendanceEdit implements OnInit, OnDestroy, DoCheck {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private dialog = inject(MatDialog);
   private zone = inject(NgZone);
   private headerService = inject(HeaderService);
   private displayNamePipe = inject(DisplayNamePipe);
@@ -372,7 +379,12 @@ export class WorkAttendanceEdit implements OnInit, OnDestroy, DoCheck {
 
   async onDelete() {
     if (!this.currentId) return;
-    if (confirm('Are you sure you want to delete this attendance record?')) {
+    if (
+      await openConfirmDialog(this.dialog, {
+        message: 'Are you sure you want to delete this attendance record?',
+        tone: ConfirmDialogTone.Delete,
+      })
+    ) {
       const success = await this.workAttendanceService.deleteWorkAttendance(
         this.currentId,
       );

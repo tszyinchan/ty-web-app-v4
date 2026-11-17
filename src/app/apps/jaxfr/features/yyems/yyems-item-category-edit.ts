@@ -22,6 +22,12 @@ import {
 import { YyemsItemCategory } from './yyems.model';
 import { YyemsService } from './yyems.service';
 
+import { MatDialog } from '@angular/material/dialog';
+import {
+  ConfirmDialogTone,
+  openConfirmDialog,
+} from '../../../../core/components/confirm-dialog/confirm-dialog';
+
 @Component({
   selector: 'app-yyems-item-category-edit',
   standalone: true,
@@ -37,6 +43,7 @@ import { YyemsService } from './yyems.service';
 export class YyemsItemCategoryEdit implements OnInit, OnDestroy, DoCheck {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private dialog = inject(MatDialog);
   private header = inject(HeaderService);
   readonly yyems = inject(YyemsService);
 
@@ -144,7 +151,11 @@ export class YyemsItemCategoryEdit implements OnInit, OnDestroy, DoCheck {
 
   async onDelete() {
     if (!this.currentId) return;
-    if (!confirm('Soft-delete this product category?')) return;
+    const confirmed = await openConfirmDialog(this.dialog, {
+      message: 'Soft-delete this product category?',
+      tone: ConfirmDialogTone.Delete,
+    });
+    if (!confirmed) return;
     const ok = await this.yyems.deleteItemCategory(this.currentId);
     if (ok) {
       await this.yyems.fetchDicts(true);

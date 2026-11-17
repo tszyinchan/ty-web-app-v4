@@ -1,4 +1,9 @@
 import { CommonModule } from '@angular/common';
+import { MatDialog } from '@angular/material/dialog';
+import {
+  ConfirmDialogTone,
+  openConfirmDialog,
+} from '../../../../core/components/confirm-dialog/confirm-dialog';
 import {
   Component,
   DoCheck,
@@ -109,6 +114,7 @@ interface BillForm {
 export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private dialog = inject(MatDialog);
   private header = inject(HeaderService);
   private auth = inject(AuthService);
   readonly yyems = inject(YyemsService);
@@ -243,7 +249,11 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
   }
 
   async deleteBuy(id: string) {
-    if (!confirm('Delete this line item?')) return;
+    const confirmed = await openConfirmDialog(this.dialog, {
+      message: 'Delete this line item?',
+      tone: ConfirmDialogTone.Delete,
+    });
+    if (!confirmed) return;
     const ok = await this.yyems.deleteBuy(id);
     if (ok) {
       this.buys.set(this.buys().filter((b) => b.tb_tyapp_yhby_id !== id));
@@ -486,9 +496,11 @@ export class YyemsBillEdit implements OnInit, OnDestroy, DoCheck {
 
   async onDelete() {
     if (!this.currentId) return;
-    if (!confirm('Soft-delete this bill? Linked buys stay until you delete them.')) {
-      return;
-    }
+    const confirmed = await openConfirmDialog(this.dialog, {
+      message: 'Soft-delete this bill? Linked buys stay until you delete them.',
+      tone: ConfirmDialogTone.Delete,
+    });
+    if (!confirmed) return;
     const ok = await this.yyems.deleteBill(this.currentId);
     if (ok) void this.router.navigateByUrl('/yyems/bills/list');
   }

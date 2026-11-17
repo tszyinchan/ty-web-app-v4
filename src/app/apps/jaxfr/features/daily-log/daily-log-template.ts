@@ -32,6 +32,12 @@ import {
   isEditDraftDirty,
 } from './daily-log.util';
 
+import { MatDialog } from '@angular/material/dialog';
+import {
+  ConfirmDialogTone,
+  openConfirmDialog,
+} from '../../../../core/components/confirm-dialog/confirm-dialog';
+
 @Component({
   selector: 'app-daily-log-template',
   standalone: true,
@@ -49,6 +55,7 @@ import {
 export class DailyLogTemplate implements OnInit, OnDestroy {
   readonly service = inject(DailyLogService);
   private headerService = inject(HeaderService);
+  private dialog = inject(MatDialog);
   private readonly addItemInput =
     viewChild<ElementRef<HTMLInputElement>>('addItemInput');
 
@@ -192,9 +199,14 @@ export class DailyLogTemplate implements OnInit, OnDestroy {
     this.editEmoji = null;
   }
 
-  startEdit(item: DailyLogTemplateRow) {
+  async startEdit(item: DailyLogTemplateRow): Promise<void> {
     if (this.editingId() === item.item_id) return;
-    if (this.editingId() && !confirmDiscardEdits(this.isEditDirty())) return;
+    if (
+      this.editingId() &&
+      !(await confirmDiscardEdits(this.dialog, this.isEditDirty()))
+    ) {
+      return;
+    }
     this.editingId.set(item.item_id);
     this.editText = item.library.item_text;
     this.editEmoji = item.library.emoji;
@@ -206,8 +218,8 @@ export class DailyLogTemplate implements OnInit, OnDestroy {
     };
   }
 
-  cancelEdit() {
-    if (!confirmDiscardEdits(this.isEditDirty())) return;
+  async cancelEdit(): Promise<void> {
+    if (!(await confirmDiscardEdits(this.dialog, this.isEditDirty()))) return;
     this.abandonEdit();
   }
 
@@ -247,13 +259,11 @@ export class DailyLogTemplate implements OnInit, OnDestroy {
   }
 
   async onDelete(item: DailyLogTemplateRow) {
-    if (
-      !confirm(
-        `Remove "${item.library.item_text}" from the Template?`,
-      )
-    ) {
-      return;
-    }
+    const confirmed = await openConfirmDialog(this.dialog, {
+      message: `Remove "${item.library.item_text}" from the Template?`,
+      tone: ConfirmDialogTone.Delete,
+    });
+    if (!confirmed) return;
     if (this.editingId() === item.item_id) this.abandonEdit();
     await this.service.deleteTemplateItem(item.tb_tyapp_dl_tpl_id);
   }

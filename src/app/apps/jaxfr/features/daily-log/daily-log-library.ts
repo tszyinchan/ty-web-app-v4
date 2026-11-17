@@ -23,6 +23,12 @@ import { DailyLogIcon } from './daily-log-icon';
 import { DailyLogService } from './daily-log.service';
 import { colourClass, findLibraryItemByName, confirmDiscardEdits, isEditDraftDirty } from './daily-log.util';
 
+import { MatDialog } from '@angular/material/dialog';
+import {
+  ConfirmDialogTone,
+  openConfirmDialog,
+} from '../../../../core/components/confirm-dialog/confirm-dialog';
+
 @Component({
   selector: 'app-daily-log-library',
   standalone: true,
@@ -40,6 +46,7 @@ import { colourClass, findLibraryItemByName, confirmDiscardEdits, isEditDraftDir
 export class DailyLogLibrary implements OnInit, OnDestroy {
   readonly service = inject(DailyLogService);
   private headerService = inject(HeaderService);
+  private dialog = inject(MatDialog);
 
   readonly colourPresets = DL_COLOUR_PRESETS;
   colourClass = colourClass;
@@ -167,9 +174,14 @@ export class DailyLogLibrary implements OnInit, OnDestroy {
     this.editEmoji = null;
   }
 
-  startEdit(item: DailyLogLibraryItem) {
+  async startEdit(item: DailyLogLibraryItem): Promise<void> {
     if (this.editingId() === item.tb_tyapp_dl_itm_id) return;
-    if (this.editingId() && !confirmDiscardEdits(this.isEditDirty())) return;
+    if (
+      this.editingId() &&
+      !(await confirmDiscardEdits(this.dialog, this.isEditDirty()))
+    ) {
+      return;
+    }
     this.editingId.set(item.tb_tyapp_dl_itm_id);
     this.editText = item.item_text;
     this.editEmoji = item.emoji;
@@ -181,8 +193,8 @@ export class DailyLogLibrary implements OnInit, OnDestroy {
     };
   }
 
-  cancelEdit() {
-    if (!confirmDiscardEdits(this.isEditDirty())) return;
+  async cancelEdit(): Promise<void> {
+    if (!(await confirmDiscardEdits(this.dialog, this.isEditDirty()))) return;
     this.abandonEdit();
   }
 
@@ -223,7 +235,11 @@ export class DailyLogLibrary implements OnInit, OnDestroy {
 
   async onDelete(item: DailyLogLibraryItem) {
     if (!this.service.canDeleteLibraryItem(item.tb_tyapp_dl_itm_id)) return;
-    if (!confirm(`Delete "${item.item_text}" from the Library?`)) return;
+    const confirmed = await openConfirmDialog(this.dialog, {
+      message: `Delete "${item.item_text}" from the Library?`,
+      tone: ConfirmDialogTone.Delete,
+    });
+    if (!confirmed) return;
     if (this.editingId() === item.tb_tyapp_dl_itm_id) this.abandonEdit();
     await this.service.deleteLibraryItem(item.tb_tyapp_dl_itm_id);
   }

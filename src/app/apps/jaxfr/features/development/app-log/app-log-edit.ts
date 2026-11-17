@@ -1,4 +1,9 @@
 import { CommonModule } from '@angular/common';
+import { MatDialog } from '@angular/material/dialog';
+import {
+  ConfirmDialogTone,
+  openConfirmDialog,
+} from '../../../../../core/components/confirm-dialog/confirm-dialog';
 import {
   Component,
   OnInit,
@@ -66,6 +71,7 @@ interface VersionTriple {
 export class AppLogEdit implements OnInit, OnDestroy, DoCheck {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private dialog = inject(MatDialog);
   private zone = inject(NgZone);
   private headerService = inject(HeaderService);
   private displayNamePipe = inject(DisplayNamePipe);
@@ -410,7 +416,12 @@ export class AppLogEdit implements OnInit, OnDestroy, DoCheck {
 
   async onDelete() {
     if (!this.currentId) return;
-    if (confirm('Are you sure you want to delete this log?')) {
+    if (
+      await openConfirmDialog(this.dialog, {
+        message: 'Are you sure you want to delete this log?',
+        tone: ConfirmDialogTone.Delete,
+      })
+    ) {
       const success = await this.logService.deleteLog(this.currentId);
       if (success) {
         this.isDirty.set(false);

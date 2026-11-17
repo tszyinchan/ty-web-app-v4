@@ -72,6 +72,7 @@
 | B1 | Studio 開。頂部 monitor bar：Preview、**Take**、Program；右邊一行 Package 設定（Name、Studio/Direct、☁ 狀態；Channel／Source、Appear、Look、Alpha/Dim、Enlarge Program、Copy OBS、深紅 Delete package）。**冇左欄**。下面 Layers strip（每層一張卡，monitor 同頂列一樣闊）。點 Logo 卡 | 卡底由左至右：六點 drag、On/Off、名。冇綠點、冇 `…`。下面 Layer panel 係大 tab 內容\|樣式\|設定（見 P 節）。內容頁冇 On air 提示列。Strip 冇標題句 |
 | B1b | 開任一 Layer desk → Delete layer → confirm | 留在同一 Package Panel（`/cg/edit/:id`），**不要**跳 `/login`。draft 少一 tile；Studio 下需 Take 才寫 DB |
 | B1c | List 點 package → Panel；點 tile 開 desk → 再點同 tile 關；Back → list；New package | URL 皆為絕對 `/cg/…`，不要進 `/login`。Overlay 複製鈕產生 `cg.*.tszyin.com/o/…`（或 localhost） |
+| B1f | 已存在的 package 點 **Delete package** | 共用確認框（玻璃面板、外陰影、無開場動畫）。字句仍是 `Delete this package and its layers?`。**Delete**（紅光澤）才軟刪並回 `/cg/list`；**Cancel** 或 Esc 關閉，package 還在 |
 | B1a | `PKG_A`（Studio）加新 Logo（未 Take）。看 desk 小監看 | desk 可預覽草稿；**尚未有 DB id 前** Layer Live 不會寫上氣。Take 後才有 layer id，之後改內容才 live（Layer 內容一律 Live） |
 | B1d | Package Studio：改已有 id 的 Logo Scale／圖。**不要**碰 On/Off | Package **不**變 Unsaved／Take；Package On air／overlay 內容立刻變 |
 | B1e | Studio：Off Logo → Take → 開 desk 改 Scale | Package Pending／On air **不**畫該層；desk 監看**仍**顯示。改完 On → Take 才回混音 |

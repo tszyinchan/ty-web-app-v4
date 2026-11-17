@@ -31,6 +31,8 @@ import {
   normalizeLogDateParam,
 } from './daily-log.util';
 
+import { MatDialog } from '@angular/material/dialog';
+
 @Component({
   selector: 'app-daily-log-new',
   standalone: true,
@@ -44,6 +46,7 @@ export class DailyLogNew implements OnInit, OnDestroy {
   private headerService = inject(HeaderService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private dialog = inject(MatDialog);
 
   readonly colourPresets = DL_COLOUR_PRESETS;
   readonly logDate = signal(formatDate(new Date()));
@@ -197,8 +200,8 @@ export class DailyLogNew implements OnInit, OnDestroy {
     if (ok) this.goToLog();
   }
 
-  cancel() {
-    if (!confirmDiscardEdits(this.isDirty())) return;
+  async cancel(): Promise<void> {
+    if (!(await confirmDiscardEdits(this.dialog, this.isDirty()))) return;
     this.goToLog();
   }
 

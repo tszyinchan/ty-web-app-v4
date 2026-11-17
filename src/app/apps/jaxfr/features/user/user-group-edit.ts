@@ -28,6 +28,12 @@ import { exportToCsv } from '../../../../core/utils/csv-export.util';
 import { UserGroup } from './user-group.model';
 import { UserService } from './user.service';
 
+import { MatDialog } from '@angular/material/dialog';
+import {
+  ConfirmDialogTone,
+  openConfirmDialog,
+} from '../../../../core/components/confirm-dialog/confirm-dialog';
+
 @Component({
   selector: 'app-user-group-edit',
   standalone: true,
@@ -49,6 +55,7 @@ import { UserService } from './user.service';
 export class UserGroupEdit implements OnInit, OnDestroy, DoCheck {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private dialog = inject(MatDialog);
   private auth = inject(AuthService);
   private headerService = inject(HeaderService);
   private displayNamePipe = inject(DisplayNamePipe);
@@ -227,9 +234,11 @@ export class UserGroupEdit implements OnInit, OnDestroy, DoCheck {
 
   async onDelete() {
     if (!this.currentId) return;
-    if (!confirm('Delete this group? People in it will no longer share this circle.')) {
-      return;
-    }
+    const confirmed = await openConfirmDialog(this.dialog, {
+      message: 'Delete this group? People in it will no longer share this circle.',
+      tone: ConfirmDialogTone.Delete,
+    });
+    if (!confirmed) return;
     const success = await this.userService.deleteGroup(this.currentId);
     if (success) {
       this.router.navigate(['/users/groups/list']);

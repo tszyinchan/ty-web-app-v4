@@ -69,6 +69,12 @@ import {
   writeDocsignZoom,
 } from './docsign.util';
 
+import { MatDialog } from '@angular/material/dialog';
+import {
+  ConfirmDialogTone,
+  openConfirmDialog,
+} from '../../../../core/components/confirm-dialog/confirm-dialog';
+
 @Component({
   selector: 'app-docsign-edit',
   standalone: true,
@@ -91,6 +97,7 @@ import {
 export class DocsignEdit implements OnInit, OnDestroy, DoCheck {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private dialog = inject(MatDialog);
   private zone = inject(NgZone);
   private headerService = inject(HeaderService);
   private displayNamePipe = inject(DisplayNamePipe);
@@ -573,21 +580,24 @@ export class DocsignEdit implements OnInit, OnDestroy, DoCheck {
     if (!latest?.tb_tyapp_dsgn_id) return;
 
     if (!latest.sent_at) {
-      if (
-        !confirm('Sign this document and send it to the other signers?')
-      ) {
-        return;
-      }
+      const confirmed = await openConfirmDialog(this.dialog, {
+        message: 'Sign this document and send it to the other signers?',
+        tone: ConfirmDialogTone.Confirm,
+      });
+      if (!confirmed) return;
     } else if (this.headerDirty() || this.contentDirty()) {
       const nextNo = (latest.current_version_no || 0) + 1;
-      if (
-        !confirm(
-          `This will create version ${nextNo}. Other signatures on the current version will be cleared. You will be signed.`,
-        )
-      ) {
-        return;
-      }
-    } else if (!confirm('Sign the current version of this document?')) {
+      const confirmed = await openConfirmDialog(this.dialog, {
+        message: `This will create version ${nextNo}. Other signatures on the current version will be cleared. You will be signed.`,
+        tone: ConfirmDialogTone.Confirm,
+      });
+      if (!confirmed) return;
+    } else if (
+      !(await openConfirmDialog(this.dialog, {
+        message: 'Sign the current version of this document?',
+        tone: ConfirmDialogTone.Confirm,
+      }))
+    ) {
       return;
     }
 
@@ -614,7 +624,11 @@ export class DocsignEdit implements OnInit, OnDestroy, DoCheck {
 
   async onDelete() {
     if (!this.currentId || !this.isOwner()) return;
-    if (!confirm('Are you sure you want to delete this document?')) return;
+    const confirmed = await openConfirmDialog(this.dialog, {
+      message: 'Are you sure you want to delete this document?',
+      tone: ConfirmDialogTone.Delete,
+    });
+    if (!confirmed) return;
     const success = await this.docsignService.deleteDocument(this.currentId);
     if (success) {
       this.claimedId = null;

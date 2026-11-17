@@ -1,4 +1,9 @@
 import { CommonModule } from '@angular/common';
+import { MatDialog } from '@angular/material/dialog';
+import {
+  ConfirmDialogTone,
+  openConfirmDialog,
+} from '../../../../core/components/confirm-dialog/confirm-dialog';
 import {
   Component,
   OnInit,
@@ -75,6 +80,7 @@ const ACCESS_FEATURE_NAMES = new Set([
 export class UserEdit implements OnInit, OnDestroy, DoCheck {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private dialog = inject(MatDialog);
   public userService = inject(UserService);
   public featureService = inject(AppFeatureService);
   public appRegistry = inject(AppRegistryService);
@@ -583,7 +589,11 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
   async onActivate() {
     const u = this.user();
     if (!u || !this.canActivate()) return;
-    if (!confirm('Activate this account so they can sign in again?')) return;
+    const confirmed = await openConfirmDialog(this.dialog, {
+      message: 'Activate this account so they can sign in again?',
+      tone: ConfirmDialogTone.Confirm,
+    });
+    if (!confirmed) return;
 
     const saved = await this.userService.setUserStatus(
       u.user_id,
@@ -601,7 +611,11 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
     const message = this.isSelf()
       ? 'Deactivate your account? You will be signed out. Try signing in again to ask a super admin to turn it back on.'
       : 'Deactivate this account? They cannot sign in until a super admin turns it back on. Shared records stay.';
-    if (!confirm(message)) return;
+    const confirmed = await openConfirmDialog(this.dialog, {
+      message,
+      tone: ConfirmDialogTone.Confirm,
+    });
+    if (!confirmed) return;
 
     const saved = await this.userService.setUserStatus(
       u.user_id,
@@ -619,7 +633,11 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
     const message = this.isSelf()
       ? 'Delete your account? You will be signed out. Chat rooms keep your membership and old messages; other people see your name with (Deleted). Only a super admin can restore the account.'
       : 'Delete this account? They cannot sign in. Chat rooms, groups, and grants stay in the database. Other people see old messages as the person\'s name with (Deleted). Only a super admin can restore.';
-    if (!confirm(message)) return;
+    const confirmed = await openConfirmDialog(this.dialog, {
+      message,
+      tone: ConfirmDialogTone.Delete,
+    });
+    if (!confirmed) return;
 
     const ok = await this.userService.softDeleteUser(u.user_id);
     if (ok && !this.isSelf()) {
@@ -636,13 +654,12 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
   async onRestore() {
     const u = this.user();
     if (!u || !this.canRestore()) return;
-    if (
-      !confirm(
+    const confirmed = await openConfirmDialog(this.dialog, {
+      message:
         'Restore this account? They can sign in again. Chat rooms, groups, and app access from before the delete are still there.',
-      )
-    ) {
-      return;
-    }
+      tone: ConfirmDialogTone.Confirm,
+    });
+    if (!confirmed) return;
 
     const saved = await this.userService.restoreUser(u.user_id);
     if (!saved) return;
@@ -694,13 +711,11 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
       );
       return;
     }
-    if (
-      !confirm(
-        'Set a new password for this person? They will use it the next time they sign in.',
-      )
-    ) {
-      return;
-    }
+    const confirmed = await openConfirmDialog(this.dialog, {
+      message: 'Set a new password for this person? They will use it the next time they sign in.',
+      tone: ConfirmDialogTone.Confirm,
+    });
+    if (!confirmed) return;
 
     this.passwordBusy.set(true);
     try {
@@ -717,13 +732,12 @@ export class UserEdit implements OnInit, OnDestroy, DoCheck {
   async onSendPasswordReset() {
     const u = this.user();
     if (!u || !this.canSendPasswordReset() || this.passwordBusy()) return;
-    if (
-      !confirm(
+    const confirmed = await openConfirmDialog(this.dialog, {
+      message:
         'Send a password reset email to this account? They will use the link to choose a new password.',
-      )
-    ) {
-      return;
-    }
+      tone: ConfirmDialogTone.Confirm,
+    });
+    if (!confirmed) return;
 
     this.passwordBusy.set(true);
     try {

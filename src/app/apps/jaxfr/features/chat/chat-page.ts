@@ -1,4 +1,9 @@
 import { CommonModule } from '@angular/common';
+import { MatDialog } from '@angular/material/dialog';
+import {
+  ConfirmDialogTone,
+  openConfirmDialog,
+} from '../../../../core/components/confirm-dialog/confirm-dialog';
 import {
   Component,
   CUSTOM_ELEMENTS_SCHEMA,
@@ -118,6 +123,7 @@ interface ThreadMessageVm {
 export class ChatPage implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private dialog = inject(MatDialog);
   private headerService = inject(HeaderService);
   private auth = inject(AuthService);
   private notification = inject(NotificationService);
@@ -475,11 +481,12 @@ export class ChatPage implements OnInit, OnDestroy {
     const room = this.selectedRoom();
     if (!room || this.isRoomCreator()) return;
     const willDelete = room.member_user_ids.length <= CHAT_ROOM_MIN_MEMBERS;
-    const ok = confirm(
-      willDelete
+    const ok = await openConfirmDialog(this.dialog, {
+      message: willDelete
         ? `Leave "${room.name}"? This will delete the room because a room needs at least two people.`
         : `Leave "${room.name}"?`,
-    );
+      tone: willDelete ? ConfirmDialogTone.Delete : ConfirmDialogTone.Confirm,
+    });
     if (!ok) return;
     const left = await this.chatService.leaveRoom(room.tb_tyapp_chat_rm_id);
     if (left) {
@@ -490,7 +497,11 @@ export class ChatPage implements OnInit, OnDestroy {
   async onDeleteRoom() {
     const room = this.selectedRoom();
     if (!room || !this.isRoomCreator()) return;
-    if (!confirm(`Delete room "${room.name}"? This cannot be undone.`)) return;
+    const confirmed = await openConfirmDialog(this.dialog, {
+      message: `Delete room "${room.name}"? This cannot be undone.`,
+      tone: ConfirmDialogTone.Delete,
+    });
+    if (!confirmed) return;
     const ok = await this.chatService.deleteRoom(room.tb_tyapp_chat_rm_id);
     if (ok) {
       await this.router.navigate(['/chat']);
@@ -742,7 +753,11 @@ export class ChatPage implements OnInit, OnDestroy {
 
   async onDeleteMessage(vm: ThreadMessageVm) {
     if (!vm.canDelete) return;
-    if (!confirm('Delete this message?')) return;
+    const confirmed = await openConfirmDialog(this.dialog, {
+      message: 'Delete this message?',
+      tone: ConfirmDialogTone.Delete,
+    });
+    if (!confirmed) return;
     this.clearPinnedToolbar();
     await this.chatService.deleteMessage(vm.message.tb_tyapp_chat_msg_id);
   }

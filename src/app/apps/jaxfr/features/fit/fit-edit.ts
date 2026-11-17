@@ -1,4 +1,9 @@
 import { CommonModule } from '@angular/common';
+import { MatDialog } from '@angular/material/dialog';
+import {
+  ConfirmDialogTone,
+  openConfirmDialog,
+} from '../../../../core/components/confirm-dialog/confirm-dialog';
 import {
   Component,
   DoCheck,
@@ -78,6 +83,7 @@ type FitEditVm = Omit<FitEditSessionInput, 'session_date'> & {
 export class FitEdit implements OnInit, OnDestroy, DoCheck {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private dialog = inject(MatDialog);
   private headerService = inject(HeaderService);
   private authService = inject(AuthService);
 
@@ -601,7 +607,12 @@ export class FitEdit implements OnInit, OnDestroy, DoCheck {
       ? '確定要刪除這份課表？不會刪除已套用過的當日紀錄。'
       : 'Are you sure you want to delete this fit session?';
 
-    if (confirm(confirmMessage)) {
+    if (
+      await openConfirmDialog(this.dialog, {
+        message: confirmMessage,
+        tone: ConfirmDialogTone.Delete,
+      })
+    ) {
       const success = await this.fitService.deleteSession(this.currentId);
       if (success) {
         this.isDirty.set(false);
@@ -614,7 +625,10 @@ export class FitEdit implements OnInit, OnDestroy, DoCheck {
     if (!this.currentId || !this.isPattern()) return;
 
     if (this.isDirty()) {
-      confirm('課表有未儲存的變更，請先儲存再套用。');
+      await openConfirmDialog(this.dialog, {
+        message: '課表有未儲存的變更，請先儲存再套用。',
+        tone: ConfirmDialogTone.Confirm,
+      });
       return;
     }
 

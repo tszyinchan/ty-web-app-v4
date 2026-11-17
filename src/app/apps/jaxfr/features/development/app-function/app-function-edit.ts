@@ -29,6 +29,12 @@ import { AppFunction } from './app-function.model';
 import { AppFunctionService } from './app-function.service';
 import { RecordStatus } from '../../../../../core/models/status.enum';
 
+import { MatDialog } from '@angular/material/dialog';
+import {
+  ConfirmDialogTone,
+  openConfirmDialog,
+} from '../../../../../core/components/confirm-dialog/confirm-dialog';
+
 @Component({
   selector: 'app-function-edit',
   standalone: true,
@@ -48,6 +54,7 @@ import { RecordStatus } from '../../../../../core/models/status.enum';
 export class AppFunctionEdit implements OnInit, OnDestroy, DoCheck {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private dialog = inject(MatDialog);
   private zone = inject(NgZone);
   public functionService = inject(AppFunctionService);
   public featureService = inject(AppFeatureService);
@@ -219,7 +226,12 @@ export class AppFunctionEdit implements OnInit, OnDestroy, DoCheck {
 
   async onDelete() {
     if (!this.currentId) return;
-    if (confirm('Are you sure you want to delete this function?')) {
+    if (
+      await openConfirmDialog(this.dialog, {
+        message: 'Are you sure you want to delete this function?',
+        tone: ConfirmDialogTone.Delete,
+      })
+    ) {
       const success = await this.functionService.deleteFunction(this.currentId);
       if (success) this.router.navigate(['/development/function/list']);
     }

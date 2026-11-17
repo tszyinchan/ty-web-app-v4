@@ -60,6 +60,10 @@ import {
   packageHasUnsavedIdentity,
   setCgDesktopViewport,
 } from '../../../../core/domains/cg/cg.util';
+import {
+  ConfirmDialogTone,
+  openConfirmDialog,
+} from '../../../../core/components/confirm-dialog/confirm-dialog';
 import { NotificationService } from '../../../../core/services/notification.service';
 import { copyTextToClipboard } from '../../../../core/utils/copy-text.util';
 import { CgOnAirDialog, CgOnAirDialogData } from './cg-on-air-dialog';
@@ -461,7 +465,11 @@ export class CgPackageEdit implements OnInit, OnDestroy, DoCheck {
   async onDelete(): Promise<void> {
     const id = this.packageId;
     if (!id) return;
-    if (!confirm('Delete this package and its layers?')) return;
+    const confirmed = await openConfirmDialog(this.dialog, {
+      message: 'Delete this package and its layers?',
+      tone: ConfirmDialogTone.Delete,
+    });
+    if (!confirmed) return;
     const ok = await this.cg.deletePackage(id);
     if (ok) {
       this.isDirty.set(false);

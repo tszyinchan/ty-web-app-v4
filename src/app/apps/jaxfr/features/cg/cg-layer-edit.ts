@@ -1,4 +1,9 @@
 import { NgTemplateOutlet } from '@angular/common';
+import { MatDialog } from '@angular/material/dialog';
+import {
+  ConfirmDialogTone,
+  openConfirmDialog,
+} from '../../../../core/components/confirm-dialog/confirm-dialog';
 import {
   Component,
   ElementRef,
@@ -176,6 +181,7 @@ const SUBTITLE_SHOW_DEFAULTS: Partial<CgSubtitleStyle> = {
 export class CgLayerEdit implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private dialog = inject(MatDialog);
   private notification = inject(NotificationService);
   private readonly weatherApi = inject(CgWeatherService);
   readonly cg = inject(CgService);
@@ -527,10 +533,14 @@ export class CgLayerEdit implements OnInit {
     });
   }
 
-  clearQueue(layer: CgLayerDraft): void {
+  async clearQueue(layer: CgLayerDraft): Promise<void> {
     if (layer.element_type !== this.Subtitle) return;
     if (layer.payload.lines.length === 0) return;
-    if (!confirm('Clear all captions in the queue?')) return;
+    const confirmed = await openConfirmDialog(this.dialog, {
+      message: 'Clear all captions in the queue?',
+      tone: ConfirmDialogTone.Delete,
+    });
+    if (!confirmed) return;
     void this.applySubtitlePayload(layer, [], null, 0);
     this.notification.showSuccess('Queue cleared');
   }
@@ -1161,8 +1171,12 @@ export class CgLayerEdit implements OnInit {
     return `${read('year')}-${read('month')}-${read('day')}T${read('hour')}:${read('minute')}:${read('second')}`;
   }
 
-  removeLayer(layer: CgLayerDraft): void {
-    if (!confirm('Remove this layer from the package?')) return;
+  async removeLayer(layer: CgLayerDraft): Promise<void> {
+    const confirmed = await openConfirmDialog(this.dialog, {
+      message: 'Remove this layer from the package?',
+      tone: ConfirmDialogTone.Delete,
+    });
+    if (!confirmed) return;
     this.cg.cancelPersistLayerContent(layer.clientId);
     this.cg.draftLayers.update((list) =>
       list.filter((row) => row.clientId !== layer.clientId),

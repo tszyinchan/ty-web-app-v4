@@ -33,6 +33,12 @@ import {
 import { CHAT_ROOM_DESCRIPTION_MAX } from './chat.constants';
 import { ChatService } from './chat.service';
 
+import { MatDialog } from '@angular/material/dialog';
+import {
+  ConfirmDialogTone,
+  openConfirmDialog,
+} from '../../../../core/components/confirm-dialog/confirm-dialog';
+
 @Component({
   selector: 'app-chat-room-manage',
   standalone: true,
@@ -53,6 +59,7 @@ export class ChatRoomManage
 {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private dialog = inject(MatDialog);
   private headerService = inject(HeaderService);
   private auth = inject(AuthService);
   private displayName = inject(DisplayNamePipe);
@@ -253,7 +260,11 @@ export class ChatRoomManage
   async onDeleteRoom() {
     const room = this.room();
     if (!room || !this.canDeleteRoom()) return;
-    if (!confirm(`Delete room "${room.name}"? This cannot be undone.`)) return;
+    const confirmed = await openConfirmDialog(this.dialog, {
+      message: `Delete room "${room.name}"? This cannot be undone.`,
+      tone: ConfirmDialogTone.Delete,
+    });
+    if (!confirmed) return;
     const ok = await this.chatService.deleteRoom(room.tb_tyapp_chat_rm_id);
     if (ok) {
       this.isDirty.set(false);

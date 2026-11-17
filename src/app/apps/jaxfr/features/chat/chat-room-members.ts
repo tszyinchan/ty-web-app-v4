@@ -29,6 +29,12 @@ import { UserService } from '../user/user.service';
 import { CHAT_ROOM_MIN_MEMBERS } from './chat.constants';
 import { ChatService } from './chat.service';
 
+import { MatDialog } from '@angular/material/dialog';
+import {
+  ConfirmDialogTone,
+  openConfirmDialog,
+} from '../../../../core/components/confirm-dialog/confirm-dialog';
+
 @Component({
   selector: 'app-chat-room-members',
   standalone: true,
@@ -48,6 +54,7 @@ import { ChatService } from './chat.service';
 export class ChatRoomMembers implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private dialog = inject(MatDialog);
   private headerService = inject(HeaderService);
   private auth = inject(AuthService);
   private displayNamePipe = inject(DisplayNamePipe);
@@ -157,7 +164,11 @@ export class ChatRoomMembers implements OnInit, OnDestroy {
     const room = this.room();
     if (!room || !this.canManageMembers()) return;
     const name = this.memberDisplayName(userId);
-    if (!confirm(`Remove ${name} from this room?`)) return;
+    const confirmed = await openConfirmDialog(this.dialog, {
+      message: `Remove ${name} from this room?`,
+      tone: ConfirmDialogTone.Delete,
+    });
+    if (!confirmed) return;
     await this.chatService.removeRoomMember(room.tb_tyapp_chat_rm_id, userId);
   }
 

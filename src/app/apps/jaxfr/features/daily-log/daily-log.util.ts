@@ -1,3 +1,8 @@
+import { MatDialog } from '@angular/material/dialog';
+import {
+  ConfirmDialogTone,
+  openConfirmDialog,
+} from '../../../../core/components/confirm-dialog/confirm-dialog';
 import { formatDate, getWeekRange, parseLocalDate } from '../../../../core/utils/date-time.util';
 import {
   DailyLogStatsRange,
@@ -23,9 +28,15 @@ export function isDayItemCompleted(item: { completed_at: string | null }): boole
   return item.completed_at != null;
 }
 
-export function confirmDiscardEdits(dirty: boolean): boolean {
+export async function confirmDiscardEdits(
+  dialog: MatDialog,
+  dirty: boolean,
+): Promise<boolean> {
   if (!dirty) return true;
-  return confirm('Discard unsaved changes?');
+  return openConfirmDialog(dialog, {
+    message: 'Discard unsaved changes?',
+    tone: ConfirmDialogTone.Confirm,
+  });
 }
 
 export function isEditDraftDirty(

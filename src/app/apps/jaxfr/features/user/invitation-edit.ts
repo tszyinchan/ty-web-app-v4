@@ -1,4 +1,9 @@
 import { CommonModule } from '@angular/common';
+import { MatDialog } from '@angular/material/dialog';
+import {
+  ConfirmDialogTone,
+  openConfirmDialog,
+} from '../../../../core/components/confirm-dialog/confirm-dialog';
 import {
   Component,
   DoCheck,
@@ -67,6 +72,7 @@ const ACCESS_FEATURE_NAMES = new Set([
 export class InvitationEdit implements OnInit, OnDestroy, DoCheck {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private dialog = inject(MatDialog);
   private auth = inject(AuthService);
   private headerService = inject(HeaderService);
   private notification = inject(NotificationService);
@@ -362,13 +368,11 @@ export class InvitationEdit implements OnInit, OnDestroy, DoCheck {
 
   async onDelete() {
     if (!this.currentId) return;
-    if (
-      !confirm(
-        'Delete this invitation? People who already registered keep their accounts.',
-      )
-    ) {
-      return;
-    }
+    const confirmed = await openConfirmDialog(this.dialog, {
+      message: 'Delete this invitation? People who already registered keep their accounts.',
+      tone: ConfirmDialogTone.Delete,
+    });
+    if (!confirmed) return;
     const success = await this.userService.deleteInvitation(this.currentId);
     if (success) {
       this.router.navigate(['/users/invites/list']);

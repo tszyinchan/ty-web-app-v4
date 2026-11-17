@@ -1,0 +1,110 @@
+// Overlay pane sits outside this component, so the glass panel is global
+// and scoped to this dialog's panelClass. Tokens match _aero-controls dialog surface.
+::ng-deep .cdk-overlay-pane.app-confirm-dialog-panel {
+  .mat-mdc-dialog-container {
+    --mat-dialog-container-shape: var(--app-radius);
+  }
+
+  .mat-mdc-dialog-surface {
+    padding: 0;
+    background-color: transparent;
+    background-image: var(--app-dialog-bg);
+    border: 1px solid var(--app-dialog-border);
+    border-radius: var(--app-radius);
+    box-shadow: var(--app-dialog-shadow);
+    backdrop-filter: var(--app-chrome-blur);
+    color: var(--app-text-primary);
+  }
+}
+
+:host {
+  display: block;
+  box-sizing: border-box;
+  padding: 20px 20px 16px;
+  background: transparent;
+  color: var(--app-text-primary);
+  font-family: var(--app-font);
+}
+
+.confirm-message {
+  margin: 0 0 20px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--app-text-primary);
+}
+
+.confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+:host button.mat-mdc-outlined-button.confirm-cancel {
+  min-height: 32px;
+  border: 1px solid var(--app-button-border);
+  border-radius: var(--app-radius);
+  background: var(--app-button-bg);
+  box-shadow: var(--app-button-shadow);
+  color: var(--app-text-primary);
+  font-family: var(--app-font);
+  --mdc-outlined-button-outline-color: transparent;
+  --mat-button-outlined-outline-color: transparent;
+  --mdc-outlined-button-label-text-color: var(--app-text-primary);
+  --mdc-outlined-button-hover-label-text-color: var(--app-text-primary);
+}
+
+:host button.mat-mdc-outlined-button.confirm-cancel:hover:not(:disabled) {
+  border-color: var(--app-accent);
+  background: var(--app-button-bg-hover);
+}
+
+:host button.mat-mdc-outlined-button.confirm-cancel:active:not(:disabled) {
+  background: var(--app-button-bg-pressed);
+  box-shadow: var(--app-button-pressed-shadow);
+}
+
+:host button.mat-mdc-unelevated-button.confirm-ok:not(.danger-btn) {
+  min-height: 32px;
+  border: 1px solid var(--app-button-primary-border);
+  border-radius: var(--app-radius);
+  background: var(--app-button-primary-bg);
+  box-shadow: var(--app-button-primary-shadow);
+  color: var(--app-accent-contrast);
+  font-family: var(--app-font);
+  --mdc-filled-button-container-color: transparent;
+  --mat-button-filled-container-color: transparent;
+  --mdc-filled-button-label-text-color: var(--app-accent-contrast);
+  --mat-button-filled-label-text-color: var(--app-accent-contrast);
+}
+
+:host button.mat-mdc-unelevated-button.confirm-ok:not(.danger-btn):hover:not(:disabled) {
+  background: var(--app-button-primary-bg-hover);
+}
+
+:host button.mat-mdc-unelevated-button.confirm-ok:not(.danger-btn):active:not(:disabled) {
+  background: var(--app-button-primary-bg-pressed);
+  box-shadow: var(--app-button-primary-pressed-shadow);
+}
+
+:host button.mat-mdc-unelevated-button.confirm-ok.danger-btn {
+  min-height: 32px;
+  border: 1px solid var(--app-button-danger-border);
+  border-radius: var(--app-radius);
+  background: var(--app-button-danger-bg);
+  box-shadow: var(--app-button-danger-shadow);
+  color: var(--app-button-danger-text);
+  font-family: var(--app-font);
+  --mdc-filled-button-container-color: transparent;
+  --mat-button-filled-container-color: transparent;
+  --mdc-filled-button-label-text-color: var(--app-button-danger-text);
+  --mat-button-filled-label-text-color: var(--app-button-danger-text);
+}
+
+:host button.mat-mdc-unelevated-button.confirm-ok.danger-btn:hover:not(:disabled) {
+  background: var(--app-button-danger-bg-hover);
+}
+
+:host button.mat-mdc-unelevated-button.confirm-ok.danger-btn:active:not(:disabled) {
+  background: var(--app-button-danger-bg-pressed);
+  box-shadow: var(--app-button-danger-pressed-shadow);
+}

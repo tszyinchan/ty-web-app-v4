@@ -12,6 +12,12 @@ import { TyappPushSubscription } from '../../../../core/models/push-subscription
 import { UserService } from '../user/user.service';
 import { formatDeviceLabel } from './notification-settings.util';
 
+import { MatDialog } from '@angular/material/dialog';
+import {
+  ConfirmDialogTone,
+  openConfirmDialog,
+} from '../../../../core/components/confirm-dialog/confirm-dialog';
+
 @Component({
   selector: 'app-notification-settings',
   standalone: true,
@@ -28,6 +34,7 @@ import { formatDeviceLabel } from './notification-settings.util';
 })
 export class NotificationSettings implements OnInit {
   private auth = inject(AuthService);
+  private dialog = inject(MatDialog);
   private displayNamePipe = inject(DisplayNamePipe);
 
   readonly pushService = inject(PushService);
@@ -79,7 +86,11 @@ export class NotificationSettings implements OnInit {
   }
 
   async onDisable() {
-    if (!confirm('Disable push notifications on this device?')) return;
+    const confirmed = await openConfirmDialog(this.dialog, {
+      message: 'Disable push notifications on this device?',
+      tone: ConfirmDialogTone.Confirm,
+    });
+    if (!confirmed) return;
     this.disabling.set(true);
     try {
       await this.pushService.unsubscribeThisDevice();
@@ -100,9 +111,11 @@ export class NotificationSettings implements OnInit {
 
   async onRevoke(sub: TyappPushSubscription) {
     const name = this.subscriberName(sub.user_id);
-    if (!confirm(`Revoke notifications for ${name} on "${this.deviceLabel(sub.user_agent)}"?`)) {
-      return;
-    }
+    const confirmed = await openConfirmDialog(this.dialog, {
+      message: `Revoke notifications for ${name} on "${this.deviceLabel(sub.user_agent)}"?`,
+      tone: ConfirmDialogTone.Delete,
+    });
+    if (!confirmed) return;
     const ok = await this.pushService.adminDeleteSubscription(sub.tb_tyapp_usr_psh_id);
     if (ok) {
       this.adminSubscriptions.update((rows) =>

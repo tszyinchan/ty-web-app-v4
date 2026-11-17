@@ -26,6 +26,12 @@ import {
 } from '../../../../../core/services/header.service';
 import { exportToCsv } from '../../../../../core/utils/csv-export.util';
 
+import { MatDialog } from '@angular/material/dialog';
+import {
+  ConfirmDialogTone,
+  openConfirmDialog,
+} from '../../../../../core/components/confirm-dialog/confirm-dialog';
+
 @Component({
   selector: 'app-registry-edit',
   standalone: true,
@@ -45,6 +51,7 @@ import { exportToCsv } from '../../../../../core/utils/csv-export.util';
 export class AppEdit implements OnInit, OnDestroy, DoCheck {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private dialog = inject(MatDialog);
   private zone = inject(NgZone);
   public appRegistry = inject(AppRegistryService);
   private headerService = inject(HeaderService);
@@ -182,9 +189,10 @@ export class AppEdit implements OnInit, OnDestroy, DoCheck {
     if (!this.currentId) return;
 
     if (
-      confirm(
-        'Are you sure you want to delete this app? This action might be irreversible.',
-      )
+      await openConfirmDialog(this.dialog, {
+        message: 'Are you sure you want to delete this app? This action might be irreversible.',
+        tone: ConfirmDialogTone.Delete,
+      })
     ) {
       const success = await this.appRegistry.deleteApp(this.currentId);
       if (success) {

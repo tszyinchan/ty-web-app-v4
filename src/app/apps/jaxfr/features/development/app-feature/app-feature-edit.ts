@@ -28,6 +28,12 @@ import { exportToCsv } from '../../../../../core/utils/csv-export.util';
 import { AppFeature } from './app-feature.model';
 import { AppFeatureService } from './app-feature.service';
 
+import { MatDialog } from '@angular/material/dialog';
+import {
+  ConfirmDialogTone,
+  openConfirmDialog,
+} from '../../../../../core/components/confirm-dialog/confirm-dialog';
+
 @Component({
   selector: 'app-feature-edit',
   standalone: true,
@@ -48,6 +54,7 @@ import { AppFeatureService } from './app-feature.service';
 export class AppFeatureEdit implements OnInit, OnDestroy, DoCheck {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private dialog = inject(MatDialog);
   private zone = inject(NgZone);
   public featureService = inject(AppFeatureService);
   public appRegistry = inject(AppRegistryService);
@@ -202,9 +209,10 @@ export class AppFeatureEdit implements OnInit, OnDestroy, DoCheck {
     if (!this.currentId) return;
 
     if (
-      confirm(
-        'Are you sure you want to delete this feature? This action might be irreversible.',
-      )
+      await openConfirmDialog(this.dialog, {
+        message: 'Are you sure you want to delete this feature? This action might be irreversible.',
+        tone: ConfirmDialogTone.Delete,
+      })
     ) {
       const success = await this.featureService.deleteFeature(this.currentId);
       if (success) {
