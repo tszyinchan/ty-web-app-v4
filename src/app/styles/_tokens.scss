@@ -1,23 +1,41 @@
 // Semantic UI tokens. Color values live on html.theme-* / html.mode-*.
 // Default (no class yet) matches Aero Light so first paint stays readable.
+// html.theme-aero repeats that light set; html.theme-aero.mode-dark replaces it.
 
-html {
+html,
+html.theme-aero {
   --app-font: "Segoe UI", Tahoma, sans-serif;
   --app-weight-emphasis: 600;
   --app-weight-strong: 700;
   --app-radius: 3px;
-  --app-page-bg: #eaf4fc;
+  --app-page-bg: #e7f4fc;
   --app-stage-bg:
-    radial-gradient(ellipse 70% 50% at 20% 0%, #7eb8e8 0%, transparent 55%),
-    radial-gradient(ellipse 60% 40% at 90% 10%, #3d7eb3 0%, transparent 50%),
-    linear-gradient(165deg, #4a8ab8 0%, #2d6a90 40%, #3d6a48 100%);
-  --app-surface: linear-gradient(180deg, #eaf4fc 0%, #ffffff 42%);
-  --app-surface-raised: linear-gradient(180deg, rgba(255, 255, 255, 0.95), #eaf4fc);
+    radial-gradient(ellipse 70% 50% at 20% 0%, #e7f6ff 0%, transparent 55%),
+    radial-gradient(ellipse 60% 40% at 90% 10%, #b9dff6 0%, transparent 50%),
+    linear-gradient(165deg, #d4ecfa 0%, #c5e3f6 40%, #d5eadc 100%);
+  // Light glass: white gloss on top, then a pale sheet so the sky stays light.
+  --app-surface:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.92) 0%,
+      rgba(255, 255, 255, 0.72) 18%,
+      rgba(232, 244, 252, 0.88) 100%
+    );
+  --app-surface-raised:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.88) 0%,
+      rgba(255, 255, 255, 0.34) 18%,
+      rgba(214, 232, 246, 0.66) 100%
+    );
   // "Card" — repeated content surfaces (feed cards, chat bubbles). Kept
   // separate from --app-surface-raised (one-off panels/chrome) so it can
-  // stay calmer/flatter without touching those other consumers.
-  --app-card-bg: #f2f8fd;
-  --app-card-border: #c9d9e6;
+  // stay calmer. Must stay a single color: CG mixes it with color-mix().
+  --app-card-bg: rgba(242, 248, 253, 0.8);
+  --app-card-border: rgba(156, 186, 210, 0.9);
+  --app-card-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    0 2px 8px rgba(0, 40, 80, 0.1);
   // "Mine" — accent-tinted, distinct from --app-card-bg (other people's
   // content) and never shared with hover-state tokens. Used by chat's
   // own-message bubble to make mine-vs-theirs obvious at a glance.
@@ -28,12 +46,14 @@ html {
   --app-text-secondary: #555555;
   --app-text-muted: #6a7a88;
   --app-text-accent: #217346;
-  --app-border-subtle: #c5d5e4;
+  --app-border-subtle: rgba(140, 170, 196, 0.55);
   --app-accent: #1b5fa8;
   --app-accent-contrast: #ffffff;
   --app-link: #0066cc;
   --app-danger: #a31f1f;
-  --app-panel-shadow: inset 0 1px 0 #fff, 0 1px 2px rgba(0, 40, 80, 0.08);
+  --app-panel-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    0 8px 22px rgba(0, 40, 80, 0.14);
   --app-chrome-bg:
     linear-gradient(
       115deg,
@@ -50,7 +70,12 @@ html {
   --app-tile-hover-border: #9cc4e4;
   --app-input-bg: #ffffff;
   --app-input-border: #8fb0cc;
-  --app-input-shadow: inset 1px 1px 2px rgba(0, 40, 80, 0.12);
+  --app-input-shadow: inset 1px 2px 3px rgba(0, 40, 80, 0.18);
+  --app-input-disabled-bg: rgba(232, 238, 242, 0.92);
+  --app-input-disabled-border: #b7c4d0;
+  --app-input-disabled-text: var(--app-button-disabled-text);
+  --app-focus-ring: 0 0 0 1px var(--app-accent);
+  --app-focus-ring-error: 0 0 0 1px var(--app-danger);
   --app-button-bg: linear-gradient(180deg, #f7fbff 0%, #d5e6f4 48%, #b7cfe4 100%);
   --app-button-bg-hover: linear-gradient(180deg, #fff 0%, #e3f2fc 50%, #c5e0f4 100%);
   --app-button-bg-pressed: linear-gradient(180deg, #c5d8ea 0%, #a8c0d6 48%, #92aec8 100%);
@@ -78,9 +103,46 @@ html {
   --app-button-disabled-bg: linear-gradient(180deg, #f4f5f6 0%, #e4e6e8 48%, #d0d3d6 100%);
   --app-button-disabled-border: #b4bac0;
   --app-button-disabled-text: #8a8f94;
-  --app-overlay-bg: linear-gradient(180deg, #f7fbff 0%, #eaf4fc 100%);
-  --app-overlay-border: #9cc4e4;
-  --app-overlay-shadow: 0 2px 8px rgba(0, 40, 80, 0.16);
+  --app-overlay-bg:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.94) 0%,
+      rgba(255, 255, 255, 0.5) 14%,
+      rgba(226, 240, 250, 0.9) 100%
+    );
+  --app-overlay-border: rgba(255, 255, 255, 0.78);
+  --app-overlay-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    0 10px 28px rgba(0, 40, 80, 0.18);
+  --app-dialog-bg:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.97) 0%,
+      rgba(255, 255, 255, 0.62) 12%,
+      rgba(232, 244, 252, 0.92) 100%
+    );
+  --app-dialog-border: rgba(255, 255, 255, 0.85);
+  --app-dialog-shadow:
+    inset 0 1px 0 #fff,
+    0 16px 44px rgba(0, 40, 80, 0.26);
+  --app-scrollbar-track: rgba(255, 255, 255, 0.28);
+  --app-scrollbar-thumb: rgba(70, 120, 160, 0.45);
+  --app-scrollbar-thumb-hover: rgba(27, 95, 168, 0.68);
+  --app-toast-bg:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.96) 0%,
+      rgba(255, 255, 255, 0.58) 18%,
+      rgba(226, 240, 250, 0.92) 100%
+    );
+  --app-toast-border: rgba(255, 255, 255, 0.8);
+  --app-toast-error-bg:
+    linear-gradient(
+      180deg,
+      rgba(255, 246, 246, 0.98) 0%,
+      rgba(255, 226, 226, 0.94) 100%
+    );
+  --app-toast-error-border: #a31f1f;
   --app-icon-filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.28));
   --app-heading-rule: linear-gradient(90deg, #c5c5c5, #e8e8e8);
 
@@ -112,14 +174,25 @@ html.theme-aero.mode-dark {
     radial-gradient(ellipse 70% 50% at 20% 0%, #1a4a72 0%, transparent 55%),
     radial-gradient(ellipse 60% 40% at 90% 10%, #0d2a40 0%, transparent 50%),
     linear-gradient(165deg, #163a58 0%, #0e2438 40%, #1a3a32 100%);
-  --app-surface: linear-gradient(180deg, #1a2e40 0%, #152230 42%);
-  --app-surface-raised: linear-gradient(
-    180deg,
-    rgba(36, 58, 78, 0.92),
-    rgba(22, 38, 52, 0.88)
-  );
-  --app-card-bg: #1c2f40;
-  --app-card-border: rgba(160, 196, 224, 0.22);
+  --app-surface:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.16) 0%,
+      rgba(255, 255, 255, 0.04) 14%,
+      rgba(18, 36, 52, 0.62) 100%
+    );
+  --app-surface-raised:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.2) 0%,
+      rgba(48, 74, 98, 0.55) 16%,
+      rgba(16, 30, 44, 0.72) 100%
+    );
+  --app-card-bg: rgba(28, 47, 64, 0.78);
+  --app-card-border: rgba(160, 196, 224, 0.28);
+  --app-card-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 6px 16px rgba(0, 0, 0, 0.28);
   --app-mine-bg: #2a4a68;
   --app-mine-border: rgba(126, 184, 240, 0.4);
   --app-mine-text: var(--app-text-primary);
@@ -132,7 +205,9 @@ html.theme-aero.mode-dark {
   --app-accent-contrast: #0b1c2c;
   --app-link: #8ec4f7;
   --app-danger: #f0a0a0;
-  --app-panel-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 8px 24px rgba(0, 0, 0, 0.28);
+  --app-panel-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 10px 28px rgba(0, 0, 0, 0.36);
   --app-chrome-bg:
     linear-gradient(
       115deg,
@@ -150,9 +225,11 @@ html.theme-aero.mode-dark {
     rgba(30, 55, 80, 0.5)
   );
   --app-tile-hover-border: rgba(160, 196, 224, 0.4);
-  --app-input-bg: rgba(12, 24, 36, 0.72);
+  --app-input-bg: rgba(8, 16, 26, 0.78);
   --app-input-border: rgba(160, 196, 224, 0.35);
-  --app-input-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.35);
+  --app-input-shadow: inset 1px 2px 4px rgba(0, 0, 0, 0.5);
+  --app-input-disabled-bg: rgba(16, 24, 32, 0.72);
+  --app-input-disabled-border: #4a5560;
   --app-button-bg: linear-gradient(180deg, #3a5874 0%, #2a4258 48%, #1e3246 100%);
   --app-button-bg-hover: linear-gradient(180deg, #4a6c8c 0%, #34506a 50%, #263c54 100%);
   --app-button-bg-pressed: linear-gradient(180deg, #1e3246 0%, #182836 48%, #121e2a 100%);
@@ -180,9 +257,46 @@ html.theme-aero.mode-dark {
     rgba(20, 40, 60, 0.65),
     rgba(12, 24, 36, 0.75)
   );
-  --app-overlay-bg: linear-gradient(180deg, #243a4e 0%, #1a2e40 100%);
-  --app-overlay-border: rgba(160, 196, 224, 0.35);
-  --app-overlay-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  --app-overlay-bg:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.16) 0%,
+      rgba(36, 58, 78, 0.92) 16%,
+      rgba(18, 32, 46, 0.94) 100%
+    );
+  --app-overlay-border: rgba(255, 255, 255, 0.16);
+  --app-overlay-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 12px 32px rgba(0, 0, 0, 0.48);
+  --app-dialog-bg:
+    linear-gradient(
+      180deg,
+      rgba(120, 160, 190, 0.42) 0%,
+      rgba(24, 42, 58, 0.94) 14%,
+      rgba(12, 24, 36, 0.96) 100%
+    );
+  --app-dialog-border: rgba(255, 255, 255, 0.18);
+  --app-dialog-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    0 18px 48px rgba(0, 0, 0, 0.55);
+  --app-scrollbar-track: rgba(0, 0, 0, 0.22);
+  --app-scrollbar-thumb: rgba(160, 196, 224, 0.38);
+  --app-scrollbar-thumb-hover: rgba(186, 216, 240, 0.62);
+  --app-toast-bg:
+    linear-gradient(
+      180deg,
+      rgba(90, 124, 152, 0.55) 0%,
+      rgba(22, 40, 56, 0.94) 18%,
+      rgba(14, 26, 38, 0.96) 100%
+    );
+  --app-toast-border: rgba(255, 255, 255, 0.18);
+  --app-toast-error-bg:
+    linear-gradient(
+      180deg,
+      rgba(160, 70, 70, 0.7) 0%,
+      rgba(62, 22, 22, 0.96) 100%
+    );
+  --app-toast-error-border: #f0a0a0;
   --app-icon-filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.5));
   --app-heading-rule: linear-gradient(90deg, rgba(160, 196, 224, 0.35), transparent);
 }

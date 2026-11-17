@@ -117,7 +117,134 @@ html.theme-aero {
     border-radius: var(--app-radius);
     background: var(--app-overlay-bg);
     box-shadow: var(--app-overlay-shadow);
+    backdrop-filter: var(--app-chrome-blur);
     color: var(--app-text-primary);
+  }
+
+  mat-card.feed-card {
+    box-shadow: var(--app-card-shadow);
+    backdrop-filter: var(--app-chrome-blur);
+  }
+
+  .mat-mdc-dialog-container {
+    --mat-dialog-subhead-color: var(--app-text-primary);
+    --mat-dialog-supporting-text-color: var(--app-text-secondary);
+    --mat-dialog-container-shape: var(--app-radius);
+  }
+
+  .mat-mdc-dialog-surface {
+    background: var(--app-dialog-bg);
+    border: 1px solid var(--app-dialog-border);
+    border-radius: var(--app-radius);
+    box-shadow: var(--app-dialog-shadow);
+    backdrop-filter: var(--app-chrome-blur);
+    color: var(--app-text-primary);
+  }
+
+  .mat-mdc-snack-bar-container {
+    border: 0;
+    box-shadow: none;
+    background: transparent;
+  }
+
+  .mat-mdc-snack-bar-container .mat-mdc-snackbar-surface {
+    background: var(--app-toast-bg);
+    color: var(--app-text-primary);
+    border: 1px solid var(--app-toast-border);
+    border-radius: var(--app-radius);
+    box-shadow: var(--app-overlay-shadow);
+    backdrop-filter: var(--app-chrome-blur);
+    --mat-snack-bar-supporting-text-color: var(--app-text-primary);
+    --mat-snack-bar-button-color: var(--app-accent);
+  }
+
+  .mat-mdc-snack-bar-container.error-snackbar .mat-mdc-snackbar-surface {
+    background: var(--app-toast-error-bg);
+    color: var(--app-danger);
+    border-color: var(--app-toast-error-border);
+    --mat-snack-bar-supporting-text-color: var(--app-danger);
+  }
+
+  mat-form-field.mat-form-field-appearance-outline {
+    font-family: var(--app-font);
+    --mat-form-field-outlined-container-shape: var(--app-radius);
+    --mat-form-field-outlined-outline-width: 1px;
+    --mat-form-field-outlined-focus-outline-width: 1px;
+    --mat-form-field-outlined-outline-color: var(--app-input-border);
+    --mat-form-field-outlined-hover-outline-color: var(--app-accent);
+    --mat-form-field-outlined-focus-outline-color: var(--app-accent);
+    --mat-form-field-outlined-disabled-outline-color: var(--app-input-disabled-border);
+    --mat-form-field-outlined-error-outline-color: var(--app-danger);
+    --mat-form-field-outlined-error-hover-outline-color: var(--app-danger);
+    --mat-form-field-outlined-error-focus-outline-color: var(--app-danger);
+    --mat-form-field-outlined-input-text-color: var(--app-text-primary);
+    --mat-form-field-outlined-input-text-placeholder-color: var(--app-text-muted);
+    --mat-form-field-outlined-disabled-input-text-color: var(--app-input-disabled-text);
+    --mat-form-field-outlined-label-text-color: var(--app-text-secondary);
+    --mat-form-field-outlined-hover-label-text-color: var(--app-text-primary);
+    --mat-form-field-outlined-focus-label-text-color: var(--app-accent);
+    --mat-form-field-outlined-disabled-label-text-color: var(--app-input-disabled-text);
+    --mat-form-field-outlined-error-label-text-color: var(--app-danger);
+    --mat-form-field-outlined-error-hover-label-text-color: var(--app-danger);
+    --mat-form-field-outlined-error-focus-label-text-color: var(--app-danger);
+    --mat-form-field-outlined-caret-color: var(--app-accent);
+    --mat-form-field-outlined-error-caret-color: var(--app-danger);
+    --mat-form-field-error-text-color: var(--app-danger);
+    --mat-form-field-disabled-input-text-placeholder-color: var(--app-input-disabled-text);
+    --mat-form-field-leading-icon-color: var(--app-text-secondary);
+    --mat-form-field-trailing-icon-color: var(--app-text-secondary);
+    --mat-form-field-disabled-leading-icon-color: var(--app-input-disabled-text);
+    --mat-form-field-disabled-trailing-icon-color: var(--app-input-disabled-text);
+    --mat-form-field-error-trailing-icon-color: var(--app-danger);
+    --mat-form-field-error-hover-trailing-icon-color: var(--app-danger);
+    --mat-form-field-error-focus-trailing-icon-color: var(--app-danger);
+
+    .mat-mdc-text-field-wrapper.mdc-text-field--outlined {
+      background: var(--app-input-bg);
+      border-radius: var(--app-radius);
+      box-shadow: var(--app-input-shadow);
+    }
+
+    &.mat-focused:not(.mat-form-field-invalid) .mat-mdc-text-field-wrapper.mdc-text-field--outlined {
+      box-shadow: var(--app-input-shadow), var(--app-focus-ring);
+    }
+
+    &.mat-form-field-invalid.mat-focused .mat-mdc-text-field-wrapper.mdc-text-field--outlined {
+      box-shadow: var(--app-input-shadow), var(--app-focus-ring-error);
+    }
+
+    &.mat-form-field-disabled .mat-mdc-text-field-wrapper.mdc-text-field--outlined {
+      background: var(--app-input-disabled-bg);
+      box-shadow: none;
+    }
+  }
+
+  scrollbar-width: thin;
+  scrollbar-color: var(--app-scrollbar-thumb) var(--app-scrollbar-track);
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--app-scrollbar-thumb) var(--app-scrollbar-track);
+  }
+
+  ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--app-scrollbar-track);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: var(--app-scrollbar-thumb);
+    border: 3px solid transparent;
+    border-radius: 8px;
+    background-clip: padding-box;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: var(--app-scrollbar-thumb-hover);
   }
 
   button.mat-mdc-menu-item {

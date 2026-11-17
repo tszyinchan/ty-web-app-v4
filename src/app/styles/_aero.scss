@@ -4,6 +4,28 @@
   border-bottom: 1px solid var(--app-chrome-border);
 }
 
+// Wallpaper sits on the document. Glass sheets (body, panels) blur it.
+// Print stays plain white; the screen rule would otherwise beat styles.scss.
+html.theme-aero {
+  background: var(--app-stage-bg);
+}
+
+html.theme-aero body {
+  background: transparent;
+}
+
+@media print {
+  html.theme-aero,
+  html.theme-aero body {
+    background: #fff;
+    background-image: none;
+  }
+
+  html.theme-aero * {
+    backdrop-filter: none;
+  }
+}
+
 .aero-stage {
   display: flex;
   flex-direction: column;
@@ -38,12 +60,14 @@
 
 @mixin body-surface {
   background: var(--app-surface);
+  backdrop-filter: var(--app-chrome-blur);
 }
 
 @mixin panel-surface {
   background: var(--app-surface-raised);
   border: 1px solid var(--app-border-subtle);
   border-radius: var(--app-radius);
+  backdrop-filter: var(--app-chrome-blur);
 }
 
 .aero-body {
@@ -80,9 +104,14 @@
 .aero-input:focus {
   outline: none;
   border-color: var(--app-accent);
-  box-shadow:
-    var(--app-input-shadow),
-    0 0 0 1px var(--app-accent);
+  box-shadow: var(--app-input-shadow), var(--app-focus-ring);
+}
+
+html.theme-aero .aero-input:disabled {
+  background: var(--app-input-disabled-bg);
+  border-color: var(--app-input-disabled-border);
+  color: var(--app-input-disabled-text);
+  box-shadow: none;
 }
 
 .aero-field-error {
